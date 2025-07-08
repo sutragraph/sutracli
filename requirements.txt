@@ -18,6 +18,7 @@ requests==2.32.3
 xmltodict==0.14.2
 trafilatura==2.0.0
 markdownify==1.1.0
+dateparser==1.2.2
 
 # Parser
 tree-sitter==0.20.1
