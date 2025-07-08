@@ -149,11 +149,28 @@ class AnalyzerFactory:
         return analyzer
 
     def is_language_supported(self, language: str) -> bool:
-        """Check if language is supported."""
-        return (
+        """
+        Check if language is supported.
+
+        A language is considered supported if:
+        1. It's in the parsers.json configuration
+        2. The language parser library exists
+        3. A YAML configuration file exists for the language
+        """
+        # Check if language is in parsers.json and has a parser library
+        if not (
             LanguageUtils.is_language_supported(language)
             and self._get_language_path(language) is not None
+        ):
+            return False
+
+        # Check if YAML configuration file exists
+        yaml_config_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "yaml_configs",
+            f"{language}.yaml",
         )
+        return os.path.isfile(yaml_config_path)
 
     def get_supported_languages(self) -> set:
         """Get set of supported languages."""
