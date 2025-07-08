@@ -136,6 +136,7 @@ pyinstaller \
     --add-data "$SRC_PATH:src" \
     --add-data "$SRC_PATH/parser/config:parser_config" \
     --add-data "certs:certs" \
+    --add-data "$(python3 -c 'import dateparser; import os; print(os.path.join(os.path.dirname(dateparser.__file__), "data"))'):dateparser/data" \
     $SQLITE_VEC_BINARY \
     $HIDDEN_IMPORTS \
     --noconfirm \
