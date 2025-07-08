@@ -694,8 +694,8 @@ def execute_structured_database_query(
                             {
                                 "type": "database_query_chunk",
                                 "tool_name": "database",
-                                "query_name": query_name,
-                                "query": action.parameters,
+                                "query_name": base_query_name,
+                                "query": final_params,
                                 "result": f"result found: 1",
                                 "chunk_info": chunk_info,
                                 "data": result_data,
