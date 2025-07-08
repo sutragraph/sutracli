@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterator, Dict, Any, Optional
 from loguru import logger
 
+from src.config.settings import config
 from src.services.agent.agentic_core import AgentAction
 
 
@@ -117,7 +118,7 @@ class ApplyDiffExecutor:
     def _parse_diff_content(self, diff_content: str) -> list:
         """Parse diff content to extract search/replace blocks."""
         blocks = []
-        
+
         logger.debug(f"Original diff content: {diff_content[:200]}...")
 
         # Clean up the diff content first
@@ -127,24 +128,24 @@ class ApplyDiffExecutor:
         # Split the content by search blocks manually since regex is failing
         # Look for the pattern: <<<<<<<SEARCH :start_line:N followed by content until >>>>>>> REPLACE
         search_blocks = []
-        
+
         # Split by >>>>>>> REPLACE to get individual blocks
         parts = cleaned_diff.split('>>>>>>> REPLACE')
-        
+
         for part in parts[:-1]:  # Last part is empty after split
             # Look for the search header
             if '<<<<<<<' in part and 'SEARCH' in part:
                 lines = part.strip().split('\n')
-                
+
                 # Find the search header line
                 search_header_idx = -1
                 start_line = None
-                
+
                 for i, line in enumerate(lines):
                     if '<<<<<<<' in line and 'SEARCH' in line:
                         search_header_idx = i
                         break
-                
+
                 # Look for start_line in the next few lines after the search header
                 if search_header_idx >= 0:
                     for i in range(search_header_idx, min(search_header_idx + 3, len(lines))):
@@ -154,7 +155,7 @@ class ApplyDiffExecutor:
                                 break
                             except:
                                 start_line = None
-                
+
                 if search_header_idx >= 0:
                     # Find the separator line (-------)
                     separator_idx = -1
@@ -162,19 +163,19 @@ class ApplyDiffExecutor:
                         if '-------' in lines[i]:
                             separator_idx = i
                             break
-                    
+
                     # Find the replace separator (=======)
                     replace_idx = -1
                     for i in range(separator_idx + 1, len(lines)):
                         if '=======' in lines[i]:
                             replace_idx = i
                             break
-                    
+
                     if separator_idx > 0 and replace_idx > separator_idx:
                         # Extract search and replace content
                         search_content = '\n'.join(lines[separator_idx + 1:replace_idx]).strip()
                         replace_content = '\n'.join(lines[replace_idx + 1:]).strip()
-                        
+
                         if search_content and replace_content:
                             blocks.append({
                                 "start_line": start_line,
@@ -238,7 +239,7 @@ class ApplyDiffExecutor:
     def _create_backup(self, file_path: str, change_id: str, content: str) -> str:
         """Create backup of original file content."""
         try:
-            backup_dir = Path(".sutra_backups")
+            backup_dir = Path(config.storage.file_edits_dir)
             backup_dir.mkdir(exist_ok=True)
 
             backup_path = backup_dir / f"{change_id}_{Path(file_path).name}.backup"

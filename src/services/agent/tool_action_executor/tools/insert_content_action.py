@@ -2,6 +2,7 @@ from typing import Iterator, Dict, Any
 import uuid
 from pathlib import Path
 
+from src.config.settings import config
 from src.services.agent.agentic_core import AgentAction
 
 def execute_insert_content_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
@@ -59,7 +60,7 @@ def execute_insert_content_action(action: AgentAction) -> Iterator[Dict[str, Any
             file_to_check.read_text(encoding="utf-8") if file_to_check.exists() else ""
         )
         change_id = str(uuid.uuid4())
-        backup_dir = Path(".sutra_backups")
+        backup_dir = Path(config.storage.file_edits_dir)
         backup_dir.mkdir(exist_ok=True)
         backup_path = backup_dir / f"{change_id}_{file_to_check.name}.backup"
         backup_path.write_text(original_content, encoding="utf-8")
@@ -97,7 +98,7 @@ def execute_insert_content_action(action: AgentAction) -> Iterator[Dict[str, Any
             "success": True,
             "message": f"Successfully inserted content at line {line_number} in {file_path}",
         }
-        
+
         # Yield detailed TOOL STATUS (success - no original_request needed)
         yield {
             "type": "tool_status",
@@ -114,7 +115,7 @@ def execute_insert_content_action(action: AgentAction) -> Iterator[Dict[str, Any
             "error": f"Failed to insert content: {str(e)}",
             "tool_name": "insert_content"
         }
-        
+
         # Yield detailed TOOL STATUS for failure (include full original_request)
         yield {
             "type": "tool_status",
