@@ -1,0 +1,221 @@
+{
+  "parsers": {
+    "python": {
+      "extensions": [".py", ".pyx", ".pyi"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-python",
+      "build_path": "tree-sitter-python",
+      "parser_name": "python"
+    },
+    "javascript": {
+      "extensions": [".js", ".jsx", ".mjs", ".cjs"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-javascript",
+      "build_path": "tree-sitter-javascript",
+      "parser_name": "javascript"
+    },
+    "typescript": {
+      "extensions": [".ts", ".tsx"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-typescript",
+      "build_path": "tree-sitter-typescript/typescript",
+      "parser_name": "typescript"
+    },
+    "java": {
+      "extensions": [".java"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-java",
+      "build_path": "tree-sitter-java",
+      "parser_name": "java"
+    },
+    "go": {
+      "extensions": [".go"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-go",
+      "build_path": "tree-sitter-go",
+      "parser_name": "go"
+    },
+    "rust": {
+      "extensions": [".rs"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-rust",
+      "build_path": "tree-sitter-rust",
+      "parser_name": "rust"
+    },
+    "cpp": {
+      "extensions": [
+        ".cpp",
+        ".cc",
+        ".cxx",
+        ".c++",
+        ".hpp",
+        ".hh",
+        ".hxx",
+        ".h++"
+      ],
+      "repository": "https://github.com/tree-sitter/tree-sitter-cpp",
+      "build_path": "tree-sitter-cpp",
+      "parser_name": "cpp"
+    },
+    "c": {
+      "extensions": [".c", ".h"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-c",
+      "build_path": "tree-sitter-c",
+      "parser_name": "c"
+    },
+    "c_sharp": {
+      "extensions": [".cs"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-c-sharp",
+      "build_path": "tree-sitter-c-sharp",
+      "parser_name": "c_sharp"
+    },
+    "ruby": {
+      "extensions": [".rb", ".rake", ".gemspec"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-ruby",
+      "build_path": "tree-sitter-ruby",
+      "parser_name": "ruby"
+    },
+    "php": {
+      "extensions": [".php", ".phtml", ".php3", ".php4", ".php5", ".phps"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-php",
+      "build_path": "tree-sitter-php",
+      "parser_name": "php"
+    },
+    "swift": {
+      "extensions": [".swift"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-swift",
+      "build_path": "tree-sitter-swift",
+      "parser_name": "swift"
+    },
+    "kotlin": {
+      "extensions": [".kt", ".kts"],
+      "repository": "https://github.com/fwcd/tree-sitter-kotlin",
+      "build_path": "tree-sitter-kotlin",
+      "parser_name": "kotlin"
+    },
+    "scala": {
+      "extensions": [".scala", ".sc"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-scala",
+      "build_path": "tree-sitter-scala",
+      "parser_name": "scala"
+    },
+    "html": {
+      "extensions": [".html", ".htm", ".xhtml"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-html",
+      "build_path": "tree-sitter-html",
+      "parser_name": "html"
+    },
+    "json": {
+      "extensions": [".json", ".jsonc"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-json",
+      "build_path": "tree-sitter-json",
+      "parser_name": "json"
+    },
+    "yaml": {
+      "extensions": [".yaml", ".yml"],
+      "repository": "https://github.com/ikatyang/tree-sitter-yaml",
+      "build_path": "tree-sitter-yaml",
+      "parser_name": "yaml"
+    },
+    "toml": {
+      "extensions": [".toml"],
+      "repository": "https://github.com/ikatyang/tree-sitter-toml",
+      "build_path": "tree-sitter-toml",
+      "parser_name": "toml"
+    },
+    "xml": {
+      "extensions": [".xml", ".xsd", ".xsl", ".xslt", ".svg"],
+      "repository": "https://github.com/ObserverOfTime/tree-sitter-xml",
+      "build_path": "tree-sitter-xml/xml",
+      "parser_name": "xml"
+    },
+    "markdown": {
+      "extensions": [".md", ".markdown", ".mdown", ".mkd"],
+      "repository": "https://github.com/ikatyang/tree-sitter-markdown",
+      "build_path": "tree-sitter-markdown",
+      "parser_name": "markdown"
+    },
+    "bash": {
+      "extensions": [".sh", ".bash", ".zsh", ".fish"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-bash",
+      "build_path": "tree-sitter-bash",
+      "parser_name": "bash"
+    },
+    "lua": {
+      "extensions": [".lua"],
+      "repository": "https://github.com/Azganoth/tree-sitter-lua",
+      "build_path": "tree-sitter-lua",
+      "parser_name": "lua"
+    },
+    "r": {
+      "extensions": [".r", ".R"],
+      "repository": "https://github.com/r-lib/tree-sitter-r",
+      "build_path": "tree-sitter-r",
+      "parser_name": "r"
+    },
+    "sql": {
+      "extensions": [".sql"],
+      "repository": "https://github.com/derekstride/tree-sitter-sql",
+      "build_path": "tree-sitter-sql",
+      "parser_name": "sql"
+    },
+    "dockerfile": {
+      "extensions": ["Dockerfile", ".dockerfile"],
+      "repository": "https://github.com/camdencheek/tree-sitter-dockerfile",
+      "build_path": "tree-sitter-dockerfile",
+      "parser_name": "dockerfile"
+    },
+    "haskell": {
+      "extensions": [".hs", ".lhs"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-haskell",
+      "build_path": "tree-sitter-haskell",
+      "parser_name": "haskell"
+    },
+    "ocaml": {
+      "extensions": [".ml", ".mli"],
+      "repository": "https://github.com/tree-sitter/tree-sitter-ocaml",
+      "build_path": "tree-sitter-ocaml",
+      "parser_name": "ocaml"
+    },
+    "elm": {
+      "extensions": [".elm"],
+      "repository": "https://github.com/elm-tooling/tree-sitter-elm",
+      "build_path": "tree-sitter-elm",
+      "parser_name": "elm"
+    },
+    "clojure": {
+      "extensions": [".clj", ".cljs", ".cljc", ".edn"],
+      "repository": "https://github.com/sogaiu/tree-sitter-clojure",
+      "build_path": "tree-sitter-clojure",
+      "parser_name": "clojure"
+    },
+    "elixir": {
+      "extensions": [".ex", ".exs"],
+      "repository": "https://github.com/elixir-lang/tree-sitter-elixir",
+      "build_path": "tree-sitter-elixir",
+      "parser_name": "elixir"
+    },
+    "erlang": {
+      "extensions": [".erl", ".hrl"],
+      "repository": "https://github.com/WhatsApp/tree-sitter-erlang",
+      "build_path": "tree-sitter-erlang",
+      "parser_name": "erlang"
+    },
+    "dart": {
+      "extensions": [".dart"],
+      "repository": "https://github.com/UserNobody14/tree-sitter-dart",
+      "build_path": "tree-sitter-dart",
+      "parser_name": "dart"
+    },
+    "vue": {
+      "extensions": [".vue"],
+      "repository": "https://github.com/ikatyang/tree-sitter-vue",
+      "build_path": "tree-sitter-vue",
+      "parser_name": "vue"
+    },
+    "svelte": {
+      "extensions": [".svelte"],
+      "repository": "https://github.com/Himujjal/tree-sitter-svelte",
+      "build_path": "tree-sitter-svelte",
+      "parser_name": "svelte"
+    }
+  },
+  "settings": {
+    "lib_directory": "./lib",
+    "build_directory": "src/parser/build"
+  }
+}

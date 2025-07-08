@@ -1,0 +1,110 @@
+# TypeScript Configuration
+# Clean, maintainable configuration for TypeScript analysis
+
+language: typescript
+
+# Skip rules for filtering elements
+skip_rules:
+  method:
+    - type: name_equals
+      value: constructor
+  constructor:
+    - type: name_not_equals
+      value: constructor
+
+# Structural elements to extract
+elements:
+  function:
+    query: |
+      ; Function declarations
+      (function_declaration
+        name: (identifier) @name
+        parameters: (formal_parameters) @parameters
+      ) @element
+
+      ; Arrow functions assigned to variables
+      (variable_declarator
+        name: (identifier) @name
+        value: (arrow_function
+          parameters: (formal_parameters)
+        )
+      ) @element
+
+  method:
+    query: |
+      ; Class method definitions
+      (method_definition
+        name: (property_identifier) @name
+        parameters: (formal_parameters) @parameters
+      ) @element
+
+  class:
+    query: |
+      (class_declaration
+        name: (type_identifier) @name
+      ) @element
+
+  interface:
+    query: |
+      (interface_declaration
+        name: (type_identifier) @name
+      ) @element
+
+  type_alias:
+    query: |
+      (type_alias_declaration
+        name: (type_identifier) @name
+      ) @element
+
+# Relationships to extract
+relationships:
+  imports:
+    query: |
+      (import_statement
+        source: (string) @target
+      )
+    target_capture: target
+    target_type: file
+
+  calls:
+    query: |
+      ; Direct function calls
+      (call_expression
+        function: (identifier) @target
+      )
+
+      ; Member expression calls
+      (call_expression
+        function: (member_expression
+          object: (identifier) @object
+          property: (property_identifier) @method
+        )
+      )
+    target_capture: target
+    target_type: function
+
+  extends:
+    query: |
+      (class_declaration
+        heritage: (class_heritage
+          (extends_clause
+            value: (identifier) @target
+          )
+        )
+      )
+    target_capture: target
+    target_type: class
+
+  implements:
+    query: |
+      (class_declaration
+        heritage: (class_heritage
+          (implements_clause
+            types: (type_list
+              (type_identifier) @target
+            )
+          )
+        )
+      )
+    target_capture: target
+    target_type: interface
