@@ -5,7 +5,7 @@ SUTRA MEMORY
 Sutra Memory is a dynamic memory system that tracks implementation state across iterations. It is fully managed by the Sutra agent and invisible to the user. This system ensures continuity, prevents redundant operations, and maintains context for complex multi-step tasks. The system tracks iteration history (last 20 entries), manages tasks (current, pending, completed), and stores important code snippets for future reference.
 
 Required Components:
-add_history: 1-3 line summary of current iteration actions, tool usage, and key findings (MANDATORY in every response)
+add_history: Comprehensive summary of current iteration actions, tool usage, key findings, and information storage for future iterations (MANDATORY in every response)
 
 Optional Components:
 task: Manage tasks by adding new ones or moving between pending/current/completed status with unique IDs (only ONE current task allowed at a time)
@@ -68,9 +68,9 @@ Usage:
 
 Examples:
 
-Example 1: Basic history update (minimum required)
+Example 1: Basic history update with detailed information storage
 <sutra_memory>
-<add_history>Used semantic_search query "user authentication" - found validateUser, authenticateToken, hashPassword functions in src/auth/validator.py lines 15-45, identified parameter compatibility issue</add_history>
+<add_history>Used semantic_search query "user authentication" - found validateUser, authenticateToken, hashPassword functions in src/auth/validator.py lines 15-45, identified parameter compatibility issue. Functions found: validateUser() expects (username, password), authenticateToken() takes (token, expiry), hashPassword() uses bcrypt. Located in /src/auth/validator.py, /src/utils/auth.js, /src/middleware/auth.py. Need to verify parameter compatibility across all 3 files for upcoming user role implementation.</add_history>
 </sutra_memory>
 
 Example 2: Task management with history
@@ -80,7 +80,7 @@ Example 2: Task management with history
 <add id="2" to="pending">Update database schema to support new user roles</add>
 <move from="pending" to="current">1</move>
 </task>
-<add_history>Used database query GET_FUNCTION_CALLERS - found validateUser called in 3 files, stored critical auth functions, added validation tasks for parameter compatibility</add_history>
+<add_history>Used database query GET_FUNCTION_CALLERS for validateUser - found called in 3 files: src/controllers/auth.js line 23, src/middleware/verify.py line 45, src/routes/login.php line 12. All callers pass (username, password) parameters. Stored auth functions in code memory. Current validateUser signature: validateUser(username, password, options={}). Added validation tasks for parameter compatibility with new role system.</add_history>
 </sutra_memory>
 
 Example 3: Complete workflow with code storage and removal
@@ -104,7 +104,7 @@ Example 3: Complete workflow with code storage and removal
 <modified>src/auth/validator.py</modified>
 <added>src/models/user_role.py</added>
 </files>
-<add_history>Applied diff to src/models/user.py - added role parameter to User constructor, found 3 dependent functions need updates, stored constructor pattern for role implementation</add_history>
+<add_history>Applied diff to src/models/user.py lines 23-45 - added role parameter to User constructor: User(name, email, role='user'). Found 3 dependent functions need updates: createUser() in controllers/user.py line 15, registerUser() in services/auth.py line 67, and updateUserProfile() in api/users.js line 134. All currently call User(name, email) without role parameter. Stored constructor pattern for role implementation - will need to update all callers to handle new role parameter with backward compatibility.</add_history>
 </sutra_memory>
 
 Example 4: File tracking with multiple operations
@@ -116,7 +116,7 @@ Example 4: File tracking with multiple operations
 <added>migrations/001_add_user_roles.sql</added>
 <added>src/models/permissions.py</added>
 </files>
-<add_history>Used write_to_file - created Permission class in src/models/permissions.py with checkAccess method, updated database config for role tables, removed legacy migration script</add_history>
+<add_history>Used write_to_file - created Permission class in src/models/permissions.py (45 lines) with checkAccess(user_id, resource, action) method, hasRole(user_id, role_name) method, and getRolePermissions(role) method. Updated database config in src/config/database.py to include permissions table schema: id, user_id, role, resource, action, created_at. Removed legacy migration script old_scripts/legacy_migration.py (was 120 lines). New permissions system ready for integration with existing auth functions.</add_history>
 </sutra_memory>
 
 Example 5: Task completion scenario (CORRECT way)
@@ -143,7 +143,7 @@ Example 7: File operation scenario (CORRECT - wait for confirmation)
 <files>
 <modified>src/auth/validator.py</modified>
 </files>
-<add_history>Used apply_diff to update validateUser function in src/auth/validator.py - waiting for user confirmation that diff was applied successfully before completing task</add_history>
+<add_history>Used apply_diff to update validateUser function in src/auth/validator.py lines 15-28 - added role validation parameter: validateUser(username, password, required_role=None). Added role checking logic: if required_role and not user.hasRole(required_role): return False. Function now returns user object with role information. Dependencies: uses hasRole() from permissions.py, connects to user_roles table. Waiting for user confirmation that diff was applied successfully before completing task.</add_history>
 </sutra_memory>
 
 Example 8: File operation scenario (WRONG - do NOT complete immediately)
@@ -181,15 +181,21 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - Memory Optimization when code storage becomes cluttered with unused snippets
    - Context Change when project direction changes making stored code irrelevant
 6. History Best Practices:
-   - Be specific about tool names and parameters used
-   - Mention key findings or results
+   - Be specific about tool names and parameters used with exact queries/commands
+   - Mention key findings, results, and outputs in detail
    - Note any failures or null results to avoid repetition
-   - Include file names and function names when relevant
-   - Keep entries concise but informative (1-3 lines maximum)
+   - Include complete file names, function names, and paths when relevant
+   - Store comprehensive information that will be needed for upcoming iterations
    - ALWAYS REVIEW YOUR HISTORY before starting new iterations to understand previous context
-   - Store important information like function names, file paths, and discoveries in history
+   - Store important information like function names, file paths, directory structures, and discoveries
+   - Include relevant terminal outputs, search results, and tool responses that may be needed later
+   - Record file paths from list_files operations if those paths will be referenced in future iterations
+   - Store configuration details, environment information, and system responses
    - Add findings that can be used for future searches or implementations to pending tasks
    - Record any important patterns, configurations, or code structures discovered during analysis
+   - Include error messages, warnings, and diagnostic information that might be relevant later
+   - Store API responses, database query results, termianl outputs, and other data outputs when they provide context for future operations
+   - Document command outputs, installation results, and system information that affects subsequent iterations
 7. Task Management Rules:
    - Only ONE task can be in "current" status at any time
    - Complete or move current task before assigning new current task
