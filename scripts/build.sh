@@ -46,12 +46,6 @@ if [ ! -d "$CONFIG_PATH" ]; then
 fi
 echo "✅ configs/"
 
-# Check for certs directory (optional but recommended)
-if [ -d "certs" ]; then
-    echo "✅ certs/ (for LLM authentication)"
-else
-    echo "⚠️  certs/ directory not found - some LLM providers may not work"
-fi
 
 echo "✅ All source files found"
 
@@ -135,7 +129,6 @@ pyinstaller \
     --add-data "$CONFIG_PATH:configs" \
     --add-data "$SRC_PATH:src" \
     --add-data "$SRC_PATH/parser/config:parser_config" \
-    --add-data "certs:certs" \
     --add-data "$(python3 -c 'import dateparser; import os; print(os.path.join(os.path.dirname(dateparser.__file__), "data"))'):dateparser/data" \
     $SQLITE_VEC_BINARY \
     $HIDDEN_IMPORTS \
