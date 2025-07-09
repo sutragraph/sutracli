@@ -49,6 +49,57 @@ cleanup() {
 
 trap cleanup EXIT
 
+setup_python_environment() {
+    log_info "Setting up Python virtual environment..."
+    
+    # Check if python3-venv is available
+    if ! python3 -c "import venv">/dev/null 2>&1; then
+        log_error "python3-venv module not available. Please install python3-venv package."
+        log_info "On Ubuntu/Debian: sudo apt-get install python3-venv"
+        log_info "On CentOS/RHEL: sudo yum install python3-venv"
+        exit 1
+    fi
+    
+    local venv_dir="$PROJECT_ROOT/venv"
+    
+    # Create virtual environment if it doesn't exist
+    if [ ! -d "$venv_dir" ]; then
+        log_info "Creating Python virtual environment at $venv_dir..."
+        python3 -m venv "$venv_dir"
+        log_success "Virtual environment created"
+    else
+        log_info "Virtual environment already exists at $venv_dir"
+    fi
+    
+    # Activate virtual environment
+    log_info "Activating virtual environment..."
+    source "$venv_dir/bin/activate"
+    
+    # Upgrade pip
+    log_info "Upgrading pip..."
+    pip install --upgrade pip
+    
+    # Install requirements if requirements.txt exists
+    if [ -f "$PROJECT_ROOT/requirements.txt" ]; then
+        log_info "Installing Python dependencies from requirements.txt..."
+        pip install -r "$PROJECT_ROOT/requirements.txt"
+        log_success "Python dependencies installed"
+    else
+        log_warning "requirements.txt not found, skipping dependency installation"
+    fi
+    
+    # Install PyInstaller if not already installed
+    if ! python3 -c "import PyInstaller">/dev/null 2>&1; then
+        log_info "Installing PyInstaller..."
+        pip install pyinstaller
+        log_success "PyInstaller installed"
+    else
+        log_info "PyInstaller already available"
+    fi
+    
+    log_success "Python environment setup completed"
+}
+
 check_prerequisites() {
     log_info "Checking prerequisites..."
     
@@ -391,6 +442,7 @@ main() {
     fi
     
     # Run setup steps
+    setup_python_environment
     check_prerequisites
     build_executable
     setup_models
