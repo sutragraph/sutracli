@@ -4,23 +4,24 @@ Constants for search executors including query mappings and configuration.
 
 # Chunking and search configuration
 SEARCH_CONFIG = {
-    "chunking_threshold": 250,  # Lines threshold for chunking (also determines "large" code)
-    "chunk_size": 200,  # Max lines per chunk
+    "chunking_threshold": 700,  # Lines threshold for chunking (also determines "large" code)
+    "chunk_size": 600,  # Max lines per chunk
 }
 
 # Semantic search specific configuration
 SEMANTIC_SEARCH_CONFIG = {
-    "total_nodes_limit": 20,  # Always fetch 21 nodes with code snippets
+    "total_nodes_limit": 30,  # Always fetch 30 nodes with code snippets
     "similarity_threshold": 0.2,
-    "delivery_batch_size": 10,  # Serve 7 nodes at a time via delivery queue
+    "delivery_batch_size": 15,  # Serve 15 nodes at a time via delivery queue
     **SEARCH_CONFIG,
 }
+
 # Delivery queue configuration for different query types
 DELIVERY_QUEUE_CONFIG = {
-    "keyword_search_with_code": 5,  # Nodes per batch for keyword search with code
-    "keyword_search_metadata": 15,  # Nodes per batch for keyword search metadata only
-    "database_metadata_only": 15,  # Nodes per batch for all other database queries without code
-    "semantic_search": 10,  # Nodes per batch for semantic search (always with code)
+    "keyword_search_with_code": 10,  # Nodes per batch for keyword search with code
+    "keyword_search_metadata": 30,  # Nodes per batch for keyword search metadata only
+    "database_metadata_only": 30,  # Nodes per batch for all other database queries without code
+    "semantic_search": 15,  # Nodes per batch for semantic search (always with code)
 }
 
 # Database query configuration mapping

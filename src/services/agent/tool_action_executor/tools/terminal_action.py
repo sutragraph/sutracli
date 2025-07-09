@@ -60,13 +60,10 @@ def execute_terminal_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                     "tool_name": "terminal",
                     "status": "success",
                     "command": command,
-                    "data": {
-                        "command": command,
-                        "output": display_output,
-                        "error": error,
-                        "return_code": result.returncode,
-                        "cwd": cwd,
-                    },
+                    "output": display_output,
+                    "error": error,
+                    "return_code": result.returncode,
+                    "cwd": cwd,
                 }
             else:
                 yield {
@@ -74,13 +71,10 @@ def execute_terminal_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                     "tool_name": "terminal",
                     "status": "error",
                     "command": command,
-                    "data": {
-                        "command": command,
-                        "output": output,
-                        "error": error,
-                        "return_code": result.returncode,
-                        "cwd": cwd,
-                    },
+                    "output": output,
+                    "error": error,
+                    "return_code": result.returncode,
+                    "cwd": cwd,
                 }
 
         except subprocess.TimeoutExpired:

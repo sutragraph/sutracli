@@ -22,15 +22,18 @@ class ApplyDiffExecutor:
         diff_content: str,
         session_id: str,
         query_id: str,
-    ) -> Iterator[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Apply diff changes to a file using search/replace format.
-        
+
         Args:
             file_path: Path to the file to modify
             diff_content: Diff content in search/replace format
             session_id: Current session ID
             query_id: Current query ID
+
+        Returns:
+            Dictionary with success status and details
         """
         try:
             # Resolve file path
@@ -46,19 +49,38 @@ class ApplyDiffExecutor:
             search_replace_blocks = self._parse_diff_content(diff_content)
 
             if not search_replace_blocks:
-                yield {"success": False, "error": "No valid search/replace blocks found"}
-                return
+                return {
+                    "success": False,
+                    "file_path": file_path,
+                    "error": "No valid search/replace blocks found",
+                    "failed_diff": diff_content,
+                }
 
             # Apply all search/replace operations
             modified_content = original_content
+            failed_blocks = []
+
             for block in search_replace_blocks:
-                modified_content = self._apply_search_replace(
-                    modified_content, block["search"], block["replace"], block.get("start_line")
+                result = self._apply_search_replace(
+                    modified_content,
+                    block["search"],
+                    block["replace"],
+                    block.get("start_line"),
                 )
 
-            if modified_content is None:
-                yield {"success": False, "error": "Failed to apply search/replace operations"}
-                return
+                if result is None:
+                    failed_blocks.append(block)
+                else:
+                    modified_content = result
+
+            if failed_blocks:
+                return {
+                    "success": False,
+                    "file_path": file_path,
+                    "error": f"Failed to apply {len(failed_blocks)} search/replace operations",
+                    "failed_diff": diff_content,
+                    "failed_blocks": failed_blocks,
+                }
 
             # Create backup and apply changes
             change_id = str(uuid.uuid4())
@@ -68,51 +90,21 @@ class ApplyDiffExecutor:
             file_to_check.parent.mkdir(parents=True, exist_ok=True)
             file_to_check.write_text(modified_content)
 
-            yield {
-                "type": "tool_use",
-                "change_id": change_id,
-                "file_path": file_path,
-                "message": f"📝 Applied diff {change_id} to {file_path}",
-            }
-
-            yield {
+            return {
                 "success": True,
-                "change_id": change_id,
                 "file_path": file_path,
-                "status": "applied",
+                "change_id": change_id,
                 "backup_path": backup_path,
                 "changes_applied": len(search_replace_blocks),
             }
 
-            # Yield detailed TOOL STATUS (success - no original_request needed)
-            yield {
-                "type": "tool_status",
-                "used_tool": "apply_diff",
-                "applied_changes_to_files": [file_path],
-                "failed_files": [],
-                "status": "success",
-                "summary": f"Successfully applied {len(search_replace_blocks)} diff changes to {file_path}",
-            }
-
         except Exception as e:
             logger.error(f"Failed to apply diff to {file_path}: {e}")
-            yield {"success": False, "error": str(e)}
-
-            # Yield detailed TOOL STATUS for failure (include full original_request)
-            yield {
-                "type": "tool_status",
-                "used_tool": "apply_diff",
-                "applied_changes_to_files": [],
-                "failed_files": [file_path],
-                "status": "failed",
-                "summary": f"Failed to apply diff to {file_path}: {str(e)}",
-                "failed_changes": f"<error>{str(e)}</error>",
-                "original_request": f"<apply_diff><path>{file_path}</path><diff>{diff_content}</diff></apply_diff>",
-                "details": {
-                    "operation": "diff_apply",
-                    "file_path": file_path,
-                    "error": str(e),
-                },
+            return {
+                "success": False,
+                "file_path": file_path,
+                "error": str(e),
+                "failed_diff": diff_content,
             }
 
     def _parse_diff_content(self, diff_content: str) -> list:
@@ -250,81 +242,126 @@ class ApplyDiffExecutor:
             logger.error(f"Failed to create backup: {e}")
             return ""
 
+    def apply_multiple_diffs(
+        self,
+        file_diffs: Dict[str, str],
+        session_id: str,
+        query_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Apply diffs to multiple files and return consolidated results.
+
+        Args:
+            file_diffs: Dictionary mapping file paths to diff content
+            session_id: Current session ID
+            query_id: Current query ID
+
+        Returns:
+            Consolidated results with all successful and failed files
+        """
+        successful_files = []
+        failed_files = []
+        failed_diffs = {}
+
+        for file_path, diff_content in file_diffs.items():
+            result = self.apply_diff(file_path, diff_content, session_id, query_id)
+
+            if result["success"]:
+                successful_files.append(
+                    {
+                        "file_path": file_path,
+                        "changes_applied": result["changes_applied"],
+                    }
+                )
+            else:
+                failed_files.append(
+                    {
+                        "file_path": file_path,
+                        "error": result["error"],
+                    }
+                )
+                failed_diffs[file_path] = result["failed_diff"]
+
+        return {
+            "type": "tool_use",
+            "tool_name": "apply_diff",
+            "successful_files": successful_files,
+            "failed_files": failed_files,
+            "failed_diffs": failed_diffs,
+            "status": (
+                "success"
+                if not failed_files
+                else "partial" if successful_files else "failed"
+            ),
+            "summary": f"Applied diffs to {len(successful_files)}/{len(file_diffs)} files successfully",
+            "total_files": len(file_diffs),
+            "success_count": len(successful_files),
+            "failure_count": len(failed_files),
+        }
+
 
 def execute_apply_diff_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
     """
     Execute apply_diff action.
-    
+
     Args:
         action: AgentAction containing apply_diff parameters
     Yields:
-        Dictionary containing the results of the apply_diff operation.
+        Dictionary containing the consolidated results of the apply_diff operation.
     """
     try:
         executor = ApplyDiffExecutor()
         parameters = action.parameters or {}
 
-        file_path = parameters.get("path")
-        diff_content = parameters.get("diff")
         session_id = parameters.get("session_id", "default")
         query_id = parameters.get("query_id", "default")
 
-        if not file_path:
-            yield {
-                "tool_name": "apply_diff",
-                "status": "error",
-                "data": {"error": "path parameter is required"},
-            }
-            return
+        # Handle single file diff
+        if "path" in parameters and "diff" in parameters:
+            file_path = parameters["path"]
+            diff_content = parameters["diff"]
 
-        if not diff_content:
-            yield {
-                "tool_name": "apply_diff", 
-                "status": "error",
-                "data": {"error": "diff parameter is required"},
-            }
-            return
+            if not file_path:
+                yield {
+                    "tool_name": "apply_diff",
+                    "status": "error",
+                    "error": "path parameter is required",
+                }
+                return
 
-        # Apply the diff
-        results = list(executor.apply_diff(file_path, diff_content, session_id, query_id))
+            if not diff_content:
+                yield {
+                    "tool_name": "apply_diff",
+                    "status": "error",
+                    "error": "diff parameter is required",
+                }
+                return
 
-        # Check if successful
-        success = any(result.get("success") for result in results)
+            file_diffs = {file_path: diff_content}
 
-        if success:
-            yield {
-                "tool_name": "apply_diff",
-                "status": "success", 
-                "data": {
-                    "summary": f"Successfully applied diff to {file_path}",
-                    "file_path": file_path,
-                    "results": results
-                },
-            }
+        # Handle multiple files (if parameters include files list)
+        elif "files" in parameters:
+            file_diffs = parameters["files"]
+            if not isinstance(file_diffs, dict):
+                yield {
+                    "tool_name": "apply_diff",
+                    "status": "error",
+                    "error": "files parameter must be a dictionary mapping file paths to diff content",
+                }
+                return
         else:
-            error_msg = next((r.get("error") for r in results if r.get("error")), "Unknown error")
             yield {
                 "tool_name": "apply_diff",
                 "status": "error",
-                "data": {"error": error_msg, "file_path": file_path},
+                "error": "Either 'path' and 'diff' parameters or 'files' parameter is required",
             }
+            return
 
-            # Yield detailed TOOL STATUS for main-level failure (include full original_request)
-            yield {
-                "type": "tool_status",
-                "used_tool": "apply_diff",
-                "applied_changes_to_files": [],
-                "failed_files": [file_path],
-                "status": "failed",
-                "summary": f"Apply diff operation failed: {error_msg}",
-                "failed_changes": f"<error>{error_msg}</error>",
-                "original_request": f"<apply_diff><path>{file_path}</path><diff>{diff_content}</diff></apply_diff>",
-                "details": {
-                    "operation": "diff_apply",
-                    "file_path": file_path,
-                    "error": error_msg,
-                },
-            }
+        # Apply all diffs and get consolidated result
+        result = executor.apply_multiple_diffs(file_diffs, session_id, query_id)
+
+        # Yield the consolidated result
+        yield result
 
     except Exception as e:
         logger.error(f"Apply diff action execution failed: {e}")

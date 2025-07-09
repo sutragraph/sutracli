@@ -45,38 +45,14 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
             "backup_path": str(backup_path),
             "success": True,
             "message": f"Successfully wrote to {file_path}",
-        }
-
-        # Yield detailed TOOL STATUS (success - no original_request needed)
-        yield {
-            "type": "tool_status",
-            "used_tool": "write_to_file",
             "applied_changes_to_files": [file_path],
-            "failed_files": [],
-            "status": "success",
-            "summary": f"Successfully wrote content to {file_path}"
         }
 
     except Exception as e:
         yield {
-            "type": "tool_error",
-            "error": f"Failed to write file: {str(e)}",
-            "tool_name": "write_to_file"
-        }
-
-        # Yield detailed TOOL STATUS for failure (include full original_request)
-        yield {
-            "type": "tool_status",
-            "used_tool": "write_to_file",
+            "type": "tool_use",
+            "tool_name": "write_to_file",
             "applied_changes_to_files": [],
-            "failed_files": [file_path] if file_path else ["unknown"],
-            "status": "failed",
-            "summary": f"Failed to write to file: {str(e)}",
-            "failed_changes": f"<error>{str(e)}</error>",
+            "message": f"Failed to write to file {file_path}: {str(e)}",
             "original_request": f"<write_to_file><path>{file_path if file_path else 'unknown'}</path><content>{content if content else ''}</content></write_to_file>",
-            "details": {
-                "operation": "file_write",
-                "file_path": file_path if file_path else "unknown",
-                "error": str(e)
-            }
         }

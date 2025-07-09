@@ -157,17 +157,18 @@ class LLMClientBase:
 
     def _wrap_diff_content_in_cdata(self, text: str) -> str:
         """
-        Wrap diff and content in CDATA sections to handle special characters.
+        Wrap diff, content, and command in CDATA sections to handle special characters.
 
         Args:
-            text (str): Text containing diff/content XML
+            text (str): Text containing diff/content/command XML
 
         Returns:
             str: Text with problematic content wrapped in CDATA
         """
-        # Pattern to match diff content that contains problematic characters
+        # Pattern to match content that contains problematic characters
         diff_pattern = r"(<diff>)(.*?)(</diff>)"
         content_pattern = r"(<content>)(.*?)(</content>)"
+        command_pattern = r"(<command>)(.*?)(</command>)"
 
         def wrap_in_cdata(match):
             opening_tag = match.group(1)
@@ -178,7 +179,7 @@ class LLMClientBase:
             if (
                 any(
                     char in content
-                    for char in ["<<<<<<<", ">>>>>>>", "=======", "-------", "<", ">"]
+                    for char in ["<<<<<<<", ">>>>>>>", "=======", "-------", "<", ">", "%"]
                 )
                 and "<![CDATA[" not in content
             ):
@@ -187,9 +188,10 @@ class LLMClientBase:
             else:
                 return match.group(0)
 
-        # Apply to both diff and content tags
+        # Apply to diff, content, and command tags
         text = re.sub(diff_pattern, wrap_in_cdata, text, flags=re.DOTALL)
         text = re.sub(content_pattern, wrap_in_cdata, text, flags=re.DOTALL)
+        text = re.sub(command_pattern, wrap_in_cdata, text, flags=re.DOTALL)
         return text
 
     def extract_specific_xml_tags(

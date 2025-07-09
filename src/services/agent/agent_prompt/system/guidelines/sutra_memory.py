@@ -159,7 +159,7 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
 
 # Sutra Memory Guidelines:
 
-1. In <thinking> tags, assess what information you already have and what information you need to proceed with the task. Also review your current sutra_memory state including tasks, stored code, and determine what updates are needed based on iteration progress and findings.
+1. In <thinking> tags, assess what information you already have and what information you need to proceed with the task. Also review your current sutra_memory state including tasks, stored code, and determine what updates are needed based on iteration progress and findings. Think about pending tasks and current task requirements - identify any information that will be needed in future iterations but not used in the current iteration, and store it directly in Sutra Memory using appropriate tags (<code> for code snippets, <history> for other important data like terminal outputs, file listings, search results) to prevent redundant tool calls and maintain context across iterations. Data of current iteration won't be available in the next iterations - only stored data in sutra memory is persistent across iterations.
 2. When to Add Tasks:
    - Function/Class Dependencies when making changes that might affect existing functions
    - Cross-file Impacts when modifications in one file require updates in related files  

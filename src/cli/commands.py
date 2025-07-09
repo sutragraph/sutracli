@@ -129,14 +129,15 @@ def _process_agent_updates(updates_generator) -> None:
         if update_type == "thinking":
             content = update.get("content", "Thinking...")
             print(f"🤔 Thinking...")
-            if content:
+            if content and content.strip():
                 print(f"   {content}")
-                print("-" * 40)
+            print("-" * 40)
 
         if update_type == "task_complete":
             completion = update.get("completion", {})
             result_text = completion.get("result", "Task completed")
-            print(f"🎉 {result_text}")
+            print(f"🎉 Task Completed 🎉 ")
+            print(f"   Result: {result_text}")
             print("-" * 40)
 
         if update_type == "tool_use":
@@ -148,17 +149,14 @@ def _process_agent_updates(updates_generator) -> None:
                 print("-" * 40)
 
             elif tool_name == "write_to_file":
-                file_path = update.get("file_path", "")
+                file_path = update.get("applied_changes_to_files", "")
                 print(f"📝 File edited: {file_path}")
                 print("-" * 40)
 
             elif tool_name == "apply_diff":
-                file_path = update.get("file_path", "")
+                file_path = update.get("successful_files", "")
                 if file_path:
                     print(f"📝 Git diff applied to {file_path}")
-                    print("-" * 40)
-                else:
-                    print(f"📝 Git diff applied")
                     print("-" * 40)
 
             elif tool_name == "database":
@@ -175,7 +173,7 @@ def _process_agent_updates(updates_generator) -> None:
                 print("-" * 40)
 
             elif tool_name == "insert_content":
-                file_path = update.get("file_path", "")
+                file_path = update.get("applied_changes_to_files", "")
                 print(f"📝 Content inserted in {file_path}")
                 print("-" * 40)
 
@@ -187,33 +185,17 @@ def _process_agent_updates(updates_generator) -> None:
 
             elif tool_name == "search_keyword":
                 keyword = update.get("keyword", "")
-                results_count = update.get("results_count", 0)
-                print(f'🔍 Keyword search "{keyword}" found {results_count} results')
+                matches_found = update.get("matches_found")
+                print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
                 print("-" * 40)
 
-            elif tool_name == "search_and_replace":
-                file_path = update.get("file_path", "")
-                print(f"🔄 Search and replace applied to {file_path}")
-                print("-" * 40)
-
-        elif update_type == "result":
-            result = update.get("result", "")
-            if result:
-                print(f"🎉 {result}")
-                print("-" * 40)
-
-        elif update_type == "error":
+        elif update_type == "too_error":
             error = update.get("error", "")
             print(f"❌ {error}")
             print("-" * 40)
 
-        elif update_type == "warning":
-            message = update.get("message", "")
-            print(f"⚠️ {message}")
-            print("-" * 40)
-
         else:
-            pass  # Ignore unknown updates
+            pass
 
 
 def handle_agent_command(args) -> None:

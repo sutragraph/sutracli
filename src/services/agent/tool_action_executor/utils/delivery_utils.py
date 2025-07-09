@@ -25,7 +25,7 @@ def handle_fetch_next_request(
     """
     if not action_parameters.get("fetch_next_code", False):
         return None
-        
+
     logger.debug(f"🔄 fetch_next_code request detected")
 
     # Use existing delivery queue if:
@@ -45,7 +45,7 @@ def handle_fetch_next_request(
         else:
             logger.debug("🔄 Different query provided with fetch_next_code - treating as new query")
             next_item = delivery_manager.get_next_item(action_type, action_parameters)
-    
+
     if next_item:
         return next_item
     else:
@@ -55,15 +55,15 @@ def handle_fetch_next_request(
             "include_code": True,
             "total_nodes": 0,
         }
-        
+
         if action_type == "database":
             return {
                 "type": f"database_{response_type}",
-                "tool_type": "database",
+                "tool_name": "database",
                 "query_name": "fetch_next_code",
                 "query": action_parameters,
                 "data": f"No more code chunks available. All items from the previous query have been delivered.",
-                **base_response
+                **base_response,
             }
         else:  # semantic_search
             return {
@@ -240,7 +240,7 @@ def create_no_items_response(
         query_name = action_parameters.get("query_name", "unknown")
         return {
             "type": "tool_use",
-            "tool_type": "database",
+            "tool_name": "database",
             "query_name": query_name,
             "query": action_parameters,
             "include_code": include_code,

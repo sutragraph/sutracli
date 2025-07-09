@@ -63,13 +63,13 @@ def build_guidance_message(
         return GUIDANCE_MESSAGES["NO_RESULTS_FOUND"].format(search_type=search_type.value)
 
     elif scenario == GuidanceScenario.SINGLE_RESULT_SMALL:
-        return f"Found 1 result from {search_type.value} search with manageable code size."
+        return f"Found 1 result from {search_type.value} search."
 
     elif scenario == GuidanceScenario.SINGLE_RESULT_LARGE:
         has_more_chunks = kwargs.get("has_more_chunks", False)
         chunk_num = kwargs.get("chunk_num", 1)
         total_chunks = kwargs.get("total_chunks", 1)
-        message = f"Found 1 result from {search_type.value} search with large code content. Content may be chunked for delivery."
+        message = f"Found 1 result from {search_type.value} search."
         if has_more_chunks or chunk_num < total_chunks:
             message += _get_fetch_next_code_note()
         return message

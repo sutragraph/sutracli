@@ -101,15 +101,6 @@ class SessionManager:
         """Get the current Sutra memory content (already cleaned)."""
         return self.sutra_memory
 
-    def add_task_progress(self, progress: str) -> None:
-        """Add a task progress entry to the history."""
-        if progress and progress.strip():
-            self.task_progress_history.append(progress.strip())
-            # Keep only last 20 progress entries to avoid memory bloat
-            if len(self.task_progress_history) > 20:
-                self.task_progress_history = self.task_progress_history[-20:]
-            self.save_session()
-
     def get_task_progress_history(self) -> str:
         """Get formatted task progress history for prompt inclusion."""
         if not self.task_progress_history:
@@ -120,30 +111,6 @@ class SessionManager:
             history_lines.append(f"Iteration {i}: {progress}")
 
         return "\n".join(history_lines)
-
-    def add_action_record(
-        self, tool_type: str, parameters: Dict[str, Any], iteration: int
-    ) -> None:
-        """Add action record to session data."""
-        action_record = {
-            "type": "action_record",
-            "tool_type": tool_type,
-            "parameters": parameters,
-            "iteration": iteration,
-            "query_id": self.current_query_id,
-            "timestamp": time.time(),
-        }
-        self.session_data.append(action_record)
-        self.save_session()
-
-    def get_session_summary(self, current_iteration: int) -> str:
-        """Get a summary of the current session."""
-        memory_length = len(self.sutra_memory)
-
-        return (
-            f"Session {self.session_id}: Sutra memory ({memory_length} chars), "
-            f"iteration {current_iteration}"
-        )
 
     def clear_session(self) -> None:
         """Clear Sutra memory and reset session."""
@@ -195,29 +162,6 @@ class SessionManager:
             "current_query_id": self.current_query_id,
             "session_file": str(self.session_file),
         }
-
-    def get_current_state(self) -> Dict[str, Any]:
-        """Get minimal current state for agent prompts."""
-        last_action_result = None
-        for item in reversed(self.session_data):
-            if item.get("type") == "action_result":
-                last_action_result = item
-                break
-
-        if last_action_result:
-            action_info = last_action_result.get("action", {})
-            tool_type = action_info.get("tool_type", "unknown")
-            result_data = last_action_result.get("data", {}).copy()
-
-            return {
-                "last_action_result": {
-                    "type": "action_result",
-                    "tool_type": tool_type,
-                    "data": result_data,
-                }
-            }
-        else:
-            return {"last_action_result": None}
 
     @classmethod
     def get_or_create_session(

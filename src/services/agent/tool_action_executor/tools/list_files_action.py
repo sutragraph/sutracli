@@ -109,7 +109,6 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
             "type": "tool_use",
             "directory": abs_directory_path,
             "recursive": recursive,
-            "files": files_list,
             "count": len(files_list),
             "data": data_message,
             "tool_name": "list_files",

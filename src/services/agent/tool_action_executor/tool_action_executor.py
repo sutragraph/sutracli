@@ -63,7 +63,7 @@ class ActionExecutor:
             completion_data = self._extract_completion(xml_response)
             tool_data = self._extract_tool(xml_response)
             sutra_memory_update = self._extract_sutra_memory(xml_response)
-            
+
             # Debug logging for tool detection
             logger.debug(f"XML Response blocks: {len(xml_response)}")
             logger.debug(f"Thinking content found: {thinking_content is not None}")
@@ -140,7 +140,7 @@ class ActionExecutor:
 
                     if not has_attempt_completion:
                         yield {
-                            "type": "tool_status",
+                            "type": "tool_use",
                             "used_tool": "none",
                             "status": "failed",
                             "message": "You didn't provide a tool call. You must use at least one tool in every response. Please use a tool like semantic_search, database, execute_command, apply_diff, write_to_file, insert_content, list_files, search_keyword, or attempt_completion.",
@@ -300,8 +300,6 @@ class ActionExecutor:
                 yield from self._execute_list_files(action)
             elif tool_name == "search_keyword":
                 yield from self._execute_search_keyword(action)
-            elif tool_name == "search_and_replace":
-                yield from self._execute_search_and_replace(action)
             elif tool_name == "attempt_completion":
                 yield from self._execute_completion(action)
             else:
@@ -361,26 +359,35 @@ class ActionExecutor:
     def _execute_apply_diff(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute apply diff tool using existing comprehensive executor."""
         yield from execute_apply_diff_action(action)
-        # Trigger incremental indexing after diff apply
-        indexer = IncrementalIndexing(self.db_connection)
-        stats = indexer.reindex_database(Path.cwd().name)
-        yield {"type": "incremental_indexing", "stats": stats, "timestamp": time.time()}
+        # Trigger incremental indexing silently after diff apply
+        try:
+            indexer = IncrementalIndexing(self.db_connection)
+            indexer.reindex_database(Path.cwd().name)
+            logger.debug("Incremental indexing completed after apply_diff")
+        except Exception as e:
+            logger.error(f"Incremental indexing failed after apply_diff: {e}")
 
     def _execute_write_to_file(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute write to file tool using separate executor."""
         yield from execute_write_to_file_action(action)
-        # Trigger incremental indexing after write
-        indexer = IncrementalIndexing(self.db_connection)
-        stats = indexer.reindex_database(Path.cwd().name)
-        yield {"type": "incremental_indexing", "stats": stats, "timestamp": time.time()}
+        # Trigger incremental indexing silently after write
+        try:
+            indexer = IncrementalIndexing(self.db_connection)
+            indexer.reindex_database(Path.cwd().name)
+            logger.debug("Incremental indexing completed after write_to_file")
+        except Exception as e:
+            logger.error(f"Incremental indexing failed after write_to_file: {e}")
 
     def _execute_insert_content(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute insert content tool using separate executor."""
         yield from execute_insert_content_action(action)
-        # Trigger incremental indexing after content insert
-        indexer = IncrementalIndexing(self.db_connection)
-        stats = indexer.reindex_database(Path.cwd().name)
-        yield {"type": "incremental_indexing", "stats": stats, "timestamp": time.time()}
+        # Trigger incremental indexing silently after content insert
+        try:
+            indexer = IncrementalIndexing(self.db_connection)
+            indexer.reindex_database(Path.cwd().name)
+            logger.debug("Incremental indexing completed after insert_content")
+        except Exception as e:
+            logger.error(f"Incremental indexing failed after insert_content: {e}")
 
     def _execute_list_files(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute list files tool using separate executor."""

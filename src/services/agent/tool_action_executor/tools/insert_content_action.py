@@ -97,39 +97,14 @@ def execute_insert_content_action(action: AgentAction) -> Iterator[Dict[str, Any
             "line_number": line_number,
             "success": True,
             "message": f"Successfully inserted content at line {line_number} in {file_path}",
-        }
-
-        # Yield detailed TOOL STATUS (success - no original_request needed)
-        yield {
-            "type": "tool_status",
-            "used_tool": "insert_content",
             "applied_changes_to_files": [file_path],
-            "failed_files": [],
-            "status": "success",
-            "summary": f"Successfully inserted content at line {line_number} in {file_path}"
         }
 
     except Exception as e:
         yield {
-            "type": "tool_error",
-            "error": f"Failed to insert content: {str(e)}",
-            "tool_name": "insert_content"
-        }
-
-        # Yield detailed TOOL STATUS for failure (include full original_request)
-        yield {
-            "type": "tool_status",
-            "used_tool": "insert_content",
+            "type": "tool_use",
+            "tool_name": "insert_content",
             "applied_changes_to_files": [],
-            "failed_files": [file_path] if file_path else ["unknown"],
-            "status": "failed",
-            "summary": f"Failed to insert content: {str(e)}",
-            "failed_changes": f"<error>{str(e)}</error>",
+            "message": f"Failed to insert content {file_path}: {str(e)}",
             "original_request": f"<insert_content><path>{file_path if file_path else 'unknown'}</path><line>{line_number if line_number is not None else 'unknown'}</line><content>{content if content else ''}</content></insert_content>",
-            "details": {
-                "operation": "content_insert",
-                "file_path": file_path if file_path else "unknown",
-                "line_number": line_number if line_number is not None else "unknown",
-                "error": str(e)
-            }
         }

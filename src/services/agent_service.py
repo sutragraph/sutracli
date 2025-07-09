@@ -42,7 +42,7 @@ class AgentService:
 
         # Determine current project name from working directory
         self.current_project_name = self._determine_project_name()
-        
+
         # Synchronize memory manager with session data if session exists
         self._synchronize_memory_manager()
 
@@ -87,9 +87,13 @@ class AgentService:
                 # the LLM to rebuild its state through sutra_memory updates
                 # This is because parsing the text format back to structured data
                 # would be complex and error-prone
-                logger.debug("Session memory found, memory manager will rebuild state from LLM updates")
+                logger.debug(
+                    "Session memory found, memory manager will rebuild state from LLM updates"
+                )
             else:
-                logger.debug("No session memory found, starting with fresh memory manager")
+                logger.debug(
+                    "No session memory found, starting with fresh memory manager"
+                )
         except Exception as e:
             logger.warning(f"Error synchronizing memory manager: {e}")
 
@@ -105,7 +109,7 @@ class AgentService:
         # Add user query to sutra memory at the start
         # Get rich memory from memory manager
         current_memory_rich = self.memory_manager.get_memory_for_llm()
-        
+
         if current_memory_rich and current_memory_rich.strip():
             updated_memory = f"{current_memory_rich}\n\nUSER QUERY: {problem_query}"
         else:
@@ -136,7 +140,7 @@ class AgentService:
         # Add user query to sutra memory for continuation
         # Get rich memory from memory manager
         current_memory_rich = self.memory_manager.get_memory_for_llm()
-        
+
         if current_memory_rich and current_memory_rich.strip():
             updated_memory = f"{current_memory_rich}\n\nUSER QUERY: {query}"
         else:
@@ -218,7 +222,9 @@ class AgentService:
                             logger.debug(
                                 f"Updated Sutra Memory in session: {len(memory_summary)} characters"
                             )
-                            logger.debug(f"Memory includes {len(self.xml_action_executor.sutra_memory_manager.code_snippets)} code snippets")
+                            logger.debug(
+                                f"Memory includes {len(self.xml_action_executor.sutra_memory_manager.code_snippets)} code snippets"
+                            )
                         else:
                             logger.warning(
                                 f"Sutra Memory update failed: {memory_result.get('errors', [])}"
@@ -261,7 +267,9 @@ class AgentService:
 
         # Build user message with context
         # Get rich sutra memory from memory manager (includes code snippets and file modifications)
-        sutra_memory_rich = self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
+        sutra_memory_rich = (
+            self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
+        )
         task_progress = self.session_manager.get_task_progress_history()
 
         user_message_parts = []
@@ -309,110 +317,243 @@ class AgentService:
 
     def _build_tool_status(self, last_tool_result: Optional[Dict[str, Any]]) -> str:
         """
-        UNIFIED tool status builder - handles ALL tools with improved formatting.
+        Clean tool status builder - handles each tool with specific if-else logic.
         """
         if not last_tool_result:
             return "No previous tool execution"
 
-        # Extract basic info generically
-        event_type = last_tool_result.get("type", "unknown")
-        tool_name = last_tool_result.get(
-            "tool_name", event_type.replace("_complete", "").replace("_applied", "")
-        )
+        tool_name = last_tool_result.get("tool_name", "unknown_tool")
 
-        # Build simple unified status
-        status = f"Tool: {tool_name}\n"
+        # Build tool-specific status using if-else statements
+        if tool_name == "database":
+            return self._build_database_status(last_tool_result)
+        elif tool_name == "semantic_search":
+            return self._build_semantic_status(last_tool_result)
+        elif tool_name == "terminal":
+            return self._build_terminal_status(last_tool_result)
+        elif tool_name == "write_to_file":
+            return self._build_write_to_file_status(last_tool_result)
+        elif tool_name == "insert_content":
+            return self._build_insert_content_status(last_tool_result)
+        elif tool_name == "apply_diff":
+            return self._build_apply_diff_status(last_tool_result)
+        elif tool_name == "search_keyword":
+            return self._build_search_keyword_status(last_tool_result)
+        elif tool_name == "list_files":
+            return self._build_list_files_status(last_tool_result)
+        else:
+            # Fallback for unknown tools
+            return self._build_generic_status(last_tool_result, tool_name)
 
-        # Add query/search info if available (works for all search tools)
-        query = (
-            last_tool_result.get("query")
-            or last_tool_result.get("keyword")
-            or last_tool_result.get("query_name")
-        )
-        
-        # Fix for semantic search - don't show 'fetch_next_code' as query
-        if query and query != "fetch_next_code":
+    def _build_database_status(self, result: Dict[str, Any]) -> str:
+        """Build status for database tool."""
+        status = "Tool: database\n"
+
+        query = result.get("query")
+        if query:
             status += f"Query: '{query}'\n"
 
-        # Add result count if available (works for all tools that return counts)
-        count = (
-            last_tool_result.get("count")
-            or last_tool_result.get("total_nodes")
-            or last_tool_result.get("total_results")
-            or last_tool_result.get("results_count")
-        )
-        
-        # Improved formatting for semantic search and database results
+        count = result.get("count") or result.get("total_results")
         if count is not None:
-            if tool_name == "semantic_search":
-                # Check if this is a batch delivery
-                batch_info = last_tool_result.get("batch_info", {})
-                if batch_info:
-                    delivered = batch_info.get("delivered_count", 0)
-                    remaining = batch_info.get("remaining_count", 0)
-                    total = count
-                    if delivered > 0:
-                        status += f"Found {total} nodes from semantic search. Showing nodes {delivered} of {total}\n"
-                        if remaining > 0:
-                            status += f"Remaining nodes: {remaining}\n"
-                    else:
-                        status += f"Found {count} nodes from semantic search\n"
-                else:
-                    status += f"Found {count} nodes from semantic search\n"
-            else:
-                status += f"Results: {count} found\n"
+            status += f"Results: {count} found\n"
 
-        # Add file info if available (works for all file tools)
-        file_path = last_tool_result.get("file_path")
-        if file_path:
-            status += f"File: {file_path}\n"
-
-        # Add directory info if available (works for list_files)
-        directory = last_tool_result.get("directory")
-        if directory:
-            status += f"Directory: {directory}\n"
-
-        # Add command info if available (works for terminal)
-        command = last_tool_result.get("command")
-        if not command and isinstance(last_tool_result.get("data"), dict):
-            command = last_tool_result.get("data", {}).get("command")
-        if command:
-            status += f"Command: {command}\n"
-
-        # Add error info if available (works for all tools)
-        error = last_tool_result.get("error")
+        error = result.get("error")
         if error:
             status += f"ERROR: {error}\n"
 
-        # Add success status if available (works for file operations)
-        success = last_tool_result.get("success")
+        data = result.get("data", "")
+        if data:
+            status += f"Results:\n{data}"
+
+        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+
+        return status.rstrip()
+
+    def _build_semantic_status(self, result: Dict[str, Any]) -> str:
+        """Build status for semantic search tool."""
+        status = "Tool: semantic_search\n"
+
+        query = result.get("query")
+        if query and query != "fetch_next_code":
+            status += f"Query: '{query}'\n"
+
+        count = result.get("count") or result.get("total_nodes")
+        if count is not None:
+            batch_info = result.get("batch_info", {})
+            if batch_info:
+                delivered = batch_info.get("delivered_count", 0)
+                remaining = batch_info.get("remaining_count", 0)
+                if delivered > 0:
+                    status += f"Found {count} nodes from semantic search. Showing nodes {delivered} of {count}\n"
+                    if remaining > 0:
+                        status += f"Remaining nodes: {remaining}\n NOTE: Use <fetch_next_code>true</fetch_next_code> to get next codes as there are more results available for your current query. Use same query with fetch_next_code to get next code."
+                else:
+                    status += f"Found {count} nodes from semantic search\n"
+            else:
+                status += f"Found {count} nodes from semantic search\n"
+
+        error = result.get("error")
+        if error:
+            status += f"ERROR: {error}\n"
+
+        data = result.get("data", "")
+        if data:
+            status += f"Results:\n{data}"
+
+        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+
+        return status.rstrip()
+
+    def _build_terminal_status(self, result: Dict[str, Any]) -> str:
+        """Build status for terminal tool."""
+        status = "Tool: terminal\n"
+
+        cwd = result.get("cwd", ".")
+        if cwd:
+            status += f"Working Directory: {cwd}\n"
+
+        command = result.get("command")
+        if command:
+            status += f"Command: {command}\n"
+
+        return_code = result.get("return_code")
+        if return_code:
+            status += f"Return Code: {return_code}\n"
+
+        error = result.get("error")
+        if error:
+            status += f"ERROR: {error}\n"
+
+        output = result.get("output", "")
+        if output:
+            status += f"Output:\n{output}"
+
+        return status.rstrip()
+
+    def _build_write_to_file_status(self, result: Dict[str, Any]) -> str:
+        """Build status for write_to_file tool."""
+        status = "Tool: write_to_file\n"
+
+        file_path = result.get("applied_changes_to_files")
+        if file_path:
+            status += f"Suceess File: {file_path}\n"
+
+        message = result.get("message")
+        if message:
+            status += f"Status: {message}\n"
+
+        original_request = result.get("original_request")
+        if original_request:
+            status += f"Failed Content: {original_request}\n"
+
+        return status.rstrip()
+
+    def _build_insert_content_status(self, result: Dict[str, Any]) -> str:
+        """Build status for insert_content tool."""
+        status = "Tool: insert_content\n"
+
+        file_path = result.get("applied_changes_to_files")
+        if file_path:
+            status += f"Success File: {file_path}\n"
+
+        message = result.get("message")
+        if message:
+            status += f"Status: {message}\n"
+
+        original_request = result.get("original_request")
+        if original_request:
+            status += f"Failed Content: {original_request}\n"
+
+        return status.rstrip()
+
+    def _build_apply_diff_status(self, result: Dict[str, Any]) -> str:
+        """Build status for apply_diff tool."""
+        status = "Tool: apply_diff\n"
+
+        successful_files = result.get("successful_files")
+        if successful_files:
+            status += f"Success File: {successful_files}\n"
+
+        failed_files = result.get("failed_files")
+        if failed_files:
+            status += f"Failed File: {failed_files}\n"
+
+        failed_diffs = result.get("failed_diffs")
+        if failed_diffs:
+            status += f"Failed Diff File: {failed_diffs}\n"
+
+        summary = result.get("summary")
+        if summary:
+            status += f"Summary: {summary}\n"
+
+        extra = result.get("status")
+        if extra:
+            status += f"Status: {extra}\n"
+
+        return status.rstrip()
+
+    def _build_search_keyword_status(self, result: Dict[str, Any]) -> str:
+        """Build status for search_keyword tool."""
+        status = "Tool: search_keyword\n"
+
+        keyword = result.get("keyword")
+        if keyword:
+            status += f"Keyword: '{keyword}'\n"
+
+        matches_found = result.get("matches_found")
+        if matches_found:
+            status += (
+                f"Matches Status: '{"Found" if matches_found else "Not Found" }'\n"
+            )
+
+        error = result.get("error")
+        if error:
+            status += f"ERROR: {error}\n"
+
+        data = result.get("data", "")
+        if data:
+            status += f"Results:\n{data}"
+
+        return status.rstrip()
+
+    def _build_list_files_status(self, result: Dict[str, Any]) -> str:
+        """Build status for list_files tool."""
+        status = "Tool: list_files\n"
+
+        directory = result.get("directory")
+        if directory:
+            status += f"Directory: {directory}\n"
+
+        count = result.get("count")
+        if count is not None:
+            status += f"Files: {count} found\n"
+
+        error = result.get("error")
+        if error:
+            status += f"ERROR: {error}\n"
+
+        data = result.get("data", "")
+        if data:
+            status += f"Results:\n{data}"
+
+        return status.rstrip()
+
+    def _build_generic_status(self, result: Dict[str, Any], tool_name: str) -> str:
+        """Build generic status for unknown tools."""
+        status = f"Tool: {tool_name}\n"
+
+        error = result.get("error")
+        if error:
+            status += f"ERROR: {error}\n"
+
+        success = result.get("success")
         if success is not None:
             status += f"Status: {'success' if success else 'failed'}\n"
 
-        data = last_tool_result.get("data", "")
-
-        # Debug logging to see what we're getting
-        logger.debug(
-            f"🔍 Tool status debug - event_type: {event_type}, tool_name: {tool_name}"
-        )
-        logger.debug(f"🔍 Tool status debug - data field: {repr(data)}")
-        logger.debug(
-            f"🔍 Tool status debug - full result keys: {list(last_tool_result.keys())}"
-        )
-
+        data = result.get("data", "")
         if data:
             status += f"Results:\n{data}"
-        else:
-            # If no data field, check for other result fields
-            files = last_tool_result.get("files")
-            if files:
-                files_str = "\n".join(files) if isinstance(files, list) else str(files)
-                status += f"Results:\n{files_str}"
 
-        # Add note for database and semantic search tools
-        if tool_name in ["database", "semantic_search"]:
-            status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
-        
         return status.rstrip()
 
     def get_session_info(self) -> Dict[str, Any]:

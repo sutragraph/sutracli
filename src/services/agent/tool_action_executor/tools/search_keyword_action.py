@@ -8,10 +8,10 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
     try:
         keyword = action.parameters.get("keyword", "")
         file_path = action.parameters.get("file_path", "")
-        before_lines = action.parameters.get("before_lines", 0)
-        after_lines = action.parameters.get("after_lines", 2)
-        case_sensitive = action.parameters.get("case_sensitive", False)
-        use_regex = action.parameters.get("regex", False)
+        before_lines = int(action.parameters.get("before_lines", 0))
+        after_lines = int(action.parameters.get("after_lines", 2))
+        case_sensitive = str(action.parameters.get("case_sensitive", "false")).lower() == "true"
+        use_regex = str(action.parameters.get("regex", "false")).lower() == "true"
 
         if not keyword:
             yield {

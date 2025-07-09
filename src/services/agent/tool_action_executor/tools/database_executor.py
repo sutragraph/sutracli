@@ -149,7 +149,7 @@ def execute_structured_database_query(
             error_msg = f"Unknown query: {query_name}"
             logger.error(f"❌ {error_msg}")
             yield {
-                "type": "database_query_error",
+                "type": "tool_use",
                 "tool_name": "database",
                 "query_name": base_query_name,
                 "query": query_params,
@@ -168,7 +168,7 @@ def execute_structured_database_query(
                 )
                 logger.error(f"❌ {error_msg}")
                 yield {
-                    "type": "database_query_error",
+                    "type": "tool_use",
                     "tool_name": "database",
                     "query_name": base_query_name,
                     "query": query_params,
@@ -692,7 +692,7 @@ def execute_structured_database_query(
                         # Create delivery item
                         all_delivery_items.append(
                             {
-                                "type": "database_query_chunk",
+                                "type": "tool_use",
                                 "tool_name": "database",
                                 "query_name": base_query_name,
                                 "query": final_params,
@@ -934,10 +934,6 @@ def execute_structured_database_query(
                         )
                         and not line_filtered
                     ):
-                        # Handle chunking for this node directly
-                        # For sequential processing, this is the last node if it's the last in the result set
-                        is_last_node = i == total_nodes
-
                         chunks = chunk_large_code_clean(
                             code_content,
                             file_start_line=start_line or 1,
@@ -982,7 +978,7 @@ def execute_structured_database_query(
                             # Collect item for delivery manager
                             all_delivery_items.append(
                                 {
-                                    "type": "database_query_node",
+                                    "type": "tool_use",
                                     "tool_name": "database",
                                     "query_name": base_query_name,
                                     "query": final_params,
@@ -1020,7 +1016,7 @@ def execute_structured_database_query(
                         # Collect item for delivery manager
                         all_delivery_items.append(
                             {
-                                "type": "database_query_node",
+                                "type": "tool_use",
                                 "tool_name": "database",
                                 "query_name": base_query_name,
                                 "query": final_params,
@@ -1055,7 +1051,7 @@ def execute_structured_database_query(
                     # Collect item for delivery manager
                     all_delivery_items.append(
                         {
-                            "type": "database_query_node",
+                            "type": "tool_use",
                             "tool_name": "database",
                             "query_name": base_query_name,
                             "query": final_params,
@@ -1082,7 +1078,7 @@ def execute_structured_database_query(
         error_msg = f"Database query execution failed: {str(e)}"
         logger.error(f"❌ {error_msg}")
         yield {
-            "type": "database_query_error",
+            "type": "tool_use",
             "tool_name": "database",
             "query_name": query_name,
             "query": action.parameters,
@@ -1100,7 +1096,7 @@ def execute_database_action(
         return
 
     yield {
-        "type": "database_query_error",
+        "type": "tool_use",
         "tool_name": "database",
         "query_name": "unknown",
         "query": action.parameters or {},
