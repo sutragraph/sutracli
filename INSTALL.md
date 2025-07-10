@@ -158,9 +158,9 @@ To completely remove Sutra CLI:
 
 3. **Restart your shell** or source your configuration file
 
-## Advanced Configuration
+## Essential Configuration
 
-After installation, you can customize Sutra CLI by editing:
+After installation, you should add your keys for claude by editing the below configuration:
 
 - **System Configuration**: `~/.sutra/config/system.json`
 - **Parser Configuration**: `~/.sutra/config/parsers.json`
