@@ -1,5 +1,5 @@
 from .llama_client import LlamaClient
-from .claude_client import ClaudeClient
+from .aws_client import AWSClient
 from .gemini_client import GeminiClient
 from .anthropic_client import AnthropicClient
 from .superllm_client import SuperLLMClient
@@ -10,8 +10,8 @@ def llm_client_factory():
     provider = config.llm.provider.lower()
     if provider == "llama":
         return LlamaClient()
-    elif provider == "claude":
-        return ClaudeClient()
+    elif provider == "aws":
+        return AWSClient()
     elif provider == "gemini":
         return GeminiClient()
     elif provider == "anthropic":

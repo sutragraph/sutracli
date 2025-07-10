@@ -55,7 +55,7 @@
     "log_file": "data/sutraknowledge.log"
  },
   "llm": {
-    "provider": "claude",
+    "provider": "provider_name (aws/anthropic)",
     "llama_model_id": "meta/llama-4-maverick-17b-128e-instruct-maas",
     "gemini_model": "gemini-2.5-flash",
     "aws": {

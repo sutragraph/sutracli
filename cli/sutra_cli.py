@@ -195,7 +195,7 @@ class SutraKnowledgeCLI:
             result = converter.convert_json_to_graph(
                 parser_output_path,
                 project_name=self.repo_name,
-                clear_existing=True,  # Clear any existing data for this project
+                clear_existing=False,  # Preserve existing data, add new project to database
                 create_indexes=True,
             )
 

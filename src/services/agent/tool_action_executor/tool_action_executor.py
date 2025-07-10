@@ -14,7 +14,6 @@ from src.services.agent.agentic_core import AgentAction
 from src.services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from src.config import config
 from src.graph.incremental_indexing import IncrementalIndexing
-
 from .tools.semantic_search_action import execute_semantic_search_action
 from .tools.database_executor import execute_database_action
 from .tools.terminal_action import execute_terminal_action
@@ -43,6 +42,7 @@ class ActionExecutor:
         self.sutra_memory_manager = sutra_memory_manager or SutraMemoryManager(
             db_connection=self.db_connection
         )
+        self.project_id = db_connection.get_project_id_by_name()
 
     def process_xml_response(
         self, xml_response: List[Dict[str, Any]], user_query: str
@@ -72,7 +72,7 @@ class ActionExecutor:
             logger.debug(f"Tool name: {tool_data.get('_tool_name') if tool_data else 'None'}")
             logger.debug(f"Sutra memory update found: {sutra_memory_update is not None}")
             logger.debug(f"Tool Data: {tool_data}")
-            
+
             # Yield thinking information
             if thinking_content:
                 yield {
@@ -339,7 +339,7 @@ class ActionExecutor:
     def _execute_semantic_search(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute semantic search tool using existing comprehensive executor."""
         yield from execute_semantic_search_action(
-            action, self.vector_db, self.db_connection
+            action, self.vector_db, self.db_connection, project_id=self.project_id
         )
 
     def _execute_database(self, action: AgentAction) -> Iterator[Dict[str, Any]]:

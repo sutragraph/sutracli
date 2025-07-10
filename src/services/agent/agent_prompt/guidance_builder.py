@@ -89,20 +89,9 @@ def build_guidance_message(
     elif scenario == GuidanceScenario.BATCH_DELIVERY:
         remaining_count = kwargs.get("remaining_count", 0)
         total_nodes = kwargs.get("total_nodes", 0)
-        delivered_count = kwargs.get("delivered_count", 0)
-        batch_number = kwargs.get("batch_number", 1)
-
-        if delivered_count > 0:
-            # Calculate the range of nodes being shown
-            # For batch 1: nodes 1-7, batch 2: nodes 8-14, etc.
-            start_node = (batch_number - 1) * delivered_count + 1
-            end_node = start_node + delivered_count - 1
-            message = f"Found {total_nodes} nodes from {search_type.value} search. Showing nodes {start_node}-{end_node} of {total_nodes}"
-        else:
-            message = f"Found {total_nodes} nodes from {search_type.value} search"
-
+        message = ""
         if remaining_count > 0:
-            message += _get_fetch_next_code_note()
+            message = _get_fetch_next_code_note()
         return message
 
     return f"Results from {search_type.value} search."

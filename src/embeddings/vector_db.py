@@ -9,7 +9,8 @@ from typing import List, Dict, Optional, Tuple, Any
 import numpy as np
 import sqlite_vec
 from loguru import logger
-
+from .simple_processor import get_embedding_processor
+from ..graph.sqlite_client import SQLiteConnection
 from ..config import config
 
 
@@ -143,37 +144,53 @@ class VectorDatabase:
             raise
 
     def search_similar(
-        self, query_embedding: np.ndarray, limit: int = 20, threshold: float = 0.75
+        self,
+        query_embedding: np.ndarray,
+        limit: int = 30,
+        threshold: float = 0.20,
+        project_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """Search for similar embeddings across all projects using sqlite-vec."""
+        """Search for similar embeddings using sqlite-vec, optionally filtered by project."""
         try:
-            # Ensure proper format - pass numpy array directly (implements Buffer protocol)
             if isinstance(query_embedding, np.ndarray):
                 query_vector = query_embedding.astype(np.float32)
             else:
                 query_vector = np.array(query_embedding, dtype=np.float32)
 
-            # Use sqlite-vec's built-in similarity search with proper MATCH syntax
-            # Get more results than limit to account for threshold filtering
-            search_limit = min(limit * 3, 100)
-
-            cursor = self.connection.execute(
+            if project_id is not None:
+                query_sql = """
+                    SELECT
+                        embedding_id,
+                        node_id,
+                        project_id,
+                        chunk_index,
+                        chunk_start_line,
+                        chunk_end_line,
+                        distance
+                    FROM embeddings
+                    WHERE project_id = ? AND embedding MATCH ? 
+                    ORDER BY distance
+                    LIMIT ?
                 """
-                SELECT
-                    embedding_id,
-                    node_id,
-                    project_id,
-                    chunk_index,
-                    chunk_start_line,
-                    chunk_end_line,
-                    distance
-                FROM embeddings
-                WHERE embedding MATCH ?
-                ORDER BY distance
-                LIMIT ?
-            """,
-                (query_vector, search_limit),
-            )
+                query_params = (project_id, query_vector, limit)
+            else:
+                query_sql = """
+                    SELECT
+                        embedding_id,
+                        node_id,
+                        project_id,
+                        chunk_index,
+                        chunk_start_line,
+                        chunk_end_line,
+                        distance
+                    FROM embeddings
+                    WHERE embedding MATCH ?
+                    ORDER BY distance
+                    LIMIT ?
+                """
+                query_params = (query_vector, limit)
+
+            cursor = self.connection.execute(query_sql, query_params)
 
             results = []
             for (
@@ -191,6 +208,7 @@ class VectorDatabase:
                 # We'll normalize this to 0-1 range where 1 = perfect match
                 similarity = 1.0 / (1.0 + distance)
 
+                # Only include results that meet the threshold
                 if similarity >= threshold:
                     results.append(
                         {
@@ -205,21 +223,21 @@ class VectorDatabase:
                         }
                     )
 
-            # Sort by similarity (highest first) and limit results
-            results.sort(key=lambda x: x["similarity"], reverse=True)
-            return results[:limit]
+            return results
 
         except Exception as e:
             logger.error(f"sqlite-vec similarity search failed: {e}")
             return []
 
     def search_similar_chunks(
-        self, query_text: str, limit: int = 20, threshold: float = 0.2
+        self,
+        query_text: str,
+        limit: int = 30,
+        threshold: float = 0.2,
+        project_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """Search for similar chunks using text query."""
+        """Search for similar chunks using text query, optionally filtered by project."""
         try:
-            # Import get_embedding_processor to generate embeddings
-            from .simple_processor import get_embedding_processor
 
             # Initialize the processor using the global getter to respect config path
             processor = get_embedding_processor()
@@ -227,64 +245,18 @@ class VectorDatabase:
             # Generate embedding for the query text
             query_embedding = processor.get_embedding(query_text)
 
-            # Use the existing search_similar method
-            return self.search_similar(query_embedding, limit, threshold)
+            # Use the existing search_similar method with project filtering
+            return self.search_similar(query_embedding, limit, threshold, project_id)
 
         except Exception as e:
             logger.error(f"Failed to search similar chunks: {e}")
             return []
 
-    def _preprocess_search_query(self, query: str) -> str:
-        """
-        Preprocess search query to improve semantic matching.
-
-        Args:
-            query: Original search query
-
-        Returns:
-            Enhanced query with additional semantic context
-        """
-        import re
-
-        # Check if this looks like an exact function name (camelCase, no spaces)
-        is_exact_function_name = (
-            len(query.split()) == 1  # Single word
-            and re.match(
-                r"^[a-z][a-zA-Z0-9]*$", query
-            )  # Starts lowercase, contains letters/numbers
-            and re.search(r"[A-Z]", query)  # Contains uppercase (camelCase)
-        )
-
-        # For exact function names, use original query for better accuracy
-        if is_exact_function_name:
-            # Don't preprocess exact function names - use original for best accuracy
-            return query
-
-        # For other queries, apply full preprocessing
-        # Convert camelCase and snake_case to space-separated words
-        query = re.sub(r"([a-z])([A-Z])", r"\1 \2", query)
-
-        # Replace underscores and hyphens with spaces
-        query = query.replace("_", " ").replace("-", " ")
-
-        # Add function-related keywords if the query seems to be about functions
-        query_lower = query.lower()
-        enhanced_parts = [query]
-
-        if any(word in query_lower for word in ["add", "create", "insert", "save"]):
-            enhanced_parts.append("function")
-
-        if any(word in query_lower for word in ["get", "fetch", "retrieve", "find"]):
-            enhanced_parts.append("function")
-
-        # Join all parts
-        return " ".join(enhanced_parts)
-
     def search_chunks_with_code(
         self,
         query_text: str,
-        limit: int = 15,
-        threshold: float = 0.1,
+        limit: int = 30,
+        threshold: float = 0.2,
         max_display_lines: int = None,
     ) -> List[Dict[str, Any]]:
         """
@@ -300,24 +272,17 @@ class VectorDatabase:
             List of chunks with their code content and line information
         """
         try:
-            # Preprocess query for better semantic matching
-            processed_query = self._preprocess_search_query(query_text)
-
             # Get similar chunks with expanded search
-            chunk_results = self.search_similar_chunks(
-                processed_query, limit * 3, threshold
-            )
+            chunk_results = self.search_similar_chunks(query_text, limit, threshold)
 
             if not chunk_results:
                 return []
 
-            # Import database connection to get node details
-            from ..graph.sqlite_client import SQLiteConnection
 
             db_connection = SQLiteConnection()
             enriched_chunks = []
 
-            for chunk in chunk_results[:limit]:
+            for chunk in chunk_results:
                 try:
                     # Get node details
                     cursor = db_connection.connection.cursor()

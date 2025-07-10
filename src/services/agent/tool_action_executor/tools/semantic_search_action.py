@@ -30,7 +30,7 @@ def _extract_search_parameters(action: AgentAction) -> str:
 
 
 def _perform_vector_search(
-    vector_db: VectorDatabase, query: str
+    vector_db: VectorDatabase, query: str, project_id=None
 ) -> List[Dict[str, Any]]:
     """Perform vector database search with chunk-specific results."""
     config = SEMANTIC_SEARCH_CONFIG
@@ -41,7 +41,7 @@ def _perform_vector_search(
     )
 
     return vector_db.search_similar_chunks(
-        query, limit=limit, threshold=config["similarity_threshold"]
+        query, limit=limit, threshold=config["similarity_threshold"], project_id=project_id
     )
 
 
@@ -218,7 +218,7 @@ def _extract_chunk_specific_code(
 
 
 def execute_semantic_search_action(
-    action: AgentAction, vector_db=None, db_connection=None
+    action: AgentAction, vector_db=None, db_connection=None, project_id=None
 ) -> Iterator[Dict[str, Any]]:
     logger.debug(f"Executing semantic search action: {action}")
 
@@ -344,7 +344,7 @@ def execute_semantic_search_action(
         vector_db = vector_db or VectorDatabase()
 
         # Perform search using helper function
-        vector_results = _perform_vector_search(vector_db, query)
+        vector_results = _perform_vector_search(vector_db, query, project_id)
         total_nodes = len(vector_results)
 
         # Yield tool usage information for logging

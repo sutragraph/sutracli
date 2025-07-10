@@ -356,6 +356,10 @@ class AgentService:
         """Build status for database tool."""
         status = "Tool: database\n"
 
+        query_name = result.get("query_name")
+        if query_name:
+            status += f"Query Name: {query_name}\n"
+
         query = result.get("query")
         if query:
             if isinstance(query, dict):
@@ -396,9 +400,11 @@ class AgentService:
                 delivered = batch_info.get("delivered_count", 0)
                 remaining = batch_info.get("remaining_count", 0)
                 if delivered > 0:
-                    status += f"Found {count} nodes from semantic search. Showing nodes {delivered} of {count}\n"
+                    start_node = count - remaining - delivered + 1
+                    end_node = count - remaining
+                    status += f"Found {count} nodes from semantic search. Showing nodes {start_node}-{end_node} of {count}\n"
                     if remaining > 0:
-                        status += f"Remaining nodes: {remaining}\n NOTE: Use <fetch_next_code>true</fetch_next_code> to get next codes as there are more results available for your current query. Use same query with fetch_next_code to get next code."
+                        status += f"Remaining nodes: {remaining}\n"
                 else:
                     status += f"Found {count} nodes from semantic search\n"
             else:

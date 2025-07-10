@@ -371,6 +371,21 @@ class SQLiteConnection:
             logger.debug(f"Failed to list projects (table might not exist): {e}")
             return []
 
+    def get_project_id_by_name(self) -> Optional[int]:
+        """Get project ID by project name."""
+        try:
+            current_directory = Path.cwd().absolute()
+            project_name = current_directory.stem
+            result = self.execute_query(
+                "SELECT id FROM projects WHERE name = ?", (project_name,)
+            )
+            if result:
+                return result[0]["id"]
+            return None
+        except Exception as e:
+            logger.debug(f"Failed to get project ID for '{project_name}': {e}")
+            return None
+
     def project_exists(self, project_name: str) -> bool:
         """Check if a project exists in the database."""
         try:

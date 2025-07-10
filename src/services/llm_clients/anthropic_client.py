@@ -1,4 +1,5 @@
 import anthropic
+import time
 from loguru import logger
 from typing import List, Dict, Any
 from .llm_client_base import LLMClientBase
@@ -21,30 +22,54 @@ class AnthropicClient(LLMClientBase):
 
     def call_llm(self, system_prompt: str, user_message: str) -> List[Dict[str, Any]]:
         """Call Anthropic with separate system prompt and user message."""
-        try:
-            message = self.client.messages.create(
-                model=self.model_id,
-                max_tokens=30000,
-                stream=False,
-                system=[
-                    {
-                        "type": "text",
-                        "text": system_prompt,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[
-                    {
-                        "role": "user",
-                        "content": user_message,
-                    }
-                ],
-                extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
-            )
-            raw_response = message.content[0].text
+        max_retries = 5
+        retry_delay = 30  # 30 seconds
 
-            # Parse XML from the response and return only XML data
-            return self.parse_xml_response(raw_response)
-        except Exception as e:
-            logger.error(f"LLM call with system prompt failed: {e}")
-            raise
+        for attempt in range(max_retries + 1):
+            try:
+                stream = self.client.messages.create(
+                    model=self.model_id,
+                    max_tokens=64000,
+                    stream=True,
+                    system=[
+                        {
+                            "type": "text",
+                            "text": system_prompt,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": user_message,
+                        }
+                    ],
+                    extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
+                )
+
+                # Handle streaming response
+                raw_response = ""
+                for chunk in stream:
+                    if chunk.type == "content_block_delta":
+                        raw_response += chunk.delta.text
+
+                logger.debug(
+                    f"📥 Received response from Anthropic model: {raw_response}"
+                )
+                # Parse XML from the response and return only XML data
+                return self.parse_xml_response(raw_response)
+
+            except anthropic.RateLimitError as e:
+                if attempt < max_retries:
+                    logger.warning(
+                        f"⚠️  Rate limit exception encountered (attempt {attempt + 1}/{max_retries + 1}). "
+                        f"Waiting {retry_delay} seconds before retrying..."
+                    )
+                    time.sleep(retry_delay)
+                    continue
+                else:
+                    logger.error(f"LLM call with system prompt failed: {e}")
+                    raise
+            except Exception as e:
+                logger.error(f"LLM call with system prompt failed: {e}")
+                raise
