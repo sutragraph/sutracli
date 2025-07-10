@@ -14,6 +14,7 @@ from .agent.tool_action_executor.tool_action_executor import ActionExecutor
 from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from ..config import config
+from ..utils.xml_parsing_exceptions import XMLParsingFailedException
 
 
 class AgentService:
@@ -42,9 +43,6 @@ class AgentService:
 
         # Determine current project name from working directory
         self.current_project_name = self._determine_project_name()
-
-        # Synchronize memory manager with session data if session exists
-        self._synchronize_memory_manager()
 
     def _perform_incremental_indexing(self) -> Iterator[Dict[str, Any]]:
         """Perform incremental reindexing of the database using the current project name."""
@@ -76,26 +74,6 @@ class AgentService:
         except Exception as e:
             logger.warning(f"Error determining project name: {e}")
             return Path.cwd().name
-
-    def _synchronize_memory_manager(self) -> None:
-        """Synchronize memory manager state with session data on startup."""
-        try:
-            # If we have session memory, we need to parse it and populate the memory manager
-            session_memory = self.session_manager.get_sutra_memory()
-            if session_memory and session_memory.strip():
-                # For now, we'll let the memory manager start fresh and rely on
-                # the LLM to rebuild its state through sutra_memory updates
-                # This is because parsing the text format back to structured data
-                # would be complex and error-prone
-                logger.debug(
-                    "Session memory found, memory manager will rebuild state from LLM updates"
-                )
-            else:
-                logger.debug(
-                    "No session memory found, starting with fresh memory manager"
-                )
-        except Exception as e:
-            logger.warning(f"Error synchronizing memory manager: {e}")
 
     def solve_problem(
         self, problem_query: str, project_id: Optional[int] = None
@@ -258,62 +236,90 @@ class AgentService:
     def _get_xml_response(
         self, user_query: str, current_iteration: int
     ) -> Dict[str, Any]:
-        """Get XML response from LLM using the new prompt system."""
-        # Get base system prompt
-        system_prompt = get_base_system_prompt()
+        """Get XML response from LLM using the new prompt system with retry on XML parsing failures."""
+        max_retries = 5
+        retry_count = 0
 
-        # Build tool status from last tool result -
-        tool_status = self._build_tool_status(self.last_tool_result)
+        while retry_count < max_retries:
+            try:
+                # Get base system prompt
+                system_prompt = get_base_system_prompt()
 
-        # Build user message with context
-        # Get rich sutra memory from memory manager (includes code snippets and file modifications)
-        sutra_memory_rich = (
-            self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
-        )
-        task_progress = self.session_manager.get_task_progress_history()
+                # Build tool status from last tool result -
+                tool_status = self._build_tool_status(self.last_tool_result)
 
-        user_message_parts = []
+                # Build user message with context
+                # Get rich sutra memory from memory manager (includes code snippets and file modifications)
+                sutra_memory_rich = (
+                    self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
+                )
+                task_progress = self.session_manager.get_task_progress_history()
 
-        # Add user query
-        user_message_parts.append(f"User Query: {user_query}")
+                user_message_parts = []
 
-        # Add sutra memory from memory manager
-        if sutra_memory_rich and sutra_memory_rich.strip():
-            user_message_parts.append(
-                f"\n====\nSUTRA MEMORY STATUS\n\n{sutra_memory_rich}\n===="
-            )
-        else:
-            user_message_parts.append(
-                f"\n====\nSUTRA MEMORY STATUS\n\nNo previous memory available. This is first message from user.\n===="
-            )
+                # Add user query
+                user_message_parts.append(f"User Query: {user_query}")
 
-        # Add task progress if available
-        if task_progress:
-            user_message_parts.append(f"\nTask Progress History:\n{task_progress}")
+                # Add sutra memory from memory manager
+                if sutra_memory_rich and sutra_memory_rich.strip():
+                    user_message_parts.append(
+                        f"\n====\nSUTRA MEMORY STATUS\n\n{sutra_memory_rich}\n===="
+                    )
+                else:
+                    user_message_parts.append(
+                        f"\n====\nSUTRA MEMORY STATUS\n\nNo previous memory available. This is first message from user.\n===="
+                    )
 
-        # Add tool status -  FORMAT
-        user_message_parts.append(f"\n====\nTOOL STATUS\n\n{tool_status}\n====")
+                # Add task progress if available
+                if task_progress:
+                    user_message_parts.append(
+                        f"\nTask Progress History:\n{task_progress}"
+                    )
 
-        user_message = "\n".join(user_message_parts)
+                # Add tool status -  FORMAT
+                user_message_parts.append(f"\n====\nTOOL STATUS\n\n{tool_status}\n====")
 
-        logger.debug(f"🔍 Iteration {current_iteration}: Sending prompt to LLM")
+                user_message = "\n".join(user_message_parts)
 
-        try:
-            logger.debug(
-                f"🔍 Iteration {current_iteration}: System prompt length: {len(system_prompt)}"
-            )
-            logger.debug(
-                f"🔍 Iteration {current_iteration}: User message length: {len(user_message)}"
-            )
+                logger.debug(
+                    f"🔍 Iteration {current_iteration}: Sending prompt to LLM (attempt {retry_count + 1})"
+                )
 
-            response = self.llm_client.call_llm(system_prompt, user_message)
-            logger.debug(f"RESPONSE: {response}")
-            logger.debug(f"🔍 Iteration {current_iteration}: Got XML response from LLM")
-            return response
+                logger.debug(
+                    f"🔍 Iteration {current_iteration}: System prompt length: {len(system_prompt)}"
+                )
+                logger.debug(
+                    f"🔍 Iteration {current_iteration}: User message length: {len(user_message)}"
+                )
 
-        except Exception as e:
-            logger.error(f"Failed to get valid response from LLM: {e}")
-            raise
+                response = self.llm_client.call_llm(system_prompt, user_message)
+                logger.debug(f"RESPONSE: {response}")
+                logger.debug(
+                    f"🔍 Iteration {current_iteration}: Got XML response from LLM"
+                )
+                return response
+
+            except XMLParsingFailedException as xml_error:
+                retry_count += 1
+                logger.warning(
+                    f"XML parsing failed on attempt {retry_count}/{max_retries}: {xml_error.message}"
+                )
+                if retry_count >= max_retries:
+                    logger.error(
+                        f"XML parsing failed after {max_retries} attempts, giving up"
+                    )
+                    raise Exception(
+                        f"XML parsing failed after {max_retries} attempts: {xml_error.message}"
+                    )
+                else:
+                    logger.info(
+                        f"Retrying LLM call due to XML parsing failure (attempt {retry_count + 1}/{max_retries})"
+                    )
+                    continue
+
+            except Exception as e:
+                logger.error(f"Failed to get valid response from LLM: {e}")
+                raise
 
     def _build_tool_status(self, last_tool_result: Optional[Dict[str, Any]]) -> str:
         """
@@ -322,6 +328,7 @@ class AgentService:
         if not last_tool_result:
             return "No previous tool execution"
 
+        logger.debug(f"Building tool status for last tool result: {last_tool_result}")
         tool_name = last_tool_result.get("tool_name", "unknown_tool")
 
         # Build tool-specific status using if-else statements
@@ -351,7 +358,12 @@ class AgentService:
 
         query = result.get("query")
         if query:
-            status += f"Query: '{query}'\n"
+            if isinstance(query, dict):
+                query_copy = query.copy()
+                query_copy.pop("project_id", None)
+                status += f"Query: {query_copy}\n"
+            else:
+                status += f"Query: '{query}'\n"
 
         count = result.get("count") or result.get("total_results")
         if count is not None:

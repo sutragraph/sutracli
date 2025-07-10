@@ -2,6 +2,7 @@ from loguru import logger
 import re
 import xmltodict
 from typing import Dict, List, Any, Optional
+from src.utils.xml_parsing_exceptions import XMLParsingFailedException
 
 
 class LLMClientBase:
@@ -111,9 +112,13 @@ class LLMClientBase:
                                 continue
                         except Exception:
                             pass
-                    logger.debug(f"Skipping block {i+1} from {response_text}")
-                    logger.debug(f"Skipping malformed XML block {i+1}")
-                    continue
+                    # Instead of skipping, raise exception to trigger retry
+                    logger.error(f"XML parsing failed for block {i+1}, discarding response and retrying")
+                    raise XMLParsingFailedException(
+                        f"Failed to parse XML block {i+1}: {xml_error}",
+                        failed_block_index=i+1,
+                        original_error=xml_error
+                    )
 
             logger.debug(f"Successfully parsed {len(parsed_xml_list)} XML blocks")
             return parsed_xml_list

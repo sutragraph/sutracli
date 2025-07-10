@@ -58,7 +58,7 @@ def handle_fetch_next_request(
 
         if action_type == "database":
             return {
-                "type": f"database_{response_type}",
+                "type": f"tool_use",
                 "tool_name": "database",
                 "query_name": "fetch_next_code",
                 "query": action_parameters,
@@ -67,11 +67,12 @@ def handle_fetch_next_request(
             }
         else:  # semantic_search
             return {
-                "type": f"semantic_search_{response_type}",
+                "type": f"tool_use",
+                "tool_name": "semantic_search",
                 "query": "fetch_next_code",
                 "data": f"No more code chunks/nodes available. All items from the previous query have been delivered.",
                 "code_snippet": True,
-                **base_response
+                **base_response,
             }
 
 
@@ -181,7 +182,8 @@ def register_and_deliver_first_batch(
     final_data = guidance_message + "\n\n".join(combined_data)
 
     return {
-        "type": "semantic_search_batch",
+        "type": "tool_use",
+        "tool_name": "semantic_search",
         "query": query,
         "result": f"result found: {total_nodes}",
         "data": final_data,
@@ -250,6 +252,7 @@ def create_no_items_response(
         query = action_parameters.get("query", "")
         return {
             "type": "tool_use",
+            "tool_name": "semantic_search",
             "query": query,
             "code_snippet": include_code,
             **base_response,

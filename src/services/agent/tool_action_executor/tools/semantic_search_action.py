@@ -12,9 +12,9 @@ from src.services.agent.agent_prompt.guidance_builder import (
 )
 from src.services.agent.tool_action_executor.utils.constants import (
     SEMANTIC_SEARCH_CONFIG,
+    DELIVERY_QUEUE_CONFIG,
 )
 from src.services.agent.delivery_management import delivery_manager
-
 
 def _extract_search_parameters(action: AgentAction) -> str:
     """Extract query parameter from action."""
@@ -99,8 +99,10 @@ def _process_sequential_chunk_results(
                 # Collect item for delivery manager
                 all_delivery_items.append(
                     {
-                        "type": "semantic_search_node",
+                        "type": "tool_use",
+                        "tool_name": "semantic_search",
                         "query": query,
+                        "result": f"Found {len(vector_results)} nodes",
                         "node_index": i,
                         "total_nodes": total_nodes,
                         "data": beautified_result,
@@ -115,7 +117,8 @@ def _process_sequential_chunk_results(
 
                 all_delivery_items.append(
                     {
-                        "type": "semantic_search_node",
+                        "type": "tool_use",
+                        "tool_name": "semantic_search",
                         "query": query,
                         "node_index": i,
                         "total_nodes": total_nodes,
@@ -127,7 +130,8 @@ def _process_sequential_chunk_results(
             # Handle missing node details
             all_delivery_items.append(
                 {
-                    "type": "semantic_search_node",
+                    "type": "tool_use",
+                    "tool_name": "semantic_search",
                     "query": query,
                     "node_index": i,
                     "total_nodes": total_nodes,
@@ -222,10 +226,6 @@ def execute_semantic_search_action(
         # Check if this is a fetch_next_code request (handles batch delivery)
         if action.parameters.get("fetch_next_code", False):
             logger.debug("🔄 Fetch next batch request detected")
-
-            from src.services.agent.tool_action_executor.utils.constants import (
-                DELIVERY_QUEUE_CONFIG,
-            )
 
             batch_size = DELIVERY_QUEUE_CONFIG.get("semantic_search", 7)
 

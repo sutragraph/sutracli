@@ -71,7 +71,8 @@ class ActionExecutor:
             logger.debug(f"Tool data found: {tool_data is not None}")
             logger.debug(f"Tool name: {tool_data.get('_tool_name') if tool_data else 'None'}")
             logger.debug(f"Sutra memory update found: {sutra_memory_update is not None}")
-
+            logger.debug(f"Tool Data: {tool_data}")
+            
             # Yield thinking information
             if thinking_content:
                 yield {
@@ -118,14 +119,7 @@ class ActionExecutor:
 
             # Execute other tools if present
             elif tool_data:
-                yield {
-                    "type": "tool",
-                    "tool_result": tool_data,
-                    "timestamp": time.time(),
-                }
-                tool_name = tool_data.get("name") or self._get_tool_name_from_xml(
-                    tool_data
-                )
+                tool_name = self._get_tool_name_from_xml(tool_data)
                 yield from self._execute_tool(tool_name, tool_data, user_query)
             else:
                 # If no tool is present but we have thinking or sutra_memory,
