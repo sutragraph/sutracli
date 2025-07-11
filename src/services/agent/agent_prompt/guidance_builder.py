@@ -6,7 +6,10 @@ based on different search scenarios and results.
 
 from enum import Enum
 from typing import Optional, Dict, Any, List
-from src.services.agent.tool_action_executor.utils.constants import GUIDANCE_MESSAGES, SEARCH_CONFIG
+from src.services.agent.tool_action_executor.utils.constants import (
+    GUIDANCE_MESSAGES,
+    SEARCH_CONFIG,
+)
 
 
 def _get_fetch_next_code_note() -> str:
@@ -21,6 +24,7 @@ def _get_fetch_next_code_note() -> str:
 
 class SearchType(Enum):
     """Types of search operations."""
+
     DATABASE = "database"
     SEMANTIC = "semantic"
     KEYWORD = "keyword"
@@ -28,6 +32,7 @@ class SearchType(Enum):
 
 class GuidanceScenario(Enum):
     """Different guidance scenarios for search results."""
+
     NO_RESULTS_FOUND = "no_results_found"
     SINGLE_RESULT_SMALL = "single_result_small"
     SINGLE_RESULT_LARGE = "single_result_large"
@@ -38,6 +43,7 @@ class GuidanceScenario(Enum):
 
 class SequentialNodeScenario(Enum):
     """Scenarios for sequential node delivery."""
+
     NODE_WITH_SMALL_CODE = "node_with_small_code"
     NODE_WITH_LARGE_CODE_FIRST_CHUNK = "node_with_large_code_first_chunk"
     NODE_WITH_LARGE_CODE_MIDDLE_CHUNK = "node_with_large_code_middle_chunk"
@@ -60,7 +66,9 @@ def build_guidance_message(
         Formatted guidance message
     """
     if scenario == GuidanceScenario.NO_RESULTS_FOUND:
-        return GUIDANCE_MESSAGES["NO_RESULTS_FOUND"].format(search_type=search_type.value)
+        return GUIDANCE_MESSAGES["NO_RESULTS_FOUND"].format(
+            search_type=search_type.value
+        )
 
     elif scenario == GuidanceScenario.SINGLE_RESULT_SMALL:
         return f"Found 1 result from {search_type.value} search."

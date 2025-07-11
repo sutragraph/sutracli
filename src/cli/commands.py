@@ -172,11 +172,6 @@ def _process_agent_updates(updates_generator) -> None:
                 print(f'🔍 Semantic search "{query}" | {results}')
                 print("-" * 40)
 
-            elif tool_name == "insert_content":
-                file_path = update.get("applied_changes_to_files", "")
-                print(f"📝 Content inserted in {file_path}")
-                print("-" * 40)
-
             elif tool_name == "list_files":
                 directory = update.get("directory", "")
                 files_count = update.get("count", 0)

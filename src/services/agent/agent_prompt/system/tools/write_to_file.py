@@ -1,39 +1,31 @@
 WRITE_TO_FILE_TOOL = """## write_to_file
-Description: Request to write content to a file. This tool is primarily used for **creating new files** or for scenarios where a **complete rewrite of an existing file is intentionally required**. If the file exists, it will be overwritten. If it doesn't exist, it will be created. This tool will automatically create any directories needed to write the file.
+Description: Request to write content to a file. This tool handles both **creating new files** and **inserting content into existing files**. For new files, it creates the file with the provided content. For existing files, it inserts content at the specified line or appends to the end if no line is specified.
 
 Parameters:
 - path: (required) The path of the file to write to (relative to the current workspace directory {current_dir})
-- content: (required) The content to write to the file. When performing a full rewrite of an existing file or creating a new one, ALWAYS provide the COMPLETE intended content of the file, without any truncation or omissions. You MUST include ALL parts of the file, even if they haven't been modified. Do NOT include the line numbers in the content though, just the actual content of the file.
-- line_count: (required) The number of lines in the file. Make sure to compute this based on the actual content of the file, not the number of lines in the content you're providing.
+- content: (required) The content to write or insert
+- line: (optional) Line number for insertion (1-based indexing). If not specified, content is appended to the end of existing files
+- is_new_file: (optional) Set to true when creating a new file. Defaults to false for existing file operations
 
 Usage:
 <write_to_file>
 <path>File path here</path>
-<content>
-Your file content here
-</content>
-<line_count>total number of lines in the file, including empty lines</line_count>
+<content>Your content here</content>
+<line>Line number (optional)</line>
+<is_new_file>true/false (optional)</is_new_file>
 </write_to_file>
 
-Example: Requesting to write to frontend-config.json
+Example: Creating a new file
 <write_to_file>
-<path>frontend-config.json</path>
-<content>
-{{
-  "apiEndpoint": "https://api.example.com",
-  "theme": {{
-    "primaryColor": "#007bff",
-    "secondaryColor": "#6c757d",
-    "fontFamily": "Arial, sans-serif"
-  }},
-  "features": {{
-    "darkMode": true,
-    "notifications": true,
-    "analytics": false
-  }},
-  "version": "1.0.0"
-}}
-</content>
-<line_count>14</line_count>
+<path>config.json</path>
+<content>{{"version": "1.0.0"}}</content>
+<is_new_file>true</is_new_file>
+</write_to_file>
+
+Example: Inserting content at line 5 in existing file
+<write_to_file>
+<path>src/app.py</path>
+<content># Import necessary libraries\nfrom flask import Flask\nimport json</content>
+<line>5</line>
 </write_to_file>
 """

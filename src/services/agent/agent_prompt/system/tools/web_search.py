@@ -6,16 +6,16 @@ Required Parameters:
 
 Optional Parameters:
 - time_filter: Time-based filtering options
-  - "PAST_DAY" or "pd": Results from the past day
-  - "PAST_WEEK" or "pw": Results from the past week  
-  - "PAST_MONTH" or "pm": Results from the past month
-  - "PAST_YEAR" or "py": Results from the past year
-  - "ALL_TIME" or null: All time results (default)
+  - "pd": Results from the past day
+  - "pw": Results from the past week  
+  - "pm": Results from the past month
+  - "py": Results from the past year
+  - leave empty for no time filter (default)
 - search_type: Type of search to perform
-  - "WEB": Web search (default)
-  - "NEWS": News search
-  - "IMAGES": Image search
-  - "VIDEOS": Video search
+  - "search": Web search (default)
+  - "news": News search
+  - "images": Image search
+  - "videos": Video search
 - count: Number of results to return (1-20, default: 10)
 - offset: Offset for pagination (default: 0)
 - country: Country code for localized results (e.g., "US", "GB", default: "US")
@@ -28,8 +28,8 @@ Optional Parameters:
 Usage:
 <web_search> 
 <query>search terms here</query>
-<search_type>WEB</search_type>
-<time_filter>PAST_WEEK</time_filter>
+<search_type>search</search_type>
+<time_filter>pw</time_filter>
 <count>10</count>
 </web_search>
 
@@ -42,37 +42,12 @@ Examples:
 2. Recent news search:
 <web_search>
 <query>climate change summit</query>
-<search_type>NEWS</search_type>
-<time_filter>PAST_WEEK</time_filter>
+<search_type>news</search_type>
+<time_filter>pw</time_filter>
 <count>5</count>
 </web_search>
 
-3. Image search with safe search:
-<web_search>
-<query>mountain landscapes</query>
-<search_type>IMAGES</search_type>
-<safe_search>STRICT</safe_search>
-<count>15</count>
-</web_search>
-
-4. Localized search with language preferences:
-<web_search>
-<query>local restaurants</query>
-<country>GB</country>
-<search_lang>en</search_lang>
-<ui_lang>en-GB</ui_lang>
-<extra_snippets>true</extra_snippets>
-</web_search>
-
-5. Video search for recent content:
-<web_search>
-<query>python tutorial beginners</query>
-<search_type>VIDEOS</search_type>
-<time_filter>PAST_MONTH</time_filter>
-<count>8</count>
-</web_search>
-
-6. Paginated web search:
+3. Paginated web search:
 <web_search>
 <query>machine learning algorithms</query>
 <count>20</count>

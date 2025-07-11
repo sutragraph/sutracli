@@ -382,7 +382,7 @@ def execute_web_search_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 return
 
         safe_search = SafeSearch.MODERATE
-        safe_search_str = parameters.get("safe_search", "moderate")
+        safe_search_str = parameters.get("safe_search", safe_search)
         try:
             safe_search = SafeSearch(safe_search_str)
         except ValueError:
@@ -394,7 +394,7 @@ def execute_web_search_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
             return
 
         search_type = SearchType.WEB
-        search_type_str = parameters.get("search_type", "web")
+        search_type_str = parameters.get("search_type", search_type)
         try:
             search_type = SearchType(search_type_str)
         except ValueError:
@@ -461,7 +461,8 @@ def execute_web_search_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 results_dict.append(result_dict)
 
             yield {
-                "type": "tool_result",
+                "type": "tool_use",
+                "tool_name": "web_search",
                 "results": results_dict,
                 "query": search_response.query,
                 "total_results": search_response.total_results,
@@ -470,7 +471,6 @@ def execute_web_search_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 "infobox": search_response.infobox,
                 "knowledge_graph": search_response.knowledge_graph,
                 "search_type": search_type.value,
-                "tool_name": "web_search",
             }
         else:
             yield {
