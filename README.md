@@ -48,7 +48,7 @@ Sutra Knowledge CLI is a powerful command-line application designed to help deve
 
 ## Quick Start
 
-1. **Installation**: See [INSTALL.md](INSTALL.md) for detailed installation instructions
+1. **Installation**: See [INSTALL.md](INSTALL.md) for installing binary instead of using the source code. Use below steps if you want to run the source code directly.
 
 2. **Basic Usage**:
    ```bash
