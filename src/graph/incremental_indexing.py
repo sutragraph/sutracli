@@ -10,6 +10,7 @@ from loguru import logger
 from ..graph.sqlite_client import SQLiteConnection, GraphOperations
 from ..graph.converter import TreeSitterToSQLiteConverter
 from ..processors.data_processor import GraphDataProcessor
+from ..processors.node_embedding_processor import get_node_embedding_processor
 from ..models.schema import ParsedCodebase, GraphData
 from ..utils.helpers import load_json_file
 from ..parser.analyzer.analyzer import Analyzer
@@ -25,6 +26,10 @@ class IncrementalIndexing:
         self.converter = TreeSitterToSQLiteConverter(self.connection)
         self.processor = GraphDataProcessor(self.connection)
         self.graphOperations = GraphOperations(self.connection)
+        self.embedding_processor = get_node_embedding_processor(
+            max_tokens=config.embedding.max_tokens,
+            overlap_tokens=config.embedding.overlap_tokens,
+        )
         logger.debug("🔄 IncrementalIndexing initialized")
 
     def reindex_database(self, project_name: str) -> Dict[str, Any]:
@@ -88,9 +93,6 @@ class IncrementalIndexing:
                 changes, parsed_data, project_id, project_name
             )
 
-            logger.debug("🔢 Creating database indexes...")
-            self.connection.create_indexes()
-
             logger.debug(f"✅ Incremental update completed successfully!")
             return {
                 "status": "success",
@@ -127,7 +129,7 @@ class IncrementalIndexing:
         try:
             # Get all file paths for this project
             result = self.connection.execute_query(
-                """SELECT DISTINCT file_path FROM file_hashes 
+                """SELECT DISTINCT file_path FROM file_hashes
                    WHERE project_id = ? AND file_path IS NOT NULL""",
                 (project_id,),
             )
@@ -303,6 +305,11 @@ class IncrementalIndexing:
                 filtered_data, project_id, project_name
             )
 
+            # Generate embeddings for changed file nodes
+            self._generate_embeddings_for_changed_files(
+                nodes_from_changed_files, project_id, project_name
+            )
+
             # Insert the processed data into the database
             # The underlying `insert_nodes` call should handle potential conflicts gracefully
             # (e.g., using 'INSERT OR IGNORE') for target nodes that may already exist.
@@ -442,3 +449,22 @@ class IncrementalIndexing:
         except Exception as e:
             logger.error(f"Error inserting graph data: {e}")
             raise
+
+    def _generate_embeddings_for_changed_files(
+        self, changed_file_nodes: List, project_id: int, project_name: str
+    ) -> None:
+        """Generate chunked embeddings for changed file nodes."""
+        try:
+            file_nodes = [node for node in changed_file_nodes if node.type.lower() == "file"]
+
+            for node in file_nodes:
+                try:
+                    self.embedding_processor.process_node_with_embeddings(
+                        node, project_id, project_name
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to generate embeddings for node {node.id}: {e}")
+                    continue
+
+        except Exception as e:
+            logger.error(f"Error generating embeddings for changed files: {e}")
