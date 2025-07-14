@@ -101,9 +101,6 @@ class IncrementalIndexing:
             # This ensures memory updater has access to the updated database content
             memory_updates = self._update_sutra_memory_for_changes(changes, project_id)
 
-            logger.debug("🔢 Creating database indexes...")
-            self.connection.create_indexes()
-
             logger.debug(f"✅ Incremental update completed successfully!")
             return {
                 "status": "success",
