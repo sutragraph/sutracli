@@ -9,7 +9,7 @@ add_history: Comprehensive summary of current iteration actions, tool usage, key
 
 Optional Components:
 task: Manage tasks by adding new ones or moving between pending/current/completed status with unique IDs (only ONE current task allowed at a time)
-code: Store important code snippets with file paths, line ranges, and descriptions for future reference
+code: Store important code snippets with file paths, line ranges, and descriptions for future reference (in description never add line ranges or file paths, just one line of context about why this code is important)
 files: Track file changes (modified, deleted, added) with file paths to maintain change history
 
 
