@@ -14,23 +14,38 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
         line_number = action.parameters.get("line")
         is_new_file = action.parameters.get("is_new_file", False)
 
-        # Determine operation type based on is_new_file parameter
-        operation = "write_to_file" if is_new_file else "insert_content"
-
         # Validate required parameters
         if not file_path:
             yield {
-                "type": "tool_error",
-                "error": "Missing required parameter: path",
+                "type": "tool_use",
                 "tool_name": "write_to_file",
+                "successful_files": [],
+                "failed_files": [],
+                "status": "failed",
+                "message": "Missing required parameter: path",
+                "summary": "Failed to process 0/1 files",
+                "total_files": 1,
+                "success_count": 0,
+                "failure_count": 1,
+                "applied_changes_to_files": [],
+                "original_request": "<write_to_file><path>unknown</path><content></content></write_to_file>",
             }
             return
 
         if content is None:
             yield {
-                "type": "tool_error",
-                "error": "Missing required parameter: content",
+                "type": "tool_use",
                 "tool_name": "write_to_file",
+                "successful_files": [],
+                "failed_files": [file_path],
+                "status": "failed",
+                "message": "Missing required parameter: content",
+                "summary": "Failed to process 0/1 files",
+                "total_files": 1,
+                "success_count": 0,
+                "failure_count": 1,
+                "applied_changes_to_files": [],
+                "original_request": f"<write_to_file><path>{file_path}</path><content></content></write_to_file>",
             }
             return
 
@@ -40,16 +55,34 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
                 line_number = int(line_number)
                 if line_number < 0:
                     yield {
-                        "type": "tool_error",
-                        "error": "Line number must be 0 or positive (0 = append to end, 1+ = insert before line)",
+                        "type": "tool_use",
                         "tool_name": "write_to_file",
+                        "successful_files": [],
+                        "failed_files": [file_path],
+                        "status": "failed",
+                        "message": "Line number must be 0 or positive (0 = append to end, 1+ = insert before line)",
+                        "summary": "Failed to process 0/1 files",
+                        "total_files": 1,
+                        "success_count": 0,
+                        "failure_count": 1,
+                        "applied_changes_to_files": [],
+                        "original_request": f"<insert_content><path>{file_path}</path><line>{line_number}</line><content>{content}</content></insert_content>",
                     }
                     return
             except (ValueError, TypeError):
                 yield {
-                    "type": "tool_error",
-                    "error": "Line number must be a valid integer",
+                    "type": "tool_use",
                     "tool_name": "write_to_file",
+                    "successful_files": [],
+                    "failed_files": [file_path],
+                    "status": "failed",
+                    "message": "Line number must be a valid integer",
+                    "summary": "Failed to process 0/1 files",
+                    "total_files": 1,
+                    "success_count": 0,
+                    "failure_count": 1,
+                    "applied_changes_to_files": [],
+                    "original_request": f"<insert_content><path>{file_path}</path><line>{line_number}</line><content>{content}</content></insert_content>",
                 }
                 return
 
@@ -112,8 +145,14 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
             "change_id": change_id,
             "file_path": file_path,
             "backup_path": str(backup_path),
-            "success": True,
+            "successful_files": [file_path],
+            "failed_files": [],
+            "status": "success",
             "message": success_message,
+            "summary": f"Successfully processed 1/1 files",
+            "total_files": 1,
+            "success_count": 1,
+            "failure_count": 0,
             "applied_changes_to_files": [file_path],
         }
 
@@ -133,7 +172,14 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
         yield {
             "type": "tool_use",
             "tool_name": "write_to_file",
-            "applied_changes_to_files": [],
+            "successful_files": [],
+            "failed_files": [file_path] if file_path else [],
+            "status": "failed",
             "message": f"Failed to perform file operation on {file_path}: {str(e)}",
+            "summary": f"Failed to process 0/1 files",
+            "total_files": 1,
+            "success_count": 0,
+            "failure_count": 1,
+            "applied_changes_to_files": [],
             "original_request": original_request,
         }
