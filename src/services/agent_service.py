@@ -464,13 +464,25 @@ class AgentService:
         """Build status for write_to_file tool."""
         status = "Tool: write_to_file\n"
 
-        file_path = result.get("applied_changes_to_files")
-        if file_path:
-            status += f"Suceess File: {file_path}\n"
+        successful_files = result.get("successful_files")
+        if successful_files:
+            status += f"Success File: {successful_files}\n"
+
+        failed_files = result.get("failed_files")
+        if failed_files:
+            status += f"Failed File: {failed_files}\n"
+
+        summary = result.get("summary")
+        if summary:
+            status += f"Summary: {summary}\n"
+
+        extra_status = result.get("status")
+        if extra_status:
+            status += f"Status: {extra_status}\n"
 
         message = result.get("message")
         if message:
-            status += f"Status: {message}\n"
+            status += f"Message: {message}\n"
 
         original_request = result.get("original_request")
         if original_request:

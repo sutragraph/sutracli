@@ -376,7 +376,6 @@ class SimpleEmbeddingProcessor:
             try:
                 embedding = self.get_embedding(chunk["text"])
                 embeddings_with_metadata.append((embedding, chunk))
-                logger.debug(f"Generated embedding for chunk: {chunk['text']}")
             except Exception as e:
                 logger.error(f"Failed to generate embedding for chunk: {e}")
                 continue

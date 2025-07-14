@@ -168,13 +168,22 @@ class ApplyDiffExecutor:
                         search_content = '\n'.join(lines[separator_idx + 1:replace_idx]).strip()
                         replace_content = '\n'.join(lines[replace_idx + 1:]).strip()
 
-                        if search_content and replace_content:
+                        # Allow empty search content (for empty lines) but require some replace content
+                        if replace_content or not search_content:
                             blocks.append({
                                 "start_line": start_line,
                                 "search": search_content,
                                 "replace": replace_content
                             })
                             logger.debug(f"Found block with start_line: {start_line}")
+
+        # Sort blocks by start_line in descending order (bottom to top)
+        blocks.sort(
+            key=lambda x: (
+                x.get("start_line", 0) if x.get("start_line") is not None else 0
+            ),
+            reverse=True,
+        )
 
         logger.debug(f"Parsed {len(blocks)} blocks")
         return blocks
@@ -199,34 +208,178 @@ class ApplyDiffExecutor:
         return cleaned
 
     def _apply_search_replace(self, content: str, search: str, replace: str, start_line: Optional[int] = None) -> Optional[str]:
-        """Apply search and replace operation to content."""
+        """Apply search and replace operation to content with improved fuzzy matching."""
         try:
             # If start_line is provided, use it as a hint for more precise matching
             if start_line and start_line > 0:
-                lines = content.splitlines(keepends=True)
-                if start_line <= len(lines):
-                    # Look for the search content around the specified line
-                    search_lines = search.splitlines()
-                    content_around_line = ''.join(lines[start_line-1:start_line-1+len(search_lines)])
-
-                    if search in content_around_line:
-                        # Replace in the specific section
-                        before = ''.join(lines[:start_line-1])
-                        after_start = start_line - 1 + len(search_lines)
-                        after = ''.join(lines[after_start:]) if after_start < len(lines) else ""
-
-                        return before + replace + "\n" + after
+                result = self._apply_search_replace_with_line_hint(
+                    content, search, replace, start_line
+                )
+                if result is not None:
+                    return result
 
             # Fallback to global search and replace
             if search in content:
-                return content.replace(search, replace, 1)  # Replace only first occurrence
+                return content.replace(
+                    search, replace, 1
+                )  # Replace only first occurrence
             else:
+                # Try fuzzy matching if exact match fails
+                result = self._fuzzy_search_replace(content, search, replace)
+                if result is not None:
+                    return result
+
                 logger.warning(f"Search content not found: {search[:100]}...")
                 return None
 
         except Exception as e:
             logger.error(f"Failed to apply search/replace: {e}")
             return None
+
+    def _apply_search_replace_with_line_hint(
+        self, content: str, search: str, replace: str, start_line: int
+    ) -> Optional[str]:
+        """Apply search and replace using line number hint with fuzzy matching."""
+        lines = content.splitlines(keepends=True)
+        search_lines = search.splitlines()
+
+        # Special handling for empty search content (empty lines)
+        if not search.strip():
+            if start_line <= len(lines):
+                # For empty lines, just replace at the specified line
+                before = "".join(lines[: start_line - 1])
+                after = "".join(lines[start_line:]) if start_line < len(lines) else ""
+                return before + replace + "\n" + after
+
+        # Try exact match first at the specified line
+        if start_line <= len(lines):
+            content_around_line = "".join(
+                lines[start_line - 1 : start_line - 1 + len(search_lines)]
+            )
+            if search in content_around_line:
+                before = "".join(lines[: start_line - 1])
+                after_start = start_line - 1 + len(search_lines)
+                after = "".join(lines[after_start:]) if after_start < len(lines) else ""
+                return before + replace + "\n" + after
+
+        # Try fuzzy matching around the specified line (±10 lines)
+        search_window = 10
+        start_search = max(0, start_line - search_window - 1)
+        end_search = min(len(lines), start_line + search_window)
+
+        # First try exact string matching
+        for i in range(start_search, end_search):
+            if i + len(search_lines) <= len(lines):
+                content_slice = "".join(lines[i : i + len(search_lines)])
+                if search in content_slice:
+                    before = "".join(lines[:i])
+                    after = "".join(lines[i + len(search_lines) :])
+                    return before + replace + "\n" + after
+
+        # Then try fuzzy matching line by line
+        for i in range(start_search, end_search):
+            if i + len(search_lines) <= len(lines):
+                match_found, match_end = self._fuzzy_match_at_line(lines, i, search)
+                if match_found:
+                    before = "".join(lines[:i])
+                    after = "".join(lines[match_end:])
+                    return before + replace + "\n" + after
+
+        return None
+
+    def _fuzzy_search_replace(
+        self, content: str, search: str, replace: str
+    ) -> Optional[str]:
+        """Perform fuzzy search and replace with whitespace and formatting tolerance."""
+        try:
+            # Normalize whitespace for comparison
+            normalized_search = " ".join(search.split())
+            lines = content.splitlines()
+
+            # Try to find the search pattern with some tolerance
+            for i in range(len(lines)):
+                # Check if we can match starting from line i
+                match_found, match_end = self._fuzzy_match_at_line(lines, i, search)
+                if match_found:
+                    # Replace the matched content
+                    before = "\n".join(lines[:i])
+                    after = "\n".join(lines[match_end:])
+
+                    # Add proper newlines
+                    if before:
+                        before += "\n"
+                    if after:
+                        after = "\n" + after
+
+                    return before + replace + after
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Fuzzy search failed: {e}")
+            return None
+
+    def _fuzzy_match_at_line(
+        self, lines: list, start_line: int, search: str
+    ) -> tuple[bool, int]:
+        """Check if search pattern matches starting at given line with fuzzy matching."""
+        search_lines = search.splitlines()
+
+        if start_line + len(search_lines) > len(lines):
+            return False, -1
+
+        # Extract the content to compare
+        content_slice = lines[start_line : start_line + len(search_lines)]
+        content_text = "\n".join(content_slice)
+
+        # Try exact match first
+        if search == content_text:
+            return True, start_line + len(search_lines)
+
+        # Try whitespace-normalized match
+        normalized_search = " ".join(search.split())
+        normalized_content = " ".join(content_text.split())
+
+        if normalized_search == normalized_content:
+            return True, start_line + len(search_lines)
+
+        # Try line-by-line fuzzy matching
+        fuzzy_match = True
+        for i, search_line in enumerate(search_lines):
+            if start_line + i >= len(lines):
+                fuzzy_match = False
+                break
+
+            content_line = lines[start_line + i]
+
+            # Check if lines match with whitespace tolerance
+            if not self._lines_match_fuzzy(search_line, content_line):
+                fuzzy_match = False
+                break
+
+        if fuzzy_match:
+            return True, start_line + len(search_lines)
+
+        return False, -1
+
+    def _lines_match_fuzzy(self, search_line: str, content_line: str) -> bool:
+        """Check if two lines match with fuzzy matching."""
+        # Exact match
+        if search_line == content_line:
+            return True
+
+        # Normalized whitespace match
+        search_normalized = " ".join(search_line.split())
+        content_normalized = " ".join(content_line.split())
+
+        if search_normalized == content_normalized:
+            return True
+
+        # Check if content line contains the search line (for partial matches)
+        if search_line.strip() in content_line.strip():
+            return True
+
+        return False
 
     def _create_backup(self, file_path: str, change_id: str, content: str) -> str:
         """Create backup of original file content."""
