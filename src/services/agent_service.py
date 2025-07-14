@@ -526,7 +526,7 @@ class AgentService:
 
         content = result.get("content")
         if content:
-            status += f"Content: {content[:100]}...\n"
+            status += f"Content: {content}\n"
         else:
             status += "Content: No content scraped\n"
 
