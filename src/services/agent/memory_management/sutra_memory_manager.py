@@ -14,11 +14,12 @@ This is the main interface that combines all the modular components:
 
 from typing import Dict, List, Optional, Any
 
-from .models import Task, TaskStatus, CodeSnippet, FileChange, HistoryEntry
+from .models import Task, TaskStatus, CodeSnippet, HistoryEntry
 from .memory_operations import MemoryOperations
 from .xml_processor import XMLProcessor
 from .state_persistence import StatePersistence
 from .memory_formatter import MemoryFormatter
+from .memory_updater import MemoryUpdater
 
 
 class SutraMemoryManager:
@@ -35,6 +36,7 @@ class SutraMemoryManager:
         self.xml_processor = XMLProcessor(self.memory_ops)
         self.state_persistence = StatePersistence(self.memory_ops)
         self.memory_formatter = MemoryFormatter(self.memory_ops)
+        self.memory_updater = MemoryUpdater(self.memory_ops, db_connection)
 
     # ID Generation Methods
     def get_next_task_id(self) -> str:
@@ -154,58 +156,11 @@ class SutraMemoryManager:
         """Get current memory state formatted for LLM context in text format"""
         return self.memory_formatter.get_memory_for_llm()
 
-    # Property Access for Backward Compatibility
-    @property
-    def tasks(self) -> Dict[str, Task]:
-        """Access to tasks dictionary for backward compatibility"""
-        return self.memory_ops.tasks
-
-    @property
-    def code_snippets(self) -> Dict[str, CodeSnippet]:
-        """Access to code snippets dictionary for backward compatibility"""
-        return self.memory_ops.code_snippets
-
-    @property
-    def history(self) -> List[HistoryEntry]:
-        """Access to history list for backward compatibility"""
-        return self.memory_ops.history
-
-    @property
-    def file_changes(self) -> List[FileChange]:
-        """Access to file changes list for backward compatibility"""
-        return self.memory_ops.file_changes
-
-    @property
-    def task_id_counter(self) -> int:
-        """Access to task ID counter for backward compatibility"""
-        return self.memory_ops.task_id_counter
-
-    @property
-    def code_id_counter(self) -> int:
-        """Access to code ID counter for backward compatibility"""
-        return self.memory_ops.code_id_counter
-
-    @property
-    def max_history_entries(self) -> int:
-        """Access to max history entries for backward compatibility"""
-        return self.memory_ops.max_history_entries
-
-    @property
-    def db_connection(self) -> Optional[Any]:
-        """Access to database connection for backward compatibility"""
-        return self.memory_ops.code_fetcher.db_connection
-
-
-# Re-export models and utility functions for backward compatibility
-from .models import TaskStatus, Task, CodeSnippet, FileChange, HistoryEntry
-from .memory_formatter import clean_sutra_memory_content
-
-__all__ = [
-    'SutraMemoryManager',
-    'TaskStatus',
-    'Task', 
-    'CodeSnippet',
-    'FileChange',
-    'HistoryEntry',
-    'clean_sutra_memory_content'
-]
+    # Memory Update Methods
+    def update_memory_for_file_changes(
+        self, changed_files: set, deleted_files: set, project_id: int
+    ) -> Dict[str, Any]:
+        """Update Sutra memory when files change during incremental indexing"""
+        return self.memory_updater.update_memory_for_file_changes(
+            changed_files, deleted_files, project_id
+        )

@@ -43,6 +43,11 @@ class ActionExecutor:
             db_connection=self.db_connection
         )
         self.project_id = db_connection.get_project_id_by_name()
+        
+        # Create shared incremental indexer with the same memory manager
+        self.incremental_indexer = IncrementalIndexing(
+            self.db_connection, self.sutra_memory_manager
+        )
 
     def process_xml_response(
         self, xml_response: List[Dict[str, Any]], user_query: str
@@ -353,10 +358,9 @@ class ActionExecutor:
     def _execute_apply_diff(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute apply diff tool using existing comprehensive executor."""
         yield from execute_apply_diff_action(action)
-        # Trigger incremental indexing silently after diff apply
+        # Trigger incremental indexing silently after diff apply using shared indexer
         try:
-            indexer = IncrementalIndexing(self.db_connection)
-            indexer.reindex_database(Path.cwd().name)
+            self.incremental_indexer.reindex_database(Path.cwd().name)
             logger.debug("Incremental indexing completed after apply_diff")
         except Exception as e:
             logger.error(f"Incremental indexing failed after apply_diff: {e}")
@@ -364,10 +368,9 @@ class ActionExecutor:
     def _execute_write_to_file(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute write to file tool using separate executor."""
         yield from execute_write_to_file_action(action)
-        # Trigger incremental indexing silently after write
+        # Trigger incremental indexing silently after write using shared indexer
         try:
-            indexer = IncrementalIndexing(self.db_connection)
-            indexer.reindex_database(Path.cwd().name)
+            self.incremental_indexer.reindex_database(Path.cwd().name)
             logger.debug("Incremental indexing completed after write_to_file")
         except Exception as e:
             logger.error(f"Incremental indexing failed after write_to_file: {e}")
@@ -375,10 +378,9 @@ class ActionExecutor:
     def _execute_insert_content(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute insert content tool using separate executor."""
         yield from execute_insert_content_action(action)
-        # Trigger incremental indexing silently after content insert
+        # Trigger incremental indexing silently after content insert using shared indexer
         try:
-            indexer = IncrementalIndexing(self.db_connection)
-            indexer.reindex_database(Path.cwd().name)
+            self.incremental_indexer.reindex_database(Path.cwd().name)
             logger.debug("Incremental indexing completed after insert_content")
         except Exception as e:
             logger.error(f"Incremental indexing failed after insert_content: {e}")

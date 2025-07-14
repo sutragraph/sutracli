@@ -74,7 +74,7 @@ class MemoryFormatter:
                     ]
                 )
 
-                # Include actual code content if available
+                # Include actual code content if available with line numbers
                 if code.content:
                     content.extend(
                         [
@@ -82,8 +82,11 @@ class MemoryFormatter:
                             "  ```",
                         ]
                     )
-                    # Add each line of code with proper indentation
-                    for line in code.content.split("\n"):
+                    # Add each line of code with line numbers and proper indentation
+                    formatted_code = self._format_code_with_line_numbers(
+                        code.content, code.start_line
+                    )
+                    for line in formatted_code.split("\n"):
                         content.append(f"  {line}")
                     content.extend(
                         [
@@ -113,6 +116,48 @@ class MemoryFormatter:
             content.append("")
 
         return "\n".join(content)
+
+    def _format_code_with_line_numbers(self, content: str, start_line: int) -> str:
+        """
+        Format code content with line numbers.
+
+        Args:
+            content: The raw code content
+            start_line: Starting line number for the code snippet
+
+        Returns:
+            str: Formatted code with line numbers
+        """
+        if not content:
+            return ""
+
+        # Check if content already has line numbers (from process_code_with_line_filtering)
+        lines = content.split("\n")
+        if lines and " | " in lines[0]:
+            # Content already has line numbers, strip them and re-number correctly
+            stripped_lines = []
+            for line in lines:
+                if " | " in line:
+                    # Remove existing line number prefix (e.g., "  3 | content" -> "content")
+                    stripped_line = " | ".join(line.split(" | ")[1:])
+                    stripped_lines.append(stripped_line)
+                else:
+                    stripped_lines.append(line)
+            lines = stripped_lines
+
+        formatted_lines = []
+
+        # Calculate the width needed for line numbers (for proper alignment)
+        end_line = start_line + len(lines) - 1
+        max_line_width = len(str(end_line))
+
+        for i, line in enumerate(lines):
+            line_number = start_line + i
+            # Format: "  5 | content" with proper padding
+            formatted_line = f"{line_number:>{max_line_width}} | {line}"
+            formatted_lines.append(formatted_line)
+
+        return "\n".join(formatted_lines)
 
 
 def clean_sutra_memory_content(content: str) -> str:
