@@ -5,11 +5,9 @@ Handles fetching code content from database and file operations.
 """
 
 from typing import Optional, Any
+from pathlib import Path
 from loguru import logger
 from src.queries.agent_queries import GET_CODE_FROM_FILE
-from src.services.agent.tool_action_executor.utils import (
-    process_code_with_line_filtering,
-)
 
 
 class CodeFetcher:
@@ -41,7 +39,7 @@ class CodeFetcher:
                 return ""
 
             # Check if required imports are available
-            if GET_CODE_FROM_FILE is None or process_code_with_line_filtering is None:
+            if GET_CODE_FROM_FILE is None:
                 logger.warning("Required imports not available for code fetching")
                 return ""
 
@@ -72,10 +70,25 @@ class CodeFetcher:
 
                 lines_list = json.loads(lines_data) if lines_data else [1]
                 file_start_line = lines_list[0] if lines_list else 1
+                
+                # Fix: Ensure file_start_line is never 0 (line numbers should be 1-indexed)
+                if file_start_line <= 0:
+                    logger.warning(f"Database returned invalid file_start_line: {file_start_line}, correcting to 1")
+                    file_start_line = 1
+                
+                logger.debug(f"File: {file_path}, Lines data: {lines_data}")
+                logger.debug(f"Parsed lines_list: {lines_list}")
+                logger.debug(f"Corrected file_start_line: {file_start_line}")
+                logger.debug(f"Requested range: {start_line}-{end_line}")
+                
             except (json.JSONDecodeError, IndexError):
                 file_start_line = 1
+                logger.debug(f"Failed to parse lines data, using default file_start_line: 1")
 
-            # Apply line filtering using the utility function
+            from src.services.agent.tool_action_executor.utils.code_processing_utils import (
+                process_code_with_line_filtering,
+            )
+
             filtered_result = process_code_with_line_filtering(
                 code_snippet=raw_code,
                 file_start_line=file_start_line,
@@ -93,20 +106,17 @@ class CodeFetcher:
     def _fix_file_path(self, file_path: str) -> str:
         """
         Fix file path by prepending current directory if needed.
-        
+
         Args:
             file_path: Original file path
-            
+
         Returns:
             str: Fixed file path with current directory if needed
         """
         try:
-            from pathlib import Path
-            import os
-            
             current_dir = Path.cwd()
             file_path_obj = Path(file_path)
-            
+
             # Check if file path starts with current directory
             try:
                 # If file_path is relative to current dir, this will work
@@ -118,7 +128,7 @@ class CodeFetcher:
                 fixed_path = current_dir / file_path
                 logger.debug(f"Fixed file path: {file_path} -> {fixed_path}")
                 return str(fixed_path)
-                
+
         except Exception as e:
             logger.error(f"Error fixing file path {file_path}: {str(e)}")
             return file_path  # Return original path if fixing fails

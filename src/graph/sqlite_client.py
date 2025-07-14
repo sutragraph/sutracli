@@ -13,7 +13,7 @@ from loguru import logger
 from ..config import config
 from ..models import SQLiteNode, SQLiteRelationship, GraphData
 from ..utils import chunk_list
-from ..queries.agent_queries import GET_ALL_NODES_FROM_FILE, GET_NODES_BY_EXACT_NAME
+from ..queries.agent_queries import GET_ALL_NODES_FROM_FILE
 
 
 class SQLiteConnection:

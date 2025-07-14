@@ -2,7 +2,6 @@
 
 import asyncio
 import hashlib
-import os
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Any
 from loguru import logger
@@ -15,21 +14,26 @@ from ..models.schema import ParsedCodebase, GraphData
 from ..utils.helpers import load_json_file
 from ..parser.analyzer.analyzer import Analyzer
 from ..config.settings import config
+from ..services.agent.memory_management import SutraMemoryManager
 
 
 class IncrementalIndexing:
     """Handles incremental indexing of code changes to update the database efficiently."""
 
-    def __init__(self, sqlite_connection: Optional[SQLiteConnection] = None):
-        """Initialize with optional connection."""
+    def __init__(
+        self,
+        sqlite_connection: Optional[SQLiteConnection] = None,
+        sutra_memory_manager: Optional[SutraMemoryManager] = None,
+    ):
+        """Initialize with optional connection and optional shared memory manager."""
         self.connection = sqlite_connection or SQLiteConnection()
         self.converter = TreeSitterToSQLiteConverter(self.connection)
         self.processor = GraphDataProcessor(self.connection)
         self.graphOperations = GraphOperations(self.connection)
-        self.embedding_processor = get_node_embedding_processor(
-            max_tokens=config.embedding.max_tokens,
-            overlap_tokens=config.embedding.overlap_tokens,
-        )
+
+        # Use provided memory manager or create new one
+        # This allows sharing memory instances across components
+        self.sutra_memory = sutra_memory_manager or SutraMemoryManager(self.connection)
         logger.debug("🔄 IncrementalIndexing initialized")
 
     def reindex_database(self, project_name: str) -> Dict[str, Any]:
@@ -88,10 +92,14 @@ class IncrementalIndexing:
             # Compare file hashes and identify changes
             changes = self._identify_changes(parsed_data, project_id)
 
-            # Process changes
+            # Process changes FIRST to update database with new content
             stats = self._process_changes(
                 changes, parsed_data, project_id, project_name
             )
+
+            # Update Sutra memory for file changes AFTER processing database changes
+            # This ensures memory updater has access to the updated database content
+            memory_updates = self._update_sutra_memory_for_changes(changes, project_id)
 
             logger.debug(f"✅ Incremental update completed successfully!")
             return {
@@ -104,6 +112,7 @@ class IncrementalIndexing:
                 "relationships_deleted": stats["relationships_deleted"],
                 "nodes_added": stats["nodes_added"],
                 "relationships_added": stats["relationships_added"],
+                "memory_updates": memory_updates,
             }
 
         except Exception as e:
@@ -450,21 +459,51 @@ class IncrementalIndexing:
             logger.error(f"Error inserting graph data: {e}")
             raise
 
-    def _generate_embeddings_for_changed_files(
-        self, changed_file_nodes: List, project_id: int, project_name: str
-    ) -> None:
-        """Generate chunked embeddings for changed file nodes."""
-        try:
-            file_nodes = [node for node in changed_file_nodes if node.type.lower() == "file"]
+    def _update_sutra_memory_for_changes(
+        self, changes: Dict[str, Set[str]], project_id: int
+    ) -> Dict[str, Any]:
+        """
+        Update Sutra memory when files change during incremental indexing.
 
-            for node in file_nodes:
-                try:
-                    self.embedding_processor.process_node_with_embeddings(
-                        node, project_id, project_name
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to generate embeddings for node {node.id}: {e}")
-                    continue
+        Args:
+            changes: Dictionary containing changed_files, new_files, and deleted_files
+            project_id: Project ID for database queries
+
+        Returns:
+            Dictionary with memory update statistics
+        """
+        try:
+            logger.debug("🧠 Updating Sutra memory for file changes...")
+
+            # Call the memory updater to handle the changes
+            memory_updates = self.sutra_memory.update_memory_for_file_changes(
+                changed_files=changes["changed_files"],
+                deleted_files=changes["deleted_files"],
+                project_id=project_id,
+            )
+
+            if (
+                memory_updates["codes_updated"] > 0
+                or memory_updates["codes_removed"] > 0
+            ):
+                logger.debug(
+                    f"🧠 Sutra memory updated: "
+                    f"{memory_updates['codes_updated']} codes updated, "
+                    f"{memory_updates['codes_removed']} codes removed, "
+                    f"{memory_updates['files_processed']} files processed"
+                )
+            else:
+                logger.debug("🧠 No Sutra memory updates required")
+
+            return memory_updates
 
         except Exception as e:
-            logger.error(f"Error generating embeddings for changed files: {e}")
+            logger.error(f"Error updating Sutra memory: {e}")
+            return {
+                "codes_updated": 0,
+                "codes_removed": 0,
+                "line_number_updates": 0,
+                "content_updates": 0,
+                "files_processed": 0,
+                "error": str(e),
+            }

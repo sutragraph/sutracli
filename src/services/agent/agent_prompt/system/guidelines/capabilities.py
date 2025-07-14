@@ -6,8 +6,8 @@ CAPABILITIES
 - You can use semantic search to search across the full codebase for any content, providing intelligent context-aware results that understand code semantics and relationships. When you find relevant code during searches, consider storing important findings in your Sutra Memory for future reference.
 - You can use the search_known_keyword tool to search code/variable using specific keywords with different parameters like before/after lines, case sensitivity, and regex patterns. This tool offers flexible search capabilities for finding specific code patterns and implementations. Use this tool when you found something in code that you want to explore further in other files, or when you know actual names or keywords to search for. This tool is faster than terminal commands like grep. Before using this tool, check your Sutra Memory history to avoid repeating the same searches.
 - You can use database queries to access comprehensive file data and code structure information. The database tool provides multiple features:
-    - To list all functions, classes, and methods, use database search with parameter code_content: false
-    - Query specific nodes by exact name (functions, classes, files, methods)
+    - To list all functions, classes, files, and methods, use database search with parameter code_content: false
+    - Query specific nodes by exact name (function, class, file, method)
     - Get code snippets from files with specific line ranges
     - Find function callers and callees to understand code dependencies
     - Analyze file dependencies and relationships

@@ -135,3 +135,6 @@ build/
 
 # certs 
 certs/
+
+# models
+models/all-MiniLM-L12-v2

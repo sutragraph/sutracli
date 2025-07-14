@@ -38,8 +38,10 @@ class AgentService:
         # Track last tool result for context -
         self.last_tool_result = None
 
-        # Initialize incremental indexing
-        self.incremental_indexer = IncrementalIndexing(self.db_connection)
+        # Initialize incremental indexing with shared memory manager
+        self.incremental_indexer = IncrementalIndexing(
+            self.db_connection, self.memory_manager
+        )
 
         # Determine current project name from working directory
         self.current_project_name = self._determine_project_name()
@@ -201,7 +203,7 @@ class AgentService:
                                 f"Updated Sutra Memory in session: {len(memory_summary)} characters"
                             )
                             logger.debug(
-                                f"Memory includes {len(self.xml_action_executor.sutra_memory_manager.code_snippets)} code snippets"
+                                f"Memory includes {len(self.xml_action_executor.sutra_memory_manager.get_all_code_snippets())} code snippets"
                             )
                         else:
                             logger.warning(
