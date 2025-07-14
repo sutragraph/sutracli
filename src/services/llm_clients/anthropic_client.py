@@ -8,6 +8,7 @@ from ...config import config
 
 class AnthropicClient(LLMClientBase):
     def __init__(self, model_id=None):
+        super().__init__()
         self.model_id = model_id or config.llm.anthropic.model_id
         self.api_key = config.llm.anthropic.api_key
         self._initialize_client()

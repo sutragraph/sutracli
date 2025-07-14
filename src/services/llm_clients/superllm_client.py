@@ -9,7 +9,7 @@ from ..auth.token_manager import get_token_manager
 class SuperLLMClient(LLMClientBase):
     """
     SuperLLM client that communicates with the SuperLLM API server.
-    
+
     This client requires a Firebase authentication token that users obtain
     from the SuperLLM web interface. The token is used to authenticate
     API requests to the SuperLLM server.
@@ -17,8 +17,9 @@ class SuperLLMClient(LLMClientBase):
 
     def __init__(self):
         """Initialize the SuperLLM client with configuration."""
+        super().__init__()
         # Load configuration
-        if hasattr(config.llm, 'superllm') and config.llm.superllm:
+        if hasattr(config.llm, "superllm") and config.llm.superllm:
             self.api_endpoint = config.llm.superllm.api_endpoint
             self.default_model = config.llm.superllm.default_model
             self.default_provider = config.llm.superllm.default_provider
@@ -37,7 +38,7 @@ class SuperLLMClient(LLMClientBase):
 
         # Try to get token from secure storage first, then fall back to config
         token_manager = get_token_manager()
-        self.firebase_token = token_manager.get_token('superllm')
+        self.firebase_token = token_manager.get_token("superllm")
 
         if not self.firebase_token and config_token:
             # Use token from config and store it securely
@@ -76,7 +77,7 @@ class SuperLLMClient(LLMClientBase):
             True if token was refreshed, False otherwise
         """
         token_manager = get_token_manager()
-        new_token = token_manager.get_token('superllm')
+        new_token = token_manager.get_token("superllm")
 
         if new_token and new_token != self.firebase_token:
             self.firebase_token = new_token

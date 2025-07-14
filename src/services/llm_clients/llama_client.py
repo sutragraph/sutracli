@@ -11,6 +11,7 @@ from ...config import config
 
 class LlamaClient(LLMClientBase):
     def __init__(self):
+        super().__init__()
         self.model_id = config.llm.llama_model_id
         self.endpoint = config.llm.gcp.llm_endpoint
 

@@ -9,6 +9,7 @@ import sys
 
 class GeminiClient(LLMClientBase):
     def __init__(self):
+        super().__init__()
         self.project_id = config.llm.gcp.project_id
         self.location = config.llm.gcp.location
         self.model_name = config.llm.gemini_model

@@ -10,6 +10,7 @@ from ...config import config
 
 class AWSClient(LLMClientBase):
     def __init__(self, model_id=None, region=None):
+        super().__init__()
         self.model_id = model_id or config.llm.aws.model_id
         self.region = region or config.llm.aws.region
         self._initialize_bedrock_client()
