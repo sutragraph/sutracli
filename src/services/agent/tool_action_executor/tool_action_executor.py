@@ -19,10 +19,11 @@ from .tools.database_executor import execute_database_action
 from .tools.terminal_action import execute_terminal_action
 from .tools.apply_diff_action import execute_apply_diff_action
 from .tools.write_to_file_action import execute_write_to_file_action
-from .tools.insert_content_action import execute_insert_content_action
+from .tools.completion_action import execute_completion_action
+from .tools.web_scrap_action import execute_web_scraper_action
+from .tools.web_search_action import execute_web_search_action
 from .tools.list_files_action import execute_list_files_action
 from .tools.search_keyword_action import execute_search_keyword_action
-from .tools.completion_action import execute_completion_action
 
 
 class ActionExecutor:
@@ -74,9 +75,12 @@ class ActionExecutor:
             logger.debug(f"Thinking content found: {thinking_content is not None}")
             logger.debug(f"Completion data found: {completion_data is not None}")
             logger.debug(f"Tool data found: {tool_data is not None}")
-            logger.debug(f"Tool name: {tool_data.get('_tool_name') if tool_data else 'None'}")
-            logger.debug(f"Sutra memory update found: {sutra_memory_update is not None}")
-            logger.debug(f"Tool Data: {tool_data}")
+            logger.debug(
+                f"Tool name: {tool_data.get('_tool_name') if tool_data else 'None'}"
+            )
+            logger.debug(
+                f"Sutra memory update found: {sutra_memory_update is not None}"
+            )
 
             # Yield thinking information
             if thinking_content:
@@ -89,7 +93,11 @@ class ActionExecutor:
             # Update sutra memory if present
             if sutra_memory_update:
                 # Process sutra memory using the manager
-                memory_result = self.sutra_memory_manager.extract_and_process_sutra_memory(xml_response)
+                memory_result = (
+                    self.sutra_memory_manager.extract_and_process_sutra_memory(
+                        xml_response
+                    )
+                )
                 yield {
                     "type": "sutra_memory_update",
                     "result": memory_result,
@@ -104,7 +112,11 @@ class ActionExecutor:
                     "timestamp": time.time(),
                 }
                 # Execute the completion tool
-                yield from self._execute_completion(self._create_agent_action("attempt_completion", tool_data, user_query))
+                yield from self._execute_completion(
+                    self._create_agent_action(
+                        "attempt_completion", tool_data, user_query
+                    )
+                )
                 # Then mark as task complete
                 yield {
                     "type": "task_complete",
@@ -142,7 +154,7 @@ class ActionExecutor:
                             "type": "tool_use",
                             "used_tool": "none",
                             "status": "failed",
-                            "message": "You didn't provide a tool call. You must use at least one tool in every response. Please use a tool like semantic_search, database, execute_command, apply_diff, write_to_file, insert_content, list_files, search_keyword, or attempt_completion.",
+                            "message": "You didn't provide a tool call. You must use at least one tool in every response. Please use a tool like semantic_search, database, execute_command, apply_diff, write_to_file, list_files, search_keyword, or attempt_completion.",
                             "summary": "No tool was used - violates one-tool-per-iteration rule",
                             "timestamp": time.time(),
                         }
@@ -211,10 +223,11 @@ class ActionExecutor:
                     "execute_command",
                     "apply_diff",
                     "write_to_file",
-                    "insert_content",
                     "list_files",
                     "search_keyword",
                     "attempt_completion",
+                    "web_search",
+                    "web_scrap",
                 ]
 
                 for tag in tool_tags:
@@ -293,14 +306,16 @@ class ActionExecutor:
                 yield from self._execute_apply_diff(action)
             elif tool_name == "write_to_file":
                 yield from self._execute_write_to_file(action)
-            elif tool_name == "insert_content":
-                yield from self._execute_insert_content(action)
             elif tool_name == "list_files":
                 yield from self._execute_list_files(action)
             elif tool_name == "search_keyword":
                 yield from self._execute_search_keyword(action)
             elif tool_name == "attempt_completion":
                 yield from self._execute_completion(action)
+            elif tool_name == "web_scrap":
+                yield from self._execute_web_scraper(action)
+            elif tool_name == "web_search":
+                yield from self._execute_web_search(action)
             else:
                 yield {
                     "type": "tool_error",
@@ -336,7 +351,11 @@ class ActionExecutor:
         return AgentAction(
             tool_type=tool_name,
             description=f"Execute {tool_name}",
-            query=clean_data.get("query", user_query) if isinstance(clean_data, dict) else user_query,
+            query=(
+                clean_data.get("query", user_query)
+                if isinstance(clean_data, dict)
+                else user_query
+            ),
             parameters=parameters,
             priority=1,
         )
@@ -375,16 +394,6 @@ class ActionExecutor:
         except Exception as e:
             logger.error(f"Incremental indexing failed after write_to_file: {e}")
 
-    def _execute_insert_content(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
-        """Execute insert content tool using separate executor."""
-        yield from execute_insert_content_action(action)
-        # Trigger incremental indexing silently after content insert using shared indexer
-        try:
-            self.incremental_indexer.reindex_database(Path.cwd().name)
-            logger.debug("Incremental indexing completed after insert_content")
-        except Exception as e:
-            logger.error(f"Incremental indexing failed after insert_content: {e}")
-
     def _execute_list_files(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute list files tool using separate executor."""
         yield from execute_list_files_action(action)
@@ -396,3 +405,11 @@ class ActionExecutor:
     def _execute_completion(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute completion tool using separate executor."""
         yield from execute_completion_action(action)
+
+    def _execute_web_scraper(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
+        """Execute web scraper tool using separate executor."""
+        yield from execute_web_scraper_action(action)
+
+    def _execute_web_search(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
+        """Execute web search tool using separate executor."""
+        yield from execute_web_search_action(action)

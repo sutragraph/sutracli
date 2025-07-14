@@ -342,14 +342,16 @@ class AgentService:
             return self._build_terminal_status(last_tool_result)
         elif tool_name == "write_to_file":
             return self._build_write_to_file_status(last_tool_result)
-        elif tool_name == "insert_content":
-            return self._build_insert_content_status(last_tool_result)
         elif tool_name == "apply_diff":
             return self._build_apply_diff_status(last_tool_result)
         elif tool_name == "search_keyword":
             return self._build_search_keyword_status(last_tool_result)
         elif tool_name == "list_files":
             return self._build_list_files_status(last_tool_result)
+        elif tool_name == "web_search":
+            return self._build_web_search_status(last_tool_result)
+        elif tool_name == "web_scrap":
+            return self._build_web_scrap_status(last_tool_result)
         else:
             # Fallback for unknown tools
             return self._build_generic_status(last_tool_result, tool_name)
@@ -436,9 +438,17 @@ class AgentService:
         if command:
             status += f"Command: {command}\n"
 
-        return_code = result.get("return_code")
-        if return_code:
-            status += f"Return Code: {return_code}\n"
+        session_id = result.get("session_id")
+        if session_id:
+            status += f"Session ID: {session_id}\n"
+
+        mode = result.get("mode")
+        if mode:
+            status += f"Mode: {mode}\n"
+
+        exit_code = result.get("exit_code")
+        if exit_code is not None:  # Check for None instead of falsy
+            status += f"Exit Code: {exit_code}\n"
 
         error = result.get("error")
         if error:
@@ -468,21 +478,49 @@ class AgentService:
 
         return status.rstrip()
 
-    def _build_insert_content_status(self, result: Dict[str, Any]) -> str:
-        """Build status for insert_content tool."""
-        status = "Tool: insert_content\n"
+    def _build_web_search_status(self, result: Dict[str, Any]) -> str:
+        """Build status for web_search tool."""
+        status = "Tool: web_search\n"
 
-        file_path = result.get("applied_changes_to_files")
-        if file_path:
-            status += f"Success File: {file_path}\n"
+        query = result.get("query")
+        if query:
+            status += f"Query: '{query}'\n"
 
-        message = result.get("message")
-        if message:
-            status += f"Status: {message}\n"
+        error = result.get("error")
+        if error:
+            status += f"ERROR: {error}\n"
 
-        original_request = result.get("original_request")
-        if original_request:
-            status += f"Failed Content: {original_request}\n"
+        data = result.get("results", [])
+
+        if data:
+            status += "Results:\n"
+            for i, item in enumerate(data, 1):
+                status += f"\nResult {i}:\n"
+                status += f"  Title: {item.get('title', 'N/A')}\n"
+                status += f"  URL: {item.get('url', 'N/A')}\n"
+                status += f"  Description: {item.get('description', 'N/A')}\n"
+
+        return status.rstrip()
+
+    def _build_web_scrap_status(self, result: Dict[str, Any]) -> str:
+        """Build status for web_scrap tool."""
+        status = "Tool: web_scrap\n"
+
+        url = result.get("url")
+        if url:
+            status += f"URL: {url}\n"
+        else:
+            status += "URL: No URL provided\n"
+
+        content = result.get("content")
+        if content:
+            status += f"Content: {content[:100]}...\n"
+        else:
+            status += "Content: No content scraped\n"
+
+        error = result.get("error")
+        if error:
+            status += f"ERROR: {error}\n"
 
         return status.rstrip()
 

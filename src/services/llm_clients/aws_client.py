@@ -54,7 +54,7 @@ class AWSClient(LLMClientBase):
                     }
                 )
                 logger.debug(
-                    f"📦 Sending request to AWS model {self.model_id} with body: {body}"
+                    f"📦 Sending request to AWS model {self.model_id} with body: {body[-500:]}"
                 )
                 response = self.bedrock_client.invoke_model_with_response_stream(
                     body=body,

@@ -151,6 +151,40 @@ check_prerequisites() {
         log_success "ripgrep already installed"
     fi
     
+    if ! command -v tmux >/dev/null 2>&1; then
+        log_info "Installing tmux..."
+        
+        # Detect OS and install tmux
+        if command -v apt-get >/dev/null 2>&1; then
+            # Debian/Ubuntu
+            sudo apt-get update && sudo apt-get install -y tmux
+        elif command -v yum >/dev/null 2>&1; then
+            # CentOS/RHEL/Fedora
+            sudo yum install -y tmux
+        elif command -v dnf >/dev/null 2>&1; then
+            # Fedora (newer versions)
+            sudo dnf install -y tmux
+        elif command -v pacman >/dev/null 2>&1; then
+            # Arch Linux
+            sudo pacman -S --noconfirm tmux
+        elif command -v brew >/dev/null 2>&1; then
+            # macOS with Homebrew
+            brew install tmux
+        else
+            log_error "Failed to install tmux please install manually"
+            exit 1
+        fi
+        
+        if command -v tmux >/dev/null 2>&1; then
+            log_success "tmux installed successfully"
+        else
+            log_error "tmux installation failed"
+            exit 1
+        fi
+    else
+        log_success "tmux already installed"
+    fi
+    
     log_success "All prerequisites satisfied"
 }
 

@@ -9,6 +9,7 @@ from loguru import logger
 from ..graph.sqlite_client import SQLiteConnection, GraphOperations
 from ..graph.converter import TreeSitterToSQLiteConverter
 from ..processors.data_processor import GraphDataProcessor
+from ..processors.node_embedding_processor import get_node_embedding_processor
 from ..models.schema import ParsedCodebase, GraphData
 from ..utils.helpers import load_json_file
 from ..parser.analyzer.analyzer import Analyzer
@@ -140,7 +141,7 @@ class IncrementalIndexing:
         try:
             # Get all file paths for this project
             result = self.connection.execute_query(
-                """SELECT DISTINCT file_path FROM file_hashes 
+                """SELECT DISTINCT file_path FROM file_hashes
                    WHERE project_id = ? AND file_path IS NOT NULL""",
                 (project_id,),
             )
@@ -314,6 +315,11 @@ class IncrementalIndexing:
             # Process the filtered data into a format ready for database insertion
             graph_data = self.processor.process_codebase(
                 filtered_data, project_id, project_name
+            )
+
+            # Generate embeddings for changed file nodes
+            self._generate_embeddings_for_changed_files(
+                nodes_from_changed_files, project_id, project_name
             )
 
             # Insert the processed data into the database

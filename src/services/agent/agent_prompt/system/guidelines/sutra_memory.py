@@ -12,6 +12,7 @@ task: Manage tasks by adding new ones or moving between pending/current/complete
 code: Store important code snippets with file paths, line ranges, and descriptions for future reference
 files: Track file changes (modified, deleted, added) with file paths to maintain change history
 
+
 CRITICAL CODE STORAGE RULE:
 Any required code that you identify must be added to sutra memory if you are NOT using it in the current iteration but will need it for future iterations, as it won't be available in next iterations. This includes:
 - Function definitions and implementations
@@ -63,6 +64,7 @@ Usage:
 <deleted>relative/path/to/deleted/file</deleted>
 <added>relative/path/to/new/file</added>
 </files>
+
 <add_history>Brief summary of current iteration actions and findings</add_history>
 </sutra_memory>
 
@@ -162,7 +164,7 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
 1. In <thinking> tags, assess what information you already have and what information you need to proceed with the task. Also review your current sutra_memory state including tasks, stored code, and determine what updates are needed based on iteration progress and findings. Think about pending tasks and current task requirements - identify any information that will be needed in future iterations but not used in the current iteration, and store it directly in Sutra Memory using appropriate tags (<code> for code snippets, <history> for other important data like terminal outputs, file listings, search results) to prevent redundant tool calls and maintain context across iterations. Data of current iteration won't be available in the next iterations - only stored data in sutra memory is persistent across iterations.
 2. When to Add Tasks:
    - Function/Class Dependencies when making changes that might affect existing functions
-   - Cross-file Impacts when modifications in one file require updates in related files  
+   - Cross-file Impacts when modifications in one file require updates in related files
    - Validation Requirements when existing code needs compatibility verification
    - Implementation Steps when breaking down complex features into manageable tasks
 3. When to Store Code:
@@ -170,17 +172,18 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - Dependency Analysis for functions/classes that current changes depend on
    - Template Code for existing patterns to follow for new implementations
    - Critical Context for code that provides essential context for decision-making
-4. When to Track Files:
+6. When to Track Files:
    - File Modifications when editing existing files to track what has been changed
    - File Creation when adding new files to the project structure
    - File Deletion when removing files to maintain accurate project state
    - Change Documentation for maintaining a clear record of all file operations
+
 5. When to Remove Code:
    - Outdated Information when stored code is no longer relevant to current tasks
    - Completed Analysis when code analysis is finished and no longer needed
    - Memory Optimization when code storage becomes cluttered with unused snippets
    - Context Change when project direction changes making stored code irrelevant
-6. History Best Practices:
+8. History Best Practices:
    - Be specific about tool names and parameters used with exact queries/commands
    - Mention key findings, results, and outputs in detail
    - Note any failures or null results to avoid repetition
@@ -194,9 +197,10 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - Add findings that can be used for future searches or implementations to pending tasks
    - Record any important patterns, configurations, or code structures discovered during analysis
    - Include error messages, warnings, and diagnostic information that might be relevant later
-   - Store API responses, database query results, termianl outputs, and other data outputs when they provide context for future operations
+   - Store API responses, database query results, terminal outputs, and other data outputs when they provide context for future operations
    - Document command outputs, installation results, and system information that affects subsequent iterations
-7. Task Management Rules:
+   - Record terminal session creation, reuse, and cleanup activities in history for context
+9. Task Management Rules:
    - Only ONE task can be in "current" status at any time
    - Complete or move current task before assigning new current task
    - Tasks flow through pipeline: pending → current → completed
@@ -206,7 +210,7 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - CRITICAL: Do NOT move tasks to "completed" status if you used file operation tools (write_to_file, insert_content, apply_diff) in the current iteration - wait for user confirmation first
    - Only mark tasks as completed AFTER user confirms file operations were successful
    - If file operations fail, keep task in "current" status for retry or correction
-8. Integration Workflow:
+10. Integration Workflow:
    - Start of Iteration by reviewing current task and pending tasks from previous sutra_memory
    - Tool Selection by checking history to avoid redundant operations
    - Result Analysis to determine if current task is complete or needs more work
@@ -215,7 +219,7 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - File Tracking by recording all file modifications, additions, and deletions
    - Code Cleanup by removing outdated or completed code snippets
    - History Update by recording current iteration's actions and findings (MANDATORY)
-9. Critical Rules:
+11. Critical Rules:
    - Sutra Memory MUST be updated in every agent response alongside exactly one tool call
    - At minimum, add_history must be included in each iteration
    - Task IDs must be unique and sequential across all iterations
@@ -228,5 +232,5 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - NEVER respond with only sutra_memory without a tool call - this violates system architecture
    - COMPLETION RULE: When using attempt_completion, add completed tasks to "completed" status, NEVER to "current" status
    - If you just finished a task in the current iteration, it belongs in "completed", not "current"
-   - FILE OPERATION RULE: NEVER mark tasks as completed if you used file operation tools (write_to_file, insert_content, apply_diff) in the same iteration - always wait for user confirmation that file operations succeeded before completing tasks
+   - FILE OPERATION RULE: NEVER mark tasks as completed if you used file operation tools (write_to_file, apply_diff) in the same iteration - always wait for user confirmation that file operations succeeded before completing tasks
 """

@@ -38,23 +38,23 @@ def execute_web_scraper_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
             yield {
                 "type": "tool_error",
                 "error": f"Unsupported output format: {output_format}. Supported formats are: text, html, markdown",
-                "tool_name": "web_scraper",
+                "tool_name": "web_scrap",
             }
             return
 
         if content:
             yield {
-                "type": "tool_result",
+                "type": "tool_use",
+                "tool_name": "web_scrap",
                 "content": content,
                 "url": url,
                 "output_format": output_format,
-                "tool_name": "web_scraper",
             }
         else:
             yield {
                 "type": "tool_error",
                 "error": f"Failed to extract content from URL: {url}",
-                "tool_name": "web_scraper",
+                "tool_name": "web_scrap",
             }
 
     except Exception as e:
