@@ -64,6 +64,7 @@ HIDDEN_IMPORTS="--hidden-import sqlite3"  # Essential built-in module
 HIDDEN_IMPORTS="$HIDDEN_IMPORTS --hidden-import cryptography.fernet"  # For token encryption
 HIDDEN_IMPORTS="$HIDDEN_IMPORTS --hidden-import cryptography.hazmat.primitives"  # For token encryption
 HIDDEN_IMPORTS="$HIDDEN_IMPORTS --hidden-import cryptography.hazmat.primitives.kdf.pbkdf2"  # For key derivation
+HIDDEN_IMPORTS="$HIDDEN_IMPORTS --hidden-import prompt_toolkit"  # For key derivation
 
 while IFS= read -r line; do
     # Skip empty lines and comments

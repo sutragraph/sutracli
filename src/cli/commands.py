@@ -5,6 +5,11 @@ import webbrowser
 from pathlib import Path
 from loguru import logger
 import requests
+from prompt_toolkit import prompt
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.keys import Keys
 
 from ..graph import TreeSitterToSQLiteConverter
 from ..services.agent_service import AgentService
@@ -225,7 +230,29 @@ def handle_agent_command(args) -> None:
 
         while True:
             try:
-                user_input = input("\n👤 You: ").strip()
+# Create history and completer for enhanced input
+                history = InMemoryHistory()
+                completer = WordCompleter(['exit', 'quit', 'bye', 'goodbye', 'help'])
+                
+                # Create key bindings
+                bindings = KeyBindings()
+                
+                @bindings.add('c-c')
+                def _(event):
+                    """Handle Ctrl+C"""
+                    raise KeyboardInterrupt
+                
+                # Enhanced prompt with multiline support and navigation
+                user_input = prompt(
+                    "\n👤 You: ",
+                    multiline=True,
+                    history=history,
+                    completer=completer,
+                    complete_while_typing=True,
+                    key_bindings=bindings,
+                    mouse_support=True,
+                    bottom_toolbar="Press [Meta+Enter] or [Escape followed by Enter] to submit multiline input. Use arrow keys to navigate.",
+                ).strip()
                 print("-" * 40)
 
                 if not user_input:
