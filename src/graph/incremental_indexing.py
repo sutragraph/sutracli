@@ -30,6 +30,10 @@ class IncrementalIndexing:
         self.converter = TreeSitterToSQLiteConverter(self.connection)
         self.processor = GraphDataProcessor(self.connection)
         self.graphOperations = GraphOperations(self.connection)
+        self.embedding_processor = get_node_embedding_processor(
+            max_tokens=config.embedding.max_tokens,
+            overlap_tokens=config.embedding.overlap_tokens,
+        )
 
         # Use provided memory manager or create new one
         # This allows sharing memory instances across components
@@ -507,3 +511,26 @@ class IncrementalIndexing:
                 "files_processed": 0,
                 "error": str(e),
             }
+
+    def _generate_embeddings_for_changed_files(
+        self, changed_file_nodes: List, project_id: int, project_name: str
+    ) -> None:
+        """Generate chunked embeddings for changed file nodes."""
+        try:
+            file_nodes = [
+                node for node in changed_file_nodes if node.type.lower() == "file"
+            ]
+
+            for node in file_nodes:
+                try:
+                    self.embedding_processor.process_node_with_embeddings(
+                        node, project_id, project_name
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to generate embeddings for node {node.id}: {e}"
+                    )
+                    continue
+
+        except Exception as e:
+            logger.error(f"Error generating embeddings for changed files: {e}")
