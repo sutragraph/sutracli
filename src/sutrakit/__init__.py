@@ -2,7 +2,7 @@
 Sutrakit - A comprehensive AI-powered code analysis and automation CLI tool.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Sutra Team"
 __email__ = "support@sutragraph.com"
 
