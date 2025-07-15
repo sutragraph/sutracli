@@ -1,6 +1,6 @@
 import requests
 from loguru import logger
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from .llm_client_base import LLMClientBase
 from config import config
 from ..auth.token_manager import get_token_manager
@@ -86,16 +86,17 @@ class SuperLLMClient(LLMClientBase):
 
         return False
 
-    def call_llm(self, system_prompt: str, user_message: str) -> List[Dict[str, Any]]:
+    def call_llm(self, system_prompt: str, user_message: str, return_raw: bool = False) -> Union[List[Dict[str, Any]], str]:
         """
         Call SuperLLM with separate system prompt and user message.
 
         Args:
             system_prompt: The system prompt
             user_message: The user message
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
 
         Returns:
-            List of parsed XML elements
+            Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
 
         Raises:
             Exception: If the API call fails
@@ -114,18 +115,22 @@ class SuperLLMClient(LLMClientBase):
 
         raw_response = self._make_api_call(payload, headers)
 
-        # Parse XML from the response and return only XML data
-        return self.parse_xml_response(raw_response)
+        # Return raw response or parse XML based on return_raw parameter
+        if return_raw:
+            return raw_response
+        else:
+            return self.parse_xml_response(raw_response)
 
-    def call_llm_single(self, prompt: str) -> List[Dict[str, Any]]:
+    def call_llm_single(self, prompt: str, return_raw: bool = False) -> Union[List[Dict[str, Any]], str]:
         """
         Call the SuperLLM API to generate a response with a single prompt.
 
         Args:
             prompt: The input prompt for the LLM
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
 
         Returns:
-            List of parsed XML elements
+            Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
 
         Raises:
             Exception: If the API call fails
@@ -141,8 +146,11 @@ class SuperLLMClient(LLMClientBase):
 
         raw_response = self._make_api_call(payload, headers)
 
-        # Parse XML from the response and return only XML data
-        return self.parse_xml_response(raw_response)
+        # Return raw response or parse XML based on return_raw parameter
+        if return_raw:
+            return raw_response
+        else:
+            return self.parse_xml_response(raw_response)
 
     def _make_api_call(self, payload: dict, headers: dict) -> str:
         """

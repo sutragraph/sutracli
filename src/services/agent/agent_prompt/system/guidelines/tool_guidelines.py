@@ -8,6 +8,13 @@ TOOL_GUIDELINES = """# Tool Use Guidelines
    - Use generic descriptions like "Build process", "Testing", "File operations" (not task-specific)
    - Use `close_after=true` for one-off commands that don't need session persistence
    - Clean up sessions when task sequences are complete to maintain system efficiency
+   - Note: command should be XML escaped. for example:
+       <!-- Bad -->
+       <command>mkdir -p clone && cp *.js *.txt clone/</command>
+
+       <!-- Good -->
+       <command>mkdir -p clone &amp;&amp; cp *.js *.txt clone/</command>
+
 4. If multiple actions are needed, use one tool at a time per message to accomplish the task iteratively, with each tool use being informed by the result of the previous tool use. Do not assume the outcome of any tool use. Each step must be informed by the previous step's result and tracked in your Sutra Memory.
 5. Formulate your tool use using the XML format specified for each tool.
 6. After each tool use, the user will respond with the result of that tool use. This result will provide you with the necessary information to continue your task or make further decisions. This response may include:

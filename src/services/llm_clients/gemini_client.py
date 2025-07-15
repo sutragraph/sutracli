@@ -1,6 +1,6 @@
 import os
 from loguru import logger
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from .llm_client_base import LLMClientBase
 from google import genai
 from config import config
@@ -44,8 +44,17 @@ class GeminiClient(LLMClientBase):
             logger.error(f"Failed to initialize Gemini client: {e}")
             raise
 
-    def call_llm(self, system_prompt: str, user_message: str) -> List[Dict[str, Any]]:
-        """Call Gemini with separate system prompt and user message."""
+    def call_llm(self, system_prompt: str, user_message: str, return_raw: bool = False) -> Union[List[Dict[str, Any]], str]:
+        """Call Gemini with separate system prompt and user message.
+
+        Args:
+            system_prompt (str): System prompt
+            user_message (str): User message
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
+
+        Returns:
+            Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
+        """
         try:
             # Gemini doesn't have explicit system prompts, so combine them
             combined_prompt = f"{system_prompt}\n\n{user_message}"
@@ -60,8 +69,11 @@ class GeminiClient(LLMClientBase):
             if response.text:
                 raw_response = response.text
 
-                # Parse XML from the response and return only XML data
-                return self.parse_xml_response(raw_response)
+                # Return raw response or parse XML based on return_raw parameter
+                if return_raw:
+                    return raw_response
+                else:
+                    return self.parse_xml_response(raw_response)
 
             raise Exception("Unexpected response format from Gemini API")
 

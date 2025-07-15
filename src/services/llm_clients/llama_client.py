@@ -2,7 +2,7 @@ import os
 import sys
 import requests
 from loguru import logger
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from .llm_client_base import LLMClientBase
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
@@ -49,8 +49,17 @@ class LlamaClient(LLMClientBase):
         credentials.refresh(Request())
         return credentials.token
 
-    def call_llm(self, system_prompt: str, user_message: str) -> List[Dict[str, Any]]:
-        """Call Llama with separate system prompt and user message."""
+    def call_llm(self, system_prompt: str, user_message: str, return_raw: bool = False) -> Union[List[Dict[str, Any]], str]:
+        """Call Llama with separate system prompt and user message.
+
+        Args:
+            system_prompt (str): System prompt
+            user_message (str): User message
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
+
+        Returns:
+            Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
+        """
         access_token = self._get_access_token()
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -69,8 +78,11 @@ class LlamaClient(LLMClientBase):
             data = response.json()
             raw_response = data["choices"][0]["message"]["content"]
 
-            # Parse XML from the response and return only XML data
-            return self.parse_xml_response(raw_response)
+            # Return raw response or parse XML based on return_raw parameter
+            if return_raw:
+                return raw_response
+            else:
+                return self.parse_xml_response(raw_response)
         except Exception as e:
             logger.error(f"Llama LLM call with system prompt failed: {e}")
             raise
