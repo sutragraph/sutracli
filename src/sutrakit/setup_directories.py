@@ -59,6 +59,10 @@ def setup_directories():
         INSTALL_DIR / "models",
         INSTALL_DIR / "build",
         INSTALL_DIR / "data",
+        INSTALL_DIR / "data" / "sessions",
+        INSTALL_DIR / "data" / "file_changes",
+        INSTALL_DIR / "data" / "edits",
+        INSTALL_DIR / "parser_results",
         INSTALL_DIR / "logs"
     ]
     
@@ -173,32 +177,88 @@ def setup_configuration():
     
     # Create system configuration
     system_config = {
+        "database": {
+            "knowledge_graph_db": f"{INSTALL_DIR}/data/knowledge_graph.db",
+            "embeddings_db": f"{INSTALL_DIR}/data/knowledge_graph_embeddings.db",
+            "connection_timeout": 60,
+            "max_retry_attempts": 5,
+            "batch_size": 1000,
+            "enable_indexing": True,
+            "create_tables": True,
+            "enable_wal_mode": True
+        },
+        "storage": {
+            "data_dir": f"{INSTALL_DIR}/data",
+            "sessions_dir": f"{INSTALL_DIR}/data/sessions",
+            "file_changes_dir": f"{INSTALL_DIR}/data/file_changes",
+            "file_edits_dir": f"{INSTALL_DIR}/data/edits",
+            "parser_results_dir": f"{INSTALL_DIR}/parser_results",
+            "models_dir": f"{INSTALL_DIR}/models"
+        },
+        "embedding": {
+            "model_name": "all-MiniLM-L12-v2",
+            "model_path": f"{INSTALL_DIR}/models/all-MiniLM-L12-v2",
+            "max_tokens": 230,
+            "overlap_tokens": 30,
+            "similarity_threshold": 0.2,
+            "enable_optimization": False
+        },
+        "parser": {
+            "config_file": f"{INSTALL_DIR}/config/parsers.json",
+            "build_directory": f"{INSTALL_DIR}/build"
+        },
+        "web_search": {
+            "api_key": "",
+            "requests_per_minute": 60,
+            "timeout": 30
+        },
+        "web_scrap": {
+            "timeout": 30,
+            "max_retries": 3,
+            "delay_between_retries": 1.0,
+            "include_comments": True,
+            "include_tables": True,
+            "include_images": True,
+            "include_links": True,
+            "trafilatura_config": {},
+            "markdown_options": {
+                "heading_style": "ATX",
+                "bullets": "-",
+                "wrap": True
+            }
+        },
+        "logging": {
+            "level": "INFO",
+            "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+            "log_file": f"{INSTALL_DIR}/logs/sutraknowledge.log"
+        },
         "llm": {
+            "provider": "anthropic",
+            "llama_model_id": "meta/llama-3.1-8b-instruct",
+            "claude_model": "claude-3-5-sonnet-20241022",
+            "gemini_model": "gemini-1.5-flash",
+            "aws": {
+                "model_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "access_key_id": "",
+                "secret_access_key": "",
+                "region": "us-east-1"
+            },
             "anthropic": {
                 "api_key": "",
-                "model": "claude-3-5-sonnet-20241022"
-            },
-            "openai": {
-                "api_key": "",
-                "model": "gpt-4o-mini"
+                "model_id": "claude-3-5-sonnet-20241022"
             },
             "gcp": {
                 "api_key": "",
                 "project_id": "",
                 "location": "us-central1",
-                "model": "gemini-1.5-flash"
+                "llm_endpoint": "https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/endpoints/openapi/chat/completions"
+            },
+            "superllm": {
+                "api_endpoint": "http://localhost:8000",
+                "firebase_token": "",
+                "default_model": "gpt-3.5-turbo",
+                "default_provider": "openai"
             }
-        },
-        "embeddings": {
-            "local": {
-                "model_path": str(INSTALL_DIR / "models" / "all-MiniLM-L12-v2"),
-                "provider": "local_onnx"
-            }
-        },
-        "web_search": {
-            "api_key": "",
-            "search_engine_id": "",
-            "provider": "google"
         }
     }
     

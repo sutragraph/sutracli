@@ -176,10 +176,16 @@ class Config:
     def __init__(self, config_file: Optional[str] = None):
         """Initialize configuration from JSON file."""
         self.config_file = config_file or os.getenv("SUTRAKNOWLEDGE_CONFIG")
+        
+        # If no config file is specified, use default path
+        if not self.config_file:
+            default_config_path = os.path.expanduser("~/.sutra/config/system.json")
+            self.config_file = default_config_path
 
-        if not self.config_file or not os.path.exists(self.config_file):
+        if not os.path.exists(self.config_file):
             raise ValueError(
-                f"Configuration file required. Set SUTRAKNOWLEDGE_CONFIG environment variable or provide config_file parameter."
+                f"Configuration file not found: {self.config_file}. "
+                f"Please run 'sutrakit-setup' to create the configuration file, or set SUTRAKNOWLEDGE_CONFIG environment variable."
             )
 
         # Load from JSON file
