@@ -314,6 +314,24 @@ class MemoryOperations:
             self.history = self.history[-self.max_history_entries :]
 
         return True
+    
+    def add_history_entry(self, history_entry: HistoryEntry) -> bool:
+        """
+        Add enhanced history entry with full details.
+
+        Args:
+            history_entry: Enhanced history entry with tool details
+
+        Returns:
+            bool: True if history was added successfully
+        """
+        self.history.append(history_entry)
+
+        # Keep only last 20 entries
+        if len(self.history) > self.max_history_entries:
+            self.history = self.history[-self.max_history_entries :]
+
+        return True
 
     def get_recent_history(self, count: int = 5) -> List[HistoryEntry]:
         """Get recent history entries"""
