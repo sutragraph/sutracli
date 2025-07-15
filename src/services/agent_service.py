@@ -55,6 +55,9 @@ class AgentService:
         
         # Performance monitoring
         self.performance_monitor = get_performance_monitor()
+        
+        # Check if project exists in database and auto-index if needed
+        self._ensure_project_indexed()
 
     def _perform_incremental_indexing(self) -> Iterator[Dict[str, Any]]:
         """Perform incremental reindexing of the database using the current project name."""
@@ -87,6 +90,107 @@ class AgentService:
             logger.warning(f"Error determining project name: {e}")
             return Path.cwd().name
     
+    def _ensure_project_indexed(self) -> None:
+        """Ensure the current project is indexed in the database."""
+        try:
+            # Check if project exists in database
+            if not self.db_connection.project_exists(self.current_project_name):
+                logger.info(f"Project '{self.current_project_name}' not found in database")
+                self._auto_index_project(self.current_project_name)
+        except Exception as e:
+            logger.error(f"Error checking project indexing status: {e}")
+    
+    def _auto_index_project(self, project_name: str) -> None:
+        """Automatically index the current project if not found in database."""
+        try:
+            print(f"\n📁 Project '{project_name}' not found in database")
+            print("🔄 Starting automatic indexing...")
+            print("   This will analyze the codebase and generate embeddings for better responses.")
+            print("   Please wait while the project is being indexed...\n")
+            
+            # Phase 1: Parse repository
+            self._run_parser(project_name)
+            
+            # Phase 2: Generate embeddings and knowledge graph
+            self._run_embedding_generation(project_name)
+            
+            print("\n✅ Project indexing completed successfully!")
+            print("   The agent is now ready to provide intelligent assistance.\n")
+            
+        except Exception as e:
+            logger.error(f"Error during auto-indexing: {e}")
+            print(f"❌ Auto-indexing failed: {e}")
+            print("   Continuing with limited functionality.")
+            
+    def _run_parser(self, project_name: str) -> None:
+        """Run the parser phase of indexing."""
+        print("PHASE 1: Parsing Repository")
+        print("-" * 40)
+        
+        try:
+            # Import correct parser components
+            from parser.analyzer.analyzer import Analyzer
+            import tempfile
+            import json
+            import asyncio
+            
+            # Initialize analyzer
+            analyzer = Analyzer(repo_id=project_name)
+            
+            # Parse the current directory (using asyncio to handle async method)
+            current_dir = Path.cwd()
+            
+            # Run the async analyze_directory method
+            results = asyncio.run(analyzer.analyze_directory(str(current_dir)))
+            
+            # Save results to temporary file
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                json.dump(results, f, indent=2)
+                self._parser_output_path = f.name
+            
+            print(f"✅ Repository parsed successfully")
+            print(f"   Generated analysis for project: {project_name}")
+            
+        except Exception as e:
+            logger.error(f"Parser error: {e}")
+            print(f"❌ Failed to parse repository: {e}")
+            raise
+            
+    def _run_embedding_generation(self, project_name: str) -> None:
+        """Run the embedding generation phase of indexing."""
+        print("\nPHASE 2: Generating Embeddings & Knowledge Graph")
+        print("-" * 40)
+        
+        try:
+            # Import graph converter
+            from graph import TreeSitterToSQLiteConverter
+            
+            # Generate embeddings and knowledge graph
+            converter = TreeSitterToSQLiteConverter()
+            result = converter.convert_json_to_graph(
+                self._parser_output_path,
+                project_name=project_name,
+                clear_existing=False,
+                create_indexes=True,
+            )
+            
+            if result and result.get("status") == "success":
+                stats = result.get("database_stats", {})
+                print(f"✅ Knowledge graph generated successfully!")
+                print(f"   Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships")
+                print(f"   Embeddings: Generated for semantic search")
+                
+                # Clean up temporary file
+                import os
+                if hasattr(self, '_parser_output_path') and os.path.exists(self._parser_output_path):
+                    os.unlink(self._parser_output_path)
+            else:
+                raise Exception("Knowledge graph generation failed")
+                
+        except Exception as e:
+            logger.error(f"Graph generation error: {e}")
+            print(f"❌ Failed to generate knowledge graph: {e}")
+            raise
 
     
     def _update_session_memory(self):
@@ -290,16 +394,31 @@ class AgentService:
                         # Store ANY non-thinking, non-memory event as tool result
                         self.last_tool_result = event
                         
-                        # Improve tool call visibility
+                        # Improve tool call visibility - extract tool name from event
                         tool_name = event.get("tool_name", "unknown")
-                        if event.get("type") == "tool_use":
-                            print(f"🔧 Tool: {tool_name}")
-                            if "data" in event:
-                                data_preview = str(event["data"])[:200]
-                                print(f"   Result: {data_preview}...")
+                        
+                        # Show tool execution for all relevant events
+                        event_type = event.get("type", "unknown")
+                        # Include all event types that have tool names
+                        if event_type in ["tool_use", "tool_error", "completion", "semantic_search_error"]:
+                            print(f"🔧 Tool: {tool_name} ({event_type})")
+                        elif tool_name == "unknown":
+                            # Debug: log when tool name is unknown
+                            logger.debug(f"Unknown tool name for event type: {event_type}, event keys: {list(event.keys())}")
+                            
+                        # Show data preview for successful tool use
+                        if event_type == "tool_use" and "data" in event:
+                            data_preview = str(event["data"])[:200]
+                            print(f"   Result: {data_preview}...")
+                        elif "results" in event:
+                            results_preview = str(event["results"])[:200]
+                            print(f"   Result: {results_preview}...")
+                        elif "output" in event:
+                            output_preview = str(event["output"])[:200]
+                            print(f"   Output: {output_preview}...")
                         
                         # Check for tool failures and stop if critical
-                        if event.get("type") == "error" or event.get("success") is False:
+                        if event.get("type") == "error" or event.get("success") is False or event.get("type") == "tool_error":
                             error_msg = event.get("error", event.get("message", "Unknown error"))
                             logger.error(f"Tool {tool_name} failed: {error_msg}")
                             print(f"❌ Tool {tool_name} failed: {error_msg}")
@@ -497,6 +616,10 @@ class AgentService:
             return self._build_web_search_status(last_tool_result)
         elif tool_name == "web_scrap":
             return self._build_web_scrap_status(last_tool_result)
+        elif tool_name == "web_scraper":  # Handle both web_scrap and web_scraper
+            return self._build_web_scrap_status(last_tool_result)
+        elif tool_name == "attempt_completion":
+            return self._build_completion_status(last_tool_result)
         else:
             # Fallback for unknown tools
             return self._build_generic_status(last_tool_result, tool_name)
@@ -751,6 +874,21 @@ class AgentService:
         if data:
             status += f"Results:\n{data}"
 
+        return status.rstrip()
+
+    def _build_completion_status(self, result: Dict[str, Any]) -> str:
+        """Build status for completion tool."""
+        status = "Tool: attempt_completion\n"
+        
+        if result.get("type") == "task_complete":
+            status += "Status: Task completed successfully\n"
+        elif result.get("type") == "completion":
+            status += "Status: Completion requested\n"
+        
+        completion_result = result.get("result", "")
+        if completion_result:
+            status += f"Result: {completion_result}"
+        
         return status.rstrip()
 
     def _build_generic_status(self, result: Dict[str, Any], tool_name: str) -> str:
