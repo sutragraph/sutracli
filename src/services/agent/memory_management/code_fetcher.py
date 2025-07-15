@@ -8,6 +8,7 @@ from typing import Optional, Any
 from pathlib import Path
 from loguru import logger
 from queries.agent_queries import GET_CODE_FROM_FILE
+from .query_cache import get_query_cache
 
 
 class CodeFetcher:
@@ -46,15 +47,27 @@ class CodeFetcher:
             # Fix file path - prepend current directory if path doesn't start with current dir
             fixed_file_path = self._fix_file_path(file_path)
 
-            # Execute database query to get file content
-            cursor = self.db_connection.connection.cursor()
-            params = {"file_path": fixed_file_path, "project_id": None}
-            cursor.execute(GET_CODE_FROM_FILE, params)
+            # Check cache first
+            cache = get_query_cache()
+            cache_key_params = {"file_path": fixed_file_path, "project_id": None}
+            cached_results = cache.get(GET_CODE_FROM_FILE, cache_key_params)
+            
+            if cached_results is not None:
+                results = cached_results
+                logger.debug(f"Using cached results for file: {file_path}")
+            else:
+                # Execute database query to get file content
+                cursor = self.db_connection.connection.cursor()
+                params = {"file_path": fixed_file_path, "project_id": None}
+                cursor.execute(GET_CODE_FROM_FILE, params)
 
-            results = cursor.fetchall()
-            if not results:
-                logger.warning(f"No code found for file path: {file_path}")
-                return ""
+                results = cursor.fetchall()
+                if not results:
+                    logger.warning(f"No code found for file path: {file_path}")
+                    return ""
+                
+                # Cache the results
+                cache.set(GET_CODE_FROM_FILE, cache_key_params, results)
 
             # Get the first result (should be the File node)
             columns = [description[0] for description in cursor.description]

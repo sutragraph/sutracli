@@ -15,6 +15,7 @@ from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from config import config
 from utils.xml_parsing_exceptions import XMLParsingFailedException
+from utils.performance_monitor import get_performance_monitor, performance_timer
 
 
 class AgentService:
@@ -37,6 +38,12 @@ class AgentService:
 
         # Track last tool result for context -
         self.last_tool_result = None
+        
+        # Memory update optimization flag
+        self._memory_needs_update = False
+        
+        # Consecutive failures tracking
+        self._consecutive_failures = 0
 
         # Initialize incremental indexing with shared memory manager
         self.incremental_indexer = IncrementalIndexing(
@@ -45,6 +52,9 @@ class AgentService:
 
         # Determine current project name from working directory
         self.current_project_name = self._determine_project_name()
+        
+        # Performance monitoring
+        self.performance_monitor = get_performance_monitor()
 
     def _perform_incremental_indexing(self) -> Iterator[Dict[str, Any]]:
         """Perform incremental reindexing of the database using the current project name."""
@@ -76,12 +86,96 @@ class AgentService:
         except Exception as e:
             logger.warning(f"Error determining project name: {e}")
             return Path.cwd().name
+    
+
+    
+    def _update_session_memory(self):
+        """Update session memory with current memory state."""
+        try:
+            # Get the rich formatted memory from memory manager (includes code snippets)
+            memory_summary = (
+                self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
+            )
+            # Update session manager with the rich memory content
+            self.session_manager.update_sutra_memory(memory_summary)
+            logger.debug(
+                f"Updated Sutra Memory in session: {len(memory_summary)} characters"
+            )
+            logger.debug(
+                f"Memory includes {len(self.xml_action_executor.sutra_memory_manager.get_all_code_snippets())} code snippets"
+            )
+        except Exception as e:
+            logger.error(f"Error updating session memory: {e}")
+    
+    def _is_critical_tool_failure(self, event: Dict[str, Any]) -> bool:
+        """Determine if a tool failure is critical enough to stop execution."""
+        tool_name = event.get("tool_name", "")
+        error_msg = event.get("error", event.get("message", "")).lower()
+        
+        # Critical tool failures that should stop execution
+        critical_tools = ["write_to_file", "apply_diff", "execute_command"]
+        critical_errors = [
+            "permission denied",
+            "file not found",
+            "directory not found",
+            "invalid path",
+            "access denied",
+            "command not found",
+            "syntax error",
+            "compilation error"
+        ]
+        
+        # Stop if critical tool fails
+        if tool_name in critical_tools:
+            return True
+        
+        # Stop if error message indicates critical failure
+        for critical_error in critical_errors:
+            if critical_error in error_msg:
+                return True
+        
+        # Stop if multiple consecutive failures (indicates systemic issue)
+        if hasattr(self, '_consecutive_failures'):
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= 3:
+                return True
+        else:
+            self._consecutive_failures = 1
+        
+        return False
+    
+    def _detect_simple_completion(self, event: Dict[str, Any], user_query: str) -> bool:
+        """Detect if a simple task has been completed successfully."""
+        tool_name = event.get("tool_name", "")
+        query_lower = user_query.lower()
+        
+        # Simple completion patterns
+        simple_completions = {
+            "list_files": ["list", "show", "find files", "what files"],
+            "search_keyword": ["search", "find", "look for"],
+            "database": ["explain", "show", "describe", "what is"],
+            "semantic_search": ["find", "search", "look for", "where is"],
+            "write_to_file": ["create", "write", "make", "generate"],
+            "execute_command": ["run", "execute", "create", "copy", "clone"]
+        }
+        
+        # Check if this tool typically completes the user's query
+        if tool_name in simple_completions:
+            patterns = simple_completions[tool_name]
+            for pattern in patterns:
+                if pattern in query_lower:
+                    # Check if tool was successful
+                    if event.get("success", True) and event.get("type") != "error":
+                        logger.debug(f"Detected simple completion for {tool_name}")
+                        return True
+        
+        return False
 
     def solve_problem(
         self, problem_query: str, project_id: Optional[int] = None
     ) -> Iterator[Dict[str, Any]]:
         """Main entry point for the agent to solve a problem autonomously."""
-        # Perform incremental indexing before processing the query
+        # Always perform incremental indexing to catch external code changes
         yield from self._perform_incremental_indexing()
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
@@ -116,6 +210,9 @@ class AgentService:
         # Clear session data for the new query to ensure clean state
         self.session_manager.clear_session_data_for_current_query()
         self.last_tool_result = None
+        
+        # Reset consecutive failures for new query
+        self._consecutive_failures = 0
 
         # Add user query to sutra memory for continuation
         # Get rich memory from memory manager
@@ -144,10 +241,13 @@ class AgentService:
     def _solving_loop(self, user_query: str) -> Iterator[Dict[str, Any]]:
         """Main solving loop using XML-based responses."""
         current_iteration = 0
-        max_iterations = 50  # Safety limit
+        max_iterations = 20  # Reduced from 50 to 20 for faster completion
 
         while current_iteration < max_iterations:
             current_iteration += 1
+            
+            # Show progress for each iteration
+            print(f"🔄 Iteration {current_iteration}/{max_iterations}")
 
             # User confirmation every 15 iterations
             if current_iteration % 15 == 0:
@@ -170,6 +270,7 @@ class AgentService:
 
                 # Process XML response using XML action executor
                 task_complete = False
+                tool_failed = False
                 for event in self.xml_action_executor.process_xml_response(
                     xml_response, user_query
                 ):
@@ -188,33 +289,76 @@ class AgentService:
                     ]:
                         # Store ANY non-thinking, non-memory event as tool result
                         self.last_tool_result = event
+                        
+                        # Improve tool call visibility
+                        tool_name = event.get("tool_name", "unknown")
+                        if event.get("type") == "tool_use":
+                            print(f"🔧 Tool: {tool_name}")
+                            if "data" in event:
+                                data_preview = str(event["data"])[:200]
+                                print(f"   Result: {data_preview}...")
+                        
+                        # Check for tool failures and stop if critical
+                        if event.get("type") == "error" or event.get("success") is False:
+                            error_msg = event.get("error", event.get("message", "Unknown error"))
+                            logger.error(f"Tool {tool_name} failed: {error_msg}")
+                            print(f"❌ Tool {tool_name} failed: {error_msg}")
+                            
+                            # Stop on critical tool failures
+                            if self._is_critical_tool_failure(event):
+                                tool_failed = True
+                                yield {
+                                    "type": "critical_error",
+                                    "message": f"Critical tool failure: {error_msg}",
+                                    "tool": tool_name,
+                                    "iteration": current_iteration
+                                }
+                                break
+                        else:
+                            # Reset consecutive failures on success
+                            self._consecutive_failures = 0
+                            
+                            # Check for simple completion
+                            if self._detect_simple_completion(event, user_query):
+                                print(f"🎯 Simple task completed with {tool_name}")
+                                task_complete = True
 
                     # Handle Sutra Memory updates
                     elif event.get("type") == "sutra_memory_update":
                         memory_result = event.get("result", {})
                         if memory_result.get("success"):
-                            # Get the rich formatted memory from memory manager (includes code snippets)
-                            memory_summary = (
-                                self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
-                            )
-                            # Update session manager with the rich memory content
-                            self.session_manager.update_sutra_memory(memory_summary)
-                            logger.debug(
-                                f"Updated Sutra Memory in session: {len(memory_summary)} characters"
-                            )
-                            logger.debug(
-                                f"Memory includes {len(self.xml_action_executor.sutra_memory_manager.get_all_code_snippets())} code snippets"
-                            )
+                            # Defer memory formatting to reduce overhead
+                            # Only format memory when really needed
+                            self._memory_needs_update = True
+                            logger.debug("Marked memory for update")
                         else:
                             logger.warning(
                                 f"Sutra Memory update failed: {memory_result.get('errors', [])}"
                             )
+
+                # Update memory if needed before next iteration
+                if self._memory_needs_update:
+                    self._update_session_memory()
+                    self._memory_needs_update = False
+
+                # Break if tool failed critically
+                if tool_failed:
+                    logger.error(f"💥 Critical tool failure in iteration {current_iteration}, stopping loop")
+                    yield {
+                        "type": "execution_stopped",
+                        "reason": "critical_tool_failure",
+                        "iteration": current_iteration
+                    }
+                    break
 
                 # Break if task was completed
                 if task_complete:
                     logger.debug(
                         f"🎯 Task completed in iteration {current_iteration}, stopping loop"
                     )
+                    print(f"✅ Task completed successfully in {current_iteration} iterations")
+                    # Log performance summary
+                    self.performance_monitor.log_performance_summary()
                     break
 
             except Exception as e:
@@ -235,6 +379,7 @@ class AgentService:
                 "message": f"Maximum iterations ({max_iterations}) reached. Terminating session.",
             }
 
+    @performance_timer("get_xml_response")
     def _get_xml_response(
         self, user_query: str, current_iteration: int
     ) -> Dict[str, Any]:
