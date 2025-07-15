@@ -37,7 +37,7 @@ class ParserConfigLoader:
         """Get parser config path from main configuration."""
         try:
             # Try to get from main config system
-            from src.config.settings import get_config
+            from config.settings import get_config
 
             main_config = get_config()
 
@@ -62,7 +62,7 @@ class ParserConfigLoader:
         """Get parser build directory from main configuration."""
         try:
             # Try to get from main config system
-            from src.config.settings import get_config
+            from config.settings import get_config
 
             main_config = get_config()
 
@@ -294,7 +294,7 @@ class ConfigManager:
         """Get build directory path from main configuration."""
         try:
             # Get from main config system
-            from src.config.settings import get_config
+            from config.settings import get_config
 
             main_config = get_config()
 

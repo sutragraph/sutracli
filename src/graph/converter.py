@@ -9,9 +9,9 @@ from typing import Optional, Dict, Any
 from loguru import logger
 
 from .sqlite_client import SQLiteConnection, GraphOperations
-from ..models import ParsedCodebase, CodeNode, CodeEdge, Project
-from ..processors import GraphDataProcessor
-from ..utils import load_json_file
+from models import ParsedCodebase, CodeNode, CodeEdge, Project
+from processors import GraphDataProcessor
+from utils import load_json_file
 
 
 class TreeSitterToSQLiteConverter:

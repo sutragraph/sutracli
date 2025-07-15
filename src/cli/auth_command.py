@@ -11,7 +11,7 @@ from typing import Optional
 from loguru import logger
 import click
 import requests
-from ..services.auth.token_manager import get_token_manager
+from services.auth.token_manager import get_token_manager
 
 
 @click.group()

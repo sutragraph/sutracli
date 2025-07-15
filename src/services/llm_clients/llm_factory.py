@@ -3,7 +3,7 @@ from .aws_client import AWSClient
 from .gemini_client import GeminiClient
 from .anthropic_client import AnthropicClient
 from .superllm_client import SuperLLMClient
-from ...config import config
+from config import config
 
 
 def llm_client_factory():

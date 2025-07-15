@@ -46,9 +46,28 @@ Sutra Knowledge CLI is a powerful command-line application designed to help deve
 | `web_search` | Search web for programming resources |
 | `web_scrap` | Scrape and analyze web content |
 
+## Installation
+
+### Option 1: Pip Install (Recommended)
+
+```bash
+# Install sutrakit directly from repository
+pip install git+https://github.com/sutragraph/sutracli.git
+
+# Setup the ~/.sutra directory and download models/parsers
+sutrakit-setup
+
+# Analyze your first project
+sutrakit --directory /path/to/your/project
+```
+
+### Option 2: Binary Installation
+
+See [INSTALL.md](INSTALL.md) for installing the pre-built binary instead of using the source code.
+
 ## Quick Start
 
-1. **Installation**: See [INSTALL.md](INSTALL.md) for installing binary instead of using the source code. Use below steps if you want to run the source code directly.
+1. **Using Source Code**: Use below steps if you want to run the source code directly.
 
 2. **Basic Usage**:
    ```bash

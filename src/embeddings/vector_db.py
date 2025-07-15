@@ -10,8 +10,8 @@ import numpy as np
 import sqlite_vec
 from loguru import logger
 from .simple_processor import get_embedding_processor
-from ..graph.sqlite_client import SQLiteConnection
-from ..config import config
+from graph.sqlite_client import SQLiteConnection
+from config import config
 
 
 class VectorDatabase:

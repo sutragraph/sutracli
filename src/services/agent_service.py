@@ -5,16 +5,16 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Iterator
 from loguru import logger
 
-from ..graph.sqlite_client import SQLiteConnection
-from ..graph.incremental_indexing import IncrementalIndexing
-from ..embeddings.vector_db import VectorDatabase
+from graph.sqlite_client import SQLiteConnection
+from graph.incremental_indexing import IncrementalIndexing
+from embeddings.vector_db import VectorDatabase
 from .agent.agent_prompt.system import get_base_system_prompt
 from .llm_clients.llm_factory import llm_client_factory
 from .agent.tool_action_executor.tool_action_executor import ActionExecutor
 from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
-from ..config import config
-from ..utils.xml_parsing_exceptions import XMLParsingFailedException
+from config import config
+from utils.xml_parsing_exceptions import XMLParsingFailedException
 
 
 class AgentService:

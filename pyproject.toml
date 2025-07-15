@@ -60,7 +60,8 @@ Repository="https://github.com/sutragraph/sutracli"
 Issues="https://github.com/sutragraph/sutracli/issues"
 
 [project.scripts]
-sutrakit="src.cli.main:main"
+sutrakit="cli.main:main"
+sutrakit-setup="sutrakit.setup_directories:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

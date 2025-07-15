@@ -1,20 +1,20 @@
 from loguru import logger
 from typing import Iterator, Dict, Any, List
-from src.embeddings.vector_db import VectorDatabase
-from src.services.agent.tool_action_executor.utils import (
+from embeddings.vector_db import VectorDatabase
+from services.agent.tool_action_executor.utils import (
     get_node_details,
     beautify_node_result,
 )
-from src.services.agent.agentic_core import AgentAction
-from src.services.agent.agent_prompt.guidance_builder import (
+from services.agent.agentic_core import AgentAction
+from services.agent.agent_prompt.guidance_builder import (
     SearchType,
     build_guidance_message,
 )
-from src.services.agent.tool_action_executor.utils.constants import (
+from services.agent.tool_action_executor.utils.constants import (
     SEMANTIC_SEARCH_CONFIG,
     DELIVERY_QUEUE_CONFIG,
 )
-from src.services.agent.delivery_management import delivery_manager
+from services.agent.delivery_management import delivery_manager
 
 def _extract_search_parameters(action: AgentAction) -> str:
     """Extract query parameter from action."""
@@ -142,7 +142,7 @@ def _process_sequential_chunk_results(
 
     # Register all items with delivery manager and send first batch
     if all_delivery_items:
-        from src.services.agent.tool_action_executor.utils.delivery_utils import (
+        from services.agent.tool_action_executor.utils.delivery_utils import (
             register_and_deliver_first_batch,
         )
 
@@ -204,7 +204,7 @@ def _extract_chunk_specific_code(
                     chunk_lines = code_lines[relative_start:relative_end]
 
                     # Add line numbers to the chunk code
-                    from src.services.agent.tool_action_executor.utils.code_processing_utils import (
+                    from services.agent.tool_action_executor.utils.code_processing_utils import (
                         add_line_numbers_to_code,
                     )
 
@@ -275,7 +275,7 @@ def execute_semantic_search_action(
 
                 # Add guidance for fetch_next_code batch
                 guidance_message = ""
-                from src.services.agent.agent_prompt.guidance_builder import (
+                from services.agent.agent_prompt.guidance_builder import (
                     determine_semantic_batch_scenario,
                 )
 
@@ -357,7 +357,7 @@ def execute_semantic_search_action(
 
         # Handle empty results case
         if total_nodes == 0:
-            from src.services.agent.agent_prompt.guidance_builder import (
+            from services.agent.agent_prompt.guidance_builder import (
                 GuidanceScenario,
             )
 

@@ -3,7 +3,7 @@ from loguru import logger
 from typing import List, Dict, Any
 from .llm_client_base import LLMClientBase
 from google import genai
-from ...config import config
+from config import config
 import sys
 
 

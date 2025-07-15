@@ -7,9 +7,9 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 from tqdm import tqdm
 
-from ..models.schema import CodeNode
-from ..embeddings import get_embedding_processor, get_vector_db
-from ..embeddings.vector_db import VectorDatabase
+from models.schema import CodeNode
+from embeddings import get_embedding_processor, get_vector_db
+from embeddings.vector_db import VectorDatabase
 
 
 class NodeEmbeddingProcessor:

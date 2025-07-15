@@ -1,6 +1,6 @@
 from loguru import logger
 from typing import Iterator, Dict, Any
-from src.services.agent.tool_action_executor.utils import (
+from services.agent.tool_action_executor.utils import (
     beautify_node_result,
     process_code_with_line_filtering,
     chunk_large_code_clean,
@@ -11,14 +11,14 @@ from src.services.agent.tool_action_executor.utils import (
     clean_result_dict,
     process_metadata_only_results,
 )
-from src.services.agent.tool_action_executor.utils.chunk_processing_utils import (
+from services.agent.tool_action_executor.utils.chunk_processing_utils import (
     create_chunk_info,
     should_chunk_content,
 )
-from src.services.agent.tool_action_executor.utils.search_utils import (
+from services.agent.tool_action_executor.utils.search_utils import (
     build_batch_guidance_message,
 )
-from src.queries.agent_queries import (
+from queries.agent_queries import (
     GET_NODES_BY_EXACT_NAME,
     GET_NODES_BY_NAME_LIKE,
     GET_NODES_BY_KEYWORD_SEARCH,
@@ -28,23 +28,23 @@ from src.queries.agent_queries import (
     GET_FUNCTION_CALLEES,
     GET_FILE_DEPENDENCIES,
 )
-from src.services.agent.agentic_core import AgentAction
-from src.services.agent.agent_prompt.guidance_builder import (
+from services.agent.agentic_core import AgentAction
+from services.agent.agent_prompt.guidance_builder import (
     SearchType,
     determine_guidance_scenario,
     determine_sequential_node_scenario,
     build_guidance_message,
     build_sequential_node_message,
 )
-from src.services.agent.tool_action_executor.utils.constants import (
+from services.agent.tool_action_executor.utils.constants import (
     SEARCH_CONFIG,
     DATABASE_QUERY_CONFIG,
     DATABASE_ERROR_GUIDANCE,
     DELIVERY_QUEUE_CONFIG,
     GUIDANCE_MESSAGES,
 )
-from src.services.agent.delivery_management import delivery_manager
-from src.services.agent.tool_action_executor.utils.search_utils import (
+from services.agent.delivery_management import delivery_manager
+from services.agent.tool_action_executor.utils.search_utils import (
     process_keyword_search_results,
     create_delivery_batches,
     build_delivery_info,
@@ -373,7 +373,7 @@ def execute_structured_database_query(
 
             if not results:
                 # Use proper guidance scenario for no results
-                from src.services.agent.agent_prompt.guidance_builder import (
+                from services.agent.agent_prompt.guidance_builder import (
                     GuidanceScenario,
                 )
 
@@ -1028,7 +1028,7 @@ def execute_structured_database_query(
                         )
                 else:
                     # No code content available - use proper enum scenario
-                    from src.services.agent.agent_prompt.guidance_builder import (
+                    from services.agent.agent_prompt.guidance_builder import (
                         SequentialNodeScenario,
                     )
 

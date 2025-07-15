@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Dict, Any
 from loguru import logger
 
-from ..graph import TreeSitterToSQLiteConverter
-from ..graph.sqlite_client import SQLiteConnection
-from ..processors.node_embedding_processor import get_node_embedding_processor
+from graph import TreeSitterToSQLiteConverter
+from graph.sqlite_client import SQLiteConnection
+from processors.node_embedding_processor import get_node_embedding_processor
 
 
 def load_project_config(config_file: str) -> Dict[str, Any]:

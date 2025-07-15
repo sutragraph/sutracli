@@ -5,7 +5,7 @@ from loguru import logger
 from typing import List, Dict, Any
 from botocore.exceptions import ClientError
 from .llm_client_base import LLMClientBase
-from ...config import config
+from config import config
 
 
 class AWSClient(LLMClientBase):

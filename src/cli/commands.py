@@ -11,21 +11,21 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 
-from ..graph import TreeSitterToSQLiteConverter
-from ..services.agent_service import AgentService
-from ..services.auth.token_manager import get_token_manager
-from ..config import config
-from ..embeddings.vector_db import VectorDatabase
-from ..services.agent.tool_action_executor.utils.code_processing_utils import (
+from graph import TreeSitterToSQLiteConverter
+from services.agent_service import AgentService
+from services.auth.token_manager import get_token_manager
+from config import config
+from embeddings.vector_db import VectorDatabase
+from services.agent.tool_action_executor.utils.code_processing_utils import (
     add_line_numbers_to_code,
 )
-from ..services.agent.tool_action_executor.tools.web_search_action import (
+from services.agent.tool_action_executor.tools.web_search_action import (
     WebSearch,
     TimeFilter,
     SafeSearch,
     SearchType,
 )
-from ..services.agent.tool_action_executor.tools.web_scrap_action import WebScraper
+from services.agent.tool_action_executor.tools.web_scrap_action import WebScraper
 
 
 def handle_single_command(args) -> None:
@@ -303,7 +303,7 @@ def handle_parse_command(args) -> str:
     from pathlib import Path
 
     # Import analyzer using relative import from the parser package
-    from ..parser.analyzer.analyzer import Analyzer
+    from parser.analyzer.analyzer import Analyzer
 
     directory_path = args.directory
     repo_id = args.repo_id

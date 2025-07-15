@@ -2,7 +2,7 @@ import requests
 from loguru import logger
 from typing import List, Dict, Any
 from .llm_client_base import LLMClientBase
-from ...config import config
+from config import config
 from ..auth.token_manager import get_token_manager
 
 

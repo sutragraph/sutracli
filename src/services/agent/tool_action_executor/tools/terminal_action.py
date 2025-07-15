@@ -16,7 +16,7 @@ import platform
 import shutil
 from typing import Iterator, Dict, Any, Optional, ClassVar, List
 from loguru import logger
-from src.services.agent.agentic_core import AgentAction
+from services.agent.agentic_core import AgentAction
 
 
 class DesktopEnvironment:

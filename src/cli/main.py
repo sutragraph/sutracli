@@ -4,9 +4,6 @@
 import sys
 from pathlib import Path
 
-# Add src to path for development/direct execution
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
 from cli.parser import setup_argument_parser
 from cli.utils import setup_logging
 from cli.commands import (
@@ -39,7 +36,7 @@ def main():
     args = parser.parse_args()
 
     if args.command is None:
-        if len(sys.argv) > 1 and sys.argv[1].endswith(".json"):
+        if len(sys.argv)> 1 and sys.argv[1].endswith(".json"):
             args = parser.parse_args(["single"] + sys.argv[1:])
         else:
             parser.print_help()

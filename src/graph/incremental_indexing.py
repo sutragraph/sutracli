@@ -6,15 +6,15 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Any
 from loguru import logger
 
-from ..graph.sqlite_client import SQLiteConnection, GraphOperations
-from ..graph.converter import TreeSitterToSQLiteConverter
-from ..processors.data_processor import GraphDataProcessor
-from ..processors.node_embedding_processor import get_node_embedding_processor
-from ..models.schema import ParsedCodebase, GraphData
-from ..utils.helpers import load_json_file
-from ..parser.analyzer.analyzer import Analyzer
-from ..config.settings import config
-from ..services.agent.memory_management import SutraMemoryManager
+from graph.sqlite_client import SQLiteConnection, GraphOperations
+from graph.converter import TreeSitterToSQLiteConverter
+from processors.data_processor import GraphDataProcessor
+from processors.node_embedding_processor import get_node_embedding_processor
+from models.schema import ParsedCodebase, GraphData
+from utils.helpers import load_json_file
+from parser.analyzer.analyzer import Analyzer
+from config.settings import config
+from services.agent.memory_management import SutraMemoryManager
 
 
 class IncrementalIndexing:

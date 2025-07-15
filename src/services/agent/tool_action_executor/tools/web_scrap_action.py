@@ -6,9 +6,9 @@ from trafilatura.settings import use_config
 import time
 from loguru import logger
 import markdownify
-from src.config.settings import config
+from config.settings import config
 from typing import Iterator, Dict, Any
-from src.services.agent.agentic_core import AgentAction
+from services.agent.agentic_core import AgentAction
 
 
 def execute_web_scraper_action(action: AgentAction) -> Iterator[Dict[str, Any]]:

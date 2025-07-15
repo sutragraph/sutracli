@@ -4,7 +4,7 @@ import hashlib
 from typing import Optional, List, Dict
 from loguru import logger
 
-from ..models import (
+from models import (
     CodeNode,
     CodeEdge,
     ParsedCodebase,
@@ -12,9 +12,9 @@ from ..models import (
     SQLiteRelationship,
     GraphData,
 )
-from ..utils import normalize_node_type, normalize_relationship_type
+from utils import normalize_node_type, normalize_relationship_type
 from .node_embedding_processor import get_node_embedding_processor
-from ..config import config
+from config import config
 
 
 class NodeProcessor:

@@ -2,8 +2,8 @@ from typing import Iterator, Dict, Any
 import uuid
 from pathlib import Path
 
-from src.config.settings import config
-from src.services.agent.agentic_core import AgentAction
+from config.settings import config
+from services.agent.agentic_core import AgentAction
 
 
 def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]]:

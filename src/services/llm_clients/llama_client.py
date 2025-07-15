@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 from .llm_client_base import LLMClientBase
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
-from ...config import config
+from config import config
 
 
 class LlamaClient(LLMClientBase):

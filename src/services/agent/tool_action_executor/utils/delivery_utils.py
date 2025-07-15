@@ -4,7 +4,7 @@ Utility functions for delivery management shared between executors.
 
 from typing import Dict, Any, List, Optional
 from loguru import logger
-from src.services.agent.delivery_management import delivery_manager
+from services.agent.delivery_management import delivery_manager
 
 
 def handle_fetch_next_request(

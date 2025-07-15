@@ -6,7 +6,7 @@ based on different search scenarios and results.
 
 from enum import Enum
 from typing import Optional, Dict, Any, List
-from src.services.agent.tool_action_executor.utils.constants import (
+from services.agent.tool_action_executor.utils.constants import (
     GUIDANCE_MESSAGES,
     SEARCH_CONFIG,
 )

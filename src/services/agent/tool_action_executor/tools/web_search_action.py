@@ -5,9 +5,9 @@ from typing import List, Optional, Iterator, Dict, Any
 from loguru import logger
 from dataclasses import dataclass, field
 from enum import Enum
-from src.config.settings import config
+from config.settings import config
 
-from src.services.agent.agentic_core import AgentAction
+from services.agent.agentic_core import AgentAction
 
 
 class TimeFilter(Enum):

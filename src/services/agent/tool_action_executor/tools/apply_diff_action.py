@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Iterator, Dict, Any, Optional
 from loguru import logger
 
-from src.config.settings import config
-from src.services.agent.agentic_core import AgentAction
+from config.settings import config
+from services.agent.agentic_core import AgentAction
 
 
 class ApplyDiffExecutor:

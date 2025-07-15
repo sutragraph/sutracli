@@ -38,9 +38,9 @@ def setup_environment():
 # Set up environment before importing other modules
 setup_environment()
 
-from src.cli.utils import setup_logging
+from cli.utils import setup_logging
 from loguru import logger
-from src.config.settings import get_config
+from config.settings import get_config
 
 
 class SutraKnowledgeCLI:
@@ -120,7 +120,7 @@ class SutraKnowledgeCLI:
     def check_if_indexed(self) -> bool:
         """Check if the current repository is already indexed."""
         try:
-            from src.graph.sqlite_client import SQLiteConnection
+            from graph.sqlite_client import SQLiteConnection
 
             db = SQLiteConnection()
             return db.project_exists(self.repo_name)
@@ -160,7 +160,7 @@ class SutraKnowledgeCLI:
 
         try:
             # Import parser command handler
-            from src.cli.commands import handle_parse_command
+            from cli.commands import handle_parse_command
 
             # Create args object for handle_parse_command
             args = Namespace(directory=str(self.current_dir), repo_id=self.repo_name)
@@ -189,7 +189,7 @@ class SutraKnowledgeCLI:
 
         try:
             # Import graph converter
-            from src.graph import TreeSitterToSQLiteConverter
+            from graph import TreeSitterToSQLiteConverter
 
             converter = TreeSitterToSQLiteConverter()
             result = converter.convert_json_to_graph(
@@ -225,7 +225,7 @@ class SutraKnowledgeCLI:
 
         try:
             # Import agent command handler
-            from src.cli.commands import handle_agent_command
+            from cli.commands import handle_agent_command
 
             # Create args object for handle_agent_command
             args = Namespace(
