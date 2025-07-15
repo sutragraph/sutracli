@@ -1,7 +1,7 @@
 import anthropic
 import time
 from loguru import logger
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from .llm_client_base import LLMClientBase
 from config import config
 
@@ -21,8 +21,19 @@ class AnthropicClient(LLMClientBase):
             logger.error(f"❌ Failed to initialize Anthropic client: {e}")
             raise
 
-    def call_llm(self, system_prompt: str, user_message: str) -> List[Dict[str, Any]]:
-        """Call Anthropic with separate system prompt and user message."""
+    def call_llm(
+        self, system_prompt: str, user_message: str, return_raw: bool = False
+    ) -> Union[List[Dict[str, Any]], str]:
+        """Call Anthropic with separate system prompt and user message.
+
+        Args:
+            system_prompt (str): System prompt
+            user_message (str): User message
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
+
+        Returns:
+            Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
+        """
         max_retries = 5
         retry_delay = 30  # 30 seconds
 
@@ -52,13 +63,18 @@ class AnthropicClient(LLMClientBase):
                 raw_response = ""
                 for chunk in stream:
                     if chunk.type == "content_block_delta":
-                        raw_response += chunk.delta.text
+                        text = getattr(chunk.delta, "text", None)
+                        if text:
+                            raw_response += text
 
                 logger.debug(
                     f"📥 Received response from Anthropic model: {raw_response}"
                 )
-                # Parse XML from the response and return only XML data
-                return self.parse_xml_response(raw_response)
+                # Return raw response or parse XML based on return_raw parameter
+                if return_raw:
+                    return raw_response
+                else:
+                    return self.parse_xml_response(raw_response)
 
             except anthropic.RateLimitError as e:
                 if attempt < max_retries:
@@ -74,3 +90,8 @@ class AnthropicClient(LLMClientBase):
             except Exception as e:
                 logger.error(f"LLM call with system prompt failed: {e}")
                 raise
+
+        if return_raw:
+            return ""
+        else:
+            return []

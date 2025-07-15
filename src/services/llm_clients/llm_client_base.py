@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Union
 from ..agent.xml_service import XMLService
 
 
@@ -21,12 +21,17 @@ class LLMClientBase:
         """
         return self.xml_service.parse_xml_response(response_text)
 
-    def call_llm(self, *args, **kwargs) -> List[Dict[str, Any]]:
+    def call_llm(self, *args, return_raw: bool = False, **kwargs) -> Union[List[Dict[str, Any]], str]:
         """
         Base method to be implemented by subclasses.
-        Subclasses should call parse_xml_response before returning data.
+        Subclasses should call parse_xml_response before returning data unless return_raw=True.
+
+        Args:
+            return_raw (bool): If True, return raw LLM response text without XML parsing.
+                              If False (default), parse and return XML elements.
 
         Returns:
-            List of parsed XML elements
+            Union[List[Dict[str, Any]], str]: List of parsed XML elements if return_raw=False,
+                                            raw response text if return_raw=True
         """
         raise NotImplementedError("Subclasses must implement call_llm method")

@@ -2,7 +2,7 @@ import json
 import boto3
 import time
 from loguru import logger
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from botocore.exceptions import ClientError
 from .llm_client_base import LLMClientBase
 from config import config
@@ -28,8 +28,19 @@ class AWSClient(LLMClientBase):
             logger.error(f"❌ Failed to initialize Bedrock client: {e}")
             raise
 
-    def call_llm(self, system_prompt: str, user_message: str) -> List[Dict[str, Any]]:
-        """Call AWS with separate system prompt and user message."""
+    def call_llm(
+        self, system_prompt: str, user_message: str, return_raw: bool = False
+    ) -> Union[List[Dict[str, Any]], str]:
+        """Call AWS with separate system prompt and user message.
+
+        Args:
+            system_prompt (str): System prompt
+            user_message (str): User message
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
+
+        Returns:
+            Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
+        """
         max_retries = 5
         retry_delay = 30  # 30 seconds
 
@@ -74,8 +85,11 @@ class AWSClient(LLMClientBase):
                             raw_response += chunk_data["delta"]["text"]
 
                 logger.debug(f"📥 Received response from AWS model: {raw_response}")
-                # Parse XML from the response and return only XML data
-                return self.parse_xml_response(raw_response)
+                # Return raw response or parse XML based on return_raw parameter
+                if return_raw:
+                    return raw_response
+                else:
+                    return self.parse_xml_response(raw_response)
 
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")
@@ -92,3 +106,8 @@ class AWSClient(LLMClientBase):
             except Exception as e:
                 logger.error(f"LLM call with system prompt failed: {e}")
                 raise
+
+        if return_raw:
+            return ""
+        else:
+            return []
