@@ -7,7 +7,7 @@ Handles fetching code content from database and file operations.
 from typing import Optional, Any
 from pathlib import Path
 from loguru import logger
-from src.queries.agent_queries import GET_CODE_FROM_FILE
+from queries.agent_queries import GET_CODE_FROM_FILE
 
 
 class CodeFetcher:
@@ -85,7 +85,7 @@ class CodeFetcher:
                 file_start_line = 1
                 logger.debug(f"Failed to parse lines data, using default file_start_line: 1")
 
-            from src.services.agent.tool_action_executor.utils.code_processing_utils import (
+            from services.agent.tool_action_executor.utils.code_processing_utils import (
                 process_code_with_line_filtering,
             )
 

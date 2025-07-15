@@ -120,7 +120,7 @@ def register_and_deliver_first_batch(
     if not delivery_items:
         return None
 
-    from src.services.agent.tool_action_executor.utils.constants import DELIVERY_QUEUE_CONFIG
+    from services.agent.tool_action_executor.utils.constants import DELIVERY_QUEUE_CONFIG
 
     # Register all items with delivery manager
     delivery_manager.register_delivery_queue(
@@ -153,7 +153,7 @@ def register_and_deliver_first_batch(
     # Add semantic search guidance
     guidance_message = ""
     if action_type == "semantic_search":
-        from src.services.agent.agent_prompt.guidance_builder import (
+        from services.agent.agent_prompt.guidance_builder import (
             determine_semantic_batch_scenario,
             build_guidance_message,
             SearchType,

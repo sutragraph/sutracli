@@ -12,7 +12,7 @@ Main Components:
 - XMLService: Main service class for all XML processing operations
 
 Usage:
-    from src.services.agent.xml_service import XMLService
+    from services.agent.xml_service import XMLService
 
     # Create XML service with LLM client for repair capabilities
     xml_service = XMLService(llm_client)

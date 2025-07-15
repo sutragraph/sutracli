@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from .models import CodeSnippet
 from .memory_operations import MemoryOperations
-from src.queries.agent_queries import GET_CODE_FROM_FILE
+from queries.agent_queries import GET_CODE_FROM_FILE
 
 
 @dataclass

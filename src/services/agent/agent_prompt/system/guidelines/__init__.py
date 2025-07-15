@@ -5,7 +5,7 @@ from .rules import RULES
 from .system_info import SYSTEM_INFO
 from .objective import OBJECTIVE
 
-from src.utils.system_utils import (
+from utils.system_utils import (
     get_current_directory,
     get_home_directory,
     get_default_shell,

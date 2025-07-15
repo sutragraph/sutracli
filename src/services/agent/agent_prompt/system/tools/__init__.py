@@ -14,7 +14,7 @@ from .web_search import WEB_SEARCH_TOOL
 # TODO: Uncomment when search and replace tool is implemented
 # from .search_and_replace import SEARCH_AND_REPLACE_TOOL
 
-from src.utils.system_utils import get_current_directory
+from utils.system_utils import get_current_directory
 
 CURRENT_DIR = get_current_directory()
 

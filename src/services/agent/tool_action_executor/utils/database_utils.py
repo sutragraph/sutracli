@@ -2,7 +2,7 @@
 Database utility functions for agent action executors.
 """
 
-from src.graph.sqlite_client import SQLiteConnection
+from graph.sqlite_client import SQLiteConnection
 from loguru import logger
 
 
@@ -21,7 +21,7 @@ def get_node_details(node_id: int, project_id: int = None, db_connection=None):
     try:
         db_connection = db_connection or SQLiteConnection()
         cursor = db_connection.connection.cursor()
-        from src.queries.agent_queries import GET_NODE_DETAILS
+        from queries.agent_queries import GET_NODE_DETAILS
         cursor.execute(
             GET_NODE_DETAILS, {"node_id": node_id, "project_id": project_id}
         )

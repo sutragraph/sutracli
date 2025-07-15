@@ -393,7 +393,7 @@ def get_embedding_processor() -> SimpleEmbeddingProcessor:
     if _embedding_processor is None:
         # Get model path from configuration
         try:
-            from src.config.settings import get_config
+            from config.settings import get_config
 
             config = get_config()
             import os

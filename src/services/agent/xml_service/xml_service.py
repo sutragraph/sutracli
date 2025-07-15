@@ -17,7 +17,7 @@ from loguru import logger
 import re
 import xmltodict
 from typing import Dict, List, Any, Optional
-from src.utils.xml_parsing_exceptions import XMLParsingFailedException
+from utils.xml_parsing_exceptions import XMLParsingFailedException
 
 
 class XMLService:

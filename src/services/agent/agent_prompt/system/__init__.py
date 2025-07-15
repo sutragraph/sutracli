@@ -7,7 +7,7 @@ from .tools import get_all_tools
 from .guidelines import get_all_guidelines
 from .workspace_structure import WORKSPACE_STRUCTURE
 
-from src.utils.system_utils import get_current_directory, get_workspace_structure
+from utils.system_utils import get_current_directory, get_workspace_structure
 
 CURRENT_DIR = get_current_directory()
 
