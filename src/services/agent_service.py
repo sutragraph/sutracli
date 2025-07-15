@@ -326,12 +326,11 @@ class AgentService:
         
         # Simple completion patterns
         simple_completions = {
-            "list_files": ["list", "show", "find files", "what files"],
-            "search_keyword": ["search", "find", "look for"],
-            "database": ["explain", "show", "describe", "what is"],
-            "semantic_search": ["find", "search", "look for", "where is"],
-            "write_to_file": ["create", "write", "make", "generate"],
-            "execute_command": ["run", "execute", "create", "copy", "clone"]
+            # "list_files": ["list", "show", "find files", "what files"],
+            # "search_keyword": ["search", "find", "look for"],
+            # "semantic_search": ["find", "search", "look for", "where is"],
+            # "write_to_file": ["create", "write", "make", "generate"],
+            # "execute_command": ["run", "execute", "create", "copy", "clone"]
         }
         
         # Check if this tool typically completes the user's query
