@@ -2,6 +2,11 @@
 Main package initialization.
 """
 
+import os
+
+# Set tokenizers parallelism before any imports to avoid warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from .graph import TreeSitterToSQLiteConverter, SQLiteConnection, GraphOperations
 from .models import CodeNode, CodeEdge, ParsedCodebase
 from .processors import GraphDataProcessor

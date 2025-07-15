@@ -16,6 +16,9 @@ from pathlib import Path
 from typing import Optional
 from argparse import ArgumentParser, Namespace
 
+# Set tokenizers parallelism before any imports to avoid warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 # Add src to path for imports (src is at project root, not in cli/)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 

@@ -263,6 +263,13 @@ def handle_agent_command(args) -> None:
                 if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
                     print("\n👋 Goodbye! Session ended.")
                     break
+                
+                if user_input.lower() in ["version", "--version", "-v"]:
+                    print("\n📦 Sutra Agent Version Information:")
+                    print("   Sutra Knowledge CLI v1.0")
+                    print("   AI-Powered Repository Assistant")
+                    print("   Build: Agent Interface")
+                    continue
 
                 if args.problem_query:
                     _process_agent_updates(

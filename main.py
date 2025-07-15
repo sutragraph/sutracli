@@ -2,7 +2,11 @@
 """Main entry point for the Sutra Knowledge application."""
 
 import sys
+import os
 from pathlib import Path
+
+# Set tokenizers parallelism before any imports to avoid warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # Add src to path for development/direct execution
 sys.path.insert(0, str(Path(__file__).parent / "src"))

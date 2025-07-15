@@ -202,11 +202,9 @@ class SutraMemoryManager:
     
     def validate_tool_result(self, tool_name: str, tool_result: dict, user_query: str) -> dict:
         """Validate tool result using integrated reasoning logic"""
-        from ..reasoning_engine import ReasoningEngine
         
-        # Use reasoning engine for validation
-        reasoning_engine = ReasoningEngine()
-        validation_result = reasoning_engine.validate_tool_result(tool_name, tool_result, user_query)
+        # Perform validation directly in memory manager
+        validation_result = self._perform_tool_validation(tool_name, tool_result, user_query)
         
         # Store validation result in reasoning context
         if self.reasoning_context:
@@ -319,3 +317,160 @@ Choose the most appropriate tool and explain your reasoning briefly.
     def clear_reasoning_context(self) -> None:
         """Clear reasoning context for new session"""
         self.reasoning_context = None
+    
+    def _perform_tool_validation(self, tool_name: str, tool_result: dict, user_query: str) -> dict:
+        """Perform tool validation directly in memory manager"""
+        validation_result = {
+            "valid": True,
+            "confidence": 1.0,
+            "issues": [],
+            "suggestions": []
+        }
+        
+        # Check for basic tool result structure
+        if not tool_result or not isinstance(tool_result, dict):
+            validation_result["valid"] = False
+            validation_result["confidence"] = 0.0
+            validation_result["issues"].append("Tool result is empty or invalid structure")
+            return validation_result
+        
+        # Tool-specific validation
+        if tool_name == "semantic_search":
+            validation_result = self._validate_semantic_search(tool_result, user_query, validation_result)
+        elif tool_name == "database":
+            validation_result = self._validate_database_query(tool_result, user_query, validation_result)
+        elif tool_name == "write_to_file":
+            validation_result = self._validate_file_write(tool_result, user_query, validation_result)
+        elif tool_name == "execute_command":
+            validation_result = self._validate_command_execution(tool_result, user_query, validation_result)
+        elif tool_name == "apply_diff":
+            validation_result = self._validate_diff_application(tool_result, user_query, validation_result)
+        else:
+            validation_result = self._validate_generic_tool(tool_result, user_query, validation_result)
+        
+        return validation_result
+    
+    def _validate_semantic_search(self, result: dict, query: str, validation: dict) -> dict:
+        """Validate semantic search results"""
+        # Check for error conditions
+        if result.get("error"):
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append(f"Search error: {result['error']}")
+            return validation
+        
+        # Check if results are present
+        data = result.get("data", "")
+        if not data or data.strip() == "":
+            validation["valid"] = False
+            validation["confidence"] = 0.2
+            validation["issues"].append("No search results returned")
+            validation["suggestions"].append("Try a different search query or broader terms")
+            return validation
+        
+        # Check result quality
+        count = result.get("count", 0)
+        if count == 0:
+            validation["confidence"] = 0.3
+            validation["issues"].append("Zero results found")
+            validation["suggestions"].append("Consider using database query for more comprehensive search")
+        elif count > 100:
+            validation["confidence"] = 0.7
+            validation["issues"].append("Too many results, may be too broad")
+            validation["suggestions"].append("Refine search query to be more specific")
+        
+        return validation
+    
+    def _validate_database_query(self, result: dict, query: str, validation: dict) -> dict:
+        """Validate database query results"""
+        # Check for error conditions
+        if result.get("error"):
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append(f"Database error: {result['error']}")
+            return validation
+        
+        # Check if results are present
+        data = result.get("data", "")
+        if not data or data.strip() == "":
+            validation["confidence"] = 0.4
+            validation["issues"].append("No database results returned")
+            validation["suggestions"].append("Try semantic search for broader context")
+        
+        return validation
+    
+    def _validate_file_write(self, result: dict, query: str, validation: dict) -> dict:
+        """Validate file write operations"""
+        # Check for successful files
+        successful_files = result.get("successful_files", [])
+        failed_files = result.get("failed_files", [])
+        
+        if failed_files:
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append(f"File write failed: {failed_files}")
+            return validation
+        
+        if not successful_files:
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append("No files were written successfully")
+            return validation
+        
+        return validation
+    
+    def _validate_command_execution(self, result: dict, query: str, validation: dict) -> dict:
+        """Validate command execution results"""
+        # Check exit code
+        exit_code = result.get("exit_code")
+        if exit_code is not None and exit_code != 0:
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append(f"Command failed with exit code: {exit_code}")
+            
+            # Check for common error patterns
+            error_output = result.get("error", "")
+            if "permission denied" in error_output.lower():
+                validation["suggestions"].append("Check file permissions or use sudo if appropriate")
+            elif "command not found" in error_output.lower():
+                validation["suggestions"].append("Verify the command exists and is in PATH")
+            elif "no such file or directory" in error_output.lower():
+                validation["suggestions"].append("Check file paths and ensure files exist")
+        
+        return validation
+    
+    def _validate_diff_application(self, result: dict, query: str, validation: dict) -> dict:
+        """Validate diff application results"""
+        # Check for successful applications
+        successful_files = result.get("successful_files", [])
+        failed_files = result.get("failed_files", [])
+        failed_diffs = result.get("failed_diffs", [])
+        
+        if failed_files or failed_diffs:
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append(f"Diff application failed: files={failed_files}, diffs={failed_diffs}")
+            return validation
+        
+        if not successful_files:
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append("No diffs were applied successfully")
+            return validation
+        
+        return validation
+    
+    def _validate_generic_tool(self, result: dict, query: str, validation: dict) -> dict:
+        """Validate generic tool results"""
+        # Check for basic success indicators
+        if result.get("success") is False:
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append("Tool reported failure")
+        
+        if result.get("error"):
+            validation["valid"] = False
+            validation["confidence"] = 0.0
+            validation["issues"].append(f"Tool error: {result['error']}")
+        
+        return validation

@@ -52,15 +52,17 @@ class CodeFetcher:
             cache_key_params = {"file_path": fixed_file_path, "project_id": None}
             cached_results = cache.get(GET_CODE_FROM_FILE, cache_key_params)
             
+            # Execute database query to get file content
+            cursor = self.db_connection.connection.cursor()
+            params = {"file_path": fixed_file_path, "project_id": None}
+            cursor.execute(GET_CODE_FROM_FILE, params)
+
             if cached_results is not None:
                 results = cached_results
                 logger.debug(f"Using cached results for file: {file_path}")
+                # Still need to call fetchall() to get column descriptions
+                cursor.fetchall()
             else:
-                # Execute database query to get file content
-                cursor = self.db_connection.connection.cursor()
-                params = {"file_path": fixed_file_path, "project_id": None}
-                cursor.execute(GET_CODE_FROM_FILE, params)
-
                 results = cursor.fetchall()
                 if not results:
                     logger.warning(f"No code found for file path: {file_path}")
