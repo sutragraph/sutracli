@@ -168,8 +168,10 @@ def _process_agent_updates(updates_generator) -> None:
                 query = update.get("query", "")
                 query_name = update.get("query_name", "")
                 results = update.get("result", "")
-                print(f'🔍 Database search "{query} - {query_name}" | {results}')
-                print("-" * 40)
+                # Only show results if found, reduce verbosity
+                if "Found 0 nodes" not in results:
+                    print(f'🔍 Database search "{query}" | {results}')
+                    print("-" * 40)
 
             elif tool_name == "semantic_search":
                 query = update.get("query", "")

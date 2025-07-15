@@ -76,6 +76,13 @@ class AgentService:
         try:
             projects = self.db_connection.list_all_projects()
             if projects:
+                # Check if current directory is a subdirectory of any existing project
+                existing_project = self._find_parent_project(projects)
+                if existing_project:
+                    logger.debug(f"Found parent project: {existing_project}")
+                    return existing_project
+                
+                # If no parent project found, use the first project (existing behavior)
                 project_name = projects[0]["name"]
                 logger.debug(f"Using project from database: {project_name}")
                 return project_name
@@ -89,6 +96,70 @@ class AgentService:
         except Exception as e:
             logger.warning(f"Error determining project name: {e}")
             return Path.cwd().name
+    
+    def _find_parent_project(self, projects: List[Dict[str, Any]]) -> Optional[str]:
+        """Find if current directory is a subdirectory of any existing project."""
+        current_dir = Path.cwd().absolute()
+        
+        for project in projects:
+            project_name = project["name"]
+            try:
+                # Get the project's root directory by finding the common root of all file paths
+                project_dir = self._get_project_directory(project_name)
+                if project_dir and current_dir.is_relative_to(project_dir):
+                    logger.debug(f"Current directory {current_dir} is within project {project_name} at {project_dir}")
+                    return project_name
+            except Exception as e:
+                logger.debug(f"Error checking project {project_name}: {e}")
+                continue
+        
+        return None
+    
+    def _get_project_directory(self, project_name: str) -> Optional[Path]:
+        """Get the root directory of a project by analyzing its file paths."""
+        try:
+            # Get all file paths for this project
+            file_paths = self.db_connection.execute_query(
+                """
+                SELECT DISTINCT file_path 
+                FROM file_hashes 
+                WHERE project_id = (SELECT id FROM projects WHERE name = ?)
+                """,
+                (project_name,)
+            )
+            
+            if not file_paths:
+                return None
+            
+            # Convert to Path objects and find common root
+            paths = [Path(row["file_path"]).absolute() for row in file_paths]
+            
+            # Find the common root directory
+            if len(paths) == 1:
+                return paths[0].parent
+            
+            # Find the longest common path
+            common_path = paths[0]
+            for path in paths[1:]:
+                # Find common parts between current common_path and this path
+                common_parts = []
+                for part1, part2 in zip(common_path.parts, path.parts):
+                    if part1 == part2:
+                        common_parts.append(part1)
+                    else:
+                        break
+                
+                if common_parts:
+                    common_path = Path(*common_parts)
+                else:
+                    # No common path found
+                    return None
+            
+            return common_path
+            
+        except Exception as e:
+            logger.debug(f"Error getting project directory for {project_name}: {e}")
+            return None
     
     def _ensure_project_indexed(self) -> None:
         """Ensure the current project is indexed in the database."""

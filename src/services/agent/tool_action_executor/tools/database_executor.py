@@ -319,6 +319,56 @@ def execute_structured_database_query(
                     dict(zip(filename_fallback_columns, row))
                     for row in filename_fallback_rows
                 ]
+                
+                # If still no results, try case-insensitive fallback
+                if not filename_fallback_results:
+                    logger.debug(
+                        f"🔄 Trying case-insensitive fallback for filename: {filename}"
+                    )
+                    
+                    # Try case-insensitive search by looking for files with similar names
+                    case_insensitive_cursor = db_connection.connection.cursor()
+                    case_insensitive_query = """
+                        SELECT
+                            n.node_id,
+                            n.node_type,
+                            n.name,
+                            n.lines,
+                            n.code_snippet,
+                            n.properties,
+                            fh.file_path,
+                            fh.language,
+                            fh.file_size,
+                            p.name as project_name,
+                            p.id as project_id
+                        FROM nodes n
+                        LEFT JOIN file_hashes fh ON n.file_hash_id = fh.id
+                        LEFT JOIN projects p ON n.project_id = p.id
+                        WHERE LOWER(n.name) = LOWER(:name)
+                        AND n.node_type = 'File'
+                        AND (:project_id IS NULL OR n.project_id = :project_id)
+                        ORDER BY n.node_id
+                        LIMIT 10
+                    """
+                    case_insensitive_cursor.execute(case_insensitive_query, filename_fallback_params)
+                    case_insensitive_columns = (
+                        [
+                            description[0]
+                            for description in case_insensitive_cursor.description
+                        ]
+                        if case_insensitive_cursor.description
+                        else []
+                    )
+                    case_insensitive_rows = case_insensitive_cursor.fetchall()
+                    filename_fallback_results = [
+                        dict(zip(case_insensitive_columns, row))
+                        for row in case_insensitive_rows
+                    ]
+                    
+                    if filename_fallback_results:
+                        logger.debug(f"✅ Case-insensitive fallback found {len(filename_fallback_results)} results")
+                    else:
+                        logger.debug("❌ Case-insensitive fallback also returned 0 results")
 
                 if filename_fallback_results:
                     logger.debug(
