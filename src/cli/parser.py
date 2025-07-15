@@ -301,4 +301,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Output format: text, html, or markdown (default: text)",
     )
 
+    # Version command
+    version_parser = subparsers.add_parser(
+        "version", help="Show version information"
+    )
+
     return parser

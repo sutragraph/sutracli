@@ -46,6 +46,25 @@ from loguru import logger
 from config.settings import get_config
 
 
+def _get_version_from_init():
+    """Get version from sutrakit/__init__.py file."""
+    try:
+        import re
+        from pathlib import Path
+        
+        # Try to read version from sutrakit/__init__.py
+        init_file = Path(__file__).parent.parent / "src" / "sutrakit" / "__init__.py"
+        if init_file.exists():
+            with open(init_file, 'r') as f:
+                content = f.read()
+                version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                if version_match:
+                    return version_match.group(1)
+    except Exception:
+        pass
+    return "0.1.5"  # fallback
+
+
 class SutraKnowledgeCLI:
     """Main CLI class for Sutra Knowledge tool."""
 
@@ -290,7 +309,15 @@ def parse_arguments():
         epilog="Intelligent code analysis, indexing, and AI assistance",
     )
 
-    parser.add_argument(
+    # Create subparsers for commands
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Default run command (for backward compatibility)
+    run_parser = subparsers.add_parser(
+        "run", 
+        help="Run the Sutra Knowledge assistant (default command)"
+    )
+    run_parser.add_argument(
         "--directory",
         "-d",
         type=str,
@@ -298,11 +325,59 @@ def parse_arguments():
         metavar="PATH",
     )
 
-    parser.add_argument(
-        "--version", action="version", version="Sutra Knowledge CLI v1.0"
+    # Version command
+    version_parser = subparsers.add_parser(
+        "version", 
+        help="Show version information"
     )
 
-    return parser.parse_args()
+    # Get version for the --version flag
+    version = _get_version_from_init()
+    
+    # Add global version flag for backward compatibility
+    parser.add_argument(
+        "--version", action="version", version=f"Sutra Knowledge CLI v{version}"
+    )
+
+    # Parse arguments
+    args = parser.parse_args()
+    
+    # If no command is specified, default to 'run' behavior
+    if args.command is None:
+        # Create a namespace with run command defaults
+        import argparse
+        run_args = argparse.Namespace()
+        run_args.command = "run"
+        run_args.directory = None
+        return run_args
+    
+    return args
+
+
+def show_version():
+    """Show version information."""
+    # Get version from __init__.py
+    version = _get_version_from_init()
+    
+    print("\n📦 Sutra Knowledge CLI Version Information:")
+    print(f"   Version: {version}")
+    print("   Description: AI-Powered Repository Assistant")
+    print("   Features: Intelligent code analysis, indexing, and AI assistance")
+    
+    # Show Python version
+    print(f"   Python Version: {sys.version.split()[0]}")
+    
+    # Show current directory
+    print(f"   Current Directory: {Path.cwd()}")
+    
+    # Show configuration info
+    import os
+    config_file = os.getenv("SUTRAKNOWLEDGE_CONFIG", "Not set")
+    if config_file != "Not set":
+        config_name = Path(config_file).name
+        print(f"   Configuration: {config_name}")
+    
+    print()
 
 
 def main():
@@ -311,8 +386,21 @@ def main():
     args = parse_arguments()
 
     try:
-        cli = SutraKnowledgeCLI(directory=args.directory)
-        cli.run()
+        # Handle different commands
+        if args.command == "version":
+            show_version()
+            return
+        
+        elif args.command == "run":
+            # Default run behavior
+            directory = getattr(args, 'directory', None)
+            cli = SutraKnowledgeCLI(directory=directory)
+            cli.run()
+        
+        else:
+            print(f"Unknown command: {args.command}")
+            sys.exit(1)
+            
     except KeyboardInterrupt:
         print("\n\nOperation interrupted. Goodbye!")
         sys.exit(1)

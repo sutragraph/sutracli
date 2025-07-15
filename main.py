@@ -25,6 +25,7 @@ from cli.commands import (
     handle_auth_command,
     handle_web_search_command,
     handle_web_scrap_command,
+    handle_version_command,
 )
 from cli.utils import (
     process_multiple_projects,
@@ -82,6 +83,9 @@ def main():
             handle_web_search_command(args)
         elif args.command == "web_scrap":
             handle_web_scrap_command(args)
+
+        elif args.command == "version":
+            handle_version_command(args)
 
         else:
             logger.error(f"Unknown command: {args.command}")

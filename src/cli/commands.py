@@ -28,6 +28,25 @@ from services.agent.tool_action_executor.tools.web_search_action import (
 from services.agent.tool_action_executor.tools.web_scrap_action import WebScraper
 
 
+def get_version_from_init():
+    """Get version from sutrakit/__init__.py file."""
+    try:
+        import re
+        from pathlib import Path
+        
+        # Try to read version from sutrakit/__init__.py directly to avoid circular imports
+        init_file = Path(__file__).parent.parent / "sutrakit" / "__init__.py"
+        if init_file.exists():
+            with open(init_file, 'r') as f:
+                content = f.read()
+                version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                if version_match:
+                    return version_match.group(1)
+    except Exception:
+        pass
+    return "0.1.5"  # fallback
+
+
 def handle_single_command(args) -> None:
     """Process a single tree-sitter JSON file."""
     input_path = Path(args.input_file)
@@ -732,3 +751,35 @@ def handle_web_scrap_command(args) -> None:
     finally:
         # Close the session when done
         WebScraper.close_session()
+
+
+def handle_version_command(args) -> None:
+    """Handle version command to show version information."""
+    try:
+        # Get version from __init__.py
+        version = get_version_from_init()
+        
+        print(f"\n📦 Sutra Knowledge CLI Version: {version}")
+        print("🔧 AI-Powered Repository Assistant")
+        print("📚 Intelligent code analysis, indexing, and assistance")
+        
+        # Show Python version
+        import sys
+        print(f"🐍 Python Version: {sys.version.split()[0]}")
+        
+        # Show current directory
+        from pathlib import Path
+        print(f"📁 Current Directory: {Path.cwd()}")
+        
+        # Show configuration info
+        import os
+        config_file = os.getenv("SUTRAKNOWLEDGE_CONFIG", "Not set")
+        if config_file != "Not set":
+            config_name = Path(config_file).name
+            print(f"⚙️  Configuration: {config_name}")
+        
+        print()
+        
+    except Exception as e:
+        print(f"❌ Error getting version information: {str(e)}")
+        sys.exit(1)
