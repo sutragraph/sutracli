@@ -14,8 +14,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 from urllib.error import URLError
 import tarfile
-import zipfile
-from typing import Optional, Dict, Any
+from .setup_linters import setup_linters
 
 try:
     from setuptools.command.develop import develop
@@ -368,7 +367,7 @@ def main():
     """Main setup function"""
     print("🚀 Sutra Knowledge CLI - Post-Install Setup")
     print("=" * 50)
-    
+
     try:
         # Check if already installed
         if INSTALL_DIR.exists():
@@ -378,42 +377,48 @@ def main():
                 log_info("Installation cancelled")
                 return
             shutil.rmtree(INSTALL_DIR)
-        
+
         # Setup steps
         setup_directories()
         setup_configuration()
         check_dependencies()
-        
+
         # Try to setup models and parsers (non-blocking)
         models_success = setup_models()
         parsers_success = setup_parsers()
-        
+        linters_success = setup_linters()
+
         # Setup environment
         setup_environment()
-        
+
         # Summary
         print("\n" + "=" * 50)
         log_success("🎉 Sutra Knowledge CLI setup completed!")
         print(f"\n📁 Installation directory: {INSTALL_DIR}")
         print(f"🔧 Configuration: {INSTALL_DIR / 'config' / 'system.json'}")
-        
+
         if models_success:
             print(f"📦 Models: {INSTALL_DIR / 'models'}")
         else:
             log_warning("Models setup failed - you may need to install them manually")
-        
+
         if parsers_success:
             print(f"🔨 Parsers: {INSTALL_DIR / 'build'}")
         else:
             log_warning("Parsers setup failed - you may need to install them manually")
-        
+
+        if linters_success:
+            print(f"🔍 Linters: {INSTALL_DIR / 'linters'}")
+        else:
+            log_warning("Linters setup failed - you may need to install them manually")
+
         print("\n🚀 Usage:")
         print("  sutrakit --help                    # Show help")
         print("  sutrakit                          # Analyze current directory")
         print("  sutrakit --directory /path/to/repo # Analyze specific directory")
         print("\n💡 Restart your shell or run: source ~/.bashrc")
         print("💡 Configure your API keys in ~/.sutra/config/system.json")
-        
+
     except KeyboardInterrupt:
         log_info("Installation cancelled by user")
     except Exception as e:
@@ -421,7 +426,7 @@ def main():
         return 1
     finally:
         cleanup()
-    
+
     return 0
 
 class PostDevelopCommand(develop if develop else object):

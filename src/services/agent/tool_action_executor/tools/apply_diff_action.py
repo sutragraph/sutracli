@@ -4,14 +4,13 @@ Apply diff executor for handling apply_diff tool actions.
 
 import re
 import uuid
-import time
 from pathlib import Path
 from typing import Iterator, Dict, Any, Optional
 from loguru import logger
 
 from config.settings import config
 from services.agent.agentic_core import AgentAction
-
+from services.linting.linting_service import LintingService
 
 class ApplyDiffExecutor:
     """Executor for apply_diff actions using search/replace format."""
@@ -20,8 +19,6 @@ class ApplyDiffExecutor:
         self,
         file_path: str,
         diff_content: str,
-        session_id: str,
-        query_id: str,
     ) -> Dict[str, Any]:
         """
         Apply diff changes to a file using search/replace format.
@@ -116,10 +113,6 @@ class ApplyDiffExecutor:
         # Clean up the diff content first
         cleaned_diff = self._clean_diff_content(diff_content)
         logger.debug(f"Cleaned diff content: {cleaned_diff[:200]}...")
-
-        # Split the content by search blocks manually since regex is failing
-        # Look for the pattern: <<<<<<<SEARCH :start_line:N followed by content until >>>>>>> REPLACE
-        search_blocks = []
 
         # Split by >>>>>>> REPLACE to get individual blocks
         parts = cleaned_diff.split('>>>>>>> REPLACE')
@@ -292,8 +285,6 @@ class ApplyDiffExecutor:
     ) -> Optional[str]:
         """Perform fuzzy search and replace with whitespace and formatting tolerance."""
         try:
-            # Normalize whitespace for comparison
-            normalized_search = " ".join(search.split())
             lines = content.splitlines()
 
             # Try to find the search pattern with some tolerance
@@ -453,7 +444,9 @@ class ApplyDiffExecutor:
         }
 
 
-def execute_apply_diff_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
+def execute_apply_diff_action(
+    action: AgentAction, linting_service: LintingService
+) -> Iterator[Dict[str, Any]]:
     """
     Execute apply_diff action.
 
@@ -513,6 +506,14 @@ def execute_apply_diff_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         # Apply all diffs and get consolidated result
         result = executor.apply_multiple_diffs(file_diffs, session_id, query_id)
 
+        if result.get("successful_files"):
+            file_paths = [
+                file_info["file_path"] if isinstance(file_info, dict) else file_info
+                for file_info in result["successful_files"]
+            ]
+            lint_results = linting_service._lint_changed_files(file_paths)
+            result["lint_result"] = lint_results
+
         # Yield the consolidated result
         yield result
 
@@ -520,6 +521,7 @@ def execute_apply_diff_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         logger.error(f"Apply diff action execution failed: {e}")
         yield {
             "tool_name": "apply_diff",
-            "status": "error", 
+            "status": "error",
             "data": {"error": f"Apply diff execution failed: {str(e)}"},
+            "lint_result": [],
         }

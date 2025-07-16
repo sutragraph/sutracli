@@ -4,10 +4,13 @@ from pathlib import Path
 
 from config.settings import config
 from services.agent.agentic_core import AgentAction
+from services.linting.linting_service import LintingService
 
 
-def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
-    """Execute file operation tool - handles both write_to_file and insert_content operations."""
+def execute_write_to_file_action(
+    action: AgentAction, linting_service: LintingService
+) -> Iterator[Dict[str, Any]]:
+    """Execute file operation tool - handles both write_to_file and write_to_file operations."""
     try:
         file_path = action.parameters.get("path")
         content = action.parameters.get("content")
@@ -29,6 +32,7 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
                 "failure_count": 1,
                 "applied_changes_to_files": [],
                 "original_request": "<write_to_file><path>unknown</path><content></content></write_to_file>",
+                "lint_result": [],
             }
             return
 
@@ -46,6 +50,7 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
                 "failure_count": 1,
                 "applied_changes_to_files": [],
                 "original_request": f"<write_to_file><path>{file_path}</path><content></content></write_to_file>",
+                "lint_result": [],
             }
             return
 
@@ -66,7 +71,8 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
                         "success_count": 0,
                         "failure_count": 1,
                         "applied_changes_to_files": [],
-                        "original_request": f"<insert_content><path>{file_path}</path><line>{line_number}</line><content>{content}</content></insert_content>",
+                        "original_request": f"<write_to_file><path>{file_path}</path><line>{line_number}</line><content>{content}</content></write_to_file>",
+                        "lint_result": [],
                     }
                     return
             except (ValueError, TypeError):
@@ -82,7 +88,8 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
                     "success_count": 0,
                     "failure_count": 1,
                     "applied_changes_to_files": [],
-                    "original_request": f"<insert_content><path>{file_path}</path><line>{line_number}</line><content>{content}</content></insert_content>",
+                    "original_request": f"<write_to_file><path>{file_path}</path><line>{line_number}</line><content>{content}</content></write_to_file>",
+                    "lint_result": [],
                 }
                 return
 
@@ -160,12 +167,15 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
         if not is_new_file and line_number is not None:
             result["line_number"] = line_number
 
+        lint_results = linting_service._lint_changed_files([file_path])
+        result["lint_result"] = lint_results
+
         yield result
 
     except Exception as e:
         # Create appropriate original_request based on operation
         if not is_new_file:
-            original_request = f"<insert_content><path>{file_path if file_path else 'unknown'}</path><line>{line_number if line_number is not None else 'unknown'}</line><content>{content if content else ''}</content></insert_content>"
+            original_request = f"<write_to_file><path>{file_path if file_path else 'unknown'}</path><line>{line_number if line_number is not None else 'unknown'}</line><content>{content if content else ''}</content></write_to_file>"
         else:
             original_request = f"<write_to_file><path>{file_path if file_path else 'unknown'}</path><content>{content if content else ''}</content></write_to_file>"
 
@@ -182,4 +192,5 @@ def execute_write_to_file_action(action: AgentAction) -> Iterator[Dict[str, Any]
             "failure_count": 1,
             "applied_changes_to_files": [],
             "original_request": original_request,
+            "lint_result": [],
         }

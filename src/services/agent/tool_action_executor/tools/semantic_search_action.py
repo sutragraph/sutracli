@@ -1,3 +1,4 @@
+import json
 from loguru import logger
 from typing import Iterator, Dict, Any, List
 from embeddings.vector_db import VectorDatabase
@@ -82,8 +83,6 @@ def _process_sequential_chunk_results(
                 chunk_start_line = result.get("chunk_start_line")
                 chunk_end_line = result.get("chunk_end_line")
                 if chunk_start_line and chunk_end_line:
-                    import json
-
                     chunk_node_details["lines"] = json.dumps(
                         [chunk_start_line, chunk_end_line]
                     )

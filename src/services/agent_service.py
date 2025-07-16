@@ -17,7 +17,7 @@ from .agent.error_handler import ErrorHandler, ResultVerifier
 from config import config
 from utils.xml_parsing_exceptions import XMLParsingFailedException
 from utils.performance_monitor import get_performance_monitor, performance_timer
-
+from .linting import check_and_install_eslint
 
 class AgentService:
     """Agent Service with unified tool status handling."""
@@ -39,13 +39,13 @@ class AgentService:
 
         # Track last tool result for context -
         self.last_tool_result = None
-        
+
         # Memory update optimization flag
         self._memory_needs_update = False
-        
+
         # Consecutive failures tracking
         self._consecutive_failures = 0
-        
+
         # Initialize error handler and result verifier
         self.error_handler = ErrorHandler()
         self.result_verifier = ResultVerifier()
@@ -57,12 +57,15 @@ class AgentService:
 
         # Determine current project name from working directory
         self.current_project_name = self._determine_project_name()
-        
+
         # Performance monitoring
         self.performance_monitor = get_performance_monitor()
-        
+
         # Check if project exists in database and auto-index if needed
         self._ensure_project_indexed()
+
+        # Check and install ESLint if needed
+        check_and_install_eslint()
 
     def _perform_incremental_indexing(self) -> Iterator[Dict[str, Any]]:
         """Perform incremental reindexing of the database using the current project name."""
@@ -86,7 +89,7 @@ class AgentService:
                 if existing_project:
                     logger.debug(f"Found parent project: {existing_project}")
                     return existing_project
-                
+
                 # If no parent project found, use the first project (existing behavior)
                 project_name = projects[0]["name"]
                 logger.debug(f"Using project from database: {project_name}")
@@ -101,11 +104,11 @@ class AgentService:
         except Exception as e:
             logger.warning(f"Error determining project name: {e}")
             return Path.cwd().name
-    
+
     def _find_parent_project(self, projects: List[Dict[str, Any]]) -> Optional[str]:
         """Find if current directory is a subdirectory of any existing project."""
         current_dir = Path.cwd().absolute()
-        
+
         for project in projects:
             project_name = project["name"]
             try:
@@ -117,9 +120,9 @@ class AgentService:
             except Exception as e:
                 logger.debug(f"Error checking project {project_name}: {e}")
                 continue
-        
+
         return None
-    
+
     def _get_project_directory(self, project_name: str) -> Optional[Path]:
         """Get the root directory of a project by analyzing its file paths."""
         try:
@@ -132,17 +135,17 @@ class AgentService:
                 """,
                 (project_name,)
             )
-            
+
             if not file_paths:
                 return None
-            
+
             # Convert to Path objects and find common root
             paths = [Path(row["file_path"]).absolute() for row in file_paths]
-            
+
             # Find the common root directory
             if len(paths) == 1:
                 return paths[0].parent
-            
+
             # Find the longest common path
             common_path = paths[0]
             for path in paths[1:]:
@@ -153,19 +156,19 @@ class AgentService:
                         common_parts.append(part1)
                     else:
                         break
-                
+
                 if common_parts:
                     common_path = Path(*common_parts)
                 else:
                     # No common path found
                     return None
-            
+
             return common_path
-            
+
         except Exception as e:
             logger.debug(f"Error getting project directory for {project_name}: {e}")
             return None
-    
+
     def _ensure_project_indexed(self) -> None:
         """Ensure the current project is indexed in the database."""
         try:
@@ -175,7 +178,7 @@ class AgentService:
                 self._auto_index_project(self.current_project_name)
         except Exception as e:
             logger.error(f"Error checking project indexing status: {e}")
-    
+
     def _auto_index_project(self, project_name: str) -> None:
         """Automatically index the current project if not found in database."""
         try:
@@ -183,64 +186,64 @@ class AgentService:
             print("🔄 Starting automatic indexing...")
             print("   This will analyze the codebase and generate embeddings for better responses.")
             print("   Please wait while the project is being indexed...\n")
-            
+
             # Phase 1: Parse repository
             self._run_parser(project_name)
-            
+
             # Phase 2: Generate embeddings and knowledge graph
             self._run_embedding_generation(project_name)
-            
+
             print("\n✅ Project indexing completed successfully!")
             print("   The agent is now ready to provide intelligent assistance.\n")
-            
+
         except Exception as e:
             logger.error(f"Error during auto-indexing: {e}")
             print(f"❌ Auto-indexing failed: {e}")
             print("   Continuing with limited functionality.")
-            
+
     def _run_parser(self, project_name: str) -> None:
         """Run the parser phase of indexing."""
         print("PHASE 1: Parsing Repository")
         print("-" * 40)
-        
+
         try:
             # Import correct parser components
             from parser.analyzer.analyzer import Analyzer
             import tempfile
             import json
             import asyncio
-            
+
             # Initialize analyzer
             analyzer = Analyzer(repo_id=project_name)
-            
+
             # Parse the current directory (using asyncio to handle async method)
             current_dir = Path.cwd()
-            
+
             # Run the async analyze_directory method
             results = asyncio.run(analyzer.analyze_directory(str(current_dir)))
-            
+
             # Save results to temporary file
             with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
                 json.dump(results, f, indent=2)
                 self._parser_output_path = f.name
-            
+
             print(f"✅ Repository parsed successfully")
             print(f"   Generated analysis for project: {project_name}")
-            
+
         except Exception as e:
             logger.error(f"Parser error: {e}")
             print(f"❌ Failed to parse repository: {e}")
             raise
-            
+
     def _run_embedding_generation(self, project_name: str) -> None:
         """Run the embedding generation phase of indexing."""
         print("\nPHASE 2: Generating Embeddings & Knowledge Graph")
         print("-" * 40)
-        
+
         try:
             # Import graph converter
             from graph import TreeSitterToSQLiteConverter
-            
+
             # Generate embeddings and knowledge graph
             converter = TreeSitterToSQLiteConverter()
             result = converter.convert_json_to_graph(
@@ -249,26 +252,25 @@ class AgentService:
                 clear_existing=False,
                 create_indexes=True,
             )
-            
+
             if result and result.get("status") == "success":
                 stats = result.get("database_stats", {})
                 print(f"✅ Knowledge graph generated successfully!")
                 print(f"   Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships")
                 print(f"   Embeddings: Generated for semantic search")
-                
+
                 # Clean up temporary file
                 import os
                 if hasattr(self, '_parser_output_path') and os.path.exists(self._parser_output_path):
                     os.unlink(self._parser_output_path)
             else:
                 raise Exception("Knowledge graph generation failed")
-                
+
         except Exception as e:
             logger.error(f"Graph generation error: {e}")
             print(f"❌ Failed to generate knowledge graph: {e}")
             raise
 
-    
     def _update_session_memory(self):
         """Update session memory with current memory state."""
         try:
@@ -286,12 +288,12 @@ class AgentService:
             )
         except Exception as e:
             logger.error(f"Error updating session memory: {e}")
-    
+
     def _is_critical_tool_failure(self, event: Dict[str, Any]) -> bool:
         """Determine if a tool failure is critical enough to stop execution."""
         tool_name = event.get("tool_name", "")
         error_msg = event.get("error", event.get("message", "")).lower()
-        
+
         # Critical tool failures that should stop execution
         critical_tools = ["write_to_file", "apply_diff", "execute_command"]
         critical_errors = [
@@ -304,16 +306,16 @@ class AgentService:
             "syntax error",
             "compilation error"
         ]
-        
+
         # Stop if critical tool fails
         if tool_name in critical_tools:
             return True
-        
+
         # Stop if error message indicates critical failure
         for critical_error in critical_errors:
             if critical_error in error_msg:
                 return True
-        
+
         # Stop if multiple consecutive failures (indicates systemic issue)
         if hasattr(self, '_consecutive_failures'):
             self._consecutive_failures += 1
@@ -321,14 +323,14 @@ class AgentService:
                 return True
         else:
             self._consecutive_failures = 1
-        
+
         return False
-    
+
     def _detect_simple_completion(self, event: Dict[str, Any], user_query: str) -> bool:
         """Detect if a simple task has been completed successfully."""
         tool_name = event.get("tool_name", "")
         query_lower = user_query.lower()
-        
+
         # Simple completion patterns
         simple_completions = {
             # "list_files": ["list", "show", "find files", "what files"],
@@ -337,7 +339,7 @@ class AgentService:
             # "write_to_file": ["create", "write", "make", "generate"],
             # "execute_command": ["run", "execute", "create", "copy", "clone"]
         }
-        
+
         # Check if this tool typically completes the user's query
         if tool_name in simple_completions:
             patterns = simple_completions[tool_name]
@@ -347,7 +349,7 @@ class AgentService:
                     if event.get("success", True) and event.get("type") != "error":
                         logger.debug(f"Detected simple completion for {tool_name}")
                         return True
-        
+
         return False
 
     def solve_problem(
@@ -361,7 +363,7 @@ class AgentService:
 
         # Set reasoning context in memory manager
         self.memory_manager.set_reasoning_context(problem_query)
-        
+
         # Add user query to sutra memory at the start
         # Get rich memory from memory manager
         current_memory_rich = self.memory_manager.get_memory_for_llm()
@@ -392,17 +394,17 @@ class AgentService:
         # Clear session data for the new query to ensure clean state
         self.session_manager.clear_session_data_for_current_query()
         self.last_tool_result = None
-        
+
         # Reset consecutive failures for new query
         self._consecutive_failures = 0
-        
+
         # Clear reasoning context in memory manager
         self.memory_manager.clear_reasoning_context()
-        
+
         # Clear error handler and result verifier history
         self.error_handler.clear_history()
         self.result_verifier.clear_history()
-        
+
         # Set new reasoning context for continuation
         self.memory_manager.set_reasoning_context(query)
 
@@ -437,7 +439,7 @@ class AgentService:
 
         while current_iteration < max_iterations:
             current_iteration += 1
-            
+
             # Show progress for each iteration
             print(f"🔄 Iteration {current_iteration}/{max_iterations}")
 
@@ -481,10 +483,10 @@ class AgentService:
                     ]:
                         # Store ANY non-thinking, non-memory event as tool result
                         self.last_tool_result = event
-                        
+
                         # Improve tool call visibility - extract tool name from event
                         tool_name = event.get("tool_name", "unknown")
-                        
+
                         # Show tool execution for all relevant events
                         event_type = event.get("type", "unknown")
                         # Include all event types that have tool names
@@ -493,17 +495,17 @@ class AgentService:
                         elif tool_name == "unknown":
                             # Debug: log when tool name is unknown
                             logger.debug(f"Unknown tool name for event type: {event_type}, event keys: {list(event.keys())}")
-                        
+
                         # Validate tool result using SutraMemoryManager
                         validation_result = self.memory_manager.validate_tool_result(
                             tool_name, event, user_query
                         )
-                        
+
                         # Verify result using result verifier
                         verification_result = self.result_verifier.verify_result(
                             tool_name, event
                         )
-                        
+
                         # Show validation results
                         if not validation_result["valid"]:
                             print(f"⚠️  Tool validation failed: {validation_result['issues']}")
@@ -513,7 +515,7 @@ class AgentService:
                             confidence = validation_result["confidence"]
                             if confidence < 0.7:
                                 print(f"⚠️  Low confidence result: {confidence:.2f}")
-                        
+
                         # Show verification results
                         if not verification_result["verified"]:
                             print(f"❌ Result verification failed: {verification_result['issues']}")
@@ -523,7 +525,7 @@ class AgentService:
                             print(f"⚠️  Result quality: {verification_result['result_quality']}")
                             if verification_result["recommendations"]:
                                 print(f"📝 Recommendations: {verification_result['recommendations']}")
-                            
+
                         # Show data preview for successful tool use
                         if event_type == "tool_use" and "data" in event:
                             data_preview = str(event["data"])[:200]
@@ -534,13 +536,13 @@ class AgentService:
                         elif "output" in event:
                             output_preview = str(event["output"])[:200]
                             print(f"   Output: {output_preview}...")
-                        
+
                         # Check for tool failures and stop if critical
                         if event.get("type") == "error" or event.get("success") is False or event.get("type") == "tool_error":
                             error_msg = event.get("error", event.get("message", "Unknown error"))
                             logger.error(f"Tool {tool_name} failed: {error_msg}")
                             print(f"❌ Tool {tool_name} failed: {error_msg}")
-                            
+
                             # Stop on critical tool failures
                             if self._is_critical_tool_failure(event):
                                 tool_failed = True
@@ -554,12 +556,12 @@ class AgentService:
                         else:
                             # Reset consecutive failures on success
                             self._consecutive_failures = 0
-                            
+
                             # Check for simple completion
                             if self._detect_simple_completion(event, user_query):
                                 print(f"🎯 Simple task completed with {tool_name}")
                                 task_complete = True
-                        
+
                         # Check if execution should continue based on validation
                         if not self.memory_manager.should_continue_execution(
                             validation_result, self._consecutive_failures
@@ -592,7 +594,7 @@ class AgentService:
                 if self._memory_needs_update:
                     self._update_session_memory()
                     self._memory_needs_update = False
-                
+
                 # Check if task is likely complete using SutraMemoryManager
                 if not task_complete:
                     completion_analysis = self.memory_manager.analyze_task_completion(user_query)
@@ -684,7 +686,7 @@ class AgentService:
 
                 # Add tool status -  FORMAT
                 user_message_parts.append(f"\n====\nTOOL STATUS\n\n{tool_status}\n====")
-                
+
                 # Add reasoning prompt from SutraMemoryManager
                 reasoning_prompt = self.memory_manager.generate_reasoning_prompt(user_query)
                 if reasoning_prompt != "No previous tool executions found.":
@@ -718,7 +720,7 @@ class AgentService:
                     "iteration": current_iteration,
                     "retry_count": retry_count
                 })
-                
+
                 logger.warning(
                     f"XML parsing failed on attempt {retry_count}/{max_retries}: {xml_error.message}"
                 )
@@ -742,7 +744,7 @@ class AgentService:
                     "iteration": current_iteration,
                     "user_query": user_query
                 })
-                
+
                 logger.error(f"Failed to get valid response from LLM: {e}")
                 if self.error_handler.should_stop_execution(error_info):
                     logger.error("Stopping execution due to critical error")
@@ -920,6 +922,13 @@ class AgentService:
         if original_request:
             status += f"Failed Content: {original_request}\n"
 
+        # Add linting status if available
+        lint_result = result.get("lint_result")
+        if lint_result:
+            lint_status = self._build_linting_status(lint_result)
+            if lint_status:
+                status += f"\n{lint_status}"
+
         return status.rstrip()
 
     def _build_web_search_status(self, result: Dict[str, Any]) -> str:
@@ -992,6 +1001,12 @@ class AgentService:
         if extra:
             status += f"Status: {extra}\n"
 
+        # Add linting status if available
+        lint_result = result.get("lint_result")
+        if lint_result:
+            lint_status = self._build_linting_status(lint_result)
+            if lint_status:
+                status += f"\n{lint_status}"
         return status.rstrip()
 
     def _build_search_keyword_status(self, result: Dict[str, Any]) -> str:
@@ -1043,16 +1058,16 @@ class AgentService:
     def _build_completion_status(self, result: Dict[str, Any]) -> str:
         """Build status for completion tool."""
         status = "Tool: attempt_completion\n"
-        
+
         if result.get("type") == "task_complete":
             status += "Status: Task completed successfully\n"
         elif result.get("type") == "completion":
             status += "Status: Completion requested\n"
-        
+
         completion_result = result.get("result", "")
         if completion_result:
             status += f"Result: {completion_result}"
-        
+
         return status.rstrip()
 
     def _build_generic_status(self, result: Dict[str, Any], tool_name: str) -> str:
@@ -1071,6 +1086,18 @@ class AgentService:
         if data:
             status += f"Results:\n{data}"
 
+        return status.rstrip()
+
+    def _build_linting_status(self, result: List[Dict[str, Any]]) -> str:
+        """Build status for linting tool."""
+        if not result or len(result) == 0:
+            return ""
+
+        status = "Linting Issues Found:\n"
+
+        status += f"{result.join('\n')}"
+
+        status += "\nNOTE: Address these linting issues in your next action or store them in sutra memory history section for future reference, as this information will not persist to the next iteration."
         return status.rstrip()
 
     def get_session_info(self) -> Dict[str, Any]:
