@@ -605,13 +605,23 @@ class TerminalSession:
             )
             return False
 
-    def execute_command(self, command: str, timeout: int = 30) -> Dict[str, Any]:
-        """Execute a command in the terminal session."""
+    def execute_command(self, command: str, timeout: int = 30, is_long_running: bool = False) -> Dict[str, Any]:
+        """Execute a command in the terminal session.
+
+        Args:
+            command: The command to execute
+            timeout: Maximum time to wait for command completion (seconds)
+            is_long_running: If True, the command is expected to run indefinitely
+                           (e.g., servers, watchers). The function will wait for
+                           startup output and return success without waiting for
+                           command completion.
+
+        Returns:
+            Dict containing status, output, error, cwd, session_id, exit_code,
+            and is_long_running flag.
+        """
         with self._lock:
             self.last_used = time.time()
-
-            # Detect if this is a long-running process
-            is_long_running = self._is_long_running_command(command)
 
             if is_long_running:
                 self.has_running_task = True
@@ -845,38 +855,7 @@ class TerminalSession:
         logger.debug(f"Session {self.session_id} is compatible for reuse")
         return True
 
-    def _is_long_running_command(self, command: str) -> bool:
-        """Detect if a command is likely to be long-running."""
-        long_running_patterns = [
-            "server",
-            "serve",
-            "http.server",
-            "npm start",
-            "npm run",
-            "node server",
-            "python -m http.server",
-            "python3 -m http.server",
-            "flask run",
-            "django runserver",
-            "rails server",
-            "cargo run",
-            "dotnet run",
-            "java -jar",
-            "mvn spring-boot:run",
-            "gradle bootRun",
-            "webpack serve",
-            "ng serve",
-            "react-scripts start",
-            "next dev",
-            "gatsby develop",
-            "watch",
-            "tail -f",
-            "docker run",
-            "docker-compose up",
-        ]
 
-        command_lower = command.lower()
-        return any(pattern in command_lower for pattern in long_running_patterns)
 
     def _handle_long_running_command(
         self, command: str, timeout: int
@@ -886,7 +865,6 @@ class TerminalSession:
             return False, []
 
         # For long-running commands, wait for startup output then return
-        startup_timeout = min(10, timeout)  # Max 10 seconds for startup
         output_lines = []
 
         # Wait for initial startup output
@@ -902,24 +880,8 @@ class TerminalSession:
                     if line.strip():
                         output_lines.append(line)
 
-            # For servers, look for common startup indicators
-            startup_indicators = [
-                "serving",
-                "listening",
-                "started",
-                "running",
-                "server",
-                "port",
-                "address",
-                "http",
-                "ready",
-                "watching",
-            ]
-
-            startup_output_lower = startup_output.lower()
-            if any(
-                indicator in startup_output_lower for indicator in startup_indicators
-            ):
+            # If we got startup output, consider the process as started
+            if startup_output.strip():
                 logger.info(
                     f"Long-running process appears to have started successfully in session {self.session_id}"
                 )
@@ -1358,7 +1320,17 @@ def _handle_get_desktop_info(parameters: Dict[str, Any]) -> Iterator[Dict[str, A
 
 
 def _handle_execute_command(parameters: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
-    """Handle execute command action."""
+    """Handle execute command action.
+
+    Parameters:
+        command (str): The command to execute
+        session_id (str, optional): Specific session ID to use
+        cwd (str, optional): Working directory for the command
+        description (str, optional): Description for session reuse logic
+        is_long_running (bool, optional): Whether this is a long-running command
+                                        that won't terminate on its own (default: False)
+        timeout (int, optional): Maximum time to wait for completion (default: 30)
+    """
     command = parameters.get("command")
     if not command:
         yield {
@@ -1372,6 +1344,8 @@ def _handle_execute_command(parameters: Dict[str, Any]) -> Iterator[Dict[str, An
     session_id = parameters.get("session_id")
     cwd = parameters.get("cwd", os.getcwd())
     description = parameters.get("description", "")
+    is_long_running = parameters.get("is_long_running", False)
+    timeout = parameters.get("timeout", 30)
 
     logger.debug("Executing command: %s", command)
 
@@ -1407,7 +1381,7 @@ def _handle_execute_command(parameters: Dict[str, Any]) -> Iterator[Dict[str, An
 
     # Execute command
     logger.debug(f"Executing command in foreground session {session_id}: {command}")
-    result = session.execute_command(command)
+    result = session.execute_command(command, timeout=timeout, is_long_running=is_long_running)
 
     # Add session info to result
     result.update(
