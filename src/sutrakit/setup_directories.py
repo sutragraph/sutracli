@@ -172,9 +172,9 @@ def setup_parsers() -> bool:
 def setup_configuration():
     """Setup configuration files"""
     log_info("Setting up configuration files...")
-    
+
     config_dir = INSTALL_DIR / "config"
-    
+
     # Create system configuration
     system_config = {
         "database": {
@@ -185,7 +185,7 @@ def setup_configuration():
             "batch_size": 1000,
             "enable_indexing": True,
             "create_tables": True,
-            "enable_wal_mode": True
+            "enable_wal_mode": True,
         },
         "storage": {
             "data_dir": f"{INSTALL_DIR}/data",
@@ -193,7 +193,8 @@ def setup_configuration():
             "file_changes_dir": f"{INSTALL_DIR}/data/file_changes",
             "file_edits_dir": f"{INSTALL_DIR}/data/edits",
             "parser_results_dir": f"{INSTALL_DIR}/parser_results",
-            "models_dir": f"{INSTALL_DIR}/models"
+            "models_dir": f"{INSTALL_DIR}/models",
+            "linters_dir": f"{INSTALL_DIR}/linters",
         },
         "embedding": {
             "model_name": "all-MiniLM-L12-v2",
@@ -201,17 +202,13 @@ def setup_configuration():
             "max_tokens": 230,
             "overlap_tokens": 30,
             "similarity_threshold": 0.2,
-            "enable_optimization": False
+            "enable_optimization": False,
         },
         "parser": {
             "config_file": f"{INSTALL_DIR}/config/parsers.json",
-            "build_directory": f"{INSTALL_DIR}/build"
+            "build_directory": f"{INSTALL_DIR}/build",
         },
-        "web_search": {
-            "api_key": "",
-            "requests_per_minute": 60,
-            "timeout": 30
-        },
+        "web_search": {"api_key": "", "requests_per_minute": 60, "timeout": 30},
         "web_scrap": {
             "timeout": 30,
             "max_retries": 3,
@@ -221,16 +218,12 @@ def setup_configuration():
             "include_images": True,
             "include_links": True,
             "trafilatura_config": {},
-            "markdown_options": {
-                "heading_style": "ATX",
-                "bullets": "-",
-                "wrap": True
-            }
+            "markdown_options": {"heading_style": "ATX", "bullets": "-", "wrap": True},
         },
         "logging": {
             "level": "INFO",
             "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-            "log_file": f"{INSTALL_DIR}/logs/sutraknowledge.log"
+            "log_file": f"{INSTALL_DIR}/logs/sutraknowledge.log",
         },
         "llm": {
             "provider": "anthropic",
@@ -241,32 +234,29 @@ def setup_configuration():
                 "model_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
                 "access_key_id": "",
                 "secret_access_key": "",
-                "region": "us-east-1"
+                "region": "us-east-1",
             },
-            "anthropic": {
-                "api_key": "",
-                "model_id": "claude-3-5-sonnet-20241022"
-            },
+            "anthropic": {"api_key": "", "model_id": "claude-3-5-sonnet-20241022"},
             "gcp": {
                 "api_key": "",
                 "project_id": "",
                 "location": "us-central1",
-                "llm_endpoint": "https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/endpoints/openapi/chat/completions"
+                "llm_endpoint": "https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/endpoints/openapi/chat/completions",
             },
             "superllm": {
                 "api_endpoint": "http://localhost:8000",
                 "firebase_token": "",
                 "default_model": "gpt-3.5-turbo",
-                "default_provider": "openai"
-            }
-        }
+                "default_provider": "openai",
+            },
+        },
     }
-    
+
     system_config_path = config_dir / "system.json"
     with open(system_config_path, 'w') as f:
         json.dump(system_config, f, indent=2)
     log_success(f"System configuration created at {system_config_path}")
-    
+
     # Create parser configuration
     parser_config = {
         "build_directory": str(INSTALL_DIR / "build"),
@@ -309,7 +299,7 @@ def setup_configuration():
             }
         }
     }
-    
+
     parser_config_path = config_dir / "parsers.json"
     with open(parser_config_path, 'w') as f:
         json.dump(parser_config, f, indent=2)
