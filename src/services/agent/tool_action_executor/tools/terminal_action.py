@@ -1,4 +1,4 @@
-from logging import logger
+from loguru import logger
 import os
 import platform
 
