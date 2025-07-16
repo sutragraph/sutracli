@@ -2,8 +2,11 @@
 
 import argparse
 
+from config.settings import config
+
 
 def setup_argument_parser() -> argparse.ArgumentParser:
+    default_log_level = config.logging.level
     parser = argparse.ArgumentParser(
         description="Convert tree-sitter JSON to SQLite with embeddings for semantic search"
     )
@@ -28,7 +31,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     single_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -42,7 +45,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     multi_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -51,7 +54,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     list_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -67,7 +70,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     clear_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -78,7 +81,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     stats_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -115,7 +118,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     agent_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -136,7 +139,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     parse_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -160,9 +163,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     search_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
-        help="Set the logging level"
-        )
+        default=default_log_level,
+        help="Set the logging level",
+    )
 
     # Index command for full project indexing at custom paths
     index_parser = subparsers.add_parser(
@@ -184,7 +187,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     index_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
+        default=default_log_level,
         help="Set the logging level",
     )
 
@@ -192,10 +195,14 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     auth_parser = subparsers.add_parser(
         "auth", help="Authentication management for LLM providers"
     )
-    auth_subparsers = auth_parser.add_subparsers(dest="auth_command", help="Authentication commands")
+    auth_subparsers = auth_parser.add_subparsers(
+        dest="auth_command", help="Authentication commands"
+    )
 
     # Auth login command
-    login_parser = auth_subparsers.add_parser("login", help="Authenticate with SuperLLM")
+    login_parser = auth_subparsers.add_parser(
+        "login", help="Authenticate with SuperLLM"
+    )
     login_parser.add_argument(
         "--provider", default="superllm", help="Provider name (default: superllm)"
     )
@@ -213,13 +220,17 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     )
 
     # Auth status command
-    status_parser = auth_subparsers.add_parser("status", help="Check authentication status")
+    status_parser = auth_subparsers.add_parser(
+        "status", help="Check authentication status"
+    )
     status_parser.add_argument(
         "--provider", help="Specific provider to check (default: all)"
     )
 
     # Auth logout command
-    logout_parser = auth_subparsers.add_parser("logout", help="Remove authentication token")
+    logout_parser = auth_subparsers.add_parser(
+        "logout", help="Remove authentication token"
+    )
     logout_parser.add_argument(
         "--provider", default="superllm", help="Provider to logout from"
     )
@@ -229,15 +240,13 @@ def setup_argument_parser() -> argparse.ArgumentParser:
 
     # Auth test command
     test_parser = auth_subparsers.add_parser("test", help="Test authentication")
-    test_parser.add_argument(
-        "--provider", default="superllm", help="Provider to test"
-    )
-    test_parser.add_argument(
-        "--api-endpoint", help="Override API endpoint for testing"
-    )
+    test_parser.add_argument("--provider", default="superllm", help="Provider to test")
+    test_parser.add_argument("--api-endpoint", help="Override API endpoint for testing")
 
     # Auth clear command
-    clear_auth_parser = auth_subparsers.add_parser("clear", help="Clear all authentication tokens")
+    clear_auth_parser = auth_subparsers.add_parser(
+        "clear", help="Clear all authentication tokens"
+    )
     clear_auth_parser.add_argument(
         "--force", action="store_true", help="Skip confirmation prompt"
     )
@@ -353,8 +362,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     )
 
     # Version command
-    version_parser = subparsers.add_parser(
-        "version", help="Show version information"
-    )
+    version_parser = subparsers.add_parser("version", help="Show version information")
 
     return parser
