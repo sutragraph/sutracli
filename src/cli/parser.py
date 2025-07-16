@@ -93,6 +93,11 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Optional initial problem description (if not provided, will enter interactive mode)",
     )
     agent_parser.add_argument(
+        "--directory",
+        "-d",
+        help="Directory to analyze (default: current directory)",
+    )
+    agent_parser.add_argument(
         "--project-id", type=int, help="Limit analysis to specific project ID"
     )
     agent_parser.add_argument(
@@ -158,6 +163,31 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         default="INFO",
         help="Set the logging level"
         )
+
+    # Index command for full project indexing at custom paths
+    index_parser = subparsers.add_parser(
+        "index", help="Fully index a project at a specific path (parse + embeddings)"
+    )
+    index_parser.add_argument(
+        "project_path",
+        help="Path to the project directory to index",
+    )
+    index_parser.add_argument(
+        "--project-name",
+        help="Custom project name (default: directory name)",
+    )
+    index_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-indexing even if project already exists",
+    )
+    index_parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Set the logging level",
+    )
+
     # Auth command for authentication management
     auth_parser = subparsers.add_parser(
         "auth", help="Authentication management for LLM providers"

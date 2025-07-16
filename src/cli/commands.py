@@ -226,7 +226,12 @@ def handle_agent_command(args) -> None:
     print("=" * 80)
 
     try:
-        agent = AgentService()
+        # Get project directory from args if provided
+        project_directory = getattr(args, "directory", None)
+        if project_directory:
+            print(f"📁 Working directory: {project_directory}")
+        
+        agent = AgentService(project_path=project_directory)
 
         if args.problem_query:
             print(f"📝 Initial Problem: {args.problem_query}")
@@ -362,6 +367,67 @@ def handle_parse_command(args) -> str:
     except Exception as e:
         logger.error(f"Unexpected error during analysis: {e}")
         sys.exit(1)
+
+
+def handle_index_command(args) -> None:
+    """Handle full project indexing command."""
+    from pathlib import Path
+    from services.project_manager import ProjectManager
+    from graph.sqlite_client import SQLiteConnection
+    from embeddings.vector_db import VectorDatabase
+    
+    try:
+        # Validate project path
+        project_path = Path(args.project_path).absolute()
+        if not project_path.exists():
+            print(f"❌ Project path does not exist: {project_path}")
+            return
+        
+        if not project_path.is_dir():
+            print(f"❌ Project path is not a directory: {project_path}")
+            return
+        
+        # Initialize required components
+        db_connection = SQLiteConnection()
+        vector_db = VectorDatabase(config.sqlite.embeddings_db)
+        project_manager = ProjectManager(db_connection, vector_db)
+        
+        # Determine project name
+        project_name = args.project_name
+        if not project_name:
+            project_name = project_manager.determine_project_name(str(project_path))
+        
+        print(f"📁 Indexing project '{project_name}' at: {project_path}")
+        
+        # Check if project already exists and handle force flag
+        if db_connection.project_exists(project_name):
+            if not args.force:
+                print(f"⚠️  Project '{project_name}' already exists in database.")
+                print("   Use --force to re-index or choose a different --project-name.")
+                return
+            else:
+                print(f"🔄 Force re-indexing existing project '{project_name}'")
+                # Clear existing project data before re-indexing
+                try:
+                    delete_result = project_manager.delete_project(project_name)
+                    if delete_result["success"]:
+                        print(f"   ✅ Cleared existing project data")
+                    else:
+                        print(f"   ⚠️  Warning: Could not clear existing data: {delete_result['error']}")
+                except Exception as e:
+                    print(f"   ⚠️  Warning: Could not clear existing data: {e}")
+        
+        # Perform the indexing
+        result = project_manager.index_project_at_path(str(project_path), project_name)
+        
+        if result["success"]:
+            print(f"✅ {result['message']}")
+        else:
+            print(f"❌ Failed to index project: {result['error']}")
+            
+    except Exception as e:
+        logger.error(f"Error during project indexing: {e}")
+        print(f"❌ Unexpected error: {e}")
 
 
 def handle_search_command(args) -> None:

@@ -252,7 +252,8 @@ class SutraKnowledgeCLI:
             # Create args object for handle_agent_command
             args = Namespace(
                 problem_query=None,  # Start in interactive mode
-                project_id=None,  # Will auto-detect from repository
+                project_id=self.repo_name,  # Use repository name as project ID
+                directory=str(self.current_dir),  # Pass the current directory
             )
 
             # Run the agent

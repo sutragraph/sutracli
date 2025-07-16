@@ -14,6 +14,7 @@ from cli.commands import (
     handle_stats_command,
     handle_agent_command,
     handle_parse_command,
+    handle_index_command,
     handle_search_command,
     handle_auth_command,
     handle_web_search_command,
@@ -67,6 +68,9 @@ def main():
 
         elif args.command == "parse":
             result_path = handle_parse_command(args)
+
+        elif args.command == "index":
+            handle_index_command(args)
 
         elif args.command == "search":
             handle_search_command(args)

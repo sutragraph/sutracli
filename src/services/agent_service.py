@@ -6,7 +6,6 @@ from typing import Dict, Any, List, Optional, Iterator
 from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection
-from graph.incremental_indexing import IncrementalIndexing
 from embeddings.vector_db import VectorDatabase
 from .agent.agent_prompt.system import get_base_system_prompt
 from .llm_clients.llm_factory import llm_client_factory
@@ -14,6 +13,7 @@ from .agent.tool_action_executor.tool_action_executor import ActionExecutor
 from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from .agent.error_handler import ErrorHandler, ResultVerifier
+from .project_manager import ProjectManager
 from config import config
 from utils.xml_parsing_exceptions import XMLParsingFailedException
 from utils.performance_monitor import get_performance_monitor, performance_timer
@@ -22,7 +22,13 @@ from utils.performance_monitor import get_performance_monitor, performance_timer
 class AgentService:
     """Agent Service with unified tool status handling."""
 
-    def __init__(self, session_id: Optional[str] = None):
+    def __init__(self, session_id: Optional[str] = None, project_path: Optional[str] = None):
+        """Initialize the Agent Service.
+        
+        Args:
+            session_id: Optional session ID for conversation continuity
+            project_path: Optional path to the project directory. If None, uses current directory.
+        """
         self.llm_client = llm_client_factory()
         self.db_connection = SQLiteConnection()
         self.vector_db = VectorDatabase(config.sqlite.embeddings_db)
@@ -31,6 +37,14 @@ class AgentService:
         self.memory_manager = SutraMemoryManager(db_connection=self.db_connection)
 
         self.session_data: List[Dict[str, Any]] = []
+
+        # Store project path for future reference
+        self.project_path = project_path
+
+        # Initialize project manager for centralized project operations
+        self.project_manager = ProjectManager(
+            self.db_connection, self.vector_db, self.memory_manager
+        )
 
         # XML-based action executor with shared sutra memory manager
         self.xml_action_executor = ActionExecutor(
@@ -50,223 +64,20 @@ class AgentService:
         self.error_handler = ErrorHandler()
         self.result_verifier = ResultVerifier()
 
-        # Initialize incremental indexing with shared memory manager
-        self.incremental_indexer = IncrementalIndexing(
-            self.db_connection, self.memory_manager
-        )
-
-        # Determine current project name from working directory
-        self.current_project_name = self._determine_project_name()
+        # Determine current project name from specified or working directory
+        self.current_project_name = self.project_manager.determine_project_name(project_path)
         
         # Performance monitoring
         self.performance_monitor = get_performance_monitor()
         
         # Check if project exists in database and auto-index if needed
-        self._ensure_project_indexed()
+        self.project_manager.ensure_project_indexed(self.current_project_name, project_path)
 
     def _perform_incremental_indexing(self) -> Iterator[Dict[str, Any]]:
         """Perform incremental reindexing of the database using the current project name."""
-        logger.debug(
-            f"🔄 Running database reindex for project {self.current_project_name}"
-        )
-        stats = self.incremental_indexer.reindex_database(self.current_project_name)
-        yield {
-            "type": "incremental_indexing",
-            "stats": stats,
-            "timestamp": time.time(),
-        }
+        yield from self.project_manager.perform_incremental_indexing(self.current_project_name)
 
-    def _determine_project_name(self) -> str:
-        """Determine the correct project name from the database."""
-        try:
-            projects = self.db_connection.list_all_projects()
-            if projects:
-                # Check if current directory is a subdirectory of any existing project
-                existing_project = self._find_parent_project(projects)
-                if existing_project:
-                    logger.debug(f"Found parent project: {existing_project}")
-                    return existing_project
-                
-                # If no parent project found, use the first project (existing behavior)
-                project_name = projects[0]["name"]
-                logger.debug(f"Using project from database: {project_name}")
-                return project_name
 
-            cwd_name = Path.cwd().name
-            logger.warning(
-                f"No projects found in database, falling back to directory name: {cwd_name}"
-            )
-            return cwd_name
-
-        except Exception as e:
-            logger.warning(f"Error determining project name: {e}")
-            return Path.cwd().name
-    
-    def _find_parent_project(self, projects: List[Dict[str, Any]]) -> Optional[str]:
-        """Find if current directory is a subdirectory of any existing project."""
-        current_dir = Path.cwd().absolute()
-        
-        for project in projects:
-            project_name = project["name"]
-            try:
-                # Get the project's root directory by finding the common root of all file paths
-                project_dir = self._get_project_directory(project_name)
-                if project_dir and current_dir.is_relative_to(project_dir):
-                    logger.debug(f"Current directory {current_dir} is within project {project_name} at {project_dir}")
-                    return project_name
-            except Exception as e:
-                logger.debug(f"Error checking project {project_name}: {e}")
-                continue
-        
-        return None
-    
-    def _get_project_directory(self, project_name: str) -> Optional[Path]:
-        """Get the root directory of a project by analyzing its file paths."""
-        try:
-            # Get all file paths for this project
-            file_paths = self.db_connection.execute_query(
-                """
-                SELECT DISTINCT file_path 
-                FROM file_hashes 
-                WHERE project_id = (SELECT id FROM projects WHERE name = ?)
-                """,
-                (project_name,)
-            )
-            
-            if not file_paths:
-                return None
-            
-            # Convert to Path objects and find common root
-            paths = [Path(row["file_path"]).absolute() for row in file_paths]
-            
-            # Find the common root directory
-            if len(paths) == 1:
-                return paths[0].parent
-            
-            # Find the longest common path
-            common_path = paths[0]
-            for path in paths[1:]:
-                # Find common parts between current common_path and this path
-                common_parts = []
-                for part1, part2 in zip(common_path.parts, path.parts):
-                    if part1 == part2:
-                        common_parts.append(part1)
-                    else:
-                        break
-                
-                if common_parts:
-                    common_path = Path(*common_parts)
-                else:
-                    # No common path found
-                    return None
-            
-            return common_path
-            
-        except Exception as e:
-            logger.debug(f"Error getting project directory for {project_name}: {e}")
-            return None
-    
-    def _ensure_project_indexed(self) -> None:
-        """Ensure the current project is indexed in the database."""
-        try:
-            # Check if project exists in database
-            if not self.db_connection.project_exists(self.current_project_name):
-                logger.info(f"Project '{self.current_project_name}' not found in database")
-                self._auto_index_project(self.current_project_name)
-        except Exception as e:
-            logger.error(f"Error checking project indexing status: {e}")
-    
-    def _auto_index_project(self, project_name: str) -> None:
-        """Automatically index the current project if not found in database."""
-        try:
-            print(f"\n📁 Project '{project_name}' not found in database")
-            print("🔄 Starting automatic indexing...")
-            print("   This will analyze the codebase and generate embeddings for better responses.")
-            print("   Please wait while the project is being indexed...\n")
-            
-            # Phase 1: Parse repository
-            self._run_parser(project_name)
-            
-            # Phase 2: Generate embeddings and knowledge graph
-            self._run_embedding_generation(project_name)
-            
-            print("\n✅ Project indexing completed successfully!")
-            print("   The agent is now ready to provide intelligent assistance.\n")
-            
-        except Exception as e:
-            logger.error(f"Error during auto-indexing: {e}")
-            print(f"❌ Auto-indexing failed: {e}")
-            print("   Continuing with limited functionality.")
-            
-    def _run_parser(self, project_name: str) -> None:
-        """Run the parser phase of indexing."""
-        print("PHASE 1: Parsing Repository")
-        print("-" * 40)
-        
-        try:
-            # Import correct parser components
-            from parser.analyzer.analyzer import Analyzer
-            import tempfile
-            import json
-            import asyncio
-            
-            # Initialize analyzer
-            analyzer = Analyzer(repo_id=project_name)
-            
-            # Parse the current directory (using asyncio to handle async method)
-            current_dir = Path.cwd()
-            
-            # Run the async analyze_directory method
-            results = asyncio.run(analyzer.analyze_directory(str(current_dir)))
-            
-            # Save results to temporary file
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                json.dump(results, f, indent=2)
-                self._parser_output_path = f.name
-            
-            print(f"✅ Repository parsed successfully")
-            print(f"   Generated analysis for project: {project_name}")
-            
-        except Exception as e:
-            logger.error(f"Parser error: {e}")
-            print(f"❌ Failed to parse repository: {e}")
-            raise
-            
-    def _run_embedding_generation(self, project_name: str) -> None:
-        """Run the embedding generation phase of indexing."""
-        print("\nPHASE 2: Generating Embeddings & Knowledge Graph")
-        print("-" * 40)
-        
-        try:
-            # Import graph converter
-            from graph import TreeSitterToSQLiteConverter
-            
-            # Generate embeddings and knowledge graph
-            converter = TreeSitterToSQLiteConverter()
-            result = converter.convert_json_to_graph(
-                self._parser_output_path,
-                project_name=project_name,
-                clear_existing=False,
-                create_indexes=True,
-            )
-            
-            if result and result.get("status") == "success":
-                stats = result.get("database_stats", {})
-                print(f"✅ Knowledge graph generated successfully!")
-                print(f"   Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships")
-                print(f"   Embeddings: Generated for semantic search")
-                
-                # Clean up temporary file
-                import os
-                if hasattr(self, '_parser_output_path') and os.path.exists(self._parser_output_path):
-                    os.unlink(self._parser_output_path)
-            else:
-                raise Exception("Knowledge graph generation failed")
-                
-        except Exception as e:
-            logger.error(f"Graph generation error: {e}")
-            print(f"❌ Failed to generate knowledge graph: {e}")
-            raise
 
     
     def _update_session_memory(self):
