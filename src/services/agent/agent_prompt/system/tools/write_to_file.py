@@ -4,7 +4,7 @@ Description: Request to write content to a file. This tool handles both **creati
 Parameters:
 - path: (required) The path of the file to write to (relative to the current workspace directory {current_dir})
 - content: (required) The content to write or insert
-- line: (optional) Line number for insertion (1-based indexing). If not specified, content is appended to the end of existing files
+- line: (optional) insertion before line number (1-based indexing). If not specified, content is appended to the end of existing files
 - is_new_file: (optional) Set to true when creating a new file. Defaults to false for existing file operations
 
 Usage:

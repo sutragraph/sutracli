@@ -1,3 +1,4 @@
+import json
 from loguru import logger
 from typing import Iterator, Dict, Any, List
 from embeddings.vector_db import VectorDatabase
@@ -181,8 +182,6 @@ def _extract_chunk_specific_code(
     # Parse node lines to get the node's starting line
     node_lines = node_details.get("lines")
     if node_lines:
-        import json
-
         try:
             lines_data = json.loads(node_lines)
             if isinstance(lines_data, list) and len(lines_data) >= 1:
