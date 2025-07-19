@@ -258,20 +258,25 @@ class TypeScriptExtractor(BaseExtractor):
         if hasattr(node, 'children'):
             for child in node.children:
                 if hasattr(child, 'type') and child.type in ['variable_declaration', 'lexical_declaration']:
-                    names = self._extract_variable_names(child)
-                    if names:
-                        start_line, end_line, start_col, end_col = self._get_node_position(child)
-                        content = self._get_node_text(child)
-                        for name in names:
-                            blocks.append(CodeBlock(
-                                type=BlockType.VARIABLE,
-                                name=name,
-                                content=content,
-                                start_line=start_line,
-                                end_line=end_line,
-                                start_col=start_col,
-                                end_col=end_col
-                            ))
+                    # Extract variables but skip function assignments (they'll be handled as functions)
+                    if hasattr(child, 'children'):
+                        for grandchild in child.children:
+                            if hasattr(grandchild, 'type') and grandchild.type == 'variable_declarator':
+                                # Skip if this is a function assignment
+                                if not self._is_function_assignment(grandchild):
+                                    name = self._get_identifier_name(grandchild)
+                                    if name:
+                                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                                        content = self._get_node_text(child)
+                                        blocks.append(CodeBlock(
+                                            type=BlockType.VARIABLE,
+                                            name=name,
+                                            content=content,
+                                            start_line=start_line,
+                                            end_line=end_line,
+                                            start_col=start_col,
+                                            end_col=end_col
+                                        ))
 
         return blocks
 

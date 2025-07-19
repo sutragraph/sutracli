@@ -1,7 +1,7 @@
 """
-Enhanced AST Parser with Code Block Extraction
+AST Parser with Code Block Extraction
 
-This module provides an enhanced AST parser that can extract specific code blocks
+This module provides an AST parser that can extract specific code blocks
 from parsed AST trees using language-specific extractors.
 """
 
@@ -22,13 +22,13 @@ from extractors.typescript_extractor import TypeScriptExtractor
 from extractors.python_extractor import PythonExtractor
 
 
-class EnhancedASTParser:
+class ASTParser:
     """
-    Enhanced AST parser with code block extraction capabilities.
+    AST parser with code block extraction capabilities.
     """
 
     def __init__(self):
-        """Initialize the enhanced AST parser."""
+        """Initialize the  AST parser."""
         self._parser_cache: Dict[str, Any] = {}
         self._setup_extractors()
 
