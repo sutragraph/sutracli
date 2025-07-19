@@ -3,17 +3,19 @@
 ## Quick Start
 
 ### Installation
+
 ```bash
 pip install tree-sitter-language-pack
 ```
 
 ### Basic Usage
+
 ```python
-from enhanced_ast_parser import EnhancedASTParser
+from enhanced_ast_parser import ASTParser
 from extractors import BlockType
 
 # Initialize parser
-parser = EnhancedASTParser()
+parser = ASTParser()
 
 # Extract all code blocks
 result = parser.parse_and_extract("my_file.py")
@@ -26,6 +28,7 @@ result = parser.parse_and_extract("my_file.ts", [BlockType.FUNCTION, BlockType.C
 ## Common Operations
 
 ### Extract Functions Only
+
 ```python
 functions = parser.extract_functions("script.py")
 for func in functions:
@@ -33,6 +36,7 @@ for func in functions:
 ```
 
 ### Extract Classes Only
+
 ```python
 classes = parser.extract_classes("module.ts")
 for cls in classes:
@@ -40,6 +44,7 @@ for cls in classes:
 ```
 
 ### Process Directory
+
 ```python
 results = parser.extract_from_directory("src/")
 for file_path, result in results.items():
@@ -48,6 +53,7 @@ for file_path, result in results.items():
 ```
 
 ### Get Summary
+
 ```python
 summary = parser.get_summary("file.py")
 for block_type, count in summary.items():
@@ -56,6 +62,7 @@ for block_type, count in summary.items():
 ```
 
 ### Filter Blocks by Type
+
 ```python
 # Get all blocks
 all_blocks = parser.parse_and_extract("file.py")["blocks"]
@@ -72,15 +79,15 @@ print(f"Imports: {[i.name for i in imports]}")
 
 ## Block Types
 
-| Type | Description | Notes |
-|------|-------------|-------|
-| `BlockType.ENUM` | Enum declarations | TypeScript enums, Python Enum classes |
-| `BlockType.VARIABLE` | Variable declarations | Supports destructuring, excludes lambdas |
-| `BlockType.FUNCTION` | Function definitions | All function declarations and methods |
-| `BlockType.CLASS` | Class declarations | Complete class definitions |
+| Type                  | Description            | Notes                                      |
+| --------------------- | ---------------------- | ------------------------------------------ |
+| `BlockType.ENUM`      | Enum declarations      | TypeScript enums, Python Enum classes      |
+| `BlockType.VARIABLE`  | Variable declarations  | Supports destructuring, excludes lambdas   |
+| `BlockType.FUNCTION`  | Function definitions   | All function declarations and methods      |
+| `BlockType.CLASS`     | Class declarations     | Complete class definitions                 |
 | `BlockType.INTERFACE` | Interface declarations | TypeScript interfaces, Python ABC/Protocol |
-| `BlockType.IMPORT` | Import statements | All import variations with metadata |
-| `BlockType.EXPORT` | Export statements | TypeScript exports, Python __all__ |
+| `BlockType.IMPORT`    | Import statements      | All import variations with metadata        |
+| `BlockType.EXPORT`    | Export statements      | TypeScript exports, Python **all**         |
 
 ## Supported Languages
 
@@ -104,6 +111,7 @@ else:
 ## Code Block Properties
 
 Each `CodeBlock` contains:
+
 - `type`: Block type (enum)
 - `name`: Block name
 - `content`: Full source code
@@ -114,6 +122,7 @@ Each `CodeBlock` contains:
 ## Advanced Usage
 
 ### Custom Extraction
+
 ```python
 # Extract only imports and exports
 result = parser.parse_and_extract("file.ts", [BlockType.IMPORT, BlockType.EXPORT])
@@ -124,6 +133,7 @@ functions = parser.get_blocks_by_type(all_blocks, BlockType.FUNCTION)
 ```
 
 ### Working with Metadata
+
 ```python
 # Import metadata
 imports = parser.extract_imports("file.py")
@@ -149,6 +159,7 @@ for func in functions:
 The parser properly classifies different types of functions:
 
 ### Python
+
 ```python
 # Lambda functions - classified as FUNCTION
 my_lambda = lambda x: x * 2
@@ -168,23 +179,25 @@ def standalone():  # is_method=False
 ```
 
 ### TypeScript
+
 ```typescript
 // Arrow functions - classified as FUNCTION with is_arrow=True
-const arrow = () => {};  // is_arrow=True
+const arrow = () => {}; // is_arrow=True
 
 // Class methods - marked with is_method=True
 class MyClass {
-    constructor() {}  // is_method=True, is_constructor=True
-    method() {}       // is_method=True
+  constructor() {} // is_method=True, is_constructor=True
+  method() {} // is_method=True
 }
 
 // Async functions - marked with is_async=True
-async function asyncFunc() {}  // is_async=True
+async function asyncFunc() {} // is_async=True
 ```
 
 ## Variable Handling
 
 ### Destructuring Support
+
 ```python
 # Python tuple unpacking
 a, b, c = 1, 2, 3  # Creates 3 variables: a, b, c
@@ -192,8 +205,8 @@ a, b, c = 1, 2, 3  # Creates 3 variables: a, b, c
 
 ```typescript
 // TypeScript destructuring
-const { name, age } = person;     // Creates 2 variables: name, age
-const [first, second] = array;    // Creates 2 variables: first, second
+const { name, age } = person; // Creates 2 variables: name, age
+const [first, second] = array; // Creates 2 variables: first, second
 ```
 
 ### Builder Pattern Extension
@@ -208,18 +221,18 @@ class MyExtractor(BaseExtractor):
     def extract_functions(self, node):
         # Implementation
         pass
-    
+
     def extract_classes(self, node):
         # Implementation
         pass
-    
+
     # ... other methods
 
 # Register the extractor
 builder.register_extractor("mylang", MyExtractor)
 
 # Use with the enhanced parser
-parser = EnhancedASTParser()
+parser = ASTParser()
 result = parser.parse_and_extract("file.mylang")
 ```
 
@@ -233,6 +246,7 @@ result = parser.parse_and_extract("file.mylang")
 ## Common Patterns
 
 ### Code Analysis
+
 ```python
 # Analyze code structure
 result = parser.parse_and_extract("complex_file.py")
@@ -245,6 +259,7 @@ print(f"Classes: {summary.get('class', 0)}")
 ```
 
 ### Documentation Generation
+
 ```python
 # Extract public API
 classes = parser.extract_classes("api.py")
@@ -253,12 +268,13 @@ functions = parser.get_blocks_by_type(all_blocks, BlockType.FUNCTION)
 
 for cls in classes:
     print(f"Class: {cls.name}")
-    
+
 for func in functions:
     print(f"Function: {func.name}")
 ```
 
 ### Migration Analysis
+
 ```python
 # Find async functions for migration
 all_blocks = parser.parse_and_extract("legacy.py")["blocks"]

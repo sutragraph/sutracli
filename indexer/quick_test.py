@@ -33,9 +33,9 @@ def count_all_blocks(blocks):
 def test_file(file_path):
     """Test hierarchical parsing on a file."""
     try:
-        from enhanced_ast_parser import EnhancedASTParser
+        from ast_parser import ASTParser
 
-        parser = EnhancedASTParser()
+        parser = ASTParser()
 
         if not Path(file_path).exists():
             print(f"❌ File not found: {file_path}")
@@ -43,9 +43,12 @@ def test_file(file_path):
 
         result = parser.parse_and_extract(file_path)
 
+
+
         if result.get("error"):
             print(f"❌ Error: {result['error']}")
             return
+
 
         blocks = result["blocks"]
         language = result.get("language", "unknown")
@@ -59,23 +62,13 @@ def test_file(file_path):
         print(f"\n🌳 Structure:")
         if blocks:
             # Show only first few blocks to keep output manageable
-            display_blocks = blocks[:5]
+            display_blocks = blocks
             print_tree(display_blocks)
-            if len(blocks) > 5:
-                print(f"  ... and {len(blocks) - 5} more top-level blocks")
+
         else:
             print("  No blocks found")
 
-        # Show some examples of nested structures
-        nested_examples = []
-        for block in blocks[:10]:  # Check first 10 blocks
-            if hasattr(block, 'children') and block.children:
-                nested_examples.append(f"{block.type.value} '{block.name}' has {len(block.children)} children")
 
-        if nested_examples:
-            print(f"\n📋 Nesting Examples:")
-            for example in nested_examples[:3]:  # Show first 3 examples
-                print(f"  • {example}")
 
     except ImportError:
         print(f"❌ Parser not available - install requirements")
@@ -88,7 +81,7 @@ def main():
     print("=" * 50)
 
     test_files = [
-        "test_files/test_python.py",
+        # "test_files/test_python.py",
         "test_files/test_typescript.ts"
     ]
 
@@ -97,10 +90,7 @@ def main():
 
     print(f"\n" + "=" * 50)
     print("✅ Test completed!")
-    print("\n💡 Key Benefits Demonstrated:")
-    print("  🌳 Nested elements become children of parents")
-    print("  📊 Better understanding of code structure")
-    print("  🔍 Easier to find related code elements")
+
 
 if __name__ == "__main__":
     main()
