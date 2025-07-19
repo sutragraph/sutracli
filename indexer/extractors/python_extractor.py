@@ -36,131 +36,7 @@ class PythonExtractor(BaseExtractor):
                     return self._get_node_text(child)
         return ""
 
-    def extract_enums(self, node: Any) -> List[CodeBlock]:
-        """Extract enum declarations (Python doesn't have native enums, but we can extract Enum classes)."""
-        blocks = []
 
-        # Look for class definitions that inherit from Enum
-        class_nodes = self._traverse_nodes(node, ['class_definition'])
-
-        for class_node in class_nodes:
-            content = self._get_node_text(class_node)
-            if 'Enum' in content:  # Simple heuristic
-                name = self._get_identifier_name(class_node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(class_node)
-                    blocks.append(CodeBlock(
-                        type=BlockType.ENUM,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
-
-        return blocks
-
-    def extract_variables(self, node: Any) -> List[CodeBlock]:
-        """Extract variable assignments."""
-        blocks = []
-
-        # Extract assignments at module level
-        assignment_nodes = self._traverse_nodes(node, ['assignment'])
-
-        for assignment_node in assignment_nodes:
-            names = self._extract_assignment_names(assignment_node)
-            if names:
-                start_line, end_line, start_col, end_col = self._get_node_position(assignment_node)
-                content = self._get_node_text(assignment_node)
-
-                for name in names:
-                    blocks.append(CodeBlock(
-                        type=BlockType.VARIABLE,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
-
-        return blocks
-
-    def extract_functions(self, node: Any) -> List[CodeBlock]:
-        """Extract function definitions at module level."""
-        blocks = []
-
-        # Extract function definitions
-        func_nodes = self._traverse_nodes(node, ['function_definition', 'async_function_definition'])
-
-        for func_node in func_nodes:
-            name = self._get_identifier_name(func_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(func_node)
-                content = self._get_node_text(func_node)
-
-                blocks.append(CodeBlock(
-                    type=BlockType.FUNCTION,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
-
-        return blocks
-
-    def extract_classes(self, node: Any) -> List[CodeBlock]:
-        """Extract class definitions."""
-        blocks = []
-        class_nodes = self._traverse_nodes(node, ['class_definition'])
-
-        for class_node in class_nodes:
-            name = self._get_identifier_name(class_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(class_node)
-                content = self._get_node_text(class_node)
-
-                blocks.append(CodeBlock(
-                    type=BlockType.CLASS,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
-
-        return blocks
-
-    def extract_interfaces(self, node: Any) -> List[CodeBlock]:
-        """Extract interface-like definitions (protocols or abstract classes)."""
-        blocks = []
-
-        # In Python, interfaces are usually abstract classes or protocols
-        class_nodes = self._traverse_nodes(node, ['class_definition'])
-
-        for class_node in class_nodes:
-            content = self._get_node_text(class_node)
-
-            # Simple heuristic: look for ABC, Protocol, or abstract methods
-            if any(keyword in content for keyword in ['ABC', 'Protocol', 'abstractmethod']):
-                name = self._get_identifier_name(class_node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(class_node)
-                    blocks.append(CodeBlock(
-                        type=BlockType.INTERFACE,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
-
-        return blocks
 
     def extract_imports(self, node: Any) -> List[CodeBlock]:
         """Extract import statements."""
@@ -258,3 +134,238 @@ class PythonExtractor(BaseExtractor):
                                     return self._get_node_text(grandchild)
 
         return 'unknown'
+
+    def _get_nested_identifier_name(self, node: Any) -> str:
+        """Get identifier name from a nested Python node."""
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type == 'identifier':
+                    return self._get_node_text(child)
+        return ""
+
+    def _get_nested_variable_names(self, node: Any) -> List[str]:
+        """Get variable names from a nested Python assignment node."""
+        names = []
+
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type'):
+                    if child.type == 'identifier':
+                        names.append(self._get_node_text(child))
+                    elif child.type == 'pattern_list':
+                        names.extend(self._extract_pattern_names(child))
+
+        return names
+
+    def _extract_nested_functions(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract function declarations nested within a Python parent node."""
+        nested_functions = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                function_types = ['function_definition', 'async_function_definition']
+
+                if node.type in function_types and depth > 0:
+                    name = self._get_identifier_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_functions.append(CodeBlock(
+                            type=BlockType.FUNCTION,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+                        return  # Don't traverse deeper from this function
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_functions
+
+    def _extract_nested_classes(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract class declarations nested within a Python parent node."""
+        nested_classes = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                if node.type == 'class_definition' and depth > 0:
+                    name = self._get_identifier_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_classes.append(CodeBlock(
+                            type=BlockType.CLASS,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+                        return
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_classes
+
+    def _extract_top_level_functions(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level function declarations from Python module."""
+        blocks = []
+
+        # Look for direct children of the module that are function definitions
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type in ['function_definition', 'async_function_definition']:
+                    name = self._get_identifier_name(child)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                        content = self._get_node_text(child)
+                        blocks.append(CodeBlock(
+                            type=BlockType.FUNCTION,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+
+        return blocks
+
+    def _extract_top_level_classes(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level class declarations from Python module."""
+        blocks = []
+
+        # Look for direct children of the module that are class definitions
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type == 'class_definition':
+                    name = self._get_identifier_name(child)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                        content = self._get_node_text(child)
+                        blocks.append(CodeBlock(
+                            type=BlockType.CLASS,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+
+        return blocks
+
+    def _extract_top_level_variables(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level variable declarations from Python module."""
+        blocks = []
+
+        # Look for direct children of the module that are assignments
+        # In Python AST, module-level assignments are often wrapped in expression_statement nodes
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type'):
+                    if child.type == 'assignment':
+                        names = self._extract_assignment_names(child)
+                        if names:
+                            start_line, end_line, start_col, end_col = self._get_node_position(child)
+                            content = self._get_node_text(child)
+                            for name in names:
+                                blocks.append(CodeBlock(
+                                    type=BlockType.VARIABLE,
+                                    name=name,
+                                    content=content,
+                                    start_line=start_line,
+                                    end_line=end_line,
+                                    start_col=start_col,
+                                    end_col=end_col
+                                ))
+                    elif child.type == 'expression_statement':
+                        # Look for assignment nodes inside expression_statement
+                        if hasattr(child, 'children'):
+                            for grandchild in child.children:
+                                if hasattr(grandchild, 'type') and grandchild.type == 'assignment':
+                                    names = self._extract_assignment_names(grandchild)
+                                    if names:
+                                        start_line, end_line, start_col, end_col = self._get_node_position(grandchild)
+                                        content = self._get_node_text(grandchild)
+                                        for name in names:
+                                            blocks.append(CodeBlock(
+                                                type=BlockType.VARIABLE,
+                                                name=name,
+                                                content=content,
+                                                start_line=start_line,
+                                                end_line=end_line,
+                                                start_col=start_col,
+                                                end_col=end_col
+                                            ))
+
+        return blocks
+
+    def _extract_top_level_enums(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level enum declarations from Python module."""
+        blocks = []
+
+        # Look for direct children of the module that are class definitions inheriting from Enum
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type == 'class_definition':
+                    content = self._get_node_text(child)
+                    if 'Enum' in content:  # Simple heuristic
+                        name = self._get_identifier_name(child)
+                        if name:
+                            start_line, end_line, start_col, end_col = self._get_node_position(child)
+                            blocks.append(CodeBlock(
+                                type=BlockType.ENUM,
+                                name=name,
+                                content=content,
+                                start_line=start_line,
+                                end_line=end_line,
+                                start_col=start_col,
+                                end_col=end_col
+                            ))
+
+        return blocks
+
+    def _extract_top_level_interfaces(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level interface-like declarations from Python module."""
+        blocks = []
+
+        # Look for direct children of the module that are abstract classes or protocols
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type == 'class_definition':
+                    content = self._get_node_text(child)
+                    # Simple heuristic: look for ABC, Protocol, or abstract methods
+                    if any(keyword in content for keyword in ['ABC', 'Protocol', 'abstractmethod']):
+                        name = self._get_identifier_name(child)
+                        if name:
+                            start_line, end_line, start_col, end_col = self._get_node_position(child)
+                            blocks.append(CodeBlock(
+                                type=BlockType.INTERFACE,
+                                name=name,
+                                content=content,
+                                start_line=start_line,
+                                end_line=end_line,
+                                start_col=start_col,
+                                end_col=end_col
+                            ))
+
+        return blocks
