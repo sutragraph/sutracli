@@ -157,14 +157,14 @@ class EnhancedASTParser:
     def parse_and_extract(self, file_path: Union[str, Path],
                          block_types: Optional[List[BlockType]] = None) -> Dict[str, Any]:
         """
-        Parse a file and extract code blocks.
+        Parse a file and extract code blocks with hierarchical structure.
 
         Args:
             file_path: Path to the file to parse
             block_types: List of block types to extract (None for all)
 
         Returns:
-            Dictionary containing AST tree and extracted blocks
+            Dictionary containing AST tree and extracted blocks with nested children
         """
         file_path = Path(file_path)
 
@@ -190,7 +190,7 @@ class EnhancedASTParser:
                 "error": f"No extractor available for language: {language}"
             }
 
-        # Extract blocks
+        # Extract blocks with hierarchical structure
         if block_types:
             blocks = self._extract_specific_blocks(extractor, ast_tree.root_node, block_types)
         else:
@@ -200,8 +200,11 @@ class EnhancedASTParser:
             "ast": ast_tree,
             "blocks": blocks,
             "language": language,
-            "file_path": str(file_path)
+            "file_path": str(file_path),
+            "hierarchical": True
         }
+
+
 
     def extract_from_directory(self, dir_path: Union[str, Path],
                              block_types: Optional[List[BlockType]] = None) -> Dict[str, Dict[str, Any]]:
@@ -252,18 +255,43 @@ class EnhancedASTParser:
         return results
 
     def extract_functions(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract only function declarations from a file."""
+        """Extract function declarations with hierarchical structure from a file."""
         result = self.parse_and_extract(file_path, [BlockType.FUNCTION])
         return result.get("blocks", [])
 
     def extract_classes(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract only class declarations from a file."""
+        """Extract class declarations with hierarchical structure from a file."""
         result = self.parse_and_extract(file_path, [BlockType.CLASS])
         return result.get("blocks", [])
 
     def extract_imports(self, file_path: Union[str, Path]) -> List[CodeBlock]:
         """Extract only import statements from a file."""
         result = self.parse_and_extract(file_path, [BlockType.IMPORT])
+        return result.get("blocks", [])
+
+    def extract_variables(self, file_path: Union[str, Path]) -> List[CodeBlock]:
+        """Extract variable declarations with hierarchical structure from a file."""
+        result = self.parse_and_extract(file_path, [BlockType.VARIABLE])
+        return result.get("blocks", [])
+
+    def extract_enums(self, file_path: Union[str, Path]) -> List[CodeBlock]:
+        """Extract enum declarations with hierarchical structure from a file."""
+        result = self.parse_and_extract(file_path, [BlockType.ENUM])
+        return result.get("blocks", [])
+
+    def extract_exports(self, file_path: Union[str, Path]) -> List[CodeBlock]:
+        """Extract only export statements from a file."""
+        result = self.parse_and_extract(file_path, [BlockType.EXPORT])
+        return result.get("blocks", [])
+
+    def extract_interfaces(self, file_path: Union[str, Path]) -> List[CodeBlock]:
+        """Extract interface declarations with hierarchical structure from a file."""
+        result = self.parse_and_extract(file_path, [BlockType.INTERFACE])
+        return result.get("blocks", [])
+
+    def extract_all(self, file_path: Union[str, Path]) -> List[CodeBlock]:
+        """Extract all code blocks with hierarchical structure from a file."""
+        result = self.parse_and_extract(file_path)
         return result.get("blocks", [])
 
     def get_summary(self, file_path: Union[str, Path]) -> Dict[str, int]:
@@ -380,7 +408,7 @@ class EnhancedASTParser:
 
     def _extract_specific_blocks(self, extractor: Any, root_node: Any,
                                block_types: List[BlockType]) -> List[CodeBlock]:
-        """Extract specific types of blocks."""
+        """Extract specific types of blocks with hierarchical structure."""
         blocks = []
 
         for block_type in block_types:

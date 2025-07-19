@@ -32,174 +32,19 @@ class TypeScriptExtractor(BaseExtractor):
         """Get identifier name from a node."""
         if hasattr(node, 'children'):
             for child in node.children:
-                if hasattr(child, 'type') and child.type == 'identifier':
+                if hasattr(child, 'type') and child.type in ['identifier', 'type_identifier']:
                     return self._get_node_text(child)
         return ""
 
-    def extract_enums(self, node: Any) -> List[CodeBlock]:
-        """Extract enum declarations."""
-        blocks = []
-        enum_nodes = self._traverse_nodes(node, ['enum_declaration'])
 
-        for enum_node in enum_nodes:
-            name = self._get_identifier_name(enum_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(enum_node)
-                content = self._get_node_text(enum_node)
 
-                blocks.append(CodeBlock(
-                    type=BlockType.ENUM,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
 
-        return blocks
 
-    def extract_variables(self, node: Any) -> List[CodeBlock]:
-        """Extract variable declarations."""
-        blocks = []
 
-        # Extract variable declarations
-        var_nodes = self._traverse_nodes(node, [
-            'variable_declaration',
-            'lexical_declaration'
-        ])
 
-        for var_node in var_nodes:
-            names = self._extract_variable_names(var_node)
-            if names:
-                start_line, end_line, start_col, end_col = self._get_node_position(var_node)
-                content = self._get_node_text(var_node)
 
-                for name in names:
-                    blocks.append(CodeBlock(
-                        type=BlockType.VARIABLE,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
 
-        return blocks
 
-    def extract_functions(self, node: Any) -> List[CodeBlock]:
-        """Extract function declarations."""
-        blocks = []
-
-        # Extract function declarations
-        func_nodes = self._traverse_nodes(node, ['function_declaration'])
-        for func_node in func_nodes:
-            name = self._get_identifier_name(func_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(func_node)
-                content = self._get_node_text(func_node)
-
-                blocks.append(CodeBlock(
-                    type=BlockType.FUNCTION,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
-
-        # Extract method definitions
-        method_nodes = self._traverse_nodes(node, ['method_definition'])
-        for method_node in method_nodes:
-            name = self._get_method_name(method_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(method_node)
-                content = self._get_node_text(method_node)
-
-                blocks.append(CodeBlock(
-                    type=BlockType.FUNCTION,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
-
-        # Extract function expressions assigned to variables
-        var_nodes = self._traverse_nodes(node, [
-            'variable_declaration',
-            'lexical_declaration'
-        ])
-
-        for var_node in var_nodes:
-            if hasattr(var_node, 'children'):
-                for child in var_node.children:
-                    if hasattr(child, 'type') and child.type == 'variable_declarator':
-                        name = self._get_identifier_name(child)
-                        if name and self._is_function_assignment(child):
-                            start_line, end_line, start_col, end_col = self._get_node_position(var_node)
-                            content = self._get_node_text(var_node)
-
-                            blocks.append(CodeBlock(
-                                type=BlockType.FUNCTION,
-                                name=name,
-                                content=content,
-                                start_line=start_line,
-                                end_line=end_line,
-                                start_col=start_col,
-                                end_col=end_col
-                            ))
-
-        return blocks
-
-    def extract_classes(self, node: Any) -> List[CodeBlock]:
-        """Extract class declarations."""
-        blocks = []
-        class_nodes = self._traverse_nodes(node, ['class_declaration'])
-
-        for class_node in class_nodes:
-            name = self._get_identifier_name(class_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(class_node)
-                content = self._get_node_text(class_node)
-
-                blocks.append(CodeBlock(
-                    type=BlockType.CLASS,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
-
-        return blocks
-
-    def extract_interfaces(self, node: Any) -> List[CodeBlock]:
-        """Extract interface declarations."""
-        blocks = []
-        interface_nodes = self._traverse_nodes(node, ['interface_declaration'])
-
-        for interface_node in interface_nodes:
-            name = self._get_identifier_name(interface_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(interface_node)
-                content = self._get_node_text(interface_node)
-
-                blocks.append(CodeBlock(
-                    type=BlockType.INTERFACE,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
-
-        return blocks
 
     def extract_imports(self, node: Any) -> List[CodeBlock]:
         """Extract import statements."""
@@ -380,3 +225,321 @@ class TypeScriptExtractor(BaseExtractor):
                 if hasattr(child, 'type') and child.type == 'property_identifier':
                     return self._get_node_text(child)
         return ""
+
+    def _extract_top_level_enums(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level enum declarations from TypeScript module."""
+        blocks = []
+
+        # Look for direct children of the module that are enum declarations
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type == 'enum_declaration':
+                    name = self._get_identifier_name(child)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                        content = self._get_node_text(child)
+                        blocks.append(CodeBlock(
+                            type=BlockType.ENUM,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+
+        return blocks
+
+    def _extract_top_level_variables(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level variable declarations from TypeScript module."""
+        blocks = []
+
+        # Look for direct children of the module that are variable declarations
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type in ['variable_declaration', 'lexical_declaration']:
+                    names = self._extract_variable_names(child)
+                    if names:
+                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                        content = self._get_node_text(child)
+                        for name in names:
+                            blocks.append(CodeBlock(
+                                type=BlockType.VARIABLE,
+                                name=name,
+                                content=content,
+                                start_line=start_line,
+                                end_line=end_line,
+                                start_col=start_col,
+                                end_col=end_col
+                            ))
+
+        return blocks
+
+    def _extract_top_level_functions(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level function declarations from TypeScript module."""
+        blocks = []
+
+        # Look for direct children of the module that are function declarations
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type'):
+                    if child.type == 'function_declaration':
+                        name = self._get_identifier_name(child)
+                        if name:
+                            start_line, end_line, start_col, end_col = self._get_node_position(child)
+                            content = self._get_node_text(child)
+                            blocks.append(CodeBlock(
+                                type=BlockType.FUNCTION,
+                                name=name,
+                                content=content,
+                                start_line=start_line,
+                                end_line=end_line,
+                                start_col=start_col,
+                                end_col=end_col
+                            ))
+                    elif child.type in ['variable_declaration', 'lexical_declaration']:
+                        # Check for function expressions assigned to variables
+                        if hasattr(child, 'children'):
+                            for grandchild in child.children:
+                                if hasattr(grandchild, 'type') and grandchild.type == 'variable_declarator':
+                                    name = self._get_identifier_name(grandchild)
+                                    if name and self._is_function_assignment(grandchild):
+                                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                                        content = self._get_node_text(child)
+                                        blocks.append(CodeBlock(
+                                            type=BlockType.FUNCTION,
+                                            name=name,
+                                            content=content,
+                                            start_line=start_line,
+                                            end_line=end_line,
+                                            start_col=start_col,
+                                            end_col=end_col
+                                        ))
+
+        return blocks
+
+    def _get_nested_identifier_name(self, node: Any) -> str:
+        """Get identifier name from a nested TypeScript node."""
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type in ['identifier', 'type_identifier', 'property_identifier']:
+                    return self._get_node_text(child)
+        return ""
+
+    def _extract_nested_functions(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract function/method declarations nested within a TypeScript parent node."""
+        nested_functions = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                # TypeScript function/method node types
+                function_types = ['method_definition', 'function_declaration', 'function_expression', 'arrow_function']
+
+                if node.type in function_types and depth > 0:  # Skip direct children, only nested
+                    name = self._get_nested_identifier_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_functions.append(CodeBlock(
+                            type=BlockType.FUNCTION,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+                        return  # Don't traverse deeper from this function
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_functions
+
+    def _extract_nested_variables(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract variable/property declarations nested within a TypeScript parent node."""
+        nested_variables = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                # TypeScript variable/property node types
+                variable_types = ['public_field_definition', 'property_signature', 'variable_declarator']
+
+                if node.type in variable_types and depth > 0:  # Skip direct children, only nested
+                    name = self._get_nested_identifier_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_variables.append(CodeBlock(
+                            type=BlockType.VARIABLE,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_variables
+
+    def _extract_nested_classes(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract class declarations nested within a TypeScript parent node."""
+        nested_classes = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                if node.type == 'class_declaration' and depth > 0:  # Skip direct children, only nested
+                    name = self._get_nested_identifier_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_classes.append(CodeBlock(
+                            type=BlockType.CLASS,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+                        return  # Don't traverse deeper from this class
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_classes
+
+    def _extract_nested_interfaces(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract interface declarations nested within a TypeScript parent node."""
+        nested_interfaces = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                if node.type == 'interface_declaration' and depth > 0:  # Skip direct children, only nested
+                    name = self._get_nested_identifier_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_interfaces.append(CodeBlock(
+                            type=BlockType.INTERFACE,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+                        return  # Don't traverse deeper from this interface
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_interfaces
+
+    def _extract_nested_enums(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract enum declarations nested within a TypeScript parent node."""
+        nested_enums = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                if node.type == 'enum_declaration' and depth > 0:  # Skip direct children, only nested
+                    name = self._get_nested_identifier_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_enums.append(CodeBlock(
+                            type=BlockType.ENUM,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+                        return  # Don't traverse deeper from this enum
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_enums
+
+    def _extract_top_level_classes(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level class declarations from TypeScript module."""
+        blocks = []
+
+        # Look for direct children of the module that are class declarations
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type == 'class_declaration':
+                    name = self._get_identifier_name(child)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                        content = self._get_node_text(child)
+                        blocks.append(CodeBlock(
+                            type=BlockType.CLASS,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+
+        return blocks
+
+    def _extract_top_level_interfaces(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level interface declarations from TypeScript module."""
+        blocks = []
+
+        # Look for direct children of the module that are interface declarations
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type') and child.type == 'interface_declaration':
+                    name = self._get_identifier_name(child)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(child)
+                        content = self._get_node_text(child)
+                        blocks.append(CodeBlock(
+                            type=BlockType.INTERFACE,
+                            name=name,
+                            content=content,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_col=start_col,
+                            end_col=end_col
+                        ))
+
+        return blocks
