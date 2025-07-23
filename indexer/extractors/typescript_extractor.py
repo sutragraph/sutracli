@@ -11,8 +11,8 @@ from . import BaseExtractor, BlockType, CodeBlock
 class TypeScriptExtractor(BaseExtractor):
     """Extractor for TypeScript/JavaScript code blocks."""
 
-    def __init__(self, language: str = "typescript"):
-        super().__init__(language)
+    def __init__(self, language: str = "typescript", symbol_extractor=None):
+        super().__init__(language, symbol_extractor)
 
     def _traverse_nodes(self, node: Any, node_types: List[str]) -> List[Any]:
         """Traverse AST nodes and collect nodes of specified types."""
@@ -36,16 +36,6 @@ class TypeScriptExtractor(BaseExtractor):
                     return self._get_node_text(child)
         return ""
 
-
-
-
-
-
-
-
-
-
-
     def extract_imports(self, node: Any) -> List[CodeBlock]:
         """Extract import statements."""
         blocks = []
@@ -57,14 +47,15 @@ class TypeScriptExtractor(BaseExtractor):
                 start_line, end_line, start_col, end_col = self._get_node_position(import_node)
                 content = self._get_node_text(import_node)
 
-                blocks.append(CodeBlock(
-                    type=BlockType.IMPORT,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
+                blocks.append(self._create_code_block(
+                    BlockType.IMPORT,
+                    name,
+                    content,
+                    start_line,
+                    end_line,
+                    start_col,
+                    end_col,
+                    import_node
                 ))
 
         return blocks
@@ -83,14 +74,15 @@ class TypeScriptExtractor(BaseExtractor):
                 start_line, end_line, start_col, end_col = self._get_node_position(export_node)
                 content = self._get_node_text(export_node)
 
-                blocks.append(CodeBlock(
-                    type=BlockType.EXPORT,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
+                blocks.append(self._create_code_block(
+                    BlockType.EXPORT,
+                    name,
+                    content,
+                    start_line,
+                    end_line,
+                    start_col,
+                    end_col,
+                    export_node
                 ))
 
         return blocks
@@ -238,14 +230,15 @@ class TypeScriptExtractor(BaseExtractor):
                     if name:
                         start_line, end_line, start_col, end_col = self._get_node_position(child)
                         content = self._get_node_text(child)
-                        blocks.append(CodeBlock(
-                            type=BlockType.ENUM,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        blocks.append(self._create_code_block(
+                            BlockType.ENUM,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            child
                         ))
 
         return blocks
@@ -268,14 +261,15 @@ class TypeScriptExtractor(BaseExtractor):
                                     if name:
                                         start_line, end_line, start_col, end_col = self._get_node_position(child)
                                         content = self._get_node_text(child)
-                                        blocks.append(CodeBlock(
-                                            type=BlockType.VARIABLE,
-                                            name=name,
-                                            content=content,
-                                            start_line=start_line,
-                                            end_line=end_line,
-                                            start_col=start_col,
-                                            end_col=end_col
+                                        blocks.append(self._create_code_block(
+                                            BlockType.VARIABLE,
+                                            name,
+                                            content,
+                                            start_line,
+                                            end_line,
+                                            start_col,
+                                            end_col,
+                                            child
                                         ))
 
         return blocks
@@ -293,14 +287,15 @@ class TypeScriptExtractor(BaseExtractor):
                         if name:
                             start_line, end_line, start_col, end_col = self._get_node_position(child)
                             content = self._get_node_text(child)
-                            blocks.append(CodeBlock(
-                                type=BlockType.FUNCTION,
-                                name=name,
-                                content=content,
-                                start_line=start_line,
-                                end_line=end_line,
-                                start_col=start_col,
-                                end_col=end_col
+                            blocks.append(self._create_code_block(
+                                BlockType.FUNCTION,
+                                name,
+                                content,
+                                start_line,
+                                end_line,
+                                start_col,
+                                end_col,
+                                child
                             ))
                     elif child.type in ['variable_declaration', 'lexical_declaration']:
                         # Check for function expressions assigned to variables
@@ -311,14 +306,15 @@ class TypeScriptExtractor(BaseExtractor):
                                     if name and self._is_function_assignment(grandchild):
                                         start_line, end_line, start_col, end_col = self._get_node_position(child)
                                         content = self._get_node_text(child)
-                                        blocks.append(CodeBlock(
-                                            type=BlockType.FUNCTION,
-                                            name=name,
-                                            content=content,
-                                            start_line=start_line,
-                                            end_line=end_line,
-                                            start_col=start_col,
-                                            end_col=end_col
+                                        blocks.append(self._create_code_block(
+                                            BlockType.FUNCTION,
+                                            name,
+                                            content,
+                                            start_line,
+                                            end_line,
+                                            start_col,
+                                            end_col,
+                                            child
                                         ))
 
         return blocks
@@ -346,14 +342,15 @@ class TypeScriptExtractor(BaseExtractor):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_functions.append(CodeBlock(
-                            type=BlockType.FUNCTION,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_functions.append(self._create_code_block(
+                            BlockType.FUNCTION,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return  # Don't traverse deeper from this function
 
@@ -382,14 +379,15 @@ class TypeScriptExtractor(BaseExtractor):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_variables.append(CodeBlock(
-                            type=BlockType.VARIABLE,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_variables.append(self._create_code_block(
+                            BlockType.VARIABLE,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
 
             if hasattr(node, 'children'):
@@ -414,14 +412,15 @@ class TypeScriptExtractor(BaseExtractor):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_classes.append(CodeBlock(
-                            type=BlockType.CLASS,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_classes.append(self._create_code_block(
+                            BlockType.CLASS,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return  # Don't traverse deeper from this class
 
@@ -447,14 +446,15 @@ class TypeScriptExtractor(BaseExtractor):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_interfaces.append(CodeBlock(
-                            type=BlockType.INTERFACE,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_interfaces.append(self._create_code_block(
+                            BlockType.INTERFACE,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return  # Don't traverse deeper from this interface
 
@@ -480,14 +480,15 @@ class TypeScriptExtractor(BaseExtractor):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_enums.append(CodeBlock(
-                            type=BlockType.ENUM,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_enums.append(self._create_code_block(
+                            BlockType.ENUM,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return  # Don't traverse deeper from this enum
 
@@ -513,14 +514,15 @@ class TypeScriptExtractor(BaseExtractor):
                     if name:
                         start_line, end_line, start_col, end_col = self._get_node_position(child)
                         content = self._get_node_text(child)
-                        blocks.append(CodeBlock(
-                            type=BlockType.CLASS,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        blocks.append(self._create_code_block(
+                            BlockType.CLASS,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            child
                         ))
 
         return blocks
@@ -537,14 +539,15 @@ class TypeScriptExtractor(BaseExtractor):
                     if name:
                         start_line, end_line, start_col, end_col = self._get_node_position(child)
                         content = self._get_node_text(child)
-                        blocks.append(CodeBlock(
-                            type=BlockType.INTERFACE,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        blocks.append(self._create_code_block(
+                            BlockType.INTERFACE,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            child
                         ))
 
         return blocks
