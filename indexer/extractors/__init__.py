@@ -20,12 +20,14 @@ class BlockType(Enum):
     IMPORT = "import"
     EXPORT = "export"
 
+
 @dataclass
 class CodeBlock:
     """Represents a code block extracted from AST."""
     type: BlockType
     name: str
     content: str
+    symbols: List[str]
     start_line: int
     end_line: int
     start_col: int
@@ -35,9 +37,12 @@ class CodeBlock:
 class BaseExtractor(ABC):
     """Base class for language-specific AST extractors."""
 
-    def __init__(self, language: str):
+    def __init__(self, language: str, symbol_extractor=None):
         self.language = language
+        self.symbol_extractor = symbol_extractor
         self._blocks: List[CodeBlock] = []
+        self._all_symbols: List[Any] = []  # Store all extracted symbols
+        self._source_content: str = ""  # Store full source content
 
     def extract_enums(self, node: Any) -> List[CodeBlock]:
         """Extract top-level enum declarations with nested elements as children."""
@@ -137,28 +142,30 @@ class BaseExtractor(ABC):
                                 start_line, end_line, start_col, end_col = self._get_node_position(child)
                                 content = self._get_node_text(child)
                                 for name in names:
-                                    blocks.append(CodeBlock(
-                                        type=block_type,
-                                        name=name,
-                                        content=content,
-                                        start_line=start_line,
-                                        end_line=end_line,
-                                        start_col=start_col,
-                                        end_col=end_col
+                                    blocks.append(self._create_code_block(
+                                        block_type,
+                                        name,
+                                        content,
+                                        start_line,
+                                        end_line,
+                                        start_col,
+                                        end_col,
+                                        child
                                     ))
                         else:
                             name = self._get_nested_identifier_name(child)
                             if name:
                                 start_line, end_line, start_col, end_col = self._get_node_position(child)
                                 content = self._get_node_text(child)
-                                blocks.append(CodeBlock(
-                                    type=block_type,
-                                    name=name,
-                                    content=content,
-                                    start_line=start_line,
-                                    end_line=end_line,
-                                    start_col=start_col,
-                                    end_col=end_col
+                                blocks.append(self._create_code_block(
+                                    block_type,
+                                    name,
+                                    content,
+                                    start_line,
+                                    end_line,
+                                    start_col,
+                                    end_col,
+                                    child
                                 ))
 
                     # For module-level or program-level nodes, continue searching
@@ -223,14 +230,15 @@ class BaseExtractor(ABC):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_functions.append(CodeBlock(
-                            type=BlockType.FUNCTION,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_functions.append(self._create_code_block(
+                            BlockType.FUNCTION,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return  # Don't traverse deeper from this function
 
@@ -258,14 +266,15 @@ class BaseExtractor(ABC):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_classes.append(CodeBlock(
-                            type=BlockType.CLASS,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_classes.append(self._create_code_block(
+                            BlockType.CLASS,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return
 
@@ -294,14 +303,15 @@ class BaseExtractor(ABC):
                         content = self._get_node_text(node)
 
                         for name in names:
-                            nested_variables.append(CodeBlock(
-                                type=BlockType.VARIABLE,
-                                name=name,
-                                content=content,
-                                start_line=start_line,
-                                end_line=end_line,
-                                start_col=start_col,
-                                end_col=end_col
+                            nested_variables.append(self._create_code_block(
+                                BlockType.VARIABLE,
+                                name,
+                                content,
+                                start_line,
+                                end_line,
+                                start_col,
+                                end_col,
+                                node
                             ))
 
             if hasattr(node, 'children'):
@@ -328,14 +338,15 @@ class BaseExtractor(ABC):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_enums.append(CodeBlock(
-                            type=BlockType.ENUM,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_enums.append(self._create_code_block(
+                            BlockType.ENUM,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return
 
@@ -363,14 +374,15 @@ class BaseExtractor(ABC):
                         start_line, end_line, start_col, end_col = self._get_node_position(node)
                         content = self._get_node_text(node)
 
-                        nested_interfaces.append(CodeBlock(
-                            type=BlockType.INTERFACE,
-                            name=name,
-                            content=content,
-                            start_line=start_line,
-                            end_line=end_line,
-                            start_col=start_col,
-                            end_col=end_col
+                        nested_interfaces.append(self._create_code_block(
+                            BlockType.INTERFACE,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
                         ))
                         return
 
@@ -416,13 +428,89 @@ class BaseExtractor(ABC):
                 node.start_point[1],      # column (0-indexed)
                 node.end_point[1]         # end column (0-indexed)
             )
-        return (0, 0, 0, 0)
+        return (1, 1, 0, 0)
+
+    def _extract_all_symbols(self, root_node: Any) -> None:
+        """Extract all symbols from the entire file and store them."""
+        self._all_symbols = []
+        if not self.symbol_extractor:
+            return
+
+        try:
+            # Get the full source content from the root node
+            if hasattr(root_node, 'text'):
+                self._source_content = root_node.text.decode('utf-8') if isinstance(root_node.text, bytes) else str(root_node.text)
+            else:
+                self._source_content = ""
+
+            # Extract all symbols from the root node
+            self._all_symbols = self.symbol_extractor.extract_symbols(root_node, self._source_content, self.language)
+        except Exception as e:
+            # Log error but don't fail completely
+            print(f"Error extracting symbols: {e}")
+            self._all_symbols = []
+
+    def _get_symbols_for_block(self, start_line: int, end_line: int, start_col: int, end_col: int) -> List[str]:
+        """Find symbols that fall within the given block boundaries."""
+        if not self._all_symbols:
+            return []
+
+        matching_symbols = set()  # Use set to avoid duplicates
+        for symbol in self._all_symbols:
+            # Check if symbol position is within block boundaries
+            # Symbol must start and end within the block boundaries
+            if (symbol.start_line >= start_line and symbol.start_line <= end_line and
+                symbol.end_line >= start_line and symbol.end_line <= end_line):
+                # For symbols on the same line as block boundaries, check column positions
+                if symbol.start_line == start_line and symbol.start_col < start_col:
+                    continue
+                if symbol.end_line == end_line and symbol.end_col > end_col:
+                    continue
+                matching_symbols.add(symbol.name)
+
+        return list(matching_symbols)  # Convert back to sorted list
+
+    def _create_code_block(self, block_type: BlockType, name: str, content: str,
+                          start_line: int, end_line: int, start_col: int, end_col: int,
+                          node: Any) -> CodeBlock:
+        """Create a CodeBlock with symbols extracted."""
+        symbols = self._get_symbols_for_block(start_line, end_line, start_col, end_col)
+        return CodeBlock(
+            type=block_type,
+            name=name,
+            content=content,
+            symbols=symbols,
+            start_line=start_line,
+            end_line=end_line,
+            start_col=start_col,
+            end_col=end_col
+        )
+
+    def extract_all(self, root_node: Any) -> List[CodeBlock]:
+        """Extract all supported code blocks with hierarchical structure."""
+        self._blocks = []
+
+        # First, extract all symbols from the entire file
+        self._extract_all_symbols(root_node)
+
+        # Then extract top-level blocks with their nested children
+        self._blocks.extend(self.extract_enums(root_node))
+        self._blocks.extend(self.extract_variables(root_node))
+        self._blocks.extend(self.extract_functions(root_node))
+        self._blocks.extend(self.extract_classes(root_node))
+        self._blocks.extend(self.extract_interfaces(root_node))
+        self._blocks.extend(self.extract_imports(root_node))
+        self._blocks.extend(self.extract_exports(root_node))
+
+        return self._blocks
+
 
 class ExtractorBuilder:
     """Builder class for creating language-specific extractors."""
 
-    def __init__(self):
+    def __init__(self, symbol_extractor=None):
         self._extractors = {}
+        self.symbol_extractor = symbol_extractor
 
     def register_extractor(self, language: str, extractor_class: type) -> 'ExtractorBuilder':
         """Register an extractor for a specific language."""
@@ -433,7 +521,7 @@ class ExtractorBuilder:
         """Build an extractor for the specified language."""
         if language not in self._extractors:
             return None
-        return self._extractors[language](language)
+        return self._extractors[language](language, self.symbol_extractor)
 
     def get_supported_languages(self) -> List[str]:
         """Get list of supported languages."""
@@ -442,10 +530,87 @@ class ExtractorBuilder:
 # Global builder instance
 builder = ExtractorBuilder()
 
+class Extractor:
+    """
+    Main extractor that uses language-specific extractors.
+    """
+
+    def __init__(self, symbol_extractor=None):
+        """Initialize the extractor."""
+        self.symbol_extractor = symbol_extractor
+        self._setup_extractors()
+
+    def _setup_extractors(self):
+        """Setup language-specific extractors."""
+        from .typescript_extractor import TypeScriptExtractor
+        from .python_extractor import PythonExtractor
+
+        global builder
+        builder = ExtractorBuilder(self.symbol_extractor)
+        builder.register_extractor("typescript", TypeScriptExtractor)
+        builder.register_extractor("python", PythonExtractor)
+
+    def extract_from_ast(self, ast_tree: Any, language: str, block_types: Optional[List[BlockType]] = None) -> List[CodeBlock]:
+        """
+        Extract code blocks from an AST tree using language-specific extractor.
+
+        Args:
+            ast_tree: The AST tree to extract from
+            language: Programming language
+            block_types: List of block types to extract (None for all)
+
+        Returns:
+            List of extracted CodeBlock objects
+        """
+        extractor = builder.build(language)
+        if not extractor:
+            return []
+
+        if block_types:
+            return self._extract_specific_blocks(extractor, ast_tree.root_node, block_types)
+        else:
+            return extractor.extract_all(ast_tree.root_node)
+
+    def get_blocks_by_type(self, blocks: List[CodeBlock], block_type: BlockType) -> List[CodeBlock]:
+        """Filter blocks by type."""
+        return [block for block in blocks if block.type == block_type]
+
+    def get_supported_languages(self) -> List[str]:
+        """Get languages that support code block extraction."""
+        return builder.get_supported_languages()
+
+    def _extract_specific_blocks(self, extractor: Any, root_node: Any,
+                               block_types: List[BlockType]) -> List[CodeBlock]:
+        """Extract specific types of blocks."""
+        blocks = []
+
+        for block_type in block_types:
+            if block_type == BlockType.ENUM:
+                blocks.extend(extractor.extract_enums(root_node))
+            elif block_type == BlockType.VARIABLE:
+                blocks.extend(extractor.extract_variables(root_node))
+            elif block_type == BlockType.FUNCTION:
+                blocks.extend(extractor.extract_functions(root_node))
+            elif block_type == BlockType.CLASS:
+                blocks.extend(extractor.extract_classes(root_node))
+            elif block_type == BlockType.INTERFACE:
+                blocks.extend(extractor.extract_interfaces(root_node))
+            elif block_type == BlockType.IMPORT:
+                blocks.extend(extractor.extract_imports(root_node))
+            elif block_type == BlockType.EXPORT:
+                blocks.extend(extractor.extract_exports(root_node))
+
+        return blocks
+
+
+# Global builder instance
+builder = ExtractorBuilder()
+
 __all__ = [
     'BlockType',
     'CodeBlock',
     'BaseExtractor',
+    'Extractor',
     'ExtractorBuilder',
     'builder'
 ]
