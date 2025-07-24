@@ -155,9 +155,11 @@ class Extractor:
         """Register available language extractors."""
         from .typescript_extractor import TypeScriptExtractor
         from .python_extractor import PythonExtractor
+        from .java_extractor import JavaExtractor
 
         self.register_extractor("typescript", TypeScriptExtractor())
         self.register_extractor("python", PythonExtractor())
+        self.register_extractor("java", JavaExtractor())
 
     def extract_symbols(self, ast_node: Any, code_content: str, language: str) -> List[Symbol]:
         """Extract symbols using the appropriate language extractor."""
