@@ -6,6 +6,7 @@ from parsed AST trees using language-specific extractors.
 """
 
 import os
+import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 from tree_sitter_language_pack import get_parser
@@ -17,26 +18,18 @@ from utils.file_utils import (
     is_text_file,
     read_file_content,
 )
-from extractors import builder, BlockType, CodeBlock
-from extractors.typescript_extractor import TypeScriptExtractor
-from extractors.python_extractor import PythonExtractor
-from extractors.java_extractor import JavaExtractor
+from extractors import Extractor, BlockType
+
 
 class ASTParser:
     """
     AST parser with code block extraction capabilities.
     """
 
-    def __init__(self):
-        """Initialize the  AST parser."""
+    def __init__(self, symbol_extractor=None):
+        """Initialize the AST parser."""
         self._parser_cache: Dict[str, Any] = {}
-        self._setup_extractors()
-
-    def _setup_extractors(self):
-        """Setup language-specific extractors."""
-        builder.register_extractor("typescript", TypeScriptExtractor)
-        builder.register_extractor("python", PythonExtractor)
-        builder.register_extractor("java", JavaExtractor)
+        self._extractor = Extractor(symbol_extractor=symbol_extractor)
 
     def _get_parser(self, language: str) -> Optional[Any]:
         """
@@ -183,134 +176,64 @@ class ASTParser:
                 "error": f"Unsupported file type: {file_path}"
             }
 
-        extractor = builder.build(language)
-        if not extractor:
-            return {
-                "ast": ast_tree,
-                "blocks": [],
-                "error": f"No extractor available for language: {language}"
-            }
 
-        # Extract blocks with hierarchical structure
-        if block_types:
-            blocks = self._extract_specific_blocks(extractor, ast_tree.root_node, block_types)
-        else:
-            blocks = extractor.extract_all(ast_tree.root_node)
+
+        # Extract blocks using the main extractor
+        blocks = self._extractor.extract_from_ast(ast_tree, language, block_types)
 
         return {
             "ast": ast_tree,
             "blocks": blocks,
             "language": language,
+            "id":hashlib.blake2b(str(file_path).encode()).hexdigest(),
             "file_path": str(file_path),
-            "hierarchical": True
+            "content": ast_tree.root_node.text,
+            "content_hash": hashlib.sha256(ast_tree.root_node.text).hexdigest(),
+
         }
-
-
 
     def extract_from_directory(self, dir_path: Union[str, Path],
                              block_types: Optional[List[BlockType]] = None) -> Dict[str, Dict[str, Any]]:
         """
-        Parse all files in a directory and extract code blocks.
+        Parse all files in a directory and extract code blocks with hierarchical structure.
 
         Args:
             dir_path: Path to the directory
             block_types: List of block types to extract (None for all)
 
         Returns:
-            Dictionary with file paths as keys and extraction results as values
+            Dictionary with file paths as keys and extraction results as values,
+            each result following the same format as parse_and_extract
         """
+        dir_path = Path(dir_path)
         results = {}
-        parsed_files = self.parse_directory(dir_path)
 
-        for file_path, ast_tree in parsed_files.items():
-            language = get_language_from_extension(Path(file_path))
-            if not language:
-                results[file_path] = {
-                    "ast": ast_tree,
-                    "blocks": [],
-                    "error": f"Unsupported file type: {file_path}"
-                }
-                continue
+        if not dir_path.exists() or not dir_path.is_dir():
+            print(f"Directory not found: {dir_path}")
+            return results
 
-            extractor = builder.build(language)
-            if not extractor:
-                results[file_path] = {
-                    "ast": ast_tree,
-                    "blocks": [],
-                    "error": f"No extractor for language: {language}"
-                }
-                continue
+        print(f"Parsing and extracting from directory: {dir_path}")
 
-            if block_types:
-                blocks = self._extract_specific_blocks(extractor, ast_tree.root_node, block_types)
-            else:
-                blocks = extractor.extract_all(ast_tree.root_node)
+        for root, dirs, files in os.walk(dir_path):
+            root_path = Path(root)
 
-            results[file_path] = {
-                "ast": ast_tree,
-                "blocks": blocks,
-                "language": language,
-                "file_path": file_path
-            }
+            # Filter out ignored directories
+            original_dirs = dirs[:]
+            dirs[:] = [d for d in dirs if not should_ignore_directory(root_path / d)]
 
+            ignored_dirs = set(original_dirs) - set(dirs)
+            for ignored_dir in ignored_dirs:
+                print(f"Ignoring directory: {root_path / ignored_dir}")
+
+            # Parse and extract from files in current directory
+            for file in files:
+                file_path = root_path / file
+                result = self.parse_and_extract(file_path, block_types)
+                if result.get("ast") or result.get("error"):
+                    results[str(file_path)] = result
+
+        print(f"Parsed and extracted from {len(results)} files in directory: {dir_path}")
         return results
-
-    def extract_functions(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract function declarations with hierarchical structure from a file."""
-        result = self.parse_and_extract(file_path, [BlockType.FUNCTION])
-        return result.get("blocks", [])
-
-    def extract_classes(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract class declarations with hierarchical structure from a file."""
-        result = self.parse_and_extract(file_path, [BlockType.CLASS])
-        return result.get("blocks", [])
-
-    def extract_imports(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract only import statements from a file."""
-        result = self.parse_and_extract(file_path, [BlockType.IMPORT])
-        return result.get("blocks", [])
-
-    def extract_variables(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract variable declarations with hierarchical structure from a file."""
-        result = self.parse_and_extract(file_path, [BlockType.VARIABLE])
-        return result.get("blocks", [])
-
-    def extract_enums(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract enum declarations with hierarchical structure from a file."""
-        result = self.parse_and_extract(file_path, [BlockType.ENUM])
-        return result.get("blocks", [])
-
-    def extract_exports(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract only export statements from a file."""
-        result = self.parse_and_extract(file_path, [BlockType.EXPORT])
-        return result.get("blocks", [])
-
-    def extract_interfaces(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract interface declarations with hierarchical structure from a file."""
-        result = self.parse_and_extract(file_path, [BlockType.INTERFACE])
-        return result.get("blocks", [])
-
-    def extract_all(self, file_path: Union[str, Path]) -> List[CodeBlock]:
-        """Extract all code blocks with hierarchical structure from a file."""
-        result = self.parse_and_extract(file_path)
-        return result.get("blocks", [])
-
-    def get_summary(self, file_path: Union[str, Path]) -> Dict[str, int]:
-        """Get a summary of code blocks in a file."""
-        result = self.parse_and_extract(file_path)
-        blocks = result.get("blocks", [])
-
-        summary = {block_type.value: 0 for block_type in BlockType}
-        for block in blocks:
-            summary[block.type.value] += 1
-
-        return summary
-
-
-
-    def get_blocks_by_type(self, blocks: List[CodeBlock], block_type: BlockType) -> List[CodeBlock]:
-        """Filter blocks by type."""
-        return [block for block in blocks if block.type == block_type]
 
 
 
@@ -326,7 +249,7 @@ class ASTParser:
 
     def get_supported_extraction_languages(self) -> List[str]:
         """Get languages that support code block extraction."""
-        return builder.get_supported_languages()
+        return self._extractor.get_supported_languages()
 
     def get_file_count(self, path: Union[str, Path]) -> int:
         """
@@ -406,26 +329,3 @@ class ASTParser:
             return True
         except Exception:
             return False
-
-    def _extract_specific_blocks(self, extractor: Any, root_node: Any,
-                               block_types: List[BlockType]) -> List[CodeBlock]:
-        """Extract specific types of blocks with hierarchical structure."""
-        blocks = []
-
-        for block_type in block_types:
-            if block_type == BlockType.ENUM:
-                blocks.extend(extractor.extract_enums(root_node))
-            elif block_type == BlockType.VARIABLE:
-                blocks.extend(extractor.extract_variables(root_node))
-            elif block_type == BlockType.FUNCTION:
-                blocks.extend(extractor.extract_functions(root_node))
-            elif block_type == BlockType.CLASS:
-                blocks.extend(extractor.extract_classes(root_node))
-            elif block_type == BlockType.INTERFACE:
-                blocks.extend(extractor.extract_interfaces(root_node))
-            elif block_type == BlockType.IMPORT:
-                blocks.extend(extractor.extract_imports(root_node))
-            elif block_type == BlockType.EXPORT:
-                blocks.extend(extractor.extract_exports(root_node))
-
-        return blocks
