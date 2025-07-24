@@ -14,19 +14,7 @@ class TypeScriptExtractor(BaseExtractor):
     def __init__(self, language: str = "typescript", symbol_extractor=None):
         super().__init__(language, symbol_extractor)
 
-    def _traverse_nodes(self, node: Any, node_types: List[str]) -> List[Any]:
-        """Traverse AST nodes and collect nodes of specified types."""
-        results = []
-
-        def traverse(n):
-            if hasattr(n, 'type') and n.type in node_types:
-                results.append(n)
-            if hasattr(n, 'children'):
-                for child in n.children:
-                    traverse(child)
-
-        traverse(node)
-        return results
+    # _traverse_nodes method moved to BaseExtractor
 
     def _get_identifier_name(self, node: Any) -> str:
         """Get identifier name from a node."""
@@ -38,54 +26,134 @@ class TypeScriptExtractor(BaseExtractor):
 
     def extract_imports(self, node: Any) -> List[CodeBlock]:
         """Extract import statements."""
-        blocks = []
-        import_nodes = self._traverse_nodes(node, ['import_statement'])
+        imports = []
 
-        for import_node in import_nodes:
-            name = self._extract_import_name(import_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(import_node)
-                content = self._get_node_text(import_node)
+        def traverse(n):
+            if hasattr(n, 'type'):
+                if n.type == 'import_statement':
+                    start_line, end_line, start_col, end_col = self._get_node_position(n)
+                    content = self._get_node_text(n)
+                    
+                    # Try to extract the module name
+                    module_name = self._extract_import_name(n)
+                    
+                    imports.append(self._create_code_block(
+                        BlockType.IMPORT,
+                        module_name,
+                        content,
+                        start_line,
+                        end_line,
+                        start_col,
+                        end_col,
+                        n
+                    ))
+                    return  # Don't traverse deeper from this import
 
-                blocks.append(self._create_code_block(
-                    BlockType.IMPORT,
-                    name,
-                    content,
-                    start_line,
-                    end_line,
-                    start_col,
-                    end_col,
-                    import_node
-                ))
+            if hasattr(n, 'children'):
+                for child in n.children:
+                    traverse(child)
 
-        return blocks
+        traverse(node)
+        return imports
 
     def extract_exports(self, node: Any) -> List[CodeBlock]:
-        """Extract export statements."""
-        blocks = []
-        export_nodes = self._traverse_nodes(node, [
-            'export_statement',
-            'export_declaration'
-        ])
+        """Extract export statements with nested elements as children."""
+        exports = self._extract_top_level_exports(node)
+        for export in exports:
+            export.children = self._extract_nested_elements(node, export)
+        return exports
+        
+    def _extract_top_level_exports(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level export declarations."""
+        exports = []
 
-        for export_node in export_nodes:
-            name = self._extract_export_name(export_node)
-            if name:
-                start_line, end_line, start_col, end_col = self._get_node_position(export_node)
-                content = self._get_node_text(export_node)
+        def traverse(n):
+            if hasattr(n, 'type'):
+                if n.type in ['export_statement', 'export_declaration']:
+                    start_line, end_line, start_col, end_col = self._get_node_position(n)
+                    content = self._get_node_text(n)
+                    
+                    # Try to extract what's being exported
+                    export_name = self._extract_export_name(n)
+                    
+                    exports.append(self._create_code_block(
+                        BlockType.EXPORT,
+                        export_name or "default_export",  # Use default_export if no name found
+                        content,
+                        start_line,
+                        end_line,
+                        start_col,
+                        end_col,
+                        n
+                    ))
+                    return  # Don't traverse deeper from this export
 
-                blocks.append(self._create_code_block(
-                    BlockType.EXPORT,
-                    name,
-                    content,
-                    start_line,
-                    end_line,
-                    start_col,
-                    end_col,
-                    export_node
-                ))
+            if hasattr(n, 'children'):
+                for child in n.children:
+                    traverse(child)
 
-        return blocks
+        traverse(node)
+        return exports
+        
+    # _extract_nested_elements method moved to BaseExtractor
+        
+    # _get_node_text method moved to BaseExtractor
+        
+    # _get_node_position method moved to BaseExtractor
+        
+    def _get_nested_variable_names(self, node: Any) -> List[str]:
+        """Get variable names from a nested node."""
+        names = []
+        
+        if hasattr(node, 'children'):
+            for child in node.children:
+                if hasattr(child, 'type'):
+                    if child.type == 'identifier':
+                        names.append(self._get_node_text(child))
+                    elif child.type in ['variable_declarator', 'property_signature']:
+                        name = self._get_nested_identifier_name(child)
+                        if name:
+                            names.append(name)
+        
+        return names
+        
+    # _find_node_by_position method moved to BaseExtractor
+        
+    def _extract_nested_exports(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract export declarations nested within a parent node."""
+        nested_exports = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                export_types = ['export_statement', 'export_declaration']
+
+                if node.type in export_types and depth > 0:  # Skip direct children, only nested
+                    name = self._extract_export_name(node)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+
+                        nested_exports.append(self._create_code_block(
+                            BlockType.EXPORT,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
+                        ))
+                        return  # Don't traverse deeper from this export
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_exports
 
     def _extract_import_name(self, import_node: Any) -> str:
         """Extract the primary name from an import statement."""
@@ -218,6 +286,13 @@ class TypeScriptExtractor(BaseExtractor):
                     return self._get_node_text(child)
         return ""
 
+    def extract_enums(self, node: Any) -> List[CodeBlock]:
+        """Extract top-level enum declarations with nested elements as children."""
+        enums = self._extract_top_level_enums(node)
+        for enum in enums:
+            enum.children = self._extract_nested_elements(node, enum)
+        return enums
+        
     def _extract_top_level_enums(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level enum declarations from TypeScript module."""
         blocks = []
@@ -243,6 +318,34 @@ class TypeScriptExtractor(BaseExtractor):
 
         return blocks
 
+    def extract_variables(self, node: Any) -> List[CodeBlock]:
+        """Extract top-level variable declarations with nested elements as children."""
+        variables = self._extract_top_level_variables(node)
+        for variable in variables:
+            variable.children = self._extract_nested_elements(node, variable)
+        return variables
+        
+    def extract_all(self, root_node: Any) -> List[CodeBlock]:
+        """TypeScript-specific implementation of extract_all.
+        Extracts all supported code blocks with hierarchical structure.
+        """
+        self._blocks = []
+
+        # First, extract all symbols from the entire file
+        self._extract_all_symbols(root_node)
+
+        # Then extract top-level blocks with their nested children
+        # TypeScript-specific order and handling
+        self._blocks.extend(self.extract_imports(root_node))
+        self._blocks.extend(self.extract_exports(root_node))
+        self._blocks.extend(self.extract_interfaces(root_node))  # TypeScript has interfaces
+        self._blocks.extend(self.extract_enums(root_node))       # TypeScript has enums
+        self._blocks.extend(self.extract_variables(root_node))
+        self._blocks.extend(self.extract_functions(root_node))
+        self._blocks.extend(self.extract_classes(root_node))
+
+        return self._blocks
+        
     def _extract_top_level_variables(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level variable declarations from TypeScript module."""
         blocks = []
@@ -274,6 +377,13 @@ class TypeScriptExtractor(BaseExtractor):
 
         return blocks
 
+    def extract_functions(self, node: Any) -> List[CodeBlock]:
+        """Extract top-level function declarations with nested elements as children."""
+        functions = self._extract_top_level_functions(node)
+        for function in functions:
+            function.children = self._extract_nested_elements(node, function)
+        return functions
+        
     def _extract_top_level_functions(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level function declarations from TypeScript module."""
         blocks = []
@@ -502,6 +612,13 @@ class TypeScriptExtractor(BaseExtractor):
 
         return nested_enums
 
+    def extract_classes(self, node: Any) -> List[CodeBlock]:
+        """Extract top-level class declarations with nested elements as children."""
+        classes = self._extract_top_level_classes(node)
+        for class_block in classes:
+            class_block.children = self._extract_nested_elements(node, class_block)
+        return classes
+        
     def _extract_top_level_classes(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level class declarations from TypeScript module."""
         blocks = []
@@ -527,6 +644,13 @@ class TypeScriptExtractor(BaseExtractor):
 
         return blocks
 
+    def extract_interfaces(self, node: Any) -> List[CodeBlock]:
+        """Extract top-level interface declarations with nested elements as children."""
+        interfaces = self._extract_top_level_interfaces(node)
+        for interface in interfaces:
+            interface.children = self._extract_nested_elements(node, interface)
+        return interfaces
+        
     def _extract_top_level_interfaces(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level interface declarations from TypeScript module."""
         blocks = []

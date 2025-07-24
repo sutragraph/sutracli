@@ -1,8 +1,8 @@
-"""
-AST Parser with Code Block Extraction
+"""AST Parser with Code Block Extraction
 
 This module provides an AST parser that can extract specific code blocks
-from parsed AST trees using language-specific extractors.
+from parsed AST trees using language-specific extractors and establish
+relationships between files based on import statements.
 """
 
 import os
@@ -19,6 +19,7 @@ from utils.file_utils import (
     read_file_content,
 )
 from extractors import Extractor, BlockType
+from relationship_extractors import RelationshipExtractor
 
 
 class ASTParser:
@@ -26,10 +27,11 @@ class ASTParser:
     AST parser with code block extraction capabilities.
     """
 
-    def __init__(self, symbol_extractor=None):
+    def __init__(self, symbol_extractor=None, relationship_extractor=None):
         """Initialize the AST parser."""
         self._parser_cache: Dict[str, Any] = {}
         self._extractor = Extractor(symbol_extractor=symbol_extractor)
+        self._relationship_extractor = relationship_extractor or RelationshipExtractor()
 
     def _get_parser(self, language: str) -> Optional[Any]:
         """
@@ -196,6 +198,7 @@ class ASTParser:
                              block_types: Optional[List[BlockType]] = None) -> Dict[str, Dict[str, Any]]:
         """
         Parse all files in a directory and extract code blocks with hierarchical structure.
+        Also extracts relationships between files based on import statements.
 
         Args:
             dir_path: Path to the directory
@@ -203,7 +206,7 @@ class ASTParser:
 
         Returns:
             Dictionary with file paths as keys and extraction results as values,
-            each result following the same format as parse_and_extract
+            each result following the same format as parse_and_extract with added relationships
         """
         dir_path = Path(dir_path)
         results = {}
@@ -231,6 +234,36 @@ class ASTParser:
                 result = self.parse_and_extract(file_path, block_types)
                 if result.get("ast") or result.get("error"):
                     results[str(file_path)] = result
+
+        # Extract relationships between files based on import statements
+        if results:
+            print("Extracting relationships between files...")
+            relationships = self._relationship_extractor.extract_relationships(results)
+            
+            # Add relationships to the results
+            for relationship in relationships:
+                source_file_id = relationship.source_file
+                target_file_id = relationship.target_file
+                
+                # Find the source file path from its ID
+                source_file_path = None
+                for file_path, result in results.items():
+                    if result.get("id") == source_file_id:
+                        source_file_path = file_path
+                        break
+                
+                if source_file_path:
+                    # Initialize relationships list if it doesn't exist
+                    if "relationships" not in results[source_file_path]:
+                        results[source_file_path]["relationships"] = []
+                    
+                    # Add the relationship to the source file's results
+                    results[source_file_path]["relationships"].append({
+                        "source_file": source_file_id,
+                        "target_file": target_file_id,
+                        "import_content": relationship.import_content,
+                        "symbols": relationship.symbols
+                    })
 
         print(f"Parsed and extracted from {len(results)} files in directory: {dir_path}")
         return results
