@@ -82,7 +82,10 @@ def main():
 
     test_files = [
         # "test_files/test_python.py",
-        "test_files/test_typescript.ts"
+        "/home/utkarsh/Neusort/discoveryservice/src/index.ts",
+        "/home/utkarsh/Neusort/discoveryservice/src/services/name-cheap.service.ts",
+        # "/home/utkarsh/Neusort/mapmoxmessenger/src/main/java/com/mapmox/mapmoxmessenger/MapmoxMessengerApplication.java",
+        "/home/utkarsh/Neusort/mapmoxmessenger/src/main/java/com/mapmox/mapmoxmessenger/config/RabbitMQConfig.java"
     ]
 
     for file_path in test_files:

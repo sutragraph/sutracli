@@ -36,16 +36,6 @@ class TypeScriptExtractor(BaseExtractor):
                     return self._get_node_text(child)
         return ""
 
-
-
-
-
-
-
-
-
-
-
     def extract_imports(self, node: Any) -> List[CodeBlock]:
         """Extract import statements."""
         blocks = []

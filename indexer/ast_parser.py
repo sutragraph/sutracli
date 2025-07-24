@@ -20,7 +20,7 @@ from utils.file_utils import (
 from extractors import builder, BlockType, CodeBlock
 from extractors.typescript_extractor import TypeScriptExtractor
 from extractors.python_extractor import PythonExtractor
-
+from extractors.java_extractor import JavaExtractor
 
 class ASTParser:
     """
@@ -36,6 +36,7 @@ class ASTParser:
         """Setup language-specific extractors."""
         builder.register_extractor("typescript", TypeScriptExtractor)
         builder.register_extractor("python", PythonExtractor)
+        builder.register_extractor("java", JavaExtractor)
 
     def _get_parser(self, language: str) -> Optional[Any]:
         """
