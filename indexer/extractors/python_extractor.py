@@ -14,19 +14,7 @@ class PythonExtractor(BaseExtractor):
     def __init__(self, language: str = "python", symbol_extractor=None):
         super().__init__(language, symbol_extractor)
 
-    def _traverse_nodes(self, node: Any, node_types: List[str]) -> List[Any]:
-        """Traverse AST nodes and collect nodes of specified types."""
-        results = []
-
-        def traverse(n):
-            if hasattr(n, 'type') and n.type in node_types:
-                results.append(n)
-            if hasattr(n, 'children'):
-                for child in n.children:
-                    traverse(child)
-
-        traverse(node)
-        return results
+    # _traverse_nodes method moved to BaseExtractor
 
     def _get_identifier_name(self, node: Any) -> str:
         """Get identifier name from a node."""
@@ -64,9 +52,57 @@ class PythonExtractor(BaseExtractor):
             ))
 
         return blocks
-
+        
     def extract_exports(self, node: Any) -> List[CodeBlock]:
-        """Extract export statements (Python uses __all__ for explicit exports)."""
+        """Extract export declarations."""
+        exports = self._extract_top_level_exports(node)
+        return exports
+        
+    def extract_functions(self, node: Any) -> List[CodeBlock]:
+        """Extract function declarations with nested elements as children."""
+        functions = self._extract_top_level_functions(node)
+        for function in functions:
+            function.children = self._extract_nested_elements(node, function)
+        return functions
+        
+    def extract_classes(self, node: Any) -> List[CodeBlock]:
+        """Extract class declarations with nested elements as children."""
+        classes = self._extract_top_level_classes(node)
+        for class_block in classes:
+            class_block.children = self._extract_nested_elements(node, class_block)
+        return classes
+        
+    def extract_variables(self, node: Any) -> List[CodeBlock]:
+        """Extract variable declarations."""
+        return self._extract_top_level_variables(node)
+        
+    def extract_all(self, root_node: Any) -> List[CodeBlock]:
+        """Python-specific implementation of extract_all.
+        Extracts all supported code blocks with hierarchical structure.
+        """
+        self._blocks = []
+
+        # First, extract all symbols from the entire file
+        self._extract_all_symbols(root_node)
+
+        # Then extract top-level blocks with their nested children
+        # Python-specific order and handling
+        self._blocks.extend(self.extract_imports(root_node))
+        self._blocks.extend(self.extract_exports(root_node))  # __all__ declarations
+        self._blocks.extend(self.extract_variables(root_node))
+        self._blocks.extend(self.extract_functions(root_node))
+        self._blocks.extend(self.extract_classes(root_node))
+
+        return self._blocks
+        
+    # Python doesn't have enums in the same way as TypeScript
+    # Using the default implementation from BaseExtractor
+        
+    # Python doesn't have interfaces in the same way as TypeScript
+    # Using the default implementation from BaseExtractor
+
+    def _extract_top_level_exports(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level export declarations (Python uses __all__ for explicit exports)."""
         blocks = []
 
         # Look for __all__ assignments
@@ -158,6 +194,53 @@ class PythonExtractor(BaseExtractor):
                         names.extend(self._extract_pattern_names(child))
 
         return names
+        
+    # _get_node_text method moved to BaseExtractor
+        
+    # _get_node_position method moved to BaseExtractor
+        
+    # _find_node_by_position method moved to BaseExtractor
+        
+    # _extract_nested_elements method moved to BaseExtractor
+        
+    # Python doesn't have enums in the same way as TypeScript
+    # Using the default implementation from BaseExtractor
+        
+    # Python doesn't have interfaces in the same way as TypeScript
+    # Using the default implementation from BaseExtractor
+        
+    def _extract_nested_variables(self, parent_node: Any) -> List[CodeBlock]:
+        """Extract variable declarations nested within a Python parent node."""
+        nested_variables = []
+
+        def traverse(node, depth=0):
+            if hasattr(node, 'type'):
+                if node.type == 'assignment' and depth > 0:  # Skip direct children, only nested
+                    names = self._get_nested_variable_names(node)
+                    if names:
+                        start_line, end_line, start_col, end_col = self._get_node_position(node)
+                        content = self._get_node_text(node)
+                        for name in names:
+                            nested_variables.append(self._create_code_block(
+                                BlockType.VARIABLE,
+                                name,
+                                content,
+                                start_line,
+                                end_line,
+                                start_col,
+                                end_col,
+                                node
+                            ))
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, depth + 1)
+
+        if hasattr(parent_node, 'children'):
+            for child in parent_node.children:
+                traverse(child, 0)
+
+        return nested_variables
 
     def _extract_nested_functions(self, parent_node: Any) -> List[CodeBlock]:
         """Extract function declarations nested within a Python parent node."""
@@ -327,55 +410,8 @@ class PythonExtractor(BaseExtractor):
 
         return blocks
 
-    def _extract_top_level_enums(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level enum declarations from Python module."""
-        blocks = []
+    # Python doesn't have enums in the same way as TypeScript
+    # Using the default implementation from BaseExtractor
 
-        # Look for direct children of the module that are class definitions inheriting from Enum
-        if hasattr(node, 'children'):
-            for child in node.children:
-                if hasattr(child, 'type') and child.type == 'class_definition':
-                    content = self._get_node_text(child)
-                    if 'Enum' in content:  # Simple heuristic
-                        name = self._get_identifier_name(child)
-                        if name:
-                            start_line, end_line, start_col, end_col = self._get_node_position(child)
-                            blocks.append(self._create_code_block(
-                                BlockType.ENUM,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                child
-                            ))
-
-        return blocks
-
-    def _extract_top_level_interfaces(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level interface-like declarations from Python module."""
-        blocks = []
-
-        # Look for direct children of the module that are abstract classes or protocols
-        if hasattr(node, 'children'):
-            for child in node.children:
-                if hasattr(child, 'type') and child.type == 'class_definition':
-                    content = self._get_node_text(child)
-                    # Simple heuristic: look for ABC, Protocol, or abstract methods
-                    if any(keyword in content for keyword in ['ABC', 'Protocol', 'abstractmethod']):
-                        name = self._get_identifier_name(child)
-                        if name:
-                            start_line, end_line, start_col, end_col = self._get_node_position(child)
-                            blocks.append(self._create_code_block(
-                                BlockType.INTERFACE,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                child
-                            ))
-
-        return blocks
+    # Python doesn't have interfaces in the same way as TypeScript
+    # Using the default implementation from BaseExtractor
