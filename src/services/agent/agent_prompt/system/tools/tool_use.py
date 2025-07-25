@@ -19,7 +19,7 @@ For example, to use the search_keyword tool:
 <search_keyword>
 <keyword>defaultRouter.get</keyword>
 <before_lines>0</before_lines>  
-<after_lines>3</after_lines>
+<after_lines>2</after_lines>
 <case_sensitive>true</case_sensitive>
 <regex>false</regex>
 </search_keyword>

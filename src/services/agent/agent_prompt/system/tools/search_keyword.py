@@ -1,5 +1,5 @@
 SEARCH_KEYWORD_TOOL = """## search_keyword
-Description: Search for specific keywords or phrases in the codebase. Use this tool when you need to find occurrences of a term across files, such as function names, variable names, or specific code patterns. This tool is faster than terminal commands like grep and provides flexible search capabilities.  
+Description: Search for specific keywords or phrases in the codebase. Use this tool when you need to find occurrences of a term across files, such as function names, variable names, or specific code patterns. This tool is faster than terminal commands like grep and provides flexible search capabilities. The tool returns results with line numbers for precise location tracking.
 
 Required Parameters:
 - keyword: The keyword or phrase to search for in the codebase.
@@ -31,7 +31,7 @@ Examples:
 <search_keyword>
 <keyword>myVariable</keyword>
 <before_lines>1</before_lines>  
-<after_lines>3</after_lines>
+<after_lines>2</after_lines>
 <case_sensitive>true</case_sensitive>
 <regex>false</regex>
 </search_keyword>

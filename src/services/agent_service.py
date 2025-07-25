@@ -53,23 +53,23 @@ class AgentService:
 
         # Track last tool result for context -
         self.last_tool_result = None
-        
+
         # Memory update optimization flag
         self._memory_needs_update = False
-        
+
         # Consecutive failures tracking
         self._consecutive_failures = 0
-        
+
         # Initialize error handler and result verifier
         self.error_handler = ErrorHandler()
         self.result_verifier = ResultVerifier()
 
         # Determine current project name from specified or working directory
         self.current_project_name = self.project_manager.determine_project_name(project_path)
-        
+
         # Performance monitoring
         self.performance_monitor = get_performance_monitor()
-        
+
         # Check if project exists in database and auto-index if needed
         self.project_manager.ensure_project_indexed(self.current_project_name, project_path)
 
@@ -77,9 +77,6 @@ class AgentService:
         """Perform incremental reindexing of the database using the current project name."""
         yield from self.project_manager.perform_incremental_indexing(self.current_project_name)
 
-
-
-    
     def _update_session_memory(self):
         """Update session memory with current memory state."""
         try:
@@ -97,12 +94,12 @@ class AgentService:
             )
         except Exception as e:
             logger.error(f"Error updating session memory: {e}")
-    
+
     def _is_critical_tool_failure(self, event: Dict[str, Any]) -> bool:
         """Determine if a tool failure is critical enough to stop execution."""
         tool_name = event.get("tool_name", "")
         error_msg = event.get("error", event.get("message", "")).lower()
-        
+
         # Critical tool failures that should stop execution
         critical_tools = ["write_to_file", "apply_diff", "execute_command"]
         critical_errors = [
@@ -115,16 +112,16 @@ class AgentService:
             "syntax error",
             "compilation error"
         ]
-        
+
         # Stop if critical tool fails
         if tool_name in critical_tools:
             return True
-        
+
         # Stop if error message indicates critical failure
         for critical_error in critical_errors:
             if critical_error in error_msg:
                 return True
-        
+
         # Stop if multiple consecutive failures (indicates systemic issue)
         if hasattr(self, '_consecutive_failures'):
             self._consecutive_failures += 1
@@ -132,14 +129,14 @@ class AgentService:
                 return True
         else:
             self._consecutive_failures = 1
-        
+
         return False
-    
+
     def _detect_simple_completion(self, event: Dict[str, Any], user_query: str) -> bool:
         """Detect if a simple task has been completed successfully."""
         tool_name = event.get("tool_name", "")
         query_lower = user_query.lower()
-        
+
         # Simple completion patterns
         simple_completions = {
             # "list_files": ["list", "show", "find files", "what files"],
@@ -148,7 +145,7 @@ class AgentService:
             # "write_to_file": ["create", "write", "make", "generate"],
             # "execute_command": ["run", "execute", "create", "copy", "clone"]
         }
-        
+
         # Check if this tool typically completes the user's query
         if tool_name in simple_completions:
             patterns = simple_completions[tool_name]
@@ -158,7 +155,7 @@ class AgentService:
                     if event.get("success", True) and event.get("type") != "error":
                         logger.debug(f"Detected simple completion for {tool_name}")
                         return True
-        
+
         return False
 
     def solve_problem(
@@ -172,7 +169,7 @@ class AgentService:
 
         # Set reasoning context in memory manager
         self.memory_manager.set_reasoning_context(problem_query)
-        
+
         # Add user query to sutra memory at the start
         # Get rich memory from memory manager
         current_memory_rich = self.memory_manager.get_memory_for_llm()
@@ -203,17 +200,17 @@ class AgentService:
         # Clear session data for the new query to ensure clean state
         self.session_manager.clear_session_data_for_current_query()
         self.last_tool_result = None
-        
+
         # Reset consecutive failures for new query
         self._consecutive_failures = 0
-        
+
         # Clear reasoning context in memory manager
         self.memory_manager.clear_reasoning_context()
-        
+
         # Clear error handler and result verifier history
         self.error_handler.clear_history()
         self.result_verifier.clear_history()
-        
+
         # Set new reasoning context for continuation
         self.memory_manager.set_reasoning_context(query)
 
@@ -248,7 +245,7 @@ class AgentService:
 
         while current_iteration < max_iterations:
             current_iteration += 1
-            
+
             # Show progress for each iteration
             print(f"🔄 Iteration {current_iteration}/{max_iterations}")
 
@@ -292,10 +289,10 @@ class AgentService:
                     ]:
                         # Store ANY non-thinking, non-memory event as tool result
                         self.last_tool_result = event
-                        
+
                         # Improve tool call visibility - extract tool name from event
                         tool_name = event.get("tool_name", "unknown")
-                        
+
                         # Show tool execution for all relevant events
                         event_type = event.get("type", "unknown")
                         # Include all event types that have tool names
@@ -304,17 +301,17 @@ class AgentService:
                         elif tool_name == "unknown":
                             # Debug: log when tool name is unknown
                             logger.debug(f"Unknown tool name for event type: {event_type}, event keys: {list(event.keys())}")
-                        
+
                         # Validate tool result using SutraMemoryManager
                         validation_result = self.memory_manager.validate_tool_result(
                             tool_name, event, user_query
                         )
-                        
+
                         # Verify result using result verifier
                         verification_result = self.result_verifier.verify_result(
                             tool_name, event
                         )
-                        
+
                         # Show validation results
                         if not validation_result["valid"]:
                             print(f"⚠️  Tool validation failed: {validation_result['issues']}")
@@ -324,7 +321,7 @@ class AgentService:
                             confidence = validation_result["confidence"]
                             if confidence < 0.7:
                                 print(f"⚠️  Low confidence result: {confidence:.2f}")
-                        
+
                         # Show verification results
                         if not verification_result["verified"]:
                             print(f"❌ Result verification failed: {verification_result['issues']}")
@@ -334,7 +331,7 @@ class AgentService:
                             print(f"⚠️  Result quality: {verification_result['result_quality']}")
                             if verification_result["recommendations"]:
                                 print(f"📝 Recommendations: {verification_result['recommendations']}")
-                            
+
                         # Show data preview for successful tool use
                         if event_type == "tool_use" and "data" in event:
                             data_preview = str(event["data"])[:200]
@@ -345,13 +342,13 @@ class AgentService:
                         elif "output" in event:
                             output_preview = str(event["output"])[:200]
                             print(f"   Output: {output_preview}...")
-                        
+
                         # Check for tool failures and stop if critical
                         if event.get("type") == "error" or event.get("success") is False or event.get("type") == "tool_error":
                             error_msg = event.get("error", event.get("message", "Unknown error"))
                             logger.error(f"Tool {tool_name} failed: {error_msg}")
                             print(f"❌ Tool {tool_name} failed: {error_msg}")
-                            
+
                             # Stop on critical tool failures
                             if self._is_critical_tool_failure(event):
                                 tool_failed = True
@@ -365,12 +362,12 @@ class AgentService:
                         else:
                             # Reset consecutive failures on success
                             self._consecutive_failures = 0
-                            
+
                             # Check for simple completion
                             if self._detect_simple_completion(event, user_query):
                                 print(f"🎯 Simple task completed with {tool_name}")
                                 task_complete = True
-                        
+
                         # Check if execution should continue based on validation
                         if not self.memory_manager.should_continue_execution(
                             validation_result, self._consecutive_failures
@@ -403,7 +400,7 @@ class AgentService:
                 if self._memory_needs_update:
                     self._update_session_memory()
                     self._memory_needs_update = False
-                
+
                 # Check if task is likely complete using SutraMemoryManager
                 if not task_complete:
                     completion_analysis = self.memory_manager.analyze_task_completion(user_query)
@@ -476,16 +473,24 @@ class AgentService:
 
                 # Add user query
                 user_message_parts.append(f"User Query: {user_query}")
-
-                # Add sutra memory from memory manager
-                if sutra_memory_rich and sutra_memory_rich.strip():
-                    user_message_parts.append(
-                        f"\n====\nSUTRA MEMORY STATUS\n\n{sutra_memory_rich}\n===="
-                    )
-                else:
+                # Add sutra memory from memory manager - check iteration for better logic
+                if current_iteration == 1:
                     user_message_parts.append(
                         f"\n====\nSUTRA MEMORY STATUS\n\nNo previous memory available. This is first message from user.\n===="
                     )
+                    logger.debug("Agent: First iteration with empty memory")
+                elif sutra_memory_rich and sutra_memory_rich.strip():
+                    user_message_parts.append(
+                        f"\n====\nSUTRA MEMORY STATUS\n\n{sutra_memory_rich}\n===="
+                    )
+                    logger.debug(
+                        "Agent: Using existing Sutra memory from previous iterations"
+                    )
+                else:
+                    user_message_parts.append(
+                        f"\n====\nSUTRA MEMORY STATUS\n\nNo previous memory available.\n===="
+                    )
+                    logger.debug("Agent: No memory available")
 
                 # Add task progress if available
                 if task_progress:
@@ -495,7 +500,7 @@ class AgentService:
 
                 # Add tool status -  FORMAT
                 user_message_parts.append(f"\n====\nTOOL STATUS\n\n{tool_status}\n====")
-                
+
                 # Add reasoning prompt from SutraMemoryManager
                 reasoning_prompt = self.memory_manager.generate_reasoning_prompt(user_query)
                 if reasoning_prompt != "No previous tool executions found.":
@@ -529,7 +534,7 @@ class AgentService:
                     "iteration": current_iteration,
                     "retry_count": retry_count
                 })
-                
+
                 logger.warning(
                     f"XML parsing failed on attempt {retry_count}/{max_retries}: {xml_error.message}"
                 )
@@ -553,7 +558,7 @@ class AgentService:
                     "iteration": current_iteration,
                     "user_query": user_query
                 })
-                
+
                 logger.error(f"Failed to get valid response from LLM: {e}")
                 if self.error_handler.should_stop_execution(error_info):
                     logger.error("Stopping execution due to critical error")
@@ -854,16 +859,16 @@ class AgentService:
     def _build_completion_status(self, result: Dict[str, Any]) -> str:
         """Build status for completion tool."""
         status = "Tool: attempt_completion\n"
-        
+
         if result.get("type") == "task_complete":
             status += "Status: Task completed successfully\n"
         elif result.get("type") == "completion":
             status += "Status: Completion requested\n"
-        
+
         completion_result = result.get("result", "")
         if completion_result:
             status += f"Result: {completion_result}"
-        
+
         return status.rstrip()
 
     def _build_generic_status(self, result: Dict[str, Any], tool_name: str) -> str:

@@ -92,12 +92,12 @@ class SQLiteConnection:
                 project_id INTEGER NOT NULL,
                 node_type TEXT NOT NULL,
                 name TEXT,
-                name_lower TEXT, -- For case-insensitive search
+                name_lower TEXT,
                 file_hash_id INTEGER,
-                lines TEXT, -- JSON array as text [start_line, end_line]
+                lines TEXT,
                 code_snippet TEXT,
-                properties TEXT, -- JSON object as text for additional properties
-                UNIQUE(node_id, project_id), -- Ensure node_id is unique within project
+                properties TEXT,
+                UNIQUE(node_id, project_id),
                 FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
                 FOREIGN KEY (file_hash_id) REFERENCES file_hashes(id) ON DELETE SET NULL
             )
@@ -110,10 +110,52 @@ class SQLiteConnection:
                 to_node_id INTEGER,
                 project_id INTEGER NOT NULL,
                 relationship_type TEXT NOT NULL,
-                properties TEXT, -- JSON object as text for additional properties
+                properties TEXT,
                 FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
                 FOREIGN KEY (from_node_id, project_id) REFERENCES nodes(node_id, project_id) ON DELETE CASCADE,
                 FOREIGN KEY (to_node_id, project_id) REFERENCES nodes(node_id, project_id) ON DELETE CASCADE
+            )
+            """,
+            # Cross-index tables for connection tracking (updated schema)
+            """
+            CREATE TABLE IF NOT EXISTS incoming_connections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                description TEXT NOT NULL,
+                file_hash_id INTEGER,
+                snippet_lines TEXT,
+                technology_name TEXT,
+                code_snippet TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                FOREIGN KEY (file_hash_id) REFERENCES file_hashes(id) ON DELETE SET NULL
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS outgoing_connections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                description TEXT NOT NULL,
+                file_hash_id INTEGER,
+                snippet_lines TEXT,
+                technology_name TEXT,
+                code_snippet TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                FOREIGN KEY (file_hash_id) REFERENCES file_hashes(id) ON DELETE SET NULL
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS connection_mappings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender_id INTEGER NOT NULL,
+                receiver_id INTEGER NOT NULL,
+                connection_type TEXT NOT NULL,
+                description TEXT,
+                match_confidence REAL DEFAULT 0.0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (sender_id) REFERENCES outgoing_connections(id) ON DELETE CASCADE,
+                FOREIGN KEY (receiver_id) REFERENCES incoming_connections(id) ON DELETE CASCADE
             )
             """,
         ]
@@ -121,14 +163,121 @@ class SQLiteConnection:
         for sql in tables_sql:
             self.connection.execute(sql)
 
+        # Handle database migrations for existing tables
+        self._handle_database_migrations()
+
         self.connection.commit()
         logger.debug("Database tables created/verified")
+
+    def _handle_database_migrations(self) -> None:
+        """Handle database schema migrations for existing databases."""
+        try:
+            # Check if code_snippet column exists in incoming_connections table
+            cursor = self.connection.cursor()
+            cursor.execute("PRAGMA table_info(incoming_connections)")
+            incoming_columns = [row[1] for row in cursor.fetchall()]
+
+            if "code_snippet" not in incoming_columns:
+                logger.info("Adding code_snippet column to incoming_connections table")
+                self.connection.execute(
+                    "ALTER TABLE incoming_connections ADD COLUMN code_snippet TEXT"
+                )
+
+            # Check if code_snippet column exists in outgoing_connections table
+            cursor.execute("PRAGMA table_info(outgoing_connections)")
+            outgoing_columns = [row[1] for row in cursor.fetchall()]
+
+            if "code_snippet" not in outgoing_columns:
+                logger.info("Adding code_snippet column to outgoing_connections table")
+                self.connection.execute(
+                    "ALTER TABLE outgoing_connections ADD COLUMN code_snippet TEXT"
+                )
+
+            logger.debug("Database migrations completed")
+
+        except Exception as e:
+            logger.warning(f"Database migration failed (tables may not exist yet): {e}")
 
     def close(self) -> None:
         """Close the database connection."""
         if hasattr(self, "connection") and self.connection:
             self.connection.close()
             logger.info("Database connection closed")
+
+    def execute_query(
+        self, query: str, parameters: tuple | None = None
+    ) -> List[Dict[str, Any]]:
+        """Execute a simple query and return results."""
+        try:
+            cursor = self.connection.cursor()
+            if parameters:
+                cursor.execute(query, parameters)
+            else:
+                cursor.execute(query)
+
+            # Get column names
+            columns = (
+                [description[0] for description in cursor.description]
+                if cursor.description
+                else []
+            )
+
+            # Fetch all results and convert to dict
+            rows = cursor.fetchall()
+            return [dict(zip(columns, row)) for row in rows]
+
+        except Exception as e:
+            logger.error(f"Failed to execute query: {e}")
+            raise
+
+    def project_exists(self, project_name: str) -> bool:
+        """Check if a project exists in the database."""
+        try:
+            result = self.execute_query(
+                "SELECT COUNT(*) as count FROM projects WHERE name = ?", (project_name,)
+            )
+            return result[0]["count"] > 0 if result else False
+        except Exception as e:
+            logger.error(f"Failed to check project existence: {e}")
+            return False
+
+    def insert_project(self, project_data: Dict[str, Any]) -> int:
+        """Insert or replace a project. Returns project ID."""
+        try:
+            cursor = self.connection.execute(
+                """
+                INSERT OR REPLACE INTO projects (name, description, language, version, created_at, updated_at, source_file)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    project_data["name"],
+                    project_data.get("description"),
+                    project_data.get("language"),
+                    project_data.get("version"),
+                    project_data.get("created_at"),
+                    project_data.get("updated_at"),
+                    project_data.get("source_file"),
+                ),
+            )
+
+            self.connection.commit()
+            project_id = cursor.lastrowid
+            if project_id is None:
+                raise ValueError("Failed to get project ID after insertion")
+            print(f"Inserted project '{project_data['name']}' with ID: {project_id}")
+            return project_id
+
+        except Exception as e:
+            logger.error(f"Error inserting project {project_data['name']}: {e}")
+            raise
+
+    def list_all_projects(self) -> List[Dict[str, Any]]:
+        """List all projects in the database."""
+        try:
+            return self.execute_query("SELECT * FROM projects ORDER BY name")
+        except Exception as e:
+            logger.error(f"Error listing projects: {e}")
+            return []
 
     def clear_database(self, force_clear: bool = False) -> None:
         """
@@ -718,7 +867,7 @@ class GraphOperations:
             properties_json = json.dumps(rel.properties) if rel.properties else None
 
             # Debug: Log each relationship being prepared for insertion
-            logger.info(
+            logger.debug(
                 f"🔗 Preparing relationship: {rel.from_node_id} -> {rel.to_node_id} ({rel.relationship_type})"
             )
 

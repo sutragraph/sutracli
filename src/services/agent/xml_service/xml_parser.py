@@ -30,6 +30,19 @@ class XMLParser:
             # Provide detailed error diagnostics
             analysis = self._analyze_xml_parsing_error(xml_block, e)
             logger.error(f"XML parsing failed: {analysis}")
+            
+            # Try to clean and retry once if it's a character encoding issue
+            if "not well-formed" in str(e) and "invalid token" in str(e):
+                try:
+                    # Apply additional cleaning for special characters
+                    from .xml_cleaner import XMLCleaner
+                    cleaner = XMLCleaner()
+                    cleaned_block = cleaner.clean_xml_spacing(xml_block)
+                    parsed_xml = xmltodict.parse(cleaned_block)
+                    return self._restore_cdata(parsed_xml, cdata_replacements)
+                except Exception as retry_error:
+                    logger.error(f"Retry after cleaning also failed: {retry_error}")
+            
             raise e
 
     def _replace_cdata(self, match: re.Match, replacements: Dict[str, str]) -> str:

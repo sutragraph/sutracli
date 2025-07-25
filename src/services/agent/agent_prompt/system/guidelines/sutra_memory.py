@@ -22,6 +22,11 @@ Any required code that you identify must be added to sutra memory if you are NOT
 - Import statements and dependencies
 - File paths and directory structures
 
+IMPORTANT: Only store code in sutra memory if you have SEEN the exact code content with specific line numbers. If you don't know the exact code content or line ranges, DO NOT add it to code storage. Instead, add a task to investigate/check the file first, then after examining the code, store it if needed.
+
+EXPLORATION RULE:
+If you want to explore any files or functions, list them into the pending or current tasks and then explore them one by one. Do not explore multiple files/functions simultaneously - work systematically through your task list.
+
 Key Notes:
 Task IDs must be unique and sequential
 History prevents redundant tool calls by tracking previous operations
@@ -77,8 +82,8 @@ Example 1: Basic history update with detailed information storage
 Example 2: Task management with history
 <sutra_memory>
 <task>
-<add id="1" to="pending">Check function validateUser in file src/auth.py for compatibility with new parameters</add>
-<add id="2" to="pending">Update database schema to support new user roles</add>
+<add id="1" to="pending">Check function validateUser in file src/auth.py for compatibility with new parameters - function found at src/auth/validator.py line 15</add>
+<add id="2" to="pending">Update database schema to support new user roles - schema files: src/models/user.py, migrations/add_roles.sql</add>
 <move from="pending" to="current">1</move>
 </task>
 <add_history>Used database query GET_FUNCTION_CALLERS for validateUser - found called in 3 files: src/controllers/auth.js line 23, src/middleware/verify.py line 45, src/routes/login.php line 12. All callers pass (username, password) parameters. Stored auth functions in code memory. Current validateUser signature: validateUser(username, password, options={}). Added validation tasks for parameter compatibility with new role system.</add_history>
@@ -166,11 +171,13 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - Cross-file Impacts when modifications in one file require updates in related files
    - Validation Requirements when existing code needs compatibility verification
    - Implementation Steps when breaking down complex features into manageable tasks
+   - IMPORTANT: Always include specific file paths and function names in task descriptions when known (e.g., "Check validateUser function in src/auth/validator.py line 15" instead of "Check user validation"). This reduces LLM calls by providing direct file locations, eliminating the need for semantic search or list_files operations.
 3. When to Store Code:
    - Future Reference for code that will be needed in upcoming iterations
    - Dependency Analysis for functions/classes that current changes depend on
    - Template Code for existing patterns to follow for new implementations
    - Critical Context for code that provides essential context for decision-making
+   - ONLY when you have examined the exact code content and know the specific line numbers - never store code you haven't seen
 4. When to Track Files:
    - File Modifications when editing existing files to track what has been changed
    - File Creation when adding new files to the project structure

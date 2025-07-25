@@ -1,7 +1,7 @@
 """Data processors for converting tree-sitter JSON to SQLite graph."""
 
 import hashlib
-from typing import Optional, List, Dict
+from typing import List, Dict
 from loguru import logger
 
 from models import (

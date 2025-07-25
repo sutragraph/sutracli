@@ -43,8 +43,8 @@ class ActionExecutor:
         self.sutra_memory_manager = sutra_memory_manager or SutraMemoryManager(
             db_connection=self.db_connection
         )
-        self.project_id = db_connection.get_project_id_by_name()
-        
+        self.project_id = None  # Will be set when needed
+
         # Create shared incremental indexer with the same memory manager
         self.incremental_indexer = IncrementalIndexing(
             self.db_connection, self.sutra_memory_manager

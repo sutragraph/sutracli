@@ -1,5 +1,6 @@
 """Command handlers for the CLI application."""
 
+import uuid
 import sys
 import webbrowser
 from pathlib import Path
@@ -9,8 +10,9 @@ from prompt_toolkit import prompt
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
-
+from graph.sqlite_client import SQLiteConnection
+from services.project_manager import ProjectManager
+from services.cross_indexing.core.cross_index_system import CrossIndexSystem
 from graph import TreeSitterToSQLiteConverter
 from services.agent_service import AgentService
 from services.auth.token_manager import get_token_manager
@@ -189,7 +191,7 @@ def _process_agent_updates(updates_generator) -> None:
                 results = update.get("result", "")
                 # Only show results if found, reduce verbosity
                 if "Found 0 nodes" not in results:
-                    print(f'🔍 Database search "{query}" | {results}')
+                    print(f'🔍 Database search "{query}"  {query_name} | {results}')
                     print("-" * 40)
 
             elif tool_name == "semantic_search":
@@ -230,7 +232,7 @@ def handle_agent_command(args) -> None:
         project_directory = getattr(args, "directory", None)
         if project_directory:
             print(f"📁 Working directory: {project_directory}")
-        
+
         agent = AgentService(project_path=project_directory)
 
         if args.problem_query:
@@ -256,18 +258,18 @@ def handle_agent_command(args) -> None:
 
         while True:
             try:
-# Create history and completer for enhanced input
+                # Create history and completer for enhanced input
                 history = InMemoryHistory()
                 completer = WordCompleter(['exit', 'quit', 'bye', 'goodbye', 'help'])
-                
+
                 # Create key bindings
                 bindings = KeyBindings()
-                
+
                 @bindings.add('c-c')
                 def _(event):
                     """Handle Ctrl+C"""
                     raise KeyboardInterrupt
-                
+
                 # Enhanced prompt with multiline support and navigation
                 user_input = prompt(
                     "\n👤 You: ",
@@ -287,7 +289,7 @@ def handle_agent_command(args) -> None:
                 if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
                     print("\n👋 Goodbye! Session ended.")
                     break
-                
+
                 if user_input.lower() in ["version", "--version", "-v"]:
                     print("\n📦 Sutra Agent Version Information:")
                     print("   Sutra Knowledge CLI v1.0")
@@ -817,6 +819,172 @@ def handle_web_scrap_command(args) -> None:
     finally:
         # Close the session when done
         WebScraper.close_session()
+
+
+def handle_cross_indexing_command(args) -> None:
+    """Handle cross-indexing command for analyzing inter-service connections."""
+    try:
+        print("🔗 SUTRA CROSS-INDEX - Inter-Service Connection Analysis")
+        print("   Analyzing project for incoming/outgoing connections")
+        print("=" * 80)
+
+        # Validate project path
+        project_path = Path(args.directory).absolute()
+        if not project_path.exists():
+            print(f"❌ Project path does not exist: {project_path}")
+            return
+
+        if not project_path.is_dir():
+            print(f"❌ Project path is not a directory: {project_path}")
+            return
+
+        print(f"📁 Analyzing project at: {project_path}")
+
+        # Initialize required components
+        db_connection = SQLiteConnection()
+        vector_db = VectorDatabase(config.sqlite.embeddings_db)
+        project_manager = ProjectManager(db_connection, vector_db)
+
+        # Get or create project first to determine project name
+        project_name = (
+            args.project_name
+            if args.project_name
+            else project_manager.determine_project_name(str(project_path))
+        )
+
+        # Initialize cross-index system with project name for incremental indexing
+        print(
+            f"🔄 Initializing cross-indexing system with incremental indexing for project: {project_name}"
+        )
+        cross_index_system = CrossIndexSystem(
+            db_connection, project_manager, project_name=project_name
+        )
+        print(f"✅ Cross-indexing system initialized with up-to-date database")
+        project_id = project_manager.get_or_create_project_id(
+            project_name, str(project_path)
+        )
+
+        print(f"✅ Project: {project_name} (ID: {project_id})")
+        print("-" * 40)
+
+        session_id = str(uuid.uuid4())[:8]
+        print(f"📝 Started analysis session: {session_id}")
+
+        print("🤖 Starting Cross-Index Analysis...")
+        print("-" * 40)
+
+        # Use cross-indexing service for analysis with streaming updates
+        cross_index_service = cross_index_system.cross_index_service
+
+        analysis_result = None
+
+        for update in cross_index_service.analyze_project_connections(
+            str(project_path), project_id
+        ):
+            update_type = update.get("type", "unknown")
+
+            if update_type == "cross_index_start":
+                print(f"📁 Analyzing project: {update.get('project_path')}")
+
+            elif update_type == "iteration_start":
+                iteration = update.get("iteration", 0)
+                max_iterations = update.get("max_iterations", 50)
+                print(f"🔄 Iteration {iteration}/{max_iterations}")
+
+            elif update_type == "thinking":
+                print("🤔 Analyzing connections...")
+
+            elif update_type == "tool_use":
+                tool_name = update.get("tool_name", "unknown")
+
+                if tool_name == "database":
+                    query = update.get("query", "")
+                    query_name = update.get("query_name", "")
+                    results = update.get("result", "")
+                    # Only show results if found, reduce verbosity
+                    if "Found 0 nodes" not in results:
+                        print(f'🔍 Database search "{query}" {query_name} | {results}')
+                        print("-" * 40)
+
+                elif tool_name == "semantic_search":
+                    query = update.get("query", "")
+                    results = update.get("result", "")
+                    print(f'🔍 Semantic search "{query}" | {results}')
+                    print("-" * 40)
+
+                elif tool_name == "list_files":
+                    directory = update.get("directory", "")
+                    files_count = update.get("count", 0)
+                    print(f"📁 Listed {files_count} files in {directory}")
+                    print("-" * 40)
+
+                elif tool_name == "search_keyword":
+                    keyword = update.get("keyword", "")
+                    matches_found = update.get("matches_found")
+                    print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
+                    print("-" * 40)
+
+                elif tool_name == "attempt_completion":
+                    result = update.get("result", "")
+                    print(f"🎉 Analysis Completed")
+                    if result:
+                        print(f"   Result: {result}")
+                    print("-" * 40)
+
+            elif update_type == "analysis_complete":
+                print("✅ Analysis Complete")
+
+            elif update_type == "cross_index_success":
+                analysis_result = update.get("analysis_result")
+                matching_result = update.get("matching_result", {})
+                iteration = update.get("iteration", 0)
+                print(
+                    f"🎉 Cross-indexing completed successfully in {iteration} iterations"
+                )
+
+                # Display results
+                incoming_count = len(analysis_result.get("incoming_connections", []))
+                outgoing_count = len(analysis_result.get("outgoing_connections", []))
+                # Get matches count from matching_result instead of analysis_result
+                matches_count = matching_result.get("matches_found", 0)
+
+                print(f"📊 Analysis Results:")
+                print(f"   ⬇️  Incoming connections: {incoming_count}")
+                print(f"   ⬆️  Outgoing connections: {outgoing_count}")
+                print(f"   🔄 Potential matches: {matches_count}")
+                break
+
+            elif update_type == "tool_error":
+                error = update.get("error", "Unknown error")
+                print(f"⚠️  Tool error: {error}")
+
+            elif update_type == "iteration_error":
+                error = update.get("error", "Unknown error")
+                iteration = update.get("iteration", 0)
+                print(f"⚠️  Error in iteration {iteration}: {error}")
+
+            elif update_type == "analysis_error":
+                error = update.get("error", "Unknown error")
+                print(f"⚠️  Analysis error: {error}, retrying...")
+
+            elif update_type == "cross_index_failure":
+                error = update.get("error", "Analysis failed")
+                print(f"❌ Cross-indexing failed: {error}")
+                analysis_result = None
+                break
+
+            elif update_type == "cross_index_error":
+                error = update.get("error", "Critical error")
+                print(f"❌ Critical error: {error}")
+                analysis_result = None
+                break
+
+        print("\n🎉 Cross-Index Analysis Completed!")
+        print("=" * 80)
+
+    except Exception as e:
+        logger.error(f"Error during cross-indexing: {e}")
+        print(f"❌ Unexpected error: {e}")
 
 
 def handle_version_command(args) -> None:

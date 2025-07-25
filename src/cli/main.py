@@ -2,8 +2,6 @@
 """Main entry point for the Sutra Knowledge application."""
 
 import sys
-from pathlib import Path
-
 from cli.parser import setup_argument_parser
 from cli.utils import setup_logging
 from cli.commands import (
@@ -20,6 +18,7 @@ from cli.commands import (
     handle_web_search_command,
     handle_web_scrap_command,
     handle_version_command,
+    handle_cross_indexing_command,
 )
 from cli.utils import (
     process_multiple_projects,
@@ -83,6 +82,9 @@ def main():
 
         elif args.command == "version":
             handle_version_command(args)
+
+        elif args.command == "cross-indexing":
+            handle_cross_indexing_command(args)
 
         else:
             logger.error(f"Unknown command: {args.command}")

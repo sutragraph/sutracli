@@ -77,8 +77,16 @@ def build_guidance_message(
         has_more_chunks = kwargs.get("has_more_chunks", False)
         chunk_num = kwargs.get("chunk_num", 1)
         total_chunks = kwargs.get("total_chunks", 1)
+        total_lines = kwargs.get("total_lines", 0)
+        chunk_start = kwargs.get("chunk_start", 1)
+        chunk_end = kwargs.get("chunk_end", total_lines)
+        
         message = f"Found 1 result from {search_type.value} search."
+        if total_lines > 0:
+            message += f" Total {total_lines} lines, sending lines {chunk_start}-{chunk_end}."
+        
         if has_more_chunks or chunk_num < total_chunks:
+            message += f" For more use fetch_next (start:end: {chunk_start}:{chunk_end})"
             message += _get_fetch_next_code_note()
         return message
 
@@ -129,7 +137,14 @@ def build_sequential_node_message(
     elif scenario == SequentialNodeScenario.NODE_WITH_LARGE_CODE_FIRST_CHUNK:
         chunk_num = kwargs.get("chunk_num", 1)
         total_chunks = kwargs.get("total_chunks", 1)
+        total_lines = kwargs.get("total_lines", 0)
+        chunk_start = kwargs.get("chunk_start", 1)
+        chunk_end = kwargs.get("chunk_end", total_lines)
+        
         message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (First chunk)"
+        if total_lines > 0:
+            message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
+        
         if chunk_num < total_chunks or node_index < total_nodes:
             message += _get_fetch_next_code_note()
         return message
@@ -137,7 +152,14 @@ def build_sequential_node_message(
     elif scenario == SequentialNodeScenario.NODE_WITH_LARGE_CODE_MIDDLE_CHUNK:
         chunk_num = kwargs.get("chunk_num", 1)
         total_chunks = kwargs.get("total_chunks", 1)
+        total_lines = kwargs.get("total_lines", 0)
+        chunk_start = kwargs.get("chunk_start", 1)
+        chunk_end = kwargs.get("chunk_end", total_lines)
+        
         message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (Middle chunk)"
+        if total_lines > 0:
+            message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
+        
         if chunk_num < total_chunks or node_index < total_nodes:
             message += _get_fetch_next_code_note()
         return message
@@ -145,7 +167,14 @@ def build_sequential_node_message(
     elif scenario == SequentialNodeScenario.NODE_WITH_LARGE_CODE_LAST_CHUNK:
         chunk_num = kwargs.get("chunk_num", 1)
         total_chunks = kwargs.get("total_chunks", 1)
+        total_lines = kwargs.get("total_lines", 0)
+        chunk_start = kwargs.get("chunk_start", 1)
+        chunk_end = kwargs.get("chunk_end", total_lines)
+        
         message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (Last chunk)"
+        if total_lines > 0:
+            message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
+        
         if node_index < total_nodes:
             message += _get_fetch_next_code_note()
         return message
