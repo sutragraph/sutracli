@@ -1,7 +1,8 @@
 """TypeScript Relationship Extractor
 
 Extracts relationships between TypeScript/JavaScript files based on import statements
-using Tree-sitter for more accurate parsing.
+using Tree-sitter for accurate parsing. Works purely with extraction results data
+without file system lookups.
 """
 
 import os
@@ -14,16 +15,16 @@ from . import BaseRelationshipExtractor, Relationship
 
 
 class TypeScriptRelationshipExtractor(BaseRelationshipExtractor):
-    """Extractor for relationships between TypeScript/JavaScript files."""
+    """Extractor for relationships between TypeScript/JavaScript files using only extraction results data."""
 
-    @property
-    def language(self) -> str:
-        """Return the language this extractor handles."""
-        return "typescript"
+
 
     def extract_relationships(self, extraction_results: Dict[str, Dict[str, Any]]) -> List[Relationship]:
         """Extract relationships between TypeScript files based on import statements."""
         relationships = []
+
+        # Build a registry of available modules from extraction results
+        module_registry = self._build_module_registry(extraction_results)
 
         # Process each file's extraction results
         for source_file_path, result in extraction_results.items():
@@ -38,227 +39,417 @@ class TypeScriptRelationshipExtractor(BaseRelationshipExtractor):
 
             # Process each import block
             for import_block in import_blocks:
-                # Resolve the import to a target file path
                 content = import_block.content if hasattr(import_block, 'content') else ""
-                
-                # Resolve the import to a target file path
-                target_file_path = self._resolve_import_path(source_file_path, content)
-                if not target_file_path or target_file_path not in extraction_results:
+
+                # Parse the import statement to extract detailed information
+                import_info = self._parse_import_statement(content)
+                if not import_info:
                     continue
 
-                # Get the target file ID
-                target_file_id = extraction_results[target_file_path].get("id")
-                if not target_file_id:
-                    continue
-
-                # Create a relationship
-                symbols = import_block.symbols if hasattr(import_block, 'symbols') else []
-                relationship = Relationship(
-                    source_file=source_file_id,
-                    target_file=target_file_id,
-                    import_content=content,
-                    symbols=symbols
+                # Resolve the import to a target file using our module registry
+                target_file_id = self._resolve_import_from_registry(
+                    source_file_path, import_info, module_registry
                 )
-                relationships.append(relationship)
+
+                if target_file_id:
+                    # Create a relationship
+                    relationship = Relationship(
+                        source_file=source_file_id,
+                        target_file=target_file_id,
+                        import_content=content,
+                        symbols=import_info.get('symbols', [])
+                    )
+                    relationships.append(relationship)
 
         return relationships
 
-    def _resolve_import_path(self, source_file_path: str, import_content: str) -> Optional[str]:
-        """Resolve a TypeScript import statement to an actual file path."""
-        source_file_path = Path(source_file_path)
-        source_dir = source_file_path.parent
+    def _build_module_registry(self, extraction_results: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+        """Build a registry mapping module paths to file IDs from extraction results."""
+        registry = {}
 
-        # Extract the module path from the import statement
-        module_path = self._extract_module_path(import_content)
-        if not module_path:
-            return None
+        for file_path, result in extraction_results.items():
+            file_id = result.get("id")
+            if not file_id:
+                continue
 
-        # Handle relative imports
-        if module_path.startswith("."):
-            return self._resolve_relative_import(source_dir, module_path)
+            # Convert file path to potential module names
+            path_obj = Path(file_path)
 
-        # Handle absolute imports
-        return self._resolve_absolute_import(source_dir, module_path)
+            # Get the module path relative to different possible roots
+            module_names = self._get_potential_module_names(path_obj)
 
-    def _extract_module_path(self, import_content: str) -> Optional[str]:
-        """Extract the module path from a TypeScript import statement using Tree-sitter."""
+            for module_name in module_names:
+                registry[module_name] = file_id
+
+        return registry
+
+    def _get_potential_module_names(self, file_path: Path) -> List[str]:
+        """Get potential module names for a TypeScript/JavaScript file path."""
+        module_names = []
+
+        # Remove common extensions
+        extensions = ['.ts', '.tsx', '.js', '.jsx', '.d.ts']
+        path_without_ext = file_path
+
+        for ext in extensions:
+            if file_path.suffix == ext or str(file_path).endswith(ext):
+                if ext == '.d.ts':
+                    path_without_ext = Path(str(file_path)[:-5])  # Remove .d.ts
+                else:
+                    path_without_ext = file_path.with_suffix('')
+                break
+
+        path_parts = path_without_ext.parts
+
+        # Handle index files - they can be referenced by their directory name
+        if path_without_ext.name == 'index':
+            path_parts = path_parts[:-1]  # Remove 'index' from the path
+
+        # Generate module names by considering different root levels
+        for i in range(len(path_parts)):
+            # Try different starting points in the path
+            module_parts = path_parts[i:]
+            if module_parts:
+                # Create relative paths with ./ prefix for same directory
+                module_path = '/'.join(module_parts)
+                module_names.append(module_path)
+                module_names.append('./' + module_path)
+
+                # Also add without ./ for absolute-style imports
+                if len(module_parts) > 1:
+                    # For nested paths, also try parent directory references
+                    for j in range(1, len(module_parts)):
+                        parent_path = '../' * j + '/'.join(module_parts[j:])
+                        module_names.append(parent_path)
+
+        return module_names
+
+    def _parse_import_statement(self, import_content: str) -> Optional[Dict[str, Any]]:
+        """Parse a TypeScript import statement using manual AST traversal to extract detailed information."""
         try:
-            # Try to get the TypeScript parser
+            # Get the TypeScript parser
             parser = get_parser("typescript")
-            if not parser:
-                # Fallback to JavaScript parser if TypeScript is not available
-                parser = get_parser("javascript")
-                if not parser:
-                    return self._fallback_extract_module_path(import_content)
-            
-            # Parse the import statement
-            tree = parser.parse(bytes(import_content, "utf-8"))
-            root_node = tree.root_node
+            tree = parser.parse(bytes(import_content.strip(), "utf-8"))
 
-            # Get the language for queries (try TypeScript first, then JavaScript)
-            language = get_language("typescript")
-            if not language:
-                language = get_language("javascript")
-                if not language:
-                    return self._fallback_extract_module_path(import_content)
+            # Extract information using manual traversal
+            module_name = None
+            symbols = []
+            aliases = {}
+            is_relative = False
+            import_type = "import"
 
-            # Query for different types of imports - fixed syntax
-            query_string = """
-            (import_statement
-              source: (string) @module_path)
-            
-            (call_expression
-              function: (identifier) @func_name
-              arguments: (arguments
-                (string) @module_path))
-            
-            (call_expression
-              function: (import) @import_func
-              arguments: (arguments
-                (string) @module_path))
-            """
+            # Find the import-related node
+            import_node = None
+            for child in tree.root_node.children:
+                if child.type == 'import_statement':
+                    import_node = child
+                    import_type = "import"
+                    break
+                elif child.type == 'lexical_declaration':
+                    # Check if this is a CommonJS require
+                    if 'require' in self._safe_text_extract(child):
+                        import_node = child
+                        import_type = "require"
+                        break
+                elif child.type == 'expression_statement':
+                    # Check for bare dynamic imports or require calls
+                    for grandchild in child.children:
+                        if grandchild.type == 'call_expression':
+                            # Check for dynamic import: import('./module')
+                            if self._is_dynamic_import_call_node(grandchild):
+                                import_node = grandchild
+                                import_type = "dynamic_import"
+                                break
+                            # Check for bare require: require('./module')
+                            elif self._is_require_call_node(grandchild):
+                                import_node = grandchild
+                                import_type = "bare_require"
+                                break
+                    if import_node:
+                        break
+                elif child.type == 'call_expression':
+                    # Direct call expression (might happen in some parsing contexts)
+                    if self._is_dynamic_import_call_node(child):
+                        import_node = child
+                        import_type = "dynamic_import"
+                        break
+                    elif self._is_require_call_node(child):
+                        import_node = child
+                        import_type = "bare_require"
+                        break
 
-            # Create query and execute it using the parser
-            query = language.query(query_string)
-            # Create a query cursor and execute the query
-            from tree_sitter import QueryCursor
-            query_cursor = QueryCursor(query)
-            # Get captures from the query cursor
-            captures = query_cursor.captures(tree.root_node)
+            if not import_node:
+                return None
 
-            # Process captures - tree-sitter 0.25 format
-            # In version 0.25.0, captures() returns a dict where keys are capture names and values are lists of nodes
-            if "module_path" in captures and captures["module_path"]:
-                # Get the first node that matched the module_path pattern
-                node = captures["module_path"][0]
-                # Remove quotes from the string
-                module_path = node.text.decode("utf-8")
-                clean_path = module_path.strip('"\'')
-                return clean_path
+            if import_type == "import":
+                # Handle ES6 import statements
+                for child in import_node.children:
+                    if child.type == 'string':
+                        # Extract module path from string
+                        module_name = self._extract_string_value(child)
+                        if module_name and module_name.startswith('.'):
+                            is_relative = True
+                    elif child.type == 'import_clause':
+                        # Extract imported symbols
+                        symbols.extend(self._extract_import_clause_symbols(child, aliases))
+
+            elif import_type == "require":
+                # Handle CommonJS require statements
+                module_name, require_symbols = self._extract_require_info(import_node)
+                if module_name:
+                    if module_name.startswith('.'):
+                        is_relative = True
+                    symbols.extend(require_symbols)
+
+            elif import_type == "dynamic_import":
+                # Handle dynamic import: import('./module')
+                module_name = self._extract_call_string_argument(import_node)
+                if module_name and module_name.startswith('.'):
+                    is_relative = True
+                # Dynamic imports don't have specific symbols at parse time
+                symbols = ['*']  # Indicate dynamic import
+
+            elif import_type == "bare_require":
+                # Handle bare require: require('./module')
+                module_name = self._extract_call_string_argument(import_node)
+                if module_name and module_name.startswith('.'):
+                    is_relative = True
+                # Bare require imports everything
+                symbols = ['*']  # Indicate full module import
+
+            if module_name:
+                return {
+                    'module_name': module_name,
+                    'symbols': symbols,
+                    'aliases': aliases,
+                    'is_relative': is_relative,
+                    'import_type': import_type,
+                    'raw_content': import_content.strip()
+                }
 
         except Exception as e:
-            print(f"Error parsing import statement with Tree-sitter: {e}")
-            # Fallback to simple regex parsing
-            return self._fallback_extract_module_path(import_content)
+            print(f"Error parsing import statement '{import_content}': {e}")
 
         return None
 
-    def _fallback_extract_module_path(self, import_content: str) -> Optional[str]:
-        """Fallback method to extract module path using simple string parsing."""
-        import re
-        
-        # Handle ES6 imports: import ... from 'module'
-        es6_match = re.search(r'from\s+[\'"]([^\'"]+)[\'"]', import_content)
-        if es6_match:
-            return es6_match.group(1)
-        
-        # Handle require statements: require('module')
-        require_match = re.search(r'require\s*\(\s*[\'"]([^\'"]+)[\'"]\s*\)', import_content)
-        if require_match:
-            return require_match.group(1)
-        
-        # Handle dynamic imports: import('module')
-        dynamic_match = re.search(r'import\s*\(\s*[\'"]([^\'"]+)[\'"]\s*\)', import_content)
-        if dynamic_match:
-            return dynamic_match.group(1)
-        
-        # Handle simple import statements: import 'module'
-        simple_match = re.search(r'import\s+[\'"]([^\'"]+)[\'"]', import_content)
-        if simple_match:
-            return simple_match.group(1)
-        
-        return None
+    def _extract_string_value(self, string_node) -> Optional[str]:
+        """Extract the actual string value from a string node."""
+        try:
+            # Look for string_fragment child
+            for child in string_node.children:
+                if child.type == 'string_fragment':
+                    return self._safe_text_extract(child)
 
-    def _resolve_relative_import(self, source_dir: Path, module_path: str) -> Optional[str]:
-        """Resolve a relative import to an actual file path."""
-        # Handle relative paths starting with ./ or ../
-        if module_path.startswith("."):
-            # Determine the target directory based on the number of ../ segments
+            # Fallback: extract from the full text and remove quotes
+            full_text = self._safe_text_extract(string_node)
+            return full_text.strip('\'"')
+        except:
+            return None
+
+    def _extract_import_clause_symbols(self, import_clause_node, aliases: Dict[str, str]) -> List[str]:
+        """Extract symbols from an import clause."""
+        symbols = []
+
+        for child in import_clause_node.children:
+            if child.type == 'identifier':
+                # Default import
+                symbol_name = self._safe_text_extract(child)
+                symbols.append(symbol_name)
+            elif child.type == 'named_imports':
+                # Named imports like { function1, function2 }
+                for grandchild in child.children:
+                    if grandchild.type == 'import_specifier':
+                        # Extract import specifier details
+                        imported_name = None
+                        local_name = None
+
+                        for ggchild in grandchild.children:
+                            if ggchild.type == 'identifier':
+                                if imported_name is None:
+                                    imported_name = self._safe_text_extract(ggchild)
+                                else:
+                                    local_name = self._safe_text_extract(ggchild)
+
+                        if imported_name:
+                            symbols.append(imported_name)
+                            if local_name and local_name != imported_name:
+                                aliases[imported_name] = local_name
+            elif child.type == 'namespace_import':
+                # Namespace import like * as module2
+                for grandchild in child.children:
+                    if grandchild.type == 'identifier':
+                        namespace_name = self._safe_text_extract(grandchild)
+                        symbols.append('*')  # Indicate namespace import
+                        aliases['*'] = namespace_name
+                        break
+
+        return symbols
+
+    def _extract_require_info(self, lexical_declaration_node) -> tuple[Optional[str], List[str]]:
+        """Extract module name and symbols from a CommonJS require statement."""
+        module_name = None
+        symbols = []
+
+        # Find the variable declarator
+        for child in lexical_declaration_node.children:
+            if child.type == 'variable_declarator':
+                variable_name = None
+
+                for grandchild in child.children:
+                    if grandchild.type == 'identifier':
+                        variable_name = self._safe_text_extract(grandchild)
+                        symbols.append(variable_name)
+                    elif grandchild.type == 'call_expression':
+                        # Find the require call
+                        for ggchild in grandchild.children:
+                            if ggchild.type == 'identifier' and self._safe_text_extract(ggchild) == 'require':
+                                # Found require, now find the arguments
+                                for gggchild in grandchild.children:
+                                    if gggchild.type == 'arguments':
+                                        for ggggchild in gggchild.children:
+                                            if ggggchild.type == 'string':
+                                                module_name = self._extract_string_value(ggggchild)
+                                                break
+                                break
+                break
+
+        return module_name, symbols
+
+    def _resolve_import_from_registry(
+        self,
+        source_file_path: str,
+        import_info: Dict[str, Any],
+        module_registry: Dict[str, str]
+    ) -> Optional[str]:
+        """Resolve an import to a file ID using the module registry."""
+        module_name = import_info['module_name']
+        is_relative = import_info['is_relative']
+
+        if is_relative:
+            return self._resolve_relative_import(source_file_path, module_name, module_registry)
+        else:
+            return self._resolve_absolute_import(module_name, module_registry)
+
+    def _resolve_relative_import(
+        self,
+        source_file_path: str,
+        module_name: str,
+        module_registry: Dict[str, str]
+    ) -> Optional[str]:
+        """Resolve a relative import using the module registry."""
+        source_path = Path(source_file_path)
+        source_dir = source_path.parent
+
+        # Calculate target path based on relative import
+        if module_name.startswith('./'):
+            # Same directory
+            target_path = source_dir / module_name[2:]
+        elif module_name.startswith('../'):
+            # Parent directory - count the number of ../ segments
+            parts = module_name.split('/')
             target_dir = source_dir
-            path_parts = module_path.split('/')
-            
-            # Process directory navigation parts
+
             i = 0
-            while i < len(path_parts) and (path_parts[i] == '.' or path_parts[i] == '..'):
-                if path_parts[i] == '..':
-                    target_dir = target_dir.parent
-                # '.' means current directory, so no change needed
+            while i < len(parts) and parts[i] == '..':
+                target_dir = target_dir.parent
                 i += 1
-            
-            # Remaining parts form the file path
-            remaining_path = '/'.join(path_parts[i:])
-            target_path = target_dir / remaining_path
-            
-            # Check for various file extensions
-            for ext in ['', '.ts', '.tsx', '.js', '.jsx', '.d.ts', '/index.ts', '/index.tsx', '/index.js', '/index.jsx']:
-                file_path = Path(f"{target_path}{ext}")
-                if file_path.exists():
-                    return str(file_path)
-        
+
+            # Remaining parts form the module path
+            if i < len(parts):
+                remaining_path = '/'.join(parts[i:])
+                target_path = target_dir / remaining_path
+            else:
+                target_path = target_dir
+        else:
+            # Remove leading ./ if present
+            clean_name = module_name.lstrip('./')
+            target_path = source_dir / clean_name
+
+        # Try to find matching module names in registry
+        possible_names = self._get_potential_module_names(target_path)
+
+        # Also try with common TypeScript/JavaScript extensions
+        for ext in ['', '.ts', '.tsx', '.js', '.jsx']:
+            ext_path = target_path.with_suffix(ext)
+            possible_names.extend(self._get_potential_module_names(ext_path))
+
+        # Try as index file in directory
+        for index_name in ['index.ts', 'index.tsx', 'index.js', 'index.jsx']:
+            index_path = target_path / index_name
+            possible_names.extend(self._get_potential_module_names(index_path))
+
+        # Look for matches in registry
+        for name in possible_names:
+            if name in module_registry:
+                return module_registry[name]
+
         return None
 
-    def _resolve_absolute_import(self, source_dir: Path, module_path: str) -> Optional[str]:
-        """Resolve an absolute import to an actual file path."""
-        # Handle node_modules imports (simplified approach)
-        if not module_path.startswith(".") and not module_path.startswith("/"):
-            # Find the project root (the directory containing node_modules)
-            project_root = self._find_project_root(source_dir)
-            if project_root:
-                # Check in node_modules directory
-                node_modules_path = project_root / 'node_modules' / module_path
-                
-                # Check for package.json to find the main entry point
-                package_json = node_modules_path / 'package.json'
-                if package_json.exists():
-                    # In a real implementation, we would parse package.json to find the main entry point
-                    # For simplicity, we'll just check common entry points
-                    for entry_point in ['index.js', 'index.ts', 'dist/index.js', 'lib/index.js']:
-                        entry_file = node_modules_path / entry_point
-                        if entry_file.exists():
-                            return str(entry_file)
-                
-                # Check for direct file references
-                for ext in ['', '.ts', '.tsx', '.js', '.jsx', '.d.ts']:
-                    file_path = Path(f"{node_modules_path}{ext}")
-                    if file_path.exists():
-                        return str(file_path)
-        
-        # Handle project root imports (e.g., imports from tsconfig.json paths)
-        project_root = self._find_project_root(source_dir)
-        if project_root:
-            # Check for tsconfig.json to find path mappings
-            tsconfig_path = project_root / 'tsconfig.json'
-            if tsconfig_path.exists():
-                # In a real implementation, we would parse tsconfig.json to find path mappings
-                # For simplicity, we'll just check common patterns
-                
-                # Try direct resolution from project root
-                target_path = project_root / module_path
-                for ext in ['', '.ts', '.tsx', '.js', '.jsx', '.d.ts', '/index.ts', '/index.tsx', '/index.js', '/index.jsx']:
-                    file_path = Path(f"{target_path}{ext}")
-                    if file_path.exists():
-                        return str(file_path)
-                
-                # Try src directory
-                src_path = project_root / 'src' / module_path
-                for ext in ['', '.ts', '.tsx', '.js', '.jsx', '.d.ts', '/index.ts', '/index.tsx', '/index.js', '/index.jsx']:
-                    file_path = Path(f"{src_path}{ext}")
-                    if file_path.exists():
-                        return str(file_path)
-        
+    def _is_dynamic_import_call_node(self, node) -> bool:
+        """Check if a call_expression node is a dynamic import call."""
+        if not hasattr(node, 'children') or not node.children:
+            return False
+
+        # Check if the first child is 'import'
+        first_child = node.children[0]
+        if hasattr(first_child, 'type') and first_child.type == 'import':
+            return True
+
+        return False
+
+    def _is_require_call_node(self, node) -> bool:
+        """Check if a call_expression node is a require call."""
+        if not hasattr(node, 'children') or not node.children:
+            return False
+
+        # Check if the first child is an identifier with text 'require'
+        first_child = node.children[0]
+        if (hasattr(first_child, 'type') and first_child.type == 'identifier' and
+            self._safe_text_extract(first_child) == 'require'):
+            return True
+
+        return False
+
+    def _extract_call_string_argument(self, node) -> Optional[str]:
+        """Extract the first string argument from a call expression."""
+        if not hasattr(node, 'children'):
+            return None
+
+        # Look for arguments containing the module path
+        for child in node.children:
+            if hasattr(child, 'type') and child.type == 'arguments':
+                for arg_child in child.children:
+                    if hasattr(arg_child, 'type') and arg_child.type == 'string':
+                        # Extract the string content
+                        return self._extract_string_value(arg_child)
+
         return None
 
-    def _find_project_root(self, start_dir: Path) -> Optional[Path]:
-        """Find the project root directory by looking for common project markers."""
-        current_dir = start_dir
-        while current_dir.parent != current_dir:  # Stop at filesystem root
-            # Check for common project markers
-            for marker in ['package.json', 'tsconfig.json', '.git', 'node_modules']:
-                if (current_dir / marker).exists():
-                    return current_dir
+    def _resolve_absolute_import(
+        self,
+        module_name: str,
+        module_registry: Dict[str, str]
+    ) -> Optional[str]:
+        """Resolve an absolute import using the module registry."""
+        # For absolute imports that aren't relative paths, try to find matches
+        # in the registry by checking if any registered names end with the module name
 
-            # Move up one directory
-            current_dir = current_dir.parent
+        # Direct lookup first
+        if module_name in module_registry:
+            return module_registry[module_name]
 
-        # If no project root found, return the start directory
-        return start_dir
+        # Try with common path prefixes
+        common_prefixes = ['src/', 'lib/', 'dist/', '']
+        for prefix in common_prefixes:
+            prefixed_name = prefix + module_name
+            if prefixed_name in module_registry:
+                return module_registry[prefixed_name]
+
+        # Try looking for partial matches
+        for registered_name, file_id in module_registry.items():
+            if registered_name.endswith(module_name):
+                return file_id
+            if module_name.endswith(registered_name):
+                return file_id
+
+        return None

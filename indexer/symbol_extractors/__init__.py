@@ -6,7 +6,7 @@ Extracts user-defined identifiers from code using language-specific extractors.
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, List, Dict, Set, Optional
+from typing import Any, List, Set, Optional
 from dataclasses import dataclass
 
 
@@ -116,7 +116,7 @@ class BaseExtractor(ABC):
                 return ""
         return ""
 
-    def _extract_recursive(self, node: Any, symbols: List[Symbol], extract_calls: bool = False, defined_names: Set[str] = None):
+    def _extract_recursive(self, node: Any, symbols: List[Symbol], extract_calls: bool = False, defined_names: Optional[Set[str]] = None):
         """Helper method for recursive extraction that can be used by subclasses."""
         if not hasattr(node, 'type'):
             return
