@@ -25,10 +25,10 @@ class PythonExtractor(BaseExtractor):
         return ""
 
     def extract_imports(self, node: Any) -> List[CodeBlock]:
-        """Extract import statements."""
+        """Extract import statements, including dynamic imports."""
         blocks = []
 
-        # Extract import statements
+        # Extract static import statements
         import_nodes = self._traverse_nodes(
             node, ["import_statement", "import_from_statement"]
         )
@@ -52,6 +52,29 @@ class PythonExtractor(BaseExtractor):
                     start_col,
                     end_col,
                     import_node,
+                )
+            )
+
+        # Extract dynamic imports
+        dynamic_import_nodes = self._find_dynamic_imports(node)
+
+        for dynamic_node in dynamic_import_nodes:
+            start_line, end_line, start_col, end_col = self._get_node_position(
+                dynamic_node
+            )
+            content = self._get_node_text(dynamic_node)
+            module_name = self._extract_dynamic_import_name(dynamic_node)
+
+            blocks.append(
+                self._create_code_block(
+                    BlockType.IMPORT,
+                    module_name or "dynamic_import",
+                    content,
+                    start_line,
+                    end_line,
+                    start_col,
+                    end_col,
+                    dynamic_node,
                 )
             )
 
@@ -98,6 +121,64 @@ class PythonExtractor(BaseExtractor):
         self._blocks.extend(self.extract_classes(root_node))
 
         return self._blocks
+
+    def _find_dynamic_imports(self, node: Any) -> List[Any]:
+        """Find dynamic import calls like importlib.import_module() and __import__()."""
+        dynamic_imports = []
+
+        def traverse(n):
+            if hasattr(n, "type"):
+                if n.type == "call":
+                    # Check if this is a dynamic import call
+                    if self._is_dynamic_import_call(n):
+                        dynamic_imports.append(n)
+
+            if hasattr(n, "children"):
+                for child in n.children:
+                    traverse(child)
+
+        traverse(node)
+        return dynamic_imports
+
+    def _is_dynamic_import_call(self, node: Any) -> bool:
+        """Check if a call node is a dynamic import."""
+        if not hasattr(node, 'children') or not node.children:
+            return False
+
+        # Get the function being called
+        function_node = node.children[0]
+
+        # Check for __import__() calls
+        if (hasattr(function_node, 'type') and function_node.type == 'identifier' and
+            hasattr(function_node, 'text') and
+            self._get_node_text(function_node).strip() == '__import__'):
+            return True
+
+        # Check for importlib.import_module() calls
+        if hasattr(function_node, 'type') and function_node.type == 'attribute':
+            # Get the full attribute path
+            attr_text = self._get_node_text(function_node)
+            if 'importlib.import_module' in attr_text or 'import_module' in attr_text:
+                return True
+
+        return False
+
+    def _extract_dynamic_import_name(self, node: Any) -> str:
+        """Extract module name from a dynamic import call."""
+        if not hasattr(node, 'children'):
+            return ""
+
+        # Look for argument_list containing the module path
+        for child in node.children:
+            if hasattr(child, 'type') and child.type == 'argument_list':
+                for arg_child in child.children:
+                    if hasattr(arg_child, 'type') and arg_child.type == 'string':
+                        # Extract the string content
+                        text = self._get_node_text(arg_child)
+                        # Remove quotes
+                        return text.strip('\'"')
+
+        return ""
 
     def _extract_top_level_exports(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level export declarations (Python uses __all__ for explicit exports)."""

@@ -6,8 +6,7 @@ Supports TypeScript and Python initially, with extensible design for other langu
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Set, Union, Type
-from pathlib import Path
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 
 
@@ -26,25 +25,22 @@ class BaseRelationshipExtractor(ABC):
 
     def __init__(self):
         """Initialize the relationship extractor."""
-        # Register this extractor with the global builder
-        global builder
-        if builder and hasattr(builder, 'register_extractor'):
-            builder.register_extractor(self.language, self.__class__)
-
-    @property
-    @abstractmethod
-    def language(self) -> str:
-        """Return the language this extractor handles."""
+        # Note: Auto-registration removed - extractors are now registered explicitly
         pass
+
+    def _safe_text_extract(self, node) -> str:
+        """Safely extract text from a tree-sitter node, handling both bytes and string cases."""
+        try:
+            text = node.text
+            if isinstance(text, bytes):
+                return text.decode("utf-8")
+            return str(text)
+        except (UnicodeDecodeError, AttributeError):
+            return ""
 
     @abstractmethod
     def extract_relationships(self, extraction_results: Dict[str, Dict[str, Any]]) -> List[Relationship]:
         """Extract relationships between files based on import statements."""
-        pass
-
-    @abstractmethod
-    def _resolve_import_path(self, source_file_path: str, import_content: str) -> Optional[str]:
-        """Resolve an import statement to an actual file path."""
         pass
 
 
@@ -70,8 +66,7 @@ class RelationshipExtractorBuilder:
         return list(self._extractors.keys())
 
 
-# Global builder instance
-builder = RelationshipExtractorBuilder()
+# Note: Global builder pattern removed - now using instance-based pattern
 
 
 class RelationshipExtractor:
@@ -79,6 +74,7 @@ class RelationshipExtractor:
 
     def __init__(self):
         """Initialize the extractor."""
+        self.builder = RelationshipExtractorBuilder()
         self._setup_extractors()
 
     def _setup_extractors(self):
@@ -86,10 +82,8 @@ class RelationshipExtractor:
         from .python_extractor import PythonRelationshipExtractor
         from .typescript_extractor import TypeScriptRelationshipExtractor
 
-        global builder
-        builder = RelationshipExtractorBuilder()
-        builder.register_extractor("python", PythonRelationshipExtractor)
-        builder.register_extractor("typescript", TypeScriptRelationshipExtractor)
+        self.builder.register_extractor("python", PythonRelationshipExtractor)
+        self.builder.register_extractor("typescript", TypeScriptRelationshipExtractor)
 
     def extract_relationships(self, extraction_results: Dict[str, Dict[str, Any]]) -> List[Relationship]:
         """Extract relationships between files based on import statements."""
@@ -106,34 +100,35 @@ class RelationshipExtractor:
 
         # Process each language with its specific extractor
         for language, language_results in files_by_language.items():
-            extractor = builder.build(language)
+            extractor = self.builder.build(language)
             if extractor:
                 language_relationships = extractor.extract_relationships(language_results)
                 relationships.extend(language_relationships)
 
         return relationships
 
-    def register_extractor(self, extractor: BaseRelationshipExtractor) -> None:
+    def register_extractor(self, language: str, extractor: BaseRelationshipExtractor) -> None:
         """Register a custom extractor instance.
-        
+
         This allows adding or replacing extractors after initialization.
+
+        Args:
+            language: Language name (e.g., "python", "typescript")
+            extractor: Extractor instance
         """
-        global builder
-        language = extractor.language
         # Register the extractor class with the builder
-        builder.register_extractor(language, extractor.__class__)
+        self.builder.register_extractor(language, extractor.__class__)
         # Replace the current instance in the builder's cache
-        builder._extractors[language] = lambda: extractor
-        
+        self.builder._extractors[language] = lambda: extractor
+
     def get_supported_languages(self) -> List[str]:
         """Get languages that support relationship extraction."""
-        return builder.get_supported_languages()
+        return self.builder.get_supported_languages()
 
 
 __all__ = [
     'Relationship',
     'BaseRelationshipExtractor',
     'RelationshipExtractor',
-    'RelationshipExtractorBuilder',
-    'builder'
+    'RelationshipExtractorBuilder'
 ]
