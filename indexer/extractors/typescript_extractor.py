@@ -26,7 +26,7 @@ class TypeScriptExtractor(BaseExtractor):
         return ""
 
     def extract_imports(self, node: Any) -> List[CodeBlock]:
-        """Extract import statements."""
+        """Extract import statements, including dynamic imports and require calls."""
         imports = []
 
         def traverse(n):
@@ -53,6 +53,45 @@ class TypeScriptExtractor(BaseExtractor):
                         )
                     )
                     return  # Don't traverse deeper from this import
+
+                elif n.type == "call_expression":
+                    # Check for dynamic imports: import('./module')
+                    if self._is_dynamic_import(n):
+                        start_line, end_line, start_col, end_col = self._get_node_position(n)
+                        content = self._get_node_text(n)
+                        module_name = self._extract_dynamic_import_name(n)
+
+                        imports.append(
+                            self._create_code_block(
+                                BlockType.IMPORT,
+                                module_name or "dynamic_import",
+                                content,
+                                start_line,
+                                end_line,
+                                start_col,
+                                end_col,
+                                n,
+                            )
+                        )
+
+                    # Check for require calls: require('./module')
+                    elif self._is_require_call(n):
+                        start_line, end_line, start_col, end_col = self._get_node_position(n)
+                        content = self._get_node_text(n)
+                        module_name = self._extract_require_name(n)
+
+                        imports.append(
+                            self._create_code_block(
+                                BlockType.IMPORT,
+                                module_name or "require",
+                                content,
+                                start_line,
+                                end_line,
+                                start_col,
+                                end_col,
+                                n,
+                            )
+                        )
 
             if hasattr(n, "children"):
                 for child in n.children:
@@ -747,6 +786,66 @@ class TypeScriptExtractor(BaseExtractor):
         for interface in interfaces:
             interface.children = self._extract_nested_elements(node, interface)
         return interfaces
+
+    def _is_dynamic_import(self, node: Any) -> bool:
+        """Check if a call_expression node is a dynamic import."""
+        if not hasattr(node, 'children') or not node.children:
+            return False
+
+        # Check if the first child is 'import'
+        first_child = node.children[0]
+        if hasattr(first_child, 'type') and first_child.type == 'import':
+            return True
+
+        return False
+
+    def _is_require_call(self, node: Any) -> bool:
+        """Check if a call_expression node is a require call."""
+        if not hasattr(node, 'children') or not node.children:
+            return False
+
+        # Check if the first child is an identifier with text 'require'
+        first_child = node.children[0]
+        if (hasattr(first_child, 'type') and first_child.type == 'identifier' and
+            hasattr(first_child, 'text') and
+            self._get_node_text(first_child).strip() == 'require'):
+            return True
+
+        return False
+
+    def _extract_dynamic_import_name(self, node: Any) -> str:
+        """Extract module name from a dynamic import call."""
+        if not hasattr(node, 'children'):
+            return ""
+
+        # Look for arguments containing the module path
+        for child in node.children:
+            if hasattr(child, 'type') and child.type == 'arguments':
+                for arg_child in child.children:
+                    if hasattr(arg_child, 'type') and arg_child.type == 'string':
+                        # Extract the string content
+                        text = self._get_node_text(arg_child)
+                        # Remove quotes
+                        return text.strip('\'"')
+
+        return ""
+
+    def _extract_require_name(self, node: Any) -> str:
+        """Extract module name from a require call."""
+        if not hasattr(node, 'children'):
+            return ""
+
+        # Look for arguments containing the module path
+        for child in node.children:
+            if hasattr(child, 'type') and child.type == 'arguments':
+                for arg_child in child.children:
+                    if hasattr(arg_child, 'type') and arg_child.type == 'string':
+                        # Extract the string content
+                        text = self._get_node_text(arg_child)
+                        # Remove quotes
+                        return text.strip('\'"')
+
+        return ""
 
     def _extract_top_level_interfaces(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level interface declarations from TypeScript module."""

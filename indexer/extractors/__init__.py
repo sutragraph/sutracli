@@ -5,8 +5,8 @@ This package provides extractors for different code constructs from AST trees.
 Supports TypeScript and Python initially, with extensible design for other languages.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Union
+from abc import ABC
+from typing import Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -43,12 +43,10 @@ class BaseExtractor(ABC):
         self._blocks: List[CodeBlock] = []
         self._all_symbols: List[Any] = []  # Store all extracted symbols
         self._source_content: str = ""  # Store full source content
-        
-        # Register this extractor with the global builder
-        global builder
-        if builder and hasattr(builder, 'register_extractor'):
-            builder.register_extractor(language, self.__class__)
-            
+
+        # Note: Auto-registration removed - extractors are now registered explicitly
+        pass
+
     def _traverse_nodes(self, node: Any, node_types: List[str]) -> List[Any]:
         """Traverse AST nodes and collect nodes of specified types."""
         results = []
@@ -90,11 +88,11 @@ class BaseExtractor(ABC):
     def extract_exports(self, node: Any) -> List[CodeBlock]:
         """Extract export statements with nested elements as children."""
         return []  # Default implementation returns empty list
-        
+
     def _extract_top_level_exports(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level export declarations."""
         return []  # Default implementation returns empty list
-        
+
     def _extract_top_level_enums(self, node: Any) -> List[CodeBlock]:
         """Extract only top-level enum declarations."""
         return []  # Default implementation returns empty list
@@ -129,10 +127,10 @@ class BaseExtractor(ABC):
             nested_blocks.extend(self._extract_nested_variables(parent_node))
             nested_blocks.extend(self._extract_nested_enums(parent_node))
             nested_blocks.extend(self._extract_nested_interfaces(parent_node))
-            
+
             # Check if the extractor supports exports (TypeScript/JavaScript)
             if hasattr(self, '_extract_nested_exports'):
-                nested_blocks.extend(self._extract_nested_exports(parent_node))
+                nested_blocks.extend(self._extract_nested_exports(parent_node))  # type: ignore
 
         return nested_blocks
 
@@ -190,17 +188,17 @@ class BaseExtractor(ABC):
             if hasattr(node, 'start_point') and hasattr(node, 'end_point'):
                 node_start = node.start_point[0] + 1
                 node_end = node.end_point[0] + 1
-                
+
                 # Check if this node's range contains the target range
                 if node_start <= start_line and node_end >= end_line:
                     candidates.append((node, node_end - node_start))
-                    
+
             if hasattr(node, 'children'):
                 for child in node.children:
                     traverse(child)
-                    
+
         traverse(root_node)
-        
+
         # Sort by smallest range (most specific node)
         candidates.sort(key=lambda x: x[1])
         return candidates[0][0] if candidates else None
@@ -265,28 +263,28 @@ class BaseExtractor(ABC):
 
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
         """Extract all supported code blocks with hierarchical structure.
-        
+
         This method should be implemented by language-specific extractors.
         Each language extractor should override this method with its own implementation
         that extracts blocks in the appropriate order for that language.
-        
+
         Language-specific implementations should call self._extract_all_symbols(root_node)
         first to extract all symbols from the entire file, then proceed with their
         language-specific extraction logic.
-        
+
         Example implementation:
         ```python
         def extract_all(self, root_node: Any) -> List[CodeBlock]:
             self._blocks = []
-            
+
             # First, extract all symbols from the entire file
             self._extract_all_symbols(root_node)
-            
+
             # Then extract top-level blocks with their nested children
             # Language-specific order and handling
             self._blocks.extend(self.extract_imports(root_node))
             # ... other extractions ...
-            
+
             return self._blocks
         ```
         """
@@ -315,8 +313,7 @@ class ExtractorBuilder:
         """Get list of supported languages."""
         return list(self._extractors.keys())
 
-# Global builder instance
-builder = ExtractorBuilder()
+# Note: Global builder pattern removed - now using instance-based pattern
 
 class Extractor:
     """
@@ -326,6 +323,7 @@ class Extractor:
     def __init__(self, symbol_extractor=None):
         """Initialize the extractor."""
         self.symbol_extractor = symbol_extractor
+        self.builder = ExtractorBuilder(self.symbol_extractor)
         self._setup_extractors()
 
     def _setup_extractors(self):
@@ -333,10 +331,8 @@ class Extractor:
         from .typescript_extractor import TypeScriptExtractor
         from .python_extractor import PythonExtractor
 
-        global builder
-        builder = ExtractorBuilder(self.symbol_extractor)
-        builder.register_extractor("typescript", TypeScriptExtractor)
-        builder.register_extractor("python", PythonExtractor)
+        self.builder.register_extractor("typescript", TypeScriptExtractor)
+        self.builder.register_extractor("python", PythonExtractor)
 
     def extract_from_ast(self, ast_tree: Any, language: str, block_types: Optional[List[BlockType]] = None) -> List[CodeBlock]:
         """
@@ -350,7 +346,7 @@ class Extractor:
         Returns:
             List of extracted CodeBlock objects
         """
-        extractor = builder.build(language)
+        extractor = self.builder.build(language)
         if not extractor:
             return []
 
@@ -366,66 +362,56 @@ class Extractor:
 
     def get_supported_languages(self) -> List[str]:
         """Get languages that support code block extraction."""
-        return builder.get_supported_languages()
+        return self.builder.get_supported_languages()
 
     def _extract_specific_blocks(self, extractor: Any, root_node: Any,
                                block_types: List[BlockType]) -> List[CodeBlock]:
         """Extract specific types of blocks."""
         blocks = []
 
+        # Mapping of block types to extractor method names
+        block_type_methods = {
+            BlockType.ENUM: 'extract_enums',
+            BlockType.VARIABLE: 'extract_variables',
+            BlockType.FUNCTION: 'extract_functions',
+            BlockType.CLASS: 'extract_classes',
+            BlockType.INTERFACE: 'extract_interfaces',
+            BlockType.IMPORT: 'extract_imports',
+            BlockType.EXPORT: 'extract_exports',
+        }
+
         for block_type in block_types:
-            try:
-                if block_type == BlockType.ENUM:
-                    if hasattr(extractor, 'extract_enums'):
-                        blocks.extend(extractor.extract_enums(root_node))
-                    else:
-                        print(f"Warning: Extractor does not support {block_type}")
-                elif block_type == BlockType.VARIABLE:
-                    if hasattr(extractor, 'extract_variables'):
-                        blocks.extend(extractor.extract_variables(root_node))
-                    else:
-                        print(f"Warning: Extractor does not support {block_type}")
-                elif block_type == BlockType.FUNCTION:
-                    if hasattr(extractor, 'extract_functions'):
-                        blocks.extend(extractor.extract_functions(root_node))
-                    else:
-                        print(f"Warning: Extractor does not support {block_type}")
-                elif block_type == BlockType.CLASS:
-                    if hasattr(extractor, 'extract_classes'):
-                        blocks.extend(extractor.extract_classes(root_node))
-                    else:
-                        print(f"Warning: Extractor does not support {block_type}")
-                elif block_type == BlockType.INTERFACE:
-                    if hasattr(extractor, 'extract_interfaces'):
-                        blocks.extend(extractor.extract_interfaces(root_node))
-                    else:
-                        print(f"Warning: Extractor does not support {block_type}")
-                elif block_type == BlockType.IMPORT:
-                    if hasattr(extractor, 'extract_imports'):
-                        blocks.extend(extractor.extract_imports(root_node))
-                    else:
-                        print(f"Warning: Extractor does not support {block_type}")
-                elif block_type == BlockType.EXPORT:
-                    if hasattr(extractor, 'extract_exports'):
-                        blocks.extend(extractor.extract_exports(root_node))
-                    else:
-                        print(f"Warning: Extractor does not support {block_type}")
-            except AttributeError as e:
-                print(f"Warning: Extractor does not support {block_type}: {e}")
-            except Exception as e:
-                print(f"Error extracting {block_type}: {e}")
+            blocks.extend(self._extract_single_block_type(
+                extractor, root_node, block_type, block_type_methods
+            ))
 
         return blocks
 
+    def _extract_single_block_type(self, extractor: Any, root_node: Any,
+                                  block_type: BlockType, method_mapping: dict) -> List[CodeBlock]:
+        """Extract blocks for a single block type."""
+        try:
+            method_name = method_mapping.get(block_type)
+            if method_name and hasattr(extractor, method_name):
+                method = getattr(extractor, method_name)
+                return method(root_node)
+            else:
+                print(f"Warning: Extractor does not support {block_type}")
+                return []
+        except AttributeError as e:
+            print(f"Warning: Extractor does not support {block_type}: {e}")
+            return []
+        except Exception as e:
+            print(f"Error extracting {block_type}: {e}")
+            return []
 
-# Global builder instance
-builder = ExtractorBuilder()
+
+# Note: Global builder pattern removed - now using instance-based pattern
 
 __all__ = [
     'BlockType',
     'CodeBlock',
     'BaseExtractor',
     'Extractor',
-    'ExtractorBuilder',
-    'builder'
+    'ExtractorBuilder'
 ]
