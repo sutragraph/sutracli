@@ -935,10 +935,10 @@ class CrossIndexService:
             # Store incoming connections
             if "incoming_connections" in connections_data:
                 for conn in connections_data["incoming_connections"]:
-                    # Get file_hash_id from file path if not provided
+                    # Get file_hash_id from file path - always retrieve from database
                     file_hash_id = self._get_file_hash_id(
                         project_id, conn.get("file_path")
-                    ) if "file_hash_id" not in conn else conn["file_hash_id"]
+                    )
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -968,10 +968,10 @@ class CrossIndexService:
             # Store outgoing connections
             if "outgoing_connections" in connections_data:
                 for conn in connections_data["outgoing_connections"]:
-                    # Get file_hash_id from file path if not provided
+                    # Get file_hash_id from file path - always retrieve from database
                     file_hash_id = self._get_file_hash_id(
                         project_id, conn.get("file_path")
-                    ) if "file_hash_id" not in conn else conn["file_hash_id"]
+                    )
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -1070,13 +1070,65 @@ class CrossIndexService:
     def _get_file_hash_id(self, project_id: int, file_path: str) -> Optional[int]:
         """Get file_hash_id for a given project and file path."""
         try:
+            if not file_path:
+                logger.warning("Empty file_path provided to _get_file_hash_id")
+                return None
+            
+            # Resolve relative paths to absolute paths
+            import os
+            from pathlib import Path
+            
+            # Convert to absolute path if it's relative
+            if not os.path.isabs(file_path):
+                absolute_file_path = str(Path(file_path).resolve())
+                logger.debug(f"Resolved relative path {file_path} to absolute path {absolute_file_path}")
+            else:
+                absolute_file_path = file_path
+            
+            # Try with absolute path first
             result = self.db_connection.execute_query(
                 "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
-                (project_id, file_path),
+                (project_id, absolute_file_path),
             )
-            return result[0]["id"] if result else None
+            
+            if result:
+                file_hash_id = result[0]["id"]
+                logger.debug(f"Found file_hash_id {file_hash_id} for {absolute_file_path} in project {project_id}")
+                return file_hash_id
+            
+            # If not found with absolute path, try with original path (in case it was stored as relative)
+            if absolute_file_path != file_path:
+                result = self.db_connection.execute_query(
+                    "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
+                    (project_id, file_path),
+                )
+                
+                if result:
+                    file_hash_id = result[0]["id"]
+                    logger.debug(f"Found file_hash_id {file_hash_id} for {file_path} (original path) in project {project_id}")
+                    return file_hash_id
+            
+            # If still not found, try to find by filename match (fallback)
+            filename = os.path.basename(file_path)
+            if filename:
+                result = self.db_connection.execute_query(
+                    "SELECT id, file_path FROM file_hashes WHERE project_id = ? AND file_path LIKE ?",
+                    (project_id, f"%{filename}"),
+                )
+                
+                if result:
+                    # If multiple matches, prefer exact filename match
+                    for row in result:
+                        if os.path.basename(row["file_path"]) == filename:
+                            file_hash_id = row["id"]
+                            logger.debug(f"Found file_hash_id {file_hash_id} by filename match for {filename} -> {row['file_path']} in project {project_id}")
+                            return file_hash_id
+            
+            logger.warning(f"No file_hash_id found for {file_path} (absolute: {absolute_file_path}) in project {project_id}")
+            return None
+                
         except Exception as e:
-            logger.error(f"Error getting file_hash_id: {e}")
+            logger.error(f"Error getting file_hash_id for {file_path}: {e}")
             return None
 
     def _fetch_code_snippet_from_lines(
