@@ -10,12 +10,11 @@ from graph.sqlite_client import SQLiteConnection
 from services.project_manager import ProjectManager
 from services.agent.xml_service.xml_parser import XMLParser
 from services.agent.xml_service.xml_repair import XMLRepair
-
 from ...agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from ...agent.memory_management.code_fetcher import CodeFetcher
 from ..prompts.cross_index_prompt_manager import CrossIndexPromptManager
-from ..utils import infer_technology_type
 from ...agent.tool_action_executor.tool_action_executor import ActionExecutor
+from ..utils import infer_technology_type
 
 class CrossIndexService:
     """
@@ -47,7 +46,7 @@ class CrossIndexService:
         self.prompt_manager = CrossIndexPromptManager()
         self.code_fetcher = CodeFetcher(db_connection)
         self.action_executor = ActionExecutor(
-            db_connection, self.project_manager.vector_db, self.memory_manager
+            db_connection, self.project_manager.vector_db, self.memory_manager, "cross_index"
         )
         self._memory_needs_update = False
 

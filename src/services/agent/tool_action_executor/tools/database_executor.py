@@ -1,5 +1,5 @@
 from loguru import logger
-from typing import Iterator, Dict, Any
+from typing import Iterator, Dict, Any, List, Optional
 from services.agent.tool_action_executor.utils import (
     beautify_node_result,
     process_code_with_line_filtering,
@@ -17,6 +17,9 @@ from services.agent.tool_action_executor.utils.chunk_processing_utils import (
 )
 from services.agent.tool_action_executor.utils.search_utils import (
     build_batch_guidance_message,
+)
+from services.agent.tool_action_executor.utils.agent_connection_enhancer import (
+    get_agent_connection_enhancer,
 )
 from queries.agent_queries import (
     GET_NODES_BY_EXACT_NAME,
@@ -93,8 +96,45 @@ def _generate_error_guidance(query_name: str, params: dict) -> str:
     return " ".join(guidance_parts)
 
 
+def _add_connection_information(
+    results: List[Dict[str, Any]],
+    db_connection,
+    project_id: Optional[int] = None,
+    context: str = "agent",
+) -> str:
+    """
+    Add connection information to database query results for agent service only.
+
+    Args:
+        results: Database query results
+        db_connection: Database connection
+        project_id: Optional project ID
+        context: Context of the call ("agent" or "cross_index")
+
+    Returns:
+        Formatted connection information string (empty if context is not "agent")
+    """
+    try:
+        if not results or context != "agent":
+            return ""
+
+        # Get agent connection enhancer
+        connection_enhancer = get_agent_connection_enhancer(db_connection)
+
+        # Enhance results with connection information
+        formatted_connections = connection_enhancer.enhance_database_results(
+            results, project_id, context
+        )
+
+        return formatted_connections
+
+    except Exception as e:
+        logger.error(f"Error adding connection information: {e}")
+        return ""
+
+
 def execute_structured_database_query(
-    action: AgentAction, db_connection=None
+    action: AgentAction, db_connection=None, context: str = "agent"
 ) -> Iterator[Dict[str, Any]]:
     # Initialize variables for exception handling
     query_name = action.parameters.get("query_name", "unknown")
@@ -196,7 +236,9 @@ def execute_structured_database_query(
                     # Path is not relative to current dir, concatenate with current dir
                     fixed_path = current_dir / file_path
                     final_params[param] = str(fixed_path)
-                    logger.debug(f"🔧 Fixed file path: {query_params[param]} -> {fixed_path}")
+                    logger.debug(
+                        f"🔧 Fixed file path: {query_params[param]} -> {fixed_path}"
+                    )
             else:
                 final_params[param] = query_params[param]
 
@@ -233,6 +275,23 @@ def execute_structured_database_query(
         rows = cursor.fetchall()
         results = [dict(zip(columns, row)) for row in rows]
         logger.debug(f"📊 Query returned {len(results)} results")
+
+        # Get project_id for connection lookup from the first result if available
+        current_project_id = None
+        if results and len(results) > 0:
+            # Try to get project_id from the first result
+            first_result = results[0]
+            if isinstance(first_result, dict) and "project_id" in first_result:
+                current_project_id = first_result["project_id"]
+                logger.debug(
+                    f"🔗 Using project_id {current_project_id} for connection lookup"
+                )
+            else:
+                logger.debug(
+                    "🔗 No project_id found in database results for connection lookup"
+                )
+        else:
+            logger.debug("🔗 No results available for project_id extraction")
 
         # Yield tool usage information for logging
         search_term = query_params.get(
@@ -319,13 +378,13 @@ def execute_structured_database_query(
                     dict(zip(filename_fallback_columns, row))
                     for row in filename_fallback_rows
                 ]
-                
+
                 # If still no results, try case-insensitive fallback
                 if not filename_fallback_results:
                     logger.debug(
                         f"🔄 Trying case-insensitive fallback for filename: {filename}"
                     )
-                    
+
                     # Try case-insensitive search by looking for files with similar names
                     case_insensitive_cursor = db_connection.connection.cursor()
                     case_insensitive_query = """
@@ -350,7 +409,9 @@ def execute_structured_database_query(
                         ORDER BY n.node_id
                         LIMIT 10
                     """
-                    case_insensitive_cursor.execute(case_insensitive_query, filename_fallback_params)
+                    case_insensitive_cursor.execute(
+                        case_insensitive_query, filename_fallback_params
+                    )
                     case_insensitive_columns = (
                         [
                             description[0]
@@ -364,11 +425,15 @@ def execute_structured_database_query(
                         dict(zip(case_insensitive_columns, row))
                         for row in case_insensitive_rows
                     ]
-                    
+
                     if filename_fallback_results:
-                        logger.debug(f"✅ Case-insensitive fallback found {len(filename_fallback_results)} results")
+                        logger.debug(
+                            f"✅ Case-insensitive fallback found {len(filename_fallback_results)} results"
+                        )
                     else:
-                        logger.debug("❌ Case-insensitive fallback also returned 0 results")
+                        logger.debug(
+                            "❌ Case-insensitive fallback also returned 0 results"
+                        )
 
                 if filename_fallback_results:
                     logger.debug(
@@ -754,6 +819,15 @@ def execute_structured_database_query(
                             }
                         )
 
+                    # Add connection information to the last chunk if available
+                    if all_delivery_items:
+                        connection_info = _add_connection_information(
+                            [result_dict], db_connection, current_project_id, context
+                        )
+                        if connection_info:
+                            last_item = all_delivery_items[-1]
+                            last_item["data"] += "\n\n" + connection_info
+
                     # Register and deliver first item
                     first_item = register_and_deliver_first_item(
                         "database", action.parameters, all_delivery_items
@@ -856,12 +930,21 @@ def execute_structured_database_query(
                         total_nodes=1,
                     )
 
+                    # Add connection information for single result
+                    connection_info = _add_connection_information(
+                        [result_dict], db_connection, current_project_id, context
+                    )
+
                     # Send single batch result for small files
                     result_data = (
                         guidance_message + "\n\n" + beautified_result
                         if guidance_message
                         else beautified_result
                     )
+
+                    # Append connection information if available
+                    if connection_info:
+                        result_data += "\n\n" + connection_info
 
                     yield {
                         "type": "tool_use",
@@ -890,8 +973,17 @@ def execute_structured_database_query(
                     result_dict, 1, include_code=True, total_nodes=1
                 )
 
+                # Add connection information for single result without code
+                connection_info = _add_connection_information(
+                    [result_dict], db_connection, current_project_id, context
+                )
+
                 # Send single batch result for missing code
                 result_data = guidance_message + beautified_result
+
+                # Append connection information if available
+                if connection_info:
+                    result_data += "\n\n" + connection_info
 
                 yield {
                     "type": "tool_use",
@@ -1112,6 +1204,18 @@ def execute_structured_database_query(
                         }
                     )
 
+            # Add connection information to all delivery items before registering
+            if all_delivery_items:
+                # Get connection information for all results
+                connection_info = _add_connection_information(
+                    results, db_connection, current_project_id, context
+                )
+
+                # Add connection information to the last delivery item if available
+                if connection_info and all_delivery_items:
+                    last_item = all_delivery_items[-1]
+                    last_item["data"] += "\n\n" + connection_info
+
             # Register and deliver first item using common utility
             first_item = register_and_deliver_first_item(
                 "database", action.parameters, all_delivery_items
@@ -1138,11 +1242,11 @@ def execute_structured_database_query(
 
 
 def execute_database_action(
-    action: AgentAction, db_connection=None
+    action: AgentAction, db_connection=None, context: str = "agent"
 ) -> Iterator[Dict[str, Any]]:
     logger.debug(f"🔍 Database action triggered with parameters: {action.parameters}")
     if action.parameters and "query_name" in action.parameters:
-        yield from execute_structured_database_query(action, db_connection)
+        yield from execute_structured_database_query(action, db_connection, context)
         return
 
     yield {

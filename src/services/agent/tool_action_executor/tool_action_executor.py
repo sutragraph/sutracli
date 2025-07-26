@@ -37,6 +37,7 @@ class ActionExecutor:
         db_connection: Optional[SQLiteConnection] = None,
         vector_db: Optional[VectorDatabase] = None,
         sutra_memory_manager: Optional[SutraMemoryManager] = None,
+        context: str = "agent",
     ):
         self.db_connection = db_connection or SQLiteConnection()
         self.vector_db = vector_db or VectorDatabase(config.sqlite.embeddings_db)
@@ -44,6 +45,7 @@ class ActionExecutor:
             db_connection=self.db_connection
         )
         self.project_id = None  # Will be set when needed
+        self.context = context  # Store context for database operations
 
         # Create shared incremental indexer with the same memory manager
         self.incremental_indexer = IncrementalIndexing(
@@ -368,7 +370,7 @@ class ActionExecutor:
 
     def _execute_database(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute database tool using existing comprehensive executor."""
-        yield from execute_database_action(action, self.db_connection)
+        yield from execute_database_action(action, self.db_connection, self.context)
 
     def _execute_terminal(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute terminal command tool using existing executor."""

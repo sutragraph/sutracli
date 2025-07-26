@@ -192,6 +192,18 @@ Example 7: Task completion scenario (WRONG - do NOT do this)
 <add_history>Completed connection analysis with attempt_completion</add_history>
 </sutra_memory>
 
+Example 8: Router Files - Multiple Specific Tasks Instead of One Broad Task
+<sutra_memory>
+<task>
+<add id="10" to="pending">Check src/routes/userRouter.js file for user-related API endpoints - look for app.get, app.post, app.put, app.delete methods</add>
+<add id="11" to="pending">Check src/routes/authRouter.js file for authentication endpoints - look for login, logout, register, token validation routes</add>
+<add id="12" to="pending">Check src/routes/orderRouter.js file for order management endpoints - look for order creation, status updates, payment processing routes</add>
+<add id="13" to="pending">Check src/routes/adminRouter.js file for admin panel connections - look for user management, system configuration, reporting endpoints</add>
+<move from="pending" to="current">10</move>
+</task>
+<add_history>Found 4 router files during project structure analysis: userRouter.js, authRouter.js, orderRouter.js, adminRouter.js. Created separate specific tasks for each router file to systematically examine their endpoints. Each task focuses on specific functionality - user operations, authentication, order management, and admin operations. This approach ensures thorough analysis of each router's connection patterns without missing any endpoints.</add_history>
+</sutra_memory>
+
 # Sutra Memory Guidelines:
 
 1. In <thinking> tags, assess what connection information you already have and what connection patterns you need to discover. Also review your current sutra_memory state including analysis tasks, stored connection code, and determine what updates are needed based on iteration progress and findings. Identify any connection information that will be needed in future iterations but not used in the current iteration, and store it directly in Sutra Memory using appropriate tags (<code> for connection code snippets, <history> for other important data like search results, file listings, connection discoveries) to prevent redundant tool calls and maintain context across iterations. Data of current iteration won't be available in the next iterations - only stored data in sutra memory is persistent across iterations. When you discover specific function names, class names, or file paths during analysis, consider using the database tool to retrieve complete code implementations for thorough connection analysis.
@@ -224,6 +236,34 @@ TASK LIST UPDATES IN SUBSEQUENT ITERATIONS:
        - "Search for database connection patterns"
        - "Look for message queue implementations"
        - "Check for API connections"
+
+Example 8: Router Files Task List - Breaking Down Multiple Router Files into Specific Tasks
+<sutra_memory>
+<task>
+<add id="10" to="pending">Check src/routes/userRouter.js file for user-related API endpoints - look for app.get, app.post, app.put, app.delete methods</add>
+<add id="11" to="pending">Check src/routes/authRouter.js file for authentication endpoints - look for login, logout, register, token validation routes</add>
+<add id="12" to="pending">Check src/routes/orderRouter.js file for order management endpoints - look for order creation, status updates, payment processing routes</add>
+<add id="13" to="pending">Check src/routes/adminRouter.js file for admin panel connections - look for user management, system configuration, reporting endpoints</add>
+<move from="pending" to="current">10</move>
+</task>
+<add_history>Found 4 router files during project structure analysis: userRouter.js, authRouter.js, orderRouter.js, adminRouter.js. Instead of analyzing all routers in one task, created separate specific tasks for each router file to systematically examine their endpoints. Each task focuses on specific functionality - user operations, authentication, order management, and admin operations. This approach ensures thorough analysis of each router's connection patterns without missing any endpoints.</add_history>
+</sutra_memory>
+
+GOOD APPROACH - Separate tasks for each router file:
+- Task 10: Focus on user router endpoints (GET /users, POST /users, etc.)
+- Task 11: Focus on auth router endpoints (POST /login, POST /register, etc.)
+- Task 12: Focus on order router endpoints (POST /orders, GET /orders/:id, etc.)
+- Task 13: Focus on admin router endpoints (GET /admin/users, PUT /admin/config, etc.)
+
+BAD APPROACH - Single task for all routers:
+- Task X: "Check all router files for API endpoints" (too broad, likely to miss specific connections)
+
+This approach ensures:
+1. Each router file gets dedicated analysis time
+2. Specific endpoint patterns are identified per functional area
+3. Connection patterns unique to each router type are discovered
+4. No endpoints are overlooked due to task scope being too broad
+5. Better organization of discovered connections by functional domain
 3. When to Store Code:
    - ONLY after using `database` tool to examine the exact code content
    - ONLY essential connection identifiers (API endpoints, API calls, message producers/consumers)
@@ -295,5 +335,5 @@ TASK LIST UPDATES IN SUBSEQUENT ITERATIONS:
    - MANDATORY: When using search_keyword and finding multiple connection calls, you MUST store every single one
    - NO SAMPLING: Never store "representative examples" - store every single connection discovered
    - COMPLETE ANALYSIS: If search_keyword returns 100 results and if it is an any connection type, you must store all 100, not just 5-10
-
+   - EXAMPLE: If search_keyword finds 40 connections for "callUserApi(" you MUST store ALL 40 connections in sutra memory. This is MANDATORY and NON-NEGOTIABLE. and while giving attempt_completion, you must include all 40 connections with their file paths and line numbers.
 """
