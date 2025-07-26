@@ -4,9 +4,10 @@ Provides connection information for fetched code snippets.
 """
 
 import json
-from typing import Dict, List, Any, Optional, Tuple
+import os
 from loguru import logger
-
+from typing import Dict, List, Any, Optional, Tuple
+from pathlib import Path
 
 class ConnectionRetriever:
     """
@@ -51,8 +52,8 @@ class ConnectionRetriever:
 
                 if not file_hash_id:
                     # Try to get file_hash_id from file_path if available
-                    if file_path and project_id:
-                        file_hash_id = self._get_file_hash_id_by_path(file_path, project_id)
+                    if file_path:
+                        file_hash_id = self._get_file_hash_id_by_path(file_path)
 
                 if file_hash_id:
                     # Parse line information
@@ -60,7 +61,7 @@ class ConnectionRetriever:
 
                     # Get connections for this file_hash_id and line range
                     connections = self._get_connections_for_file_and_lines(
-                        file_hash_id, start_line, end_line, project_id
+                        file_hash_id, start_line, end_line
                     )
 
                     if connections["incoming"] or connections["outgoing"]:
@@ -78,14 +79,70 @@ class ConnectionRetriever:
             logger.error(f"Error getting connections for query results: {e}")
             return {}
 
-    def _get_file_hash_id_by_path(self, file_path: str, project_id: int) -> Optional[int]:
-        """Get file_hash_id by file path and project_id."""
+    def _get_file_hash_id_by_path(self, file_path: str) -> Optional[int]:
+        """Get file_hash_id by file path with robust path resolution."""
         try:
+            if not file_path:
+                logger.warning("Empty file_path provided to _get_file_hash_id_by_path")
+                return None
+
+            # Convert to absolute path if it's relative
+            if not os.path.isabs(file_path):
+                absolute_file_path = str(Path(file_path).resolve())
+                logger.debug(
+                    f"Resolved relative path {file_path} to absolute path {absolute_file_path}"
+                )
+            else:
+                absolute_file_path = file_path
+
+            # Try with absolute path first
             result = self.db_connection.execute_query(
-                "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
-                (project_id, file_path)
+                "SELECT id FROM file_hashes WHERE file_path = ?",
+                (absolute_file_path,),
             )
-            return result[0]["id"] if result else None
+
+            if result:
+                file_hash_id = result[0]["id"]
+                logger.debug(
+                    f"Found file_hash_id {file_hash_id} for {absolute_file_path}"
+                )
+                return file_hash_id
+
+            if absolute_file_path != file_path:
+                result = self.db_connection.execute_query(
+                    "SELECT id FROM file_hashes WHERE file_path = ?",
+                    (file_path,),
+                )
+
+                if result:
+                    file_hash_id = result[0]["id"]
+                    logger.debug(
+                        f"Found file_hash_id {file_hash_id} for {file_path} (original path)"
+                    )
+                    return file_hash_id
+
+            filename = os.path.basename(file_path)
+            if filename:
+                result = self.db_connection.execute_query(
+                    "SELECT id, file_path FROM file_hashes WHERE file_path LIKE ?",
+                    (f"%{filename}",),
+                )
+
+                if result:
+                    # If multiple matches, prefer exact filename match
+                    for row in result:
+                        if os.path.basename(row["file_path"]) == filename:
+                            file_hash_id = row["id"]
+                            logger.debug(
+                                f"Found file_hash_id {file_hash_id} by filename match for {filename} -> {row['file_path']}"
+                            )
+                            return file_hash_id
+
+            logger.warning(
+                f"No file_hash_id found for {file_path} (absolute: {absolute_file_path})"
+            )
+            return None
+
         except Exception as e:
             logger.error(f"Error getting file_hash_id for {file_path}: {e}")
             return None
@@ -113,11 +170,10 @@ class ConnectionRetriever:
             return None, None
 
     def _get_connections_for_file_and_lines(
-        self, 
-        file_hash_id: int, 
-        start_line: Optional[int], 
+        self,
+        file_hash_id: int,
+        start_line: Optional[int],
         end_line: Optional[int],
-        project_id: Optional[int] = None
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Get incoming and outgoing connections for a specific file and line range.
@@ -136,12 +192,12 @@ class ConnectionRetriever:
 
             # Get incoming connections
             incoming_connections = self._get_connections_by_type(
-                "incoming", file_hash_id, project_id
+                "incoming", file_hash_id
             )
 
             # Get outgoing connections
             outgoing_connections = self._get_connections_by_type(
-                "outgoing", file_hash_id, project_id
+                "outgoing", file_hash_id
             )
 
             # Filter connections based on line overlap if line info is available
@@ -172,10 +228,9 @@ class ConnectionRetriever:
             return {"incoming": [], "outgoing": []}
 
     def _get_connections_by_type(
-        self, 
-        connection_type: str, 
-        file_hash_id: int, 
-        project_id: Optional[int] = None
+        self,
+        connection_type: str,
+        file_hash_id: int,
     ) -> List[Dict[str, Any]]:
         """Get connections of a specific type for a file."""
         try:
@@ -192,10 +247,6 @@ class ConnectionRetriever:
             """
 
             params = [file_hash_id]
-
-            if project_id:
-                base_query += " AND c.project_id = ?"
-                params.append(project_id)
 
             base_query += " ORDER BY c.created_at DESC"
 
