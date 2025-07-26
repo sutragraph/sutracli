@@ -45,16 +45,7 @@ Match connections based on these enhanced criteria:
 - Cross-language compatibility: Node.js API can match Python requests calls
 - Protocol matching: HTTP/HTTPS, WebSocket (ws/wss), message queues
 
-### REGEX-BASED ENDPOINT EXTRACTION
-- Extract endpoints from descriptions using regex patterns:
-  - `/api/[a-zA-Z0-9/_-]+` for API paths
-  - `[a-zA-Z0-9]+\.(get|post|put|delete)\("([^"]+)"` for router definitions
-  - `fetch\("([^"]+)"` for fetch calls
-  - `axios\.(get|post|put|delete)\("([^"]+)"` for axios calls
-
 ### STRICT LOGICAL RELATIONSHIP ANALYSIS
-- Function name correlation: Only match if endpoint paths are identical or follow router prefix rules
-- Service boundary analysis: Internal service calls vs external API calls
 - Data flow direction: Request/response patterns, publisher/subscriber relationships
 - NO functional similarity matching: Similar functionality does NOT mean endpoints match
 
@@ -81,4 +72,3 @@ Return ONLY a valid JSON response with this exact structure:
 
 Return ONLY valid JSON with no additional text. Match connections VERY STRICTLY - only exact endpoint matches or router prefix matches. Do NOT match similar-sounding endpoints or functionally related endpoints.
 """
-
