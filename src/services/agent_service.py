@@ -332,16 +332,16 @@ class AgentService:
                             if verification_result["recommendations"]:
                                 print(f"📝 Recommendations: {verification_result['recommendations']}")
 
-                        # Show data preview for successful tool use
-                        if event_type == "tool_use" and "data" in event:
-                            data_preview = str(event["data"])[:200]
-                            print(f"   Result: {data_preview}...")
-                        elif "results" in event:
-                            results_preview = str(event["results"])[:200]
-                            print(f"   Result: {results_preview}...")
-                        elif "output" in event:
-                            output_preview = str(event["output"])[:200]
-                            print(f"   Output: {output_preview}...")
+                        # # Show data preview for successful tool use
+                        # if event_type == "tool_use" and "data" in event:
+                        #     data_preview = str(event["data"])[:200]
+                        #     print(f"   Result: {data_preview}...")
+                        # elif "results" in event:
+                        #     results_preview = str(event["results"])[:200]
+                        #     print(f"   Result: {results_preview}...")
+                        # elif "output" in event:
+                        #     output_preview = str(event["output"])[:200]
+                        #     print(f"   Output: {output_preview}...")
 
                         # Check for tool failures and stop if critical
                         if event.get("type") == "error" or event.get("success") is False or event.get("type") == "tool_error":
