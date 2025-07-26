@@ -295,12 +295,8 @@ class AgentService:
 
                         # Show tool execution for all relevant events
                         event_type = event.get("type", "unknown")
-                        # Include all event types that have tool names
-                        if event_type in ["tool_use", "tool_error", "completion", "semantic_search_error"]:
-                            print(f"🔧 Tool: {tool_name} ({event_type})")
-                        elif tool_name == "unknown":
-                            # Debug: log when tool name is unknown
-                            logger.debug(f"Unknown tool name for event type: {event_type}, event keys: {list(event.keys())}")
+
+                        print(f"🔧 Tool: {tool_name} ({event_type})")
 
                         # Validate tool result using SutraMemoryManager
                         validation_result = self.memory_manager.validate_tool_result(
