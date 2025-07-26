@@ -4,7 +4,6 @@ This module provides connection information specifically for agent service mode,
 without affecting cross-indexing service operations.
 """
 
-import json
 from typing import Dict, List, Any, Optional
 from loguru import logger
 from .connection_utils import get_connection_retriever
@@ -84,8 +83,7 @@ class AgentConnectionEnhancer:
             output_parts = []
 
             for result_key, info in connection_info.items():
-                result_num = result_key.replace("result_", "")
-                output_parts.append(f"\n=== CONNECTIONS FOR RESULT {result_num} ===")
+                output_parts.append(f"\nCONNECTIONS FOR QUERY RESULT:")
 
                 # Add clean note without emojis
                 note = self._generate_clean_connection_note(info.get("connections", {}))
