@@ -5,13 +5,14 @@ and extracting code blocks from TypeScript AST nodes using tree-sitter.
 """
 
 from typing import List, Any, Dict, Set, Callable, Optional
+from tree_sitter_language_pack import SupportedLanguage
 from . import BaseExtractor, CodeBlock, BlockType
 
 
 class TypeScriptExtractor(BaseExtractor):
     """TypeScript-specific extractor for code blocks."""
 
-    def __init__(self, language: str, symbol_extractor=None):
+    def __init__(self, language: SupportedLanguage, symbol_extractor=None):
         super().__init__(language, symbol_extractor)
 
     # ============================================================================
@@ -26,8 +27,12 @@ class TypeScriptExtractor(BaseExtractor):
             return self._get_node_text(node)
         return ""
 
-    def _generic_traversal(self, root_node: Any, target_types: Set[str],
-                          processor: Callable[[Any], Optional[CodeBlock]]) -> List[CodeBlock]:
+    def _generic_traversal(
+        self,
+        root_node: Any,
+        target_types: Set[str],
+        processor: Callable[[Any], Optional[CodeBlock]],
+    ) -> List[CodeBlock]:
         """Generic traversal method for extracting blocks of specific types."""
         blocks = []
 
@@ -78,28 +83,38 @@ class TypeScriptExtractor(BaseExtractor):
                     names.append(self._get_node_text(n))
                 for child in n.children:
                     find_identifiers(child)
+
             find_identifiers(node)
 
         return list(set(names))  # Remove duplicates
 
-    def _create_block_with_nested(self, node: Any, block_type: BlockType,
-                                 names: List[str], nested_types: Dict[str, BlockType] = None) -> CodeBlock:
+    def _create_block_with_nested(
+        self,
+        node: Any,
+        block_type: BlockType,
+        names: List[str],
+        nested_types: Dict[str, BlockType] = None,
+    ) -> CodeBlock:
         """Create a code block and extract nested elements."""
         block = self._create_code_block(node, block_type, names)
 
         if nested_types:
             nested_blocks = []
             for node_type, nested_block_type in nested_types.items():
-                nested_blocks.extend(self._extract_nested_elements_by_type(
-                    node, {node_type}, nested_block_type
-                ))
+                nested_blocks.extend(
+                    self._extract_nested_elements_by_type(
+                        node, {node_type}, nested_block_type
+                    )
+                )
             block.children = nested_blocks
 
         return block
 
-    def _extract_nested_elements_by_type(self, parent_node: Any, target_types: Set[str],
-                                       block_type: BlockType) -> List[CodeBlock]:
+    def _extract_nested_elements_by_type(
+        self, parent_node: Any, target_types: Set[str], block_type: BlockType
+    ) -> List[CodeBlock]:
         """Generic method to extract nested elements of specific types."""
+
         def processor(node):
             names = self._extract_names_from_node(node)
             if names:
@@ -158,7 +173,7 @@ class TypeScriptExtractor(BaseExtractor):
         """Extract module name from import statement."""
         source_node = node.child_by_field_name("source")
         if source_node and source_node.type == "string":
-            return self._get_node_text(source_node).strip('"\'')
+            return self._get_node_text(source_node).strip("\"'")
         return ""
 
     def _extract_named_imports(self, node: Any) -> List[str]:
@@ -186,7 +201,12 @@ class TypeScriptExtractor(BaseExtractor):
                             name_node = export_child.child_by_field_name("name")
                             if name_node:
                                 names.append(self._get_node_text(name_node))
-        elif node.type in ["function_declaration", "class_declaration", "interface_declaration", "enum_declaration"]:
+        elif node.type in [
+            "function_declaration",
+            "class_declaration",
+            "interface_declaration",
+            "enum_declaration",
+        ]:
             name_node = node.child_by_field_name("name")
             if name_node:
                 names.append(self._get_node_text(name_node))
@@ -199,6 +219,7 @@ class TypeScriptExtractor(BaseExtractor):
 
     def extract_imports(self, root_node: Any) -> List[CodeBlock]:
         """Extract import statements."""
+
         def process_import(node):
             import_name = self._extract_import_name(node)
             names = [import_name] if import_name else []
@@ -224,19 +245,25 @@ class TypeScriptExtractor(BaseExtractor):
 
     def extract_exports(self, root_node: Any) -> List[CodeBlock]:
         """Extract export statements."""
+
         def process_export(node):
             names = self._extract_export_names(node)
-            return self._create_code_block(node, BlockType.EXPORT, names) if names else None
+            return (
+                self._create_code_block(node, BlockType.EXPORT, names)
+                if names
+                else None
+            )
 
         export_types = {
             "export_statement",
             "export_default_statement",
-            "export_assignment"
+            "export_assignment",
         }
         return self._generic_traversal(root_node, export_types, process_export)
 
     def extract_functions(self, root_node: Any) -> List[CodeBlock]:
         """Extract function declarations."""
+
         def process_function(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
@@ -244,20 +271,23 @@ class TypeScriptExtractor(BaseExtractor):
             nested_types = {
                 "function_declaration": BlockType.FUNCTION,
                 "method_definition": BlockType.FUNCTION,
-                "variable_declaration": BlockType.VARIABLE
+                "variable_declaration": BlockType.VARIABLE,
             }
-            return self._create_block_with_nested(node, BlockType.FUNCTION, names, nested_types)
+            return self._create_block_with_nested(
+                node, BlockType.FUNCTION, names, nested_types
+            )
 
         function_types = {
             "function_declaration",
             "function_expression",
             "arrow_function",
-            "method_definition"
+            "method_definition",
         }
         return self._generic_traversal(root_node, function_types, process_function)
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
         """Extract class declarations."""
+
         def process_class(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
@@ -265,46 +295,61 @@ class TypeScriptExtractor(BaseExtractor):
             nested_types = {
                 "method_definition": BlockType.FUNCTION,
                 "field_definition": BlockType.VARIABLE,
-                "class_declaration": BlockType.CLASS
+                "class_declaration": BlockType.CLASS,
             }
-            return self._create_block_with_nested(node, BlockType.CLASS, names, nested_types)
+            return self._create_block_with_nested(
+                node, BlockType.CLASS, names, nested_types
+            )
 
         return self._generic_traversal(root_node, {"class_declaration"}, process_class)
 
     def extract_interfaces(self, root_node: Any) -> List[CodeBlock]:
         """Extract interface declarations."""
+
         def process_interface(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
             nested_types = {
                 "property_signature": BlockType.VARIABLE,
-                "method_signature": BlockType.FUNCTION
+                "method_signature": BlockType.FUNCTION,
             }
-            return self._create_block_with_nested(node, BlockType.INTERFACE, names, nested_types)
+            return self._create_block_with_nested(
+                node, BlockType.INTERFACE, names, nested_types
+            )
 
-        return self._generic_traversal(root_node, {"interface_declaration"}, process_interface)
+        return self._generic_traversal(
+            root_node, {"interface_declaration"}, process_interface
+        )
 
     def extract_enums(self, root_node: Any) -> List[CodeBlock]:
         """Extract enum declarations."""
+
         def process_enum(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
-            nested_types = {
-                "property_identifier": BlockType.VARIABLE
-            }
-            return self._create_block_with_nested(node, BlockType.ENUM, names, nested_types)
+            nested_types = {"property_identifier": BlockType.VARIABLE}
+            return self._create_block_with_nested(
+                node, BlockType.ENUM, names, nested_types
+            )
 
         return self._generic_traversal(root_node, {"enum_declaration"}, process_enum)
 
     def extract_variables(self, root_node: Any) -> List[CodeBlock]:
         """Extract variable declarations."""
+
         def process_variable(node):
             names = self._extract_variable_names(node)
-            return self._create_code_block(node, BlockType.VARIABLE, names) if names else None
+            return (
+                self._create_code_block(node, BlockType.VARIABLE, names)
+                if names
+                else None
+            )
 
-        return self._generic_traversal(root_node, {"variable_declaration"}, process_variable)
+        return self._generic_traversal(
+            root_node, {"variable_declaration"}, process_variable
+        )
 
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
         """Extract all types of code blocks."""
@@ -330,7 +375,9 @@ class TypeScriptExtractor(BaseExtractor):
             if self._is_dynamic_import(node):
                 import_name = self._extract_dynamic_import_name(node)
                 if import_name:
-                    block = self._create_code_block(node, BlockType.IMPORT, [import_name])
+                    block = self._create_code_block(
+                        node, BlockType.IMPORT, [import_name]
+                    )
                     blocks.append(block)
 
             for child in node.children:
@@ -347,7 +394,9 @@ class TypeScriptExtractor(BaseExtractor):
             if self._is_require_call(node):
                 import_name = self._extract_require_name(node)
                 if import_name:
-                    block = self._create_code_block(node, BlockType.IMPORT, [import_name])
+                    block = self._create_code_block(
+                        node, BlockType.IMPORT, [import_name]
+                    )
                     blocks.append(block)
 
             for child in node.children:
@@ -384,7 +433,7 @@ class TypeScriptExtractor(BaseExtractor):
         if arguments and arguments.children:
             first_arg = arguments.children[1] if len(arguments.children) > 1 else None
             if first_arg and first_arg.type == "string":
-                return self._get_node_text(first_arg).strip('"\'')
+                return self._get_node_text(first_arg).strip("\"'")
         return ""
 
     def _extract_require_name(self, node: Any) -> str:
@@ -393,7 +442,7 @@ class TypeScriptExtractor(BaseExtractor):
         if arguments and arguments.children:
             first_arg = arguments.children[1] if len(arguments.children) > 1 else None
             if first_arg and first_arg.type == "string":
-                return self._get_node_text(first_arg).strip('"\'')
+                return self._get_node_text(first_arg).strip("\"'")
         return ""
 
     def _get_method_name(self, node: Any) -> str:
@@ -409,4 +458,7 @@ class TypeScriptExtractor(BaseExtractor):
             return False
 
         right_node = node.child_by_field_name("right")
-        return right_node and right_node.type in ["function_expression", "arrow_function"]
+        return right_node and right_node.type in [
+            "function_expression",
+            "arrow_function",
+        ]

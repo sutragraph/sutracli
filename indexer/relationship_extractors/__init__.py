@@ -8,6 +8,7 @@ Supports TypeScript and Python initially, with extensible design for other langu
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
+from tree_sitter_language_pack import SupportedLanguage
 
 
 @dataclass
@@ -63,7 +64,9 @@ class RelationshipExtractor:
         self.register_extractor("python", PythonRelationshipExtractor)
         self.register_extractor("typescript", TypeScriptRelationshipExtractor)
 
-    def register_extractor(self, language: str, extractor_class: type) -> None:
+    def register_extractor(
+        self, language: SupportedLanguage, extractor_class: type
+    ) -> None:
         """Register an extractor for a specific language."""
         self._extractors[language] = extractor_class
 
