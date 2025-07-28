@@ -14,7 +14,7 @@ from .file_utils import (
 
 from .ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
 
-from .supported_languages import SUPPORTED_LANGUAGES
+from .supported_languages import LANGUAGE_EXTENSION_MAP
 
 __all__ = [
     # File utilities
@@ -26,5 +26,5 @@ __all__ = [
     # Patterns and configurations
     "IGNORE_FILE_PATTERNS",
     "IGNORE_DIRECTORY_PATTERNS",
-    "SUPPORTED_LANGUAGES",
+    "LANGUAGE_EXTENSION_MAP",
 ]

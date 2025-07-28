@@ -8,7 +8,7 @@ and specific filenames that should be parsed.
 from typing import Dict, List
 
 # Supported languages and their file extensions
-SUPPORTED_LANGUAGES: Dict[str, List[str]] = {
+LANGUAGE_EXTENSION_MAP: Dict[str, List[str]] = {
     "actionscript": [".as", ".mxml"],
     "ada": [".ada", ".adb", ".ads"],
     "agda": [".agda"],
@@ -169,3 +169,5 @@ SUPPORTED_LANGUAGES: Dict[str, List[str]] = {
     "yuck": [".yuck"],
     "zig": [".zig"],
 }
+
+SUPPORTED_LANGUAGES: List[str] = ["python", "typescript"]

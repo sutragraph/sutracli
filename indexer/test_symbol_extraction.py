@@ -32,7 +32,7 @@ def print_separator(title: str = "", char: str = "=", length: int = 80):
 
 def print_code_block(content: str, language: str = ""):
     """Print code content in a formatted block."""
-    lines = content.strip().split('\n')
+    lines = content.strip().split("\n")
     max_line_num_width = len(str(len(lines)))
 
     print(f"```{language}")
@@ -95,7 +95,7 @@ def test_file_extraction(file_path: Path, parser: ASTParser):
             # Show code content
             print(f"   📝 Code:")
             # Indent the code block
-            code_lines = block.content.strip().split('\n')
+            code_lines = block.content.strip().split("\n")
             for line in code_lines[:10]:  # Show first 10 lines
                 print(f"      {line}")
 
@@ -106,7 +106,9 @@ def test_file_extraction(file_path: Path, parser: ASTParser):
             if block.children:
                 print(f"   👶 Children: {len(block.children)} nested blocks")
                 for child in block.children:
-                    print(f"      - {child.type.value}: `{child.name}` (symbols: {format_symbol_list(child.symbols)})")
+                    print(
+                        f"      - {child.type.value}: `{child.name}` (symbols: {format_symbol_list(child.symbols)})"
+                    )
 
         print()
 
@@ -131,10 +133,12 @@ def test_symbol_extraction_details(file_path: Path, parser: ASTParser):
     # Extract symbols directly
     ast_tree = result["ast"]
     language = result["language"]
-    content = ast_tree.root_node.text.decode('utf-8')
+    content = ast_tree.root_node.text.decode("utf-8")
 
     try:
-        symbols = symbol_extractor.extract_symbols(ast_tree.root_node, content, language)
+        symbols = symbol_extractor.extract_symbols(
+            ast_tree.root_node, content, language
+        )
 
         print(f"📄 File: {file_path.name}")
         print(f"🔤 Language: {language}")
@@ -155,14 +159,20 @@ def test_symbol_extraction_details(file_path: Path, parser: ASTParser):
 
         # Display symbols by type
         for symbol_type, type_symbols in symbols_by_type.items():
-            print_separator(f"{symbol_type.upper()} SYMBOLS ({len(type_symbols)})", "-", 50)
+            print_separator(
+                f"{symbol_type.upper()} SYMBOLS ({len(type_symbols)})", "-", 50
+            )
 
-            for symbol in sorted(type_symbols, key=lambda s: (s.start_line, s.start_col)):
+            for symbol in sorted(
+                type_symbols, key=lambda s: (s.start_line, s.start_col)
+            ):
                 print(f"🔹 `{symbol.name}`")
-                print(f"   📍 Location: Line {symbol.start_line}:{symbol.start_col} - {symbol.end_line}:{symbol.end_col}")
+                print(
+                    f"   📍 Location: Line {symbol.start_line}:{symbol.start_col} - {symbol.end_line}:{symbol.end_col}"
+                )
 
                 # Show the relevant code line
-                content_lines = content.split('\n')
+                content_lines = content.split("\n")
                 if 1 <= symbol.start_line <= len(content_lines):
                     code_line = content_lines[symbol.start_line - 1].strip()
                     if len(code_line) > 80:
@@ -199,10 +209,12 @@ def compare_extraction_methods(file_path: Path, parser: ASTParser):
     if symbol_extractor:
         ast_tree = result["ast"]
         language = result["language"]
-        content = ast_tree.root_node.text.decode('utf-8')
+        content = ast_tree.root_node.text.decode("utf-8")
 
         try:
-            direct_symbols = symbol_extractor.extract_symbols(ast_tree.root_node, content, language)
+            direct_symbols = symbol_extractor.extract_symbols(
+                ast_tree.root_node, content, language
+            )
             direct_symbol_names = {symbol.name for symbol in direct_symbols}
         except Exception:
             direct_symbol_names = set()
@@ -258,10 +270,7 @@ def main():
 
     # Get test files
     test_dir = Path(__file__).parent / "test_files"
-    test_files = [
-        test_dir / "test_python.py",
-        test_dir / "test_typescript.ts"
-    ]
+    test_files = [test_dir / "test_python.py", test_dir / "test_typescript.ts"]
 
     print(f"📁 Test directory: {test_dir}")
     print(f"📄 Test files: {[f.name for f in test_files]}")
@@ -278,7 +287,7 @@ def main():
 
     # Test supported languages
     print("🌐 Supported languages:")
-    extraction_languages = parser.get_supported_extraction_languages()
+    extraction_languages = parser._extractor.get_supported_languages()
     symbol_languages = symbol_extractor.get_supported_languages()
     print(f"   📊 Code block extraction: {extraction_languages}")
     print(f"   🎯 Symbol extraction: {symbol_languages}")
@@ -314,5 +323,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n\n❌ Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
