@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from tree_sitter_language_pack import SupportedLanguage
 
 
 class BlockType(Enum):
@@ -41,7 +42,7 @@ class CodeBlock:
 class BaseExtractor(ABC):
     """Base class for language-specific AST extractors."""
 
-    def __init__(self, language: str, symbol_extractor=None):
+    def __init__(self, language: SupportedLanguage, symbol_extractor=None):
         """Initialize the base extractor.
 
         Args:
@@ -70,7 +71,7 @@ class BaseExtractor(ABC):
         """
         if hasattr(node, "start_point") and hasattr(node, "end_point"):
             start_line = node.start_point[0] + 1  # Convert to 1-based
-            end_line = node.end_point[0] + 1      # Convert to 1-based
+            end_line = node.end_point[0] + 1  # Convert to 1-based
             start_col = node.start_point[1]
             end_col = node.end_point[1]
             return start_line, end_line, start_col, end_col
@@ -120,7 +121,9 @@ class BaseExtractor(ABC):
 
         return sorted(list(matching_symbols))
 
-    def _create_code_block(self, node: Any, block_type: BlockType, names: List[str]) -> CodeBlock:
+    def _create_code_block(
+        self, node: Any, block_type: BlockType, names: List[str]
+    ) -> CodeBlock:
         """Create a CodeBlock from a node, automatically extracting position and content.
 
         Args:
@@ -220,7 +223,9 @@ class Extractor:
         self.register_extractor("typescript", TypeScriptExtractor)
         self.register_extractor("python", PythonExtractor)
 
-    def register_extractor(self, language: str, extractor_class: type) -> None:
+    def register_extractor(
+        self, language: SupportedLanguage, extractor_class: type
+    ) -> None:
         """Register an extractor for a specific language.
 
         Args:
@@ -229,7 +234,9 @@ class Extractor:
         """
         self._extractors[language] = extractor_class
 
-    def extract_from_ast(self, ast_tree: Any, language: str) -> List[CodeBlock]:
+    def extract_from_ast(
+        self, ast_tree: Any, language: SupportedLanguage
+    ) -> List[CodeBlock]:
         """Extract code blocks from an AST tree using language-specific extractor.
 
         Args:
@@ -245,7 +252,9 @@ class Extractor:
         extractor = self._extractors[language](language, self.symbol_extractor)
         return extractor.extract_all(ast_tree.root_node)
 
-    def get_blocks_by_type(self, blocks: List[CodeBlock], block_type: BlockType) -> List[CodeBlock]:
+    def get_blocks_by_type(
+        self, blocks: List[CodeBlock], block_type: BlockType
+    ) -> List[CodeBlock]:
         """Filter blocks by type.
 
         Args:

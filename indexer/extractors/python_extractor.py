@@ -5,13 +5,14 @@ and extracting code blocks from Python AST nodes using tree-sitter.
 """
 
 from typing import List, Any, Dict, Set, Callable, Optional
+from tree_sitter_language_pack import SupportedLanguage
 from . import BaseExtractor, CodeBlock, BlockType
 
 
 class PythonExtractor(BaseExtractor):
     """Python-specific extractor for code blocks."""
 
-    def __init__(self, language: str, symbol_extractor=None):
+    def __init__(self, language: SupportedLanguage, symbol_extractor=None):
         super().__init__(language, symbol_extractor)
 
     # ============================================================================
@@ -24,8 +25,12 @@ class PythonExtractor(BaseExtractor):
             return self._get_node_text(node)
         return ""
 
-    def _generic_traversal(self, root_node: Any, target_types: Set[str],
-                          processor: Callable[[Any], Optional[CodeBlock]]) -> List[CodeBlock]:
+    def _generic_traversal(
+        self,
+        root_node: Any,
+        target_types: Set[str],
+        processor: Callable[[Any], Optional[CodeBlock]],
+    ) -> List[CodeBlock]:
         """Generic traversal method for extracting blocks of specific types."""
         blocks = []
 
@@ -58,28 +63,38 @@ class PythonExtractor(BaseExtractor):
                     names.append(self._get_node_text(n))
                 for child in n.children:
                     find_identifiers(child)
+
             find_identifiers(node)
 
         return list(set(names))  # Remove duplicates
 
-    def _create_block_with_nested(self, node: Any, block_type: BlockType,
-                                 names: List[str], nested_types: Dict[str, BlockType] = None) -> CodeBlock:
+    def _create_block_with_nested(
+        self,
+        node: Any,
+        block_type: BlockType,
+        names: List[str],
+        nested_types: Dict[str, BlockType] = None,
+    ) -> CodeBlock:
         """Create a code block and extract nested elements."""
         block = self._create_code_block(node, block_type, names)
 
         if nested_types:
             nested_blocks = []
             for node_type, nested_block_type in nested_types.items():
-                nested_blocks.extend(self._extract_nested_elements_by_type(
-                    node, {node_type}, nested_block_type
-                ))
+                nested_blocks.extend(
+                    self._extract_nested_elements_by_type(
+                        node, {node_type}, nested_block_type
+                    )
+                )
             block.children = nested_blocks
 
         return block
 
-    def _extract_nested_elements_by_type(self, parent_node: Any, target_types: Set[str],
-                                       block_type: BlockType) -> List[CodeBlock]:
+    def _extract_nested_elements_by_type(
+        self, parent_node: Any, target_types: Set[str], block_type: BlockType
+    ) -> List[CodeBlock]:
         """Generic method to extract nested elements of specific types."""
+
         def processor(node):
             names = self._extract_names_from_node(node)
             if names:
@@ -129,6 +144,7 @@ class PythonExtractor(BaseExtractor):
 
     def extract_imports(self, root_node: Any) -> List[CodeBlock]:
         """Extract import statements."""
+
         def process_import(node):
             import_name = self._extract_import_name(node)
             names = [import_name] if import_name else []
@@ -156,20 +172,26 @@ class PythonExtractor(BaseExtractor):
 
     def extract_functions(self, root_node: Any) -> List[CodeBlock]:
         """Extract function definitions."""
+
         def process_function(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
             nested_types = {
                 "function_definition": BlockType.FUNCTION,
-                "assignment": BlockType.VARIABLE
+                "assignment": BlockType.VARIABLE,
             }
-            return self._create_block_with_nested(node, BlockType.FUNCTION, names, nested_types)
+            return self._create_block_with_nested(
+                node, BlockType.FUNCTION, names, nested_types
+            )
 
-        return self._generic_traversal(root_node, {"function_definition"}, process_function)
+        return self._generic_traversal(
+            root_node, {"function_definition"}, process_function
+        )
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
         """Extract class definitions."""
+
         def process_class(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
@@ -177,17 +199,24 @@ class PythonExtractor(BaseExtractor):
             nested_types = {
                 "function_definition": BlockType.FUNCTION,
                 "assignment": BlockType.VARIABLE,
-                "class_definition": BlockType.CLASS
+                "class_definition": BlockType.CLASS,
             }
-            return self._create_block_with_nested(node, BlockType.CLASS, names, nested_types)
+            return self._create_block_with_nested(
+                node, BlockType.CLASS, names, nested_types
+            )
 
         return self._generic_traversal(root_node, {"class_definition"}, process_class)
 
     def extract_variables(self, root_node: Any) -> List[CodeBlock]:
         """Extract variable assignments."""
+
         def process_variable(node):
             names = self._extract_assignment_names(node)
-            return self._create_code_block(node, BlockType.VARIABLE, names) if names else None
+            return (
+                self._create_code_block(node, BlockType.VARIABLE, names)
+                if names
+                else None
+            )
 
         return self._generic_traversal(root_node, {"assignment"}, process_variable)
 
@@ -213,7 +242,9 @@ class PythonExtractor(BaseExtractor):
             if self._is_dynamic_import_call(node):
                 import_name = self._extract_dynamic_import_name(node)
                 if import_name:
-                    block = self._create_code_block(node, BlockType.IMPORT, [import_name])
+                    block = self._create_code_block(
+                        node, BlockType.IMPORT, [import_name]
+                    )
                     blocks.append(block)
 
             for child in node.children:
@@ -235,7 +266,7 @@ class PythonExtractor(BaseExtractor):
         dynamic_import_patterns = [
             "importlib.import_module",
             "__import__",
-            "importlib.__import__"
+            "importlib.__import__",
         ]
 
         return any(pattern in function_text for pattern in dynamic_import_patterns)
@@ -246,7 +277,7 @@ class PythonExtractor(BaseExtractor):
         if arguments and arguments.children:
             first_arg = arguments.children[1] if len(arguments.children) > 1 else None
             if first_arg and first_arg.type == "string":
-                return self._get_node_text(first_arg).strip('"\'')
+                return self._get_node_text(first_arg).strip("\"'")
         return ""
 
     def _extract_top_level_exports(self, root_node: Any) -> List[CodeBlock]:
@@ -286,6 +317,7 @@ class PythonExtractor(BaseExtractor):
 
     def extract_enums(self, root_node: Any) -> List[CodeBlock]:
         """Extract enums (Python enum.Enum classes)."""
+
         def process_enum(node):
             # Check if this class inherits from Enum
             superclasses = node.child_by_field_name("superclasses")
@@ -295,10 +327,10 @@ class PythonExtractor(BaseExtractor):
                     name_node = node.child_by_field_name("name")
                     names = [self._get_node_text(name_node)] if name_node else []
 
-                    nested_types = {
-                        "assignment": BlockType.VARIABLE
-                    }
-                    return self._create_block_with_nested(node, BlockType.ENUM, names, nested_types)
+                    nested_types = {"assignment": BlockType.VARIABLE}
+                    return self._create_block_with_nested(
+                        node, BlockType.ENUM, names, nested_types
+                    )
             return None
 
         return self._generic_traversal(root_node, {"class_definition"}, process_enum)

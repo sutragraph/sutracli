@@ -8,7 +8,7 @@ relationships between files based on import statements.
 import os
 import hashlib
 from pathlib import Path
-from typing import Dict, Optional, Union, Any
+from typing import Dict, Optional, Union, Any, cast
 from tree_sitter import Parser
 from tree_sitter_language_pack import get_parser, SupportedLanguage
 
@@ -41,7 +41,7 @@ class ASTParser:
         self._extractor = Extractor(symbol_extractor=symbol_extractor)
         self._relationship_extractor = RelationshipExtractor()
 
-    def _get_parser(self, language: str) -> Optional[Any]:
+    def _get_parser(self, language: SupportedLanguage) -> Optional[Any]:
         """
         Get a tree-sitter parser for the specified language.
         Caches parsers for better performance.
@@ -117,9 +117,7 @@ class ASTParser:
             print(f"Error parsing file {file_path}: {e}")
             return None
 
-    def parse_and_extract(
-        self, file_path: Union[str, Path]
-    ) -> Dict[str, Any]:
+    def parse_and_extract(self, file_path: Union[str, Path]) -> Dict[str, Any]:
         """
         Parse a file and extract code blocks with hierarchical structure.
 
