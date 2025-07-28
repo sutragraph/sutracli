@@ -9,11 +9,14 @@ import fnmatch
 from pathlib import Path
 from typing import Optional, Union, Dict, List
 
+from tree_sitter_language_pack import SupportedLanguage
 from .ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
-from .supported_languages import LANGUAGE_EXTENSION_MAP, SUPPORTED_LANGUAGES
+from .supported_languages import LANGUAGE_EXTENSION_MAP
 
 
-def get_language_from_extension(file_path: Union[str, Path]) -> Optional[str]:
+def get_language_from_extension(
+    file_path: Union[str, Path],
+) -> Optional[SupportedLanguage]:
     """
     Get the language name from file extension or filename.
 
