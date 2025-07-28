@@ -7,10 +7,10 @@ and ignore pattern matching.
 
 import fnmatch
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Dict, List
 
 from .ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
-from .supported_languages import SUPPORTED_LANGUAGES
+from .supported_languages import LANGUAGE_EXTENSION_MAP, SUPPORTED_LANGUAGES
 
 
 def get_language_from_extension(file_path: Union[str, Path]) -> Optional[str]:
@@ -28,12 +28,12 @@ def get_language_from_extension(file_path: Union[str, Path]) -> Optional[str]:
     filename = file_path.name
 
     # Check exact filename matches first
-    for language, patterns in SUPPORTED_LANGUAGES.items():
+    for language, patterns in LANGUAGE_EXTENSION_MAP.items():
         if filename in patterns:
             return language
 
     # Check extension matches
-    for language, extensions in SUPPORTED_LANGUAGES.items():
+    for language, extensions in LANGUAGE_EXTENSION_MAP.items():
         if extension in extensions:
             return language
 
