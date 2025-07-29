@@ -11,29 +11,14 @@ from . import BaseExtractor, BlockType, CodeBlock
 class JavaExtractor(BaseExtractor):
     """Extractor for Java code blocks."""
 
-    def __init__(self, language: str = "java"):
-        super().__init__(language)
-
-    def _traverse_nodes(self, node: Any, node_types: List[str]) -> List[Any]:
-        """Traverse AST nodes and collect nodes of specified types."""
-        results = []
-
-        def traverse(n):
-            if hasattr(n, 'type') and n.type in node_types:
-                results.append(n)
-            if hasattr(n, 'children'):
-                for child in n.children:
-                    traverse(child)
-
-        traverse(node)
-        return results
+    def __init__(self, language: str = "java", symbol_extractor=None):
+        super().__init__(language, symbol_extractor)
 
     def _get_identifier_name(self, node: Any) -> str:
         """Get identifier name from a node."""
         if node and hasattr(node, 'children'):
-            print("node.children", node.children)
             for child in node.children:
-                if hasattr(child, 'type') and child.type == 'identifier':
+                if hasattr(child, "type") and child.type == "identifier":
                     return self._get_node_text(child)
         return ""
 
@@ -41,34 +26,29 @@ class JavaExtractor(BaseExtractor):
         """Extract import statements."""
         try:
             blocks = []
-            import_nodes = self._traverse_nodes(node, ['import_declaration'])
+            import_nodes = self._traverse_nodes(node, ["import_declaration"])
             for import_node in import_nodes:
                 start_line, end_line, start_col, end_col = self._get_node_position(import_node)
                 content = self._get_node_text(import_node)
                 # Extract the module name or first imported name as the identifier
                 name = self._extract_import_name(import_node)
-                blocks.append(CodeBlock(
-                    type=BlockType.IMPORT,
-                    name=name,
-                    content=content,
-                    start_line=start_line,
-                    end_line=end_line,
-                    start_col=start_col,
-                    end_col=end_col
-                ))
+                blocks.append(
+                    self._create_code_block(
+                        BlockType.IMPORT,
+                        name,
+                        content,
+                        start_line,
+                        end_line,
+                        start_col,
+                        end_col,
+                        import_node,
+                    )
+                )
+
             return blocks
         except Exception as e:
             print(f"[extract_imports] Exception: {e}")
             raise
-    
-    def extract_exports(self, node: Any) -> List[CodeBlock]:
-        """Java does not have export statements; return empty list."""
-        try:
-            return []
-        except Exception as e:
-            print(f"[extract_exports] Exception: {e}")
-            raise
-
 
     def _extract_import_name(self, import_node: Any) -> str:
         """Extract the imported package or class name from an import statement (Java)."""
@@ -91,15 +71,18 @@ class JavaExtractor(BaseExtractor):
                 if name:
                     start_line, end_line, start_col, end_col = self._get_node_position(interface_node)
                     content = self._get_node_text(interface_node)
-                    blocks.append(CodeBlock(
-                        type=BlockType.INTERFACE,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
+                    blocks.append(
+                        self._create_code_block(
+                            BlockType.INTERFACE,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            interface_node
+                        )
+                    )
             return blocks
         except Exception as e:
             print(f"[extract_interfaces] Exception: {e}")
@@ -115,71 +98,79 @@ class JavaExtractor(BaseExtractor):
                 if name:
                     start_line, end_line, start_col, end_col = self._get_node_position(enum_node)
                     content = self._get_node_text(enum_node)
-                    blocks.append(CodeBlock(
-                        type=BlockType.ENUM,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
+                    blocks.append(
+                        self._create_code_block(
+                            BlockType.ENUM,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col
+                        )
+                    )
             return blocks
         except Exception as e:
             print(f"[extract_enums] Exception: {e}")
             raise
 
-    def extract_methods(self, node: Any) -> List[CodeBlock]:
-        """Extract method declarations from Java AST."""
-        try:
-            blocks = []
-            method_nodes = self._traverse_nodes(node, ['method_declaration', 'constructor_declaration'])
-            for method_node in method_nodes:
-                name = self._get_identifier_name(method_node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(method_node)
-                    content = self._get_node_text(method_node)
-                    blocks.append(CodeBlock(
-                        type=BlockType.FUNCTION,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
-            return blocks
-        except Exception as e:
-            print(f"[extract_methods] Exception: {e}")
-            raise
 
-    def extract_fields(self, node: Any) -> List[CodeBlock]:
-        """Extract field (variable) declarations from Java AST."""
-        try:
-            blocks = []
-            field_nodes = self._traverse_nodes(node, ['field_declaration'])
-            for field_node in field_nodes:
-                # Java fields can have multiple variable_declarators
-                if field_node and hasattr(field_node, 'children'):
-                    for child in field_node.children:
-                        if hasattr(child, 'type') and child.type == 'variable_declarator':
-                            name = self._get_identifier_name(child)
-                            if name:
-                                start_line, end_line, start_col, end_col = self._get_node_position(child)
-                                content = self._get_node_text(child)
-                                blocks.append(CodeBlock(
-                                    type=BlockType.VARIABLE,
-                                    name=name,
-                                    content=content,
-                                    start_line=start_line,
-                                    end_line=end_line,
-                                    start_col=start_col,
-                                    end_col=end_col
-                                ))
-            return blocks
-        except Exception as e:
-            print(f"[extract_fields] Exception: {e}")
-            raise
+    def extract_functions(self, node: Any) -> List[CodeBlock]:
+        """Extract method declarations with nested elements as children."""
+        functions = self._extract_top_level_functions(node)
+        for function in functions:
+            function.children = self._extract_nested_elements(node, function)
+        return functions
+
+    def extract_classes(self, node: Any) -> List[CodeBlock]:
+        """Extract class declarations with nested elements as children."""
+        classes = self._extract_top_level_classes(node)
+        for class_block in classes:
+            class_block.children = self._extract_nested_elements(node, class_block)
+        return classes
+
+    def extract_variables(self, node: Any) -> List[CodeBlock]:
+        """Extract field declarations."""
+        return self._extract_top_level_variables(node)
+
+    def extract_all(self, root_node: Any) -> List[CodeBlock]:
+        """Java-specific implementation of extract_all."""
+        self._blocks = []
+        self._extract_all_symbols(root_node)
+
+        # Java-specific order
+        self._blocks.extend(self.extract_imports(root_node))
+        self._blocks.extend(self.extract_variables(root_node))
+        self._blocks.extend(self.extract_classes(root_node))
+        self._blocks.extend(self.extract_functions(root_node))
+
+        return self._blocks
+
+    def _extract_top_level_functions(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level method declarations."""
+        blocks = []
+        if hasattr(node, "children"):
+            for child in node.children:
+                if hasattr(child, "type") and child.type == "method_declaration":
+                    name = self._get_identifier_name(child)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(
+                            child
+                        )
+                        content = self._get_node_text(child)
+                        blocks.append(
+                            self._create_code_block(
+                                BlockType.FUNCTION,
+                                name,
+                                content,
+                                start_line,
+                                end_line,
+                                start_col,
+                                end_col,
+                                child,
+                            )
+                        )
+        return blocks
 
     def _extract_nested_functions(self, parent_node: Any) -> List[CodeBlock]:
         """Extract method and constructor declarations nested within a Java parent node (not top-level)."""
@@ -191,15 +182,18 @@ class JavaExtractor(BaseExtractor):
                 if name:
                     start_line, end_line, start_col, end_col = self._get_node_position(node)
                     content = self._get_node_text(node)
-                    nested_methods.append(CodeBlock(
-                        type=BlockType.FUNCTION,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
+                    nested_methods.append(
+                        self._create_code_block(
+                            BlockType.FUNCTION,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
+                        )
+                    )
                     return
             if hasattr(node, 'children'):
                 for child in node.children:
@@ -225,15 +219,18 @@ class JavaExtractor(BaseExtractor):
                             if name:
                                 start_line, end_line, start_col, end_col = self._get_node_position(child)
                                 content = self._get_node_text(child)
-                                nested_variables.append(CodeBlock(
-                                    type=BlockType.VARIABLE,
-                                    name=name,
-                                    content=content,
-                                    start_line=start_line,
-                                    end_line=end_line,
-                                    start_col=start_col,
-                                    end_col=end_col
-                                ))
+                                nested_variables.append(
+                                    self._create_code_block(
+                                        BlockType.VARIABLE,
+                                        name,
+                                        content,
+                                        start_line,
+                                        end_line,
+                                        start_col,
+                                        end_col,
+                                        node
+                                    )
+                                )
             if hasattr(node, 'children'):
                 for child in node.children:
                     traverse(child, depth + 1)
@@ -254,15 +251,18 @@ class JavaExtractor(BaseExtractor):
                 if name:
                     start_line, end_line, start_col, end_col = self._get_node_position(node)
                     content = self._get_node_text(node)
-                    nested_classes.append(CodeBlock(
-                        type=BlockType.CLASS,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
+                    nested_classes.append(
+                        self._create_code_block(
+                            BlockType.CLASS,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
+                        )
+                    )
                     return  # Do not traverse deeper from this class
             if hasattr(node, 'children'):
                 for child in node.children:
@@ -284,15 +284,18 @@ class JavaExtractor(BaseExtractor):
                 if name:
                     start_line, end_line, start_col, end_col = self._get_node_position(node)
                     content = self._get_node_text(node)
-                    nested_interfaces.append(CodeBlock(
-                        type=BlockType.INTERFACE,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
+                    nested_interfaces.append(
+                        self._create_code_block(
+                            BlockType.INTERFACE,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
+                        )
+                    )
                     return
             if hasattr(node, 'children'):
                 for child in node.children:
@@ -314,15 +317,18 @@ class JavaExtractor(BaseExtractor):
                 if name:
                     start_line, end_line, start_col, end_col = self._get_node_position(node)
                     content = self._get_node_text(node)
-                    nested_enums.append(CodeBlock(
-                        type=BlockType.ENUM,
-                        name=name,
-                        content=content,
-                        start_line=start_line,
-                        end_line=end_line,
-                        start_col=start_col,
-                        end_col=end_col
-                    ))
+                    nested_enums.append(
+                        self._create_code_block(
+                            BlockType.ENUM,
+                            name,
+                            content,
+                            start_line,
+                            end_line,
+                            start_col,
+                            end_col,
+                            node
+                        )
+                    )
                     return
             if hasattr(node, 'children'):
                 for child in node.children:
@@ -333,4 +339,69 @@ class JavaExtractor(BaseExtractor):
                 traverse(child, 0)
 
         return nested_enums
+
+
+    def _extract_top_level_classes(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level class declarations."""
+        blocks = []
+        if hasattr(node, "children"):
+            for child in node.children:
+                if hasattr(child, "type") and child.type == "class_declaration":
+                    name = self._get_identifier_name(child)
+                    if name:
+                        start_line, end_line, start_col, end_col = self._get_node_position(
+                            child
+                        )
+                        content = self._get_node_text(child)
+                        blocks.append(
+                            self._create_code_block(
+                                BlockType.CLASS,
+                                name,
+                                content,
+                                start_line,
+                                end_line,
+                                start_col,
+                                end_col,
+                                child,
+                            )
+                        )
+        return blocks
+
+    def _extract_top_level_variables(self, node: Any) -> List[CodeBlock]:
+        """Extract only top-level field declarations."""
+        blocks = []
+        if hasattr(node, "children"):
+            for child in node.children:
+                if hasattr(child, "type") and child.type == "field_declaration":
+                    names = self._extract_field_names(child)
+                    if names:
+                        start_line, end_line, start_col, end_col = self._get_node_position(
+                            child
+                        )
+                        content = self._get_node_text(child)
+                        for name in names:
+                            blocks.append(
+                                self._create_code_block(
+                                    BlockType.VARIABLE,
+                                    name,
+                                    content,
+                                    start_line,
+                                    end_line,
+                                    start_col,
+                                    end_col,
+                                    child,
+                                )
+                            )
+        return blocks
+
+    def _extract_field_names(self, field_node: Any) -> List[str]:
+        """Extract variable names from field declaration."""
+        names = []
+        if hasattr(field_node, "children"):
+            for child in field_node.children:
+                if hasattr(child, "type") and child.type == "variable_declarator":
+                    name = self._get_identifier_name(child)
+                    if name:
+                        names.append(name)
+        return names
 

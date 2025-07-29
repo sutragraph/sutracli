@@ -23,28 +23,65 @@ class JavaExtractor(BaseExtractor):
         self._extract_recursive(ast_node, symbols, extract_calls=True, defined_names=defined_names)
 
     def _get_keywords(self) -> Set[str]:
-        """Java keywords, built-ins and common standard library names to filter out."""
+        """Java keywords, built-ins, and common stdlib method names to filter out."""
+
         keywords = {
-            # Java keywords
             'abstract','assert','boolean','break','byte','case','catch','char','class','const','continue',
             'default','do','double','else','enum','extends','final','finally','float','for','goto','if',
             'implements','import','instanceof','int','interface','long','native','new','package','private',
             'protected','public','return','short','static','strictfp','super','switch','synchronized',
-            'this','throw','throws','transient','try','void','volatile','while','var','record'
+            'this','throw','throws','transient','try','void','volatile','while','sealed', 'permits', 'record',
+            'var','yield', 'module','requires','exports','opens','uses','provides','with','transitive'
         }
 
         builtins = {
-            # Common built-in classes
-            'Object','String','Integer','Double','Boolean','Character','Long','Short','Byte','Math',
-            'System','Thread','Runnable','Exception','RuntimeException','Error','Class','Enum','List','Map',
-            'Set','HashMap','ArrayList','LinkedList','HashSet','TreeMap','TreeSet','Arrays','Collections',
-            'Comparator','Iterable','Iterator'
+            # Core types
+            'Object','String','Integer','Long','Short','Byte','Double','Float','Character','Boolean','Number',
+            'Void','Class','Enum','Thread','Runnable','Math','System','StringBuilder','StringBuffer',
+            # Collections
+            'List','ArrayList','LinkedList','Vector','Stack','Queue','Deque','PriorityQueue',
+            'Set','HashSet','LinkedHashSet','TreeSet','EnumSet',
+            'Map','HashMap','LinkedHashMap','TreeMap','Hashtable','Properties','WeakHashMap','IdentityHashMap',
+            'Collections','Arrays','Objects',
+            # Streams and I/O
+            'InputStream','OutputStream','FileInputStream','FileOutputStream','BufferedInputStream',
+            'BufferedOutputStream','DataInputStream','DataOutputStream','PrintStream','PrintWriter',
+            'Reader','Writer','FileReader','FileWriter','BufferedReader','BufferedWriter',
+            'File','Path','Paths','Files',
+            # Time
+            'Date','Calendar','TimeZone','LocalDate','LocalTime','LocalDateTime','ZonedDateTime','Instant',
+            'Duration','Period','ZoneId','OffsetDateTime','OffsetTime',
+            # Concurrency
+            'Thread','Runnable','Callable','Executor','Executors','Future','CompletableFuture','CountDownLatch',
+            'Semaphore','ReentrantLock','ReadWriteLock','AtomicInteger','AtomicLong','ConcurrentHashMap',
+            # Exceptions
+            'Exception','RuntimeException','Error','Throwable','NullPointerException','IndexOutOfBoundsException',
+            'ClassCastException','IllegalArgumentException','IllegalStateException','IOException','FileNotFoundException',
+            'InterruptedException','CloneNotSupportedException','AssertionError','ArithmeticException',
+            'SecurityException','UnsupportedOperationException'
         }
 
-        # Common methods or fields we want to ignore (like System.out.println)
         stdlib_methods = {
-            'println','print','printf','toString','equals','hashCode','clone','compareTo','wait','notify',
-            'notifyAll','size','length','add','get','put','remove','clear','isEmpty','contains','indexOf'
+            # Object class
+            'equals','hashCode','toString','getClass','clone','notify','notifyAll','wait','finalize',
+            # String
+            'charAt','codePointAt','compareTo','concat','contains','endsWith','equalsIgnoreCase','format',
+            'getBytes','getChars','indexOf','isEmpty','join','lastIndexOf','length','matches','replace',
+            'replaceAll','split','startsWith','strip','stripLeading','stripTrailing','substring','toCharArray',
+            'toLowerCase','toUpperCase','trim','valueOf',
+            # Collections/Lists
+            'add','addAll','clear','contains','containsAll','get','indexOf','isEmpty','iterator','listIterator',
+            'remove','removeAll','retainAll','set','size','sort','subList','toArray','replaceAll',
+            # Maps
+            'put','putAll','putIfAbsent','remove','getOrDefault','containsKey','containsValue','keySet',
+            'values','entrySet','compute','computeIfAbsent','computeIfPresent','merge','forEach','replace',
+            # Arrays/Collections utils
+            'asList','binarySearch','copyOf','equals','fill','hashCode','parallelSort','sort','stream',
+            # System/Math
+            'currentTimeMillis','nanoTime','arraycopy','exit','gc','identityHashCode','lineSeparator','setOut',
+            'abs','ceil','floor','max','min','random','round','signum','sqrt','pow','log','log10','exp',
+            # Threads/Futures
+            'run','start','join','sleep','yield','interrupt','isAlive','submit','invokeAll','invokeAny','cancel'
         }
 
         return keywords | builtins | stdlib_methods

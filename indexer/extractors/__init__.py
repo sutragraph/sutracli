@@ -332,11 +332,13 @@ class Extractor:
         """Setup language-specific extractors."""
         from .typescript_extractor import TypeScriptExtractor
         from .python_extractor import PythonExtractor
+        from .java_extractor import JavaExtractor
 
         global builder
         builder = ExtractorBuilder(self.symbol_extractor)
         builder.register_extractor("typescript", TypeScriptExtractor)
         builder.register_extractor("python", PythonExtractor)
+        builder.register_extractor("java", JavaExtractor)
 
     def extract_from_ast(self, ast_tree: Any, language: str, block_types: Optional[List[BlockType]] = None) -> List[CodeBlock]:
         """
