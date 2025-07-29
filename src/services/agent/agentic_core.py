@@ -20,5 +20,4 @@ class AgentThought:
     thought_id: str
     analysis: str  # What was discovered/understood (from LLM summary)
     user_message: Optional[str]  # User-friendly message (from LLM user_message)
-    confidence: float
     timestamp: float

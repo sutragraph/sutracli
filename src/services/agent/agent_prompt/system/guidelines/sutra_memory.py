@@ -5,7 +5,7 @@ SUTRA MEMORY
 Sutra Memory is a dynamic memory system that tracks implementation state across iterations. It is fully managed by the Sutra agent and invisible to the user. This system ensures continuity, prevents redundant operations, and maintains context for complex multi-step tasks. The system tracks iteration history (last 20 entries), manages tasks (current, pending, completed), and stores important code snippets for future reference.
 
 Required Components:
-add_history: Comprehensive summary of current iteration actions, tool usage, key findings, and information storage for future iterations (MANDATORY in every response)
+add_history: Comprehensive summary of current iteration actions, tool usage, key findings, and information storage for future iterations (MANDATORY in every response). You MUST store any important information related to the user query that will be needed in future iterations, otherwise it won't be available in the next iteration.
 
 Optional Components:
 task: Manage tasks by adding new ones or moving between pending/current/completed status with unique IDs (only ONE current task allowed at a time)
@@ -195,6 +195,7 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - Include complete file names, function names, and paths when relevant
    - Store comprehensive information that will be needed for upcoming iterations
    - ALWAYS REVIEW YOUR HISTORY before starting new iterations to understand previous context
+   - CRITICAL: Store ALL important information related to the user query in your history, as this information will NOT be available in the next iteration unless explicitly stored
    - Store important information like function names, file paths, directory structures, and discoveries
    - Include relevant terminal outputs, search results, and tool responses that may be needed later
    - Record file paths from list_files operations if those paths will be referenced in future iterations
@@ -205,6 +206,7 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - Store API responses, database query results, terminal outputs, and other data outputs when they provide context for future operations
    - Document command outputs, installation results, and system information that affects subsequent iterations
    - Record terminal session creation, reuse, and cleanup activities in history for context
+   - MANDATORY: Any information discovered that relates to the user's query must be stored in sutra memory, otherwise it will be lost in the next iteration
 7. Task Management Rules:
    - Only ONE task can be in "current" status at any time
    - Complete or move current task before assigning new current task
@@ -212,8 +214,7 @@ Example 8: File operation scenario (WRONG - do NOT complete immediately)
    - Remove completed tasks when no longer needed for reference
    - Add tasks as you discover dependencies or requirements during analysis
    - If a task is finished in the current iteration, it should be added as "completed", not "current" and if there is any pending task that needs to be moved to the current task.
-   - CRITICAL: Do NOT move tasks to "completed" status if you used file operation tools (write_to_file, apply_diff) in the current iteration - wait for user confirmation first
-   - Only mark tasks as completed AFTER user confirms file operations were successful
+   - CRITICAL: Do NOT move tasks to "completed" status if you used file operation tools (write_to_file, apply_diff) in the current iteration - wait for user confirmation first, Only mark tasks as completed AFTER user confirms file operations were successful
    - If file operations fail, keep task in "current" status for retry or correction
 8. Integration Workflow:
    - Start of Iteration by reviewing current task and pending tasks from previous sutra_memory

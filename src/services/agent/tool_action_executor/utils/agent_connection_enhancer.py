@@ -82,7 +82,7 @@ class AgentConnectionEnhancer:
 
             output_parts = []
 
-            for result_key, info in connection_info.items():
+            for info in connection_info.items():
                 output_parts.append(f"\nCONNECTIONS FOR QUERY RESULT:")
 
                 # Add clean note without emojis
@@ -150,11 +150,11 @@ class AgentConnectionEnhancer:
 
     def _generate_clean_connection_note(self, connections: Dict[str, List[Dict[str, Any]]]) -> str:
         """
-        Generate a clean note about connections without emojis.
-        
+        Generate a clean note about connections.
+
         Args:
             connections: Dictionary with incoming and outgoing connections
-            
+
         Returns:
             Clean note string for the agent
         """

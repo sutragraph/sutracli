@@ -255,7 +255,6 @@ class ResultVerifier:
         verification = {
             "tool_name": tool_name,
             "verified": True,
-            "confidence": 1.0,
             "issues": [],
             "recommendations": [],
             "result_quality": "good"
@@ -285,13 +284,11 @@ class ResultVerifier:
         
         if failed_files:
             verification["verified"] = False
-            verification["confidence"] = 0.0
             verification["issues"].append(f"Failed to write files: {failed_files}")
             verification["result_quality"] = "failed"
         
         if not successful_files:
             verification["verified"] = False
-            verification["confidence"] = 0.0
             verification["issues"].append("No files were written successfully")
             verification["result_quality"] = "failed"
         
@@ -303,18 +300,15 @@ class ResultVerifier:
         count = result.get("count", 0)
         
         if not data or data.strip() == "":
-            verification["confidence"] = 0.3
             verification["issues"].append("No search results returned")
             verification["result_quality"] = "poor"
             verification["recommendations"].append("Try different search terms or broader query")
         
         elif count == 0:
-            verification["confidence"] = 0.3
             verification["issues"].append("Zero results found")
             verification["result_quality"] = "poor"
         
         elif count > 100:
-            verification["confidence"] = 0.6
             verification["issues"].append("Too many results, may be too broad")
             verification["result_quality"] = "fair"
             verification["recommendations"].append("Refine search query to be more specific")
@@ -328,15 +322,12 @@ class ResultVerifier:
         
         if exit_code is not None and exit_code != 0:
             verification["verified"] = False
-            verification["confidence"] = 0.0
             verification["issues"].append(f"Command failed with exit code: {exit_code}")
             verification["result_quality"] = "failed"
         
         if error:
-            verification["confidence"] = max(0.0, verification["confidence"] - 0.3)
             verification["issues"].append(f"Command error: {error}")
-            if verification["confidence"] < 0.5:
-                verification["result_quality"] = "poor"
+            verification["result_quality"] = "poor"
         
         return verification
     
@@ -348,13 +339,11 @@ class ResultVerifier:
         
         if failed_files or failed_diffs:
             verification["verified"] = False
-            verification["confidence"] = 0.0
             verification["issues"].append(f"Diff application failed: files={failed_files}, diffs={failed_diffs}")
             verification["result_quality"] = "failed"
         
         if not successful_files:
             verification["verified"] = False
-            verification["confidence"] = 0.0
             verification["issues"].append("No diffs were applied successfully")
             verification["result_quality"] = "failed"
         
@@ -364,13 +353,11 @@ class ResultVerifier:
         """Verify generic tool results."""
         if result.get("error"):
             verification["verified"] = False
-            verification["confidence"] = 0.0
             verification["issues"].append(f"Tool error: {result['error']}")
             verification["result_quality"] = "failed"
         
         if result.get("success") is False:
             verification["verified"] = False
-            verification["confidence"] = 0.0
             verification["issues"].append("Tool reported failure")
             verification["result_quality"] = "failed"
         

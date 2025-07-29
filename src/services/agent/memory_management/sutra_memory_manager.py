@@ -13,7 +13,6 @@ This is the main interface that combines all the modular components:
 """
 
 from typing import Dict, List, Optional, Any
-
 from .models import Task, TaskStatus, CodeSnippet, HistoryEntry, ReasoningContext
 from .memory_operations import MemoryOperations
 from .xml_processor import XMLProcessor
@@ -122,7 +121,7 @@ class SutraMemoryManager:
         # Create enhanced history entry
         history_entry = HistoryEntry(
             timestamp=datetime.now(),
-            summary=f"Tool: {tool_name} - {validation_result.get('confidence', 0):.2f} confidence",
+            summary=f"Tool: {tool_name} - {validation_result.get('valid', True)}",
             tool_name=tool_name,
             tool_result=tool_result,
             validation_result=validation_result,
@@ -196,8 +195,7 @@ class SutraMemoryManager:
         self.reasoning_context = ReasoningContext(
             user_query=user_query,
             tool_history=[],
-            validation_results=[],
-            confidence_scores=[]
+            validation_results=[]
         )
 
     def validate_tool_result(self, tool_name: str, tool_result: dict, user_query: str) -> dict:
@@ -209,7 +207,6 @@ class SutraMemoryManager:
         # Store validation result in reasoning context
         if self.reasoning_context:
             self.reasoning_context.validation_results.append(validation_result)
-            self.reasoning_context.confidence_scores.append(validation_result.get('confidence', 0))
 
         # Add to tool history
         self.add_tool_history(tool_name, tool_result, validation_result, user_query)
@@ -239,9 +236,8 @@ Previous Tool Results Summary:
 
         for history_entry in tool_history[-3:]:  # Last 3 tools
             tool_name = history_entry.tool_name
-            confidence = history_entry.validation_result.get('confidence', 0) if history_entry.validation_result else 0
             success = history_entry.validation_result.get('valid', True) if history_entry.validation_result else True
-            reasoning_prompt += f"- {tool_name}: {'SUCCESS' if success else 'FAILED'} (confidence: {confidence:.2f})\n"
+            reasoning_prompt += f"- {tool_name}: {'SUCCESS' if success else 'FAILED'}\n"
 
         reasoning_prompt += """
 Choose the most appropriate tool and explain your reasoning briefly.
@@ -255,7 +251,6 @@ Choose the most appropriate tool and explain your reasoning briefly.
 
         analysis = {
             "likely_complete": False,
-            "confidence": 0.0,
             "reason": "",
             "missing_actions": []
         }
@@ -263,49 +258,12 @@ Choose the most appropriate tool and explain your reasoning briefly.
         if not tool_history:
             return analysis
 
-        # Simple heuristics for common task patterns
-        query_lower = user_query.lower()
-
-        # File creation/modification tasks
-        if any(word in query_lower for word in ["create", "write", "make", "generate"]):
-            write_results = [h for h in tool_history if h.tool_name == "write_to_file"]
-            if write_results:
-                last_write = write_results[-1]
-                if last_write.tool_result and last_write.tool_result.get("successful_files"):
-                    analysis["likely_complete"] = True
-                    analysis["confidence"] = 0.8
-                    analysis["reason"] = "File creation task appears complete"
-
-        # Search/find tasks
-        elif any(word in query_lower for word in ["find", "search", "look for", "show"]):
-            search_results = [h for h in tool_history if h.tool_name in ["semantic_search", "database", "search_keyword"]]
-            if search_results:
-                last_search = search_results[-1]
-                if last_search.tool_result and last_search.tool_result.get("data"):
-                    analysis["likely_complete"] = True
-                    analysis["confidence"] = 0.7
-                    analysis["reason"] = "Search task returned results"
-
-        # Command execution tasks
-        elif any(word in query_lower for word in ["run", "execute", "install", "build"]):
-            command_results = [h for h in tool_history if h.tool_name == "execute_command"]
-            if command_results:
-                last_command = command_results[-1]
-                if last_command.tool_result and last_command.tool_result.get("exit_code") == 0:
-                    analysis["likely_complete"] = True
-                    analysis["confidence"] = 0.8
-                    analysis["reason"] = "Command executed successfully"
-
         return analysis
 
     def should_continue_execution(self, validation_result: dict, consecutive_failures: int) -> bool:
         """Determine if execution should continue based on validation results"""
         # Stop on critical failures
         if not validation_result.get("valid", True):
-            return False
-
-        # Stop if confidence is too low
-        if validation_result.get("confidence", 1.0) < 0.3:
             return False
 
         # Stop if too many consecutive failures
@@ -322,7 +280,6 @@ Choose the most appropriate tool and explain your reasoning briefly.
         """Perform tool validation directly in memory manager"""
         validation_result = {
             "valid": True,
-            "confidence": 1.0,
             "issues": [],
             "suggestions": []
         }
@@ -330,7 +287,6 @@ Choose the most appropriate tool and explain your reasoning briefly.
         # Check for basic tool result structure
         if not tool_result or not isinstance(tool_result, dict):
             validation_result["valid"] = False
-            validation_result["confidence"] = 0.0
             validation_result["issues"].append("Tool result is empty or invalid structure")
             return validation_result
 
@@ -355,7 +311,6 @@ Choose the most appropriate tool and explain your reasoning briefly.
         # Check for error conditions
         if result.get("error"):
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append(f"Search error: {result['error']}")
             return validation
         return validation
@@ -365,14 +320,12 @@ Choose the most appropriate tool and explain your reasoning briefly.
         # Check for error conditions
         if result.get("error"):
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append(f"Database error: {result['error']}")
             return validation
 
         # Check if results are present
         data = result.get("data", "")
         if not data or data.strip() == "":
-            validation["confidence"] = 0.4
             validation["issues"].append("No database results returned")
             validation["suggestions"].append("Try semantic search for broader context")
 
@@ -386,13 +339,11 @@ Choose the most appropriate tool and explain your reasoning briefly.
 
         if failed_files:
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append(f"File write failed: {failed_files}")
             return validation
 
         if not successful_files:
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append("No files were written successfully")
             return validation
 
@@ -404,7 +355,6 @@ Choose the most appropriate tool and explain your reasoning briefly.
         exit_code = result.get("exit_code")
         if exit_code is not None and exit_code != 0:
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append(f"Command failed with exit code: {exit_code}")
 
             # Check for common error patterns
@@ -427,13 +377,11 @@ Choose the most appropriate tool and explain your reasoning briefly.
 
         if failed_files or failed_diffs:
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append(f"Diff application failed: files={failed_files}, diffs={failed_diffs}")
             return validation
 
         if not successful_files:
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append("No diffs were applied successfully")
             return validation
 
@@ -444,12 +392,10 @@ Choose the most appropriate tool and explain your reasoning briefly.
         # Check for basic success indicators
         if result.get("success") is False:
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append("Tool reported failure")
 
         if result.get("error"):
             validation["valid"] = False
-            validation["confidence"] = 0.0
             validation["issues"].append(f"Tool error: {result['error']}")
 
         return validation
