@@ -325,20 +325,63 @@ class TypeScriptExtractor(BaseExtractor):
         return self._generic_traversal(root_node, function_types, process_function)
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
-        """Extract class declarations."""
+        """Extract class declarations with 300-line check for methods."""
 
         def process_class(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
-            nested_types = {
-                "method_definition": BlockType.FUNCTION,
-                "field_definition": BlockType.VARIABLE,
-                "class_declaration": BlockType.CLASS,
-            }
-            return self._create_block_with_nested(
-                node, BlockType.CLASS, names, nested_types
+            # Create class block without content (since everything is in nested blocks)
+            start_line, end_line, start_col, end_col = self._get_node_position(node)
+            symbols = self._get_symbols_for_block(
+                start_line, end_line, start_col, end_col
             )
+
+            class_block = CodeBlock(
+                type=BlockType.CLASS,
+                name=names[0] if names else "anonymous",
+                content="",  # No content since everything is in nested blocks
+                symbols=symbols,
+                start_line=start_line,
+                end_line=end_line,
+                start_col=start_col,
+                end_col=end_col,
+                id=self._hash_generator.next_id(),
+            )
+
+            # Extract nested elements with 300-line check for methods
+            nested_blocks = []
+
+            # Extract methods with 300-line nested function extraction
+            function_types = {
+                "function_declaration",
+                "function_expression",
+                "arrow_function",
+                "method_definition",
+            }
+
+            def process_method(method_node):
+                if method_node.type == "method_definition":
+                    name_node = method_node.child_by_field_name("name")
+                    method_names = [self._get_node_text(name_node)] if name_node else []
+
+                    # Apply 300-line check to methods
+                    return self._create_function_block_with_nested_extraction(
+                        method_node, BlockType.FUNCTION, method_names, function_types
+                    )
+                return None
+
+            methods = self._generic_traversal(
+                node, {"method_definition"}, process_method
+            )
+            nested_blocks.extend(methods)
+
+            # Extract class-level fields only (not variables inside methods)
+            class_level_fields = self._extract_class_level_fields(node)
+            nested_blocks.extend(class_level_fields)
+
+            class_block.children = nested_blocks
+            return class_block
 
         return self._generic_traversal(root_node, {"class_declaration"}, process_class)
 
@@ -376,9 +419,13 @@ class TypeScriptExtractor(BaseExtractor):
         return self._generic_traversal(root_node, {"enum_declaration"}, process_enum)
 
     def extract_variables(self, root_node: Any) -> List[CodeBlock]:
-        """Extract variable declarations."""
+        """Extract variable declarations that are not inside classes or functions."""
 
         def process_variable(node):
+            # Skip variables that are inside classes or functions
+            if self._is_inside_class_or_function(node):
+                return None
+
             names = self._extract_variable_names(node)
             return (
                 self._create_code_block(node, BlockType.VARIABLE, names)
@@ -504,3 +551,35 @@ class TypeScriptExtractor(BaseExtractor):
             "function_expression",
             "arrow_function",
         ]
+
+    def _extract_class_level_fields(self, class_node: Any) -> List[CodeBlock]:
+        """Extract only class-level field definitions, not variables inside methods."""
+        fields = []
+
+        # Only look at direct children of the class, not nested children
+        for child in class_node.children:
+            if child.type == "field_definition":
+                # This is a direct class-level field definition
+                names = self._extract_names_from_node(child)
+                if names:
+                    field_block = self._create_code_block(
+                        child, BlockType.VARIABLE, names
+                    )
+                    fields.append(field_block)
+
+        return fields
+
+    def _is_inside_class_or_function(self, node: Any) -> bool:
+        """Check if a node is inside a class or function definition."""
+        parent = node.parent
+        while parent:
+            if parent.type in [
+                "class_declaration",
+                "function_declaration",
+                "function_expression",
+                "arrow_function",
+                "method_definition",
+            ]:
+                return True
+            parent = parent.parent
+        return False

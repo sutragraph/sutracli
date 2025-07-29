@@ -224,27 +224,69 @@ class PythonExtractor(BaseExtractor):
         return self._generic_traversal(root_node, function_types, process_function)
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
-        """Extract class definitions."""
+        """Extract class definitions with 300-line check for methods."""
 
         def process_class(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
-            nested_types = {
-                "function_definition": BlockType.FUNCTION,
-                "assignment": BlockType.VARIABLE,
-                "class_definition": BlockType.CLASS,
-            }
-            return self._create_block_with_nested(
-                node, BlockType.CLASS, names, nested_types
+            # Create class block without content (since everything is in nested blocks)
+            start_line, end_line, start_col, end_col = self._get_node_position(node)
+            symbols = self._get_symbols_for_block(
+                start_line, end_line, start_col, end_col
             )
+
+            class_block = CodeBlock(
+                type=BlockType.CLASS,
+                name=names[0] if names else "anonymous",
+                content="",  # No content since everything is in nested blocks
+                symbols=symbols,
+                start_line=start_line,
+                end_line=end_line,
+                start_col=start_col,
+                end_col=end_col,
+                id=self._hash_generator.next_id(),
+            )
+
+            # Extract nested elements with 300-line check for methods
+            nested_blocks = []
+
+            # Extract methods with 300-line nested function extraction
+            function_types = {"function_definition"}
+
+            def process_method(method_node):
+                if method_node.type == "function_definition":
+                    name_node = method_node.child_by_field_name("name")
+                    method_names = [self._get_node_text(name_node)] if name_node else []
+
+                    # Apply 300-line check to methods
+                    return self._create_function_block_with_nested_extraction(
+                        method_node, BlockType.FUNCTION, method_names, function_types
+                    )
+                return None
+
+            methods = self._generic_traversal(
+                node, {"function_definition"}, process_method
+            )
+            nested_blocks.extend(methods)
+
+            # Extract class-level variables only (not variables inside methods)
+            class_level_variables = self._extract_class_level_variables(node)
+            nested_blocks.extend(class_level_variables)
+
+            class_block.children = nested_blocks
+            return class_block
 
         return self._generic_traversal(root_node, {"class_definition"}, process_class)
 
     def extract_variables(self, root_node: Any) -> List[CodeBlock]:
-        """Extract variable assignments."""
+        """Extract variable assignments that are not inside classes or functions."""
 
         def process_variable(node):
+            # Skip variables that are inside classes or functions
+            if self._is_inside_class_or_function(node):
+                return None
+
             names = self._extract_assignment_names(node)
             return (
                 self._create_code_block(node, BlockType.VARIABLE, names)
@@ -366,3 +408,29 @@ class PythonExtractor(BaseExtractor):
             return None
 
         return self._generic_traversal(root_node, {"class_definition"}, process_enum)
+
+    def _extract_class_level_variables(self, class_node: Any) -> List[CodeBlock]:
+        """Extract only class-level variables, not variables inside methods."""
+        variables = []
+
+        # Only look at direct children of the class, not nested children
+        for child in class_node.children:
+            if child.type == "assignment":
+                # This is a direct class-level assignment
+                names = self._extract_assignment_names(child)
+                if names:
+                    variable_block = self._create_code_block(
+                        child, BlockType.VARIABLE, names
+                    )
+                    variables.append(variable_block)
+
+        return variables
+
+    def _is_inside_class_or_function(self, node: Any) -> bool:
+        """Check if a node is inside a class or function definition."""
+        parent = node.parent
+        while parent:
+            if parent.type in ["class_definition", "function_definition"]:
+                return True
+            parent = parent.parent
+        return False
