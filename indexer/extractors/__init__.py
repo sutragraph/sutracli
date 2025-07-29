@@ -6,7 +6,7 @@ Supports TypeScript and Python initially, with extensible design for other langu
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Set, Callable, Dict
 from dataclasses import dataclass, field
 from enum import Enum
 from tree_sitter_language_pack import SupportedLanguage
@@ -126,6 +126,62 @@ class BaseExtractor(ABC):
                 matching_symbols.add(symbol.name)
 
         return sorted(list(matching_symbols))
+
+    def _generic_traversal(
+        self,
+        root_node: Any,
+        target_types: Set[str],
+        processor: Callable[[Any], Optional[CodeBlock]],
+    ) -> List[CodeBlock]:
+        """Generic traversal method for extracting blocks of specific types."""
+        blocks = []
+
+        def traverse(node):
+            if node.type in target_types:
+                block = processor(node)
+                if block:
+                    blocks.append(block)
+
+            for child in node.children:
+                traverse(child)
+
+        traverse(root_node)
+        return blocks
+
+    def _create_block_with_nested(
+        self,
+        node: Any,
+        block_type: BlockType,
+        names: List[str],
+        nested_types: Dict[str, BlockType] = None,
+    ) -> CodeBlock:
+        """Create a code block and extract nested elements."""
+        block = self._create_code_block(node, block_type, names)
+
+        if nested_types:
+            nested_blocks = []
+            for node_type, nested_block_type in nested_types.items():
+                nested_blocks.extend(
+                    self._extract_nested_elements_by_type(
+                        node, {node_type}, nested_block_type
+                    )
+                )
+            block.children = nested_blocks
+
+        return block
+
+    def _extract_nested_elements_by_type(
+        self, parent_node: Any, target_types: Set[str], block_type: BlockType
+    ) -> List[CodeBlock]:
+        """Generic method to extract nested elements of specific types."""
+
+        def processor(node):
+            names = self._extract_names_from_node(node)
+            if names:
+                return self._create_code_block(node, block_type, names)
+            return None
+
+        return self._generic_traversal(parent_node, target_types, processor)
 
     def _count_function_lines(self, node: Any) -> int:
         """Count the number of lines in a function node.
