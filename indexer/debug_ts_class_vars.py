@@ -1,34 +1,36 @@
 #!/usr/bin/env python3
-"""Debug script to examine AST structure for class variables."""
+"""Debug script to examine TypeScript AST structure for class variables."""
 
 import tempfile
 from pathlib import Path
 from ast_parser import ASTParser
 
 
-def create_simple_class():
-    """Create a simple class with class variables."""
-    test_dir = tempfile.mkdtemp(prefix="ast_debug_")
+def create_simple_ts_class():
+    """Create a simple TypeScript class with class variables."""
+    test_dir = tempfile.mkdtemp(prefix="ts_ast_debug_")
 
     simple_class = """
-class TestClass:
-    CLASS_VAR = "hello"
-    ANOTHER_VAR = 42
+class TestClass {
+    static CLASS_VAR = "hello";
+    private ANOTHER_VAR = 42;
     
-    def __init__(self):
-        self.instance_var = "world"
+    constructor() {
+        this.instanceVar = "world";
+    }
+}
 """
 
-    file_path = Path(test_dir) / "simple.py"
+    file_path = Path(test_dir) / "simple.ts"
     with open(file_path, "w") as f:
         f.write(simple_class)
 
     return test_dir, file_path
 
 
-def debug_ast_structure():
-    """Debug the AST structure to understand class variable placement."""
-    test_dir, file_path = create_simple_class()
+def debug_ts_ast_structure():
+    """Debug the TypeScript AST structure to understand class variable placement."""
+    test_dir, file_path = create_simple_ts_class()
 
     try:
         # Parse the file
@@ -38,7 +40,7 @@ def debug_ast_structure():
         from tree_sitter_language_pack import get_language
         import tree_sitter
 
-        language = get_language("python")
+        language = get_language("typescript")
         ts_parser = tree_sitter.Parser(language)
 
         with open(file_path, "rb") as f:
@@ -58,7 +60,7 @@ def debug_ast_structure():
             for child in node.children:
                 print_ast_structure(child, depth + 1)
 
-        print("AST Structure:")
+        print("TypeScript AST Structure:")
         print("=" * 60)
         print_ast_structure(root_node)
 
@@ -89,4 +91,4 @@ def debug_ast_structure():
 
 
 if __name__ == "__main__":
-    debug_ast_structure()
+    debug_ts_ast_structure()

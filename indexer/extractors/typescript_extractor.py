@@ -12,6 +12,17 @@ from . import BaseExtractor, CodeBlock, BlockType
 class TypeScriptExtractor(BaseExtractor):
     """TypeScript-specific extractor for code blocks."""
 
+    # Define function types once as class constants
+    FUNCTION_TYPES = {
+        "function_declaration",
+        "function_expression",
+        "arrow_function",
+        "method_definition",
+    }
+
+    CLASS_TYPES = {"class_declaration"}
+    VARIABLE_TYPES = {"variable_declaration"}
+
     def __init__(
         self, language: SupportedLanguage, file_id: int = 0, symbol_extractor=None
     ):
@@ -28,27 +39,6 @@ class TypeScriptExtractor(BaseExtractor):
         elif node.type == "property_identifier":
             return self._get_node_text(node)
         return ""
-
-    def _generic_traversal(
-        self,
-        root_node: Any,
-        target_types: Set[str],
-        processor: Callable[[Any], Optional[CodeBlock]],
-    ) -> List[CodeBlock]:
-        """Generic traversal method for extracting blocks of specific types."""
-        blocks = []
-
-        def traverse(node):
-            if node.type in target_types:
-                block = processor(node)
-                if block:
-                    blocks.append(block)
-
-            for child in node.children:
-                traverse(child)
-
-        traverse(root_node)
-        return blocks
 
     def _extract_names_from_node(self, node: Any) -> List[str]:
         """Extract all identifier names from a node (handles various patterns)."""
@@ -89,41 +79,6 @@ class TypeScriptExtractor(BaseExtractor):
             find_identifiers(node)
 
         return list(set(names))  # Remove duplicates
-
-    def _create_block_with_nested(
-        self,
-        node: Any,
-        block_type: BlockType,
-        names: List[str],
-        nested_types: Dict[str, BlockType] = None,
-    ) -> CodeBlock:
-        """Create a code block and extract nested elements."""
-        block = self._create_code_block(node, block_type, names)
-
-        if nested_types:
-            nested_blocks = []
-            for node_type, nested_block_type in nested_types.items():
-                nested_blocks.extend(
-                    self._extract_nested_elements_by_type(
-                        node, {node_type}, nested_block_type
-                    )
-                )
-            block.children = nested_blocks
-
-        return block
-
-    def _extract_nested_elements_by_type(
-        self, parent_node: Any, target_types: Set[str], block_type: BlockType
-    ) -> List[CodeBlock]:
-        """Generic method to extract nested elements of specific types."""
-
-        def processor(node):
-            names = self._extract_names_from_node(node)
-            if names:
-                return self._create_code_block(node, block_type, names)
-            return None
-
-        return self._generic_traversal(parent_node, target_types, processor)
 
     def _replace_nested_functions_with_references(
         self, original_content: str, nested_functions: List[CodeBlock]
@@ -306,23 +261,16 @@ class TypeScriptExtractor(BaseExtractor):
     def extract_functions(self, root_node: Any) -> List[CodeBlock]:
         """Extract function declarations with nested function extraction for large functions."""
 
-        function_types = {
-            "function_declaration",
-            "function_expression",
-            "arrow_function",
-            "method_definition",
-        }
-
         def process_function(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
             # Use the new nested function extraction logic
             return self._create_function_block_with_nested_extraction(
-                node, BlockType.FUNCTION, names, function_types
+                node, BlockType.FUNCTION, names, self.FUNCTION_TYPES
             )
 
-        return self._generic_traversal(root_node, function_types, process_function)
+        return self._generic_traversal(root_node, self.FUNCTION_TYPES, process_function)
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
         """Extract class declarations with 300-line check for methods."""
@@ -353,13 +301,6 @@ class TypeScriptExtractor(BaseExtractor):
             nested_blocks = []
 
             # Extract methods with 300-line nested function extraction
-            function_types = {
-                "function_declaration",
-                "function_expression",
-                "arrow_function",
-                "method_definition",
-            }
-
             def process_method(method_node):
                 if method_node.type == "method_definition":
                     name_node = method_node.child_by_field_name("name")
@@ -367,7 +308,10 @@ class TypeScriptExtractor(BaseExtractor):
 
                     # Apply 300-line check to methods
                     return self._create_function_block_with_nested_extraction(
-                        method_node, BlockType.FUNCTION, method_names, function_types
+                        method_node,
+                        BlockType.FUNCTION,
+                        method_names,
+                        self.FUNCTION_TYPES,
                     )
                 return None
 
@@ -383,7 +327,7 @@ class TypeScriptExtractor(BaseExtractor):
             class_block.children = nested_blocks
             return class_block
 
-        return self._generic_traversal(root_node, {"class_declaration"}, process_class)
+        return self._generic_traversal(root_node, self.CLASS_TYPES, process_class)
 
     def extract_interfaces(self, root_node: Any) -> List[CodeBlock]:
         """Extract interface declarations."""
@@ -419,13 +363,10 @@ class TypeScriptExtractor(BaseExtractor):
         return self._generic_traversal(root_node, {"enum_declaration"}, process_enum)
 
     def extract_variables(self, root_node: Any) -> List[CodeBlock]:
-        """Extract variable declarations that are not inside classes or functions."""
+        """Extract variable declarations."""
+        blocks = []
 
         def process_variable(node):
-            # Skip variables that are inside classes or functions
-            if self._is_inside_class_or_function(node):
-                return None
-
             names = self._extract_variable_names(node)
             return (
                 self._create_code_block(node, BlockType.VARIABLE, names)
@@ -433,9 +374,14 @@ class TypeScriptExtractor(BaseExtractor):
                 else None
             )
 
-        return self._generic_traversal(
-            root_node, {"variable_declaration"}, process_variable
-        )
+        # Only look at direct children of root_node
+        for child in root_node.children:
+            if child.type in self.VARIABLE_TYPES:
+                block = process_variable(child)
+                if block:
+                    blocks.append(block)
+
+        return blocks
 
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
         """Extract all types of code blocks."""
@@ -556,30 +502,21 @@ class TypeScriptExtractor(BaseExtractor):
         """Extract only class-level field definitions, not variables inside methods."""
         fields = []
 
-        # Only look at direct children of the class, not nested children
+        # Look for the class body
         for child in class_node.children:
-            if child.type == "field_definition":
-                # This is a direct class-level field definition
-                names = self._extract_names_from_node(child)
-                if names:
-                    field_block = self._create_code_block(
-                        child, BlockType.VARIABLE, names
-                    )
-                    fields.append(field_block)
+            if child.type == "class_body":
+                # Now look at direct children of the class_body for field definitions
+                for body_child in child.children:
+                    if body_child.type in [
+                        "field_definition",
+                        "public_field_definition",
+                    ]:
+                        # This is a class-level field definition
+                        names = self._extract_names_from_node(body_child)
+                        if names:
+                            field_block = self._create_code_block(
+                                body_child, BlockType.VARIABLE, names
+                            )
+                            fields.append(field_block)
 
         return fields
-
-    def _is_inside_class_or_function(self, node: Any) -> bool:
-        """Check if a node is inside a class or function definition."""
-        parent = node.parent
-        while parent:
-            if parent.type in [
-                "class_declaration",
-                "function_declaration",
-                "function_expression",
-                "arrow_function",
-                "method_definition",
-            ]:
-                return True
-            parent = parent.parent
-        return False
