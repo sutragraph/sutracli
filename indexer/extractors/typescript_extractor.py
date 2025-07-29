@@ -336,13 +336,8 @@ class TypeScriptExtractor(BaseExtractor):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
-            nested_types = {
-                "property_signature": BlockType.VARIABLE,
-                "method_signature": BlockType.FUNCTION,
-            }
-            return self._create_block_with_nested(
-                node, BlockType.INTERFACE, names, nested_types
-            )
+            # Don't extract nested blocks for interfaces
+            return self._create_code_block(node, BlockType.INTERFACE, names)
 
         return self._generic_traversal(
             root_node, {"interface_declaration"}, process_interface
