@@ -11,7 +11,7 @@ from typing import Optional, Union, Dict, List
 
 from tree_sitter_language_pack import SupportedLanguage
 from .ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
-from .supported_languages import LANGUAGE_EXTENSION_MAP
+from .langauge_extension_map import LANGUAGE_EXTENSION_MAP
 
 
 def get_language_from_extension(
@@ -85,12 +85,13 @@ def should_ignore_directory(dir_path: Union[str, Path]) -> bool:
     return False
 
 
-def is_text_file(file_path: Union[str, Path]) -> bool:
+def is_text_file(file_path: Union[str, Path], chunk_size: int = 512) -> bool:
     """
-    Check if a file is likely a text file by trying to read it.
+    Check if a file is likely a text file by analyzing its content.
 
     Args:
         file_path: Path to the file
+        chunk_size: Number of bytes to read for analysis (default: 512)
 
     Returns:
         True if file appears to be text, False otherwise
@@ -101,27 +102,27 @@ def is_text_file(file_path: Union[str, Path]) -> bool:
         return False
 
     try:
-        # Try to read first 512 bytes to check for binary content
         with open(file_path, "rb") as f:
-            chunk = f.read(512)
+            chunk = f.read(chunk_size)
 
-        # Check for null bytes which indicate binary content
+        # Empty files are considered text
+        if not chunk:
+            return True
+
+        # Check for null bytes which strongly indicate binary content
         if b"\x00" in chunk:
             return False
 
-        # Try to decode as UTF-8
-        try:
-            chunk.decode("utf-8")
-            return True
-        except UnicodeDecodeError:
-            # Try other common encodings
-            for encoding in ["latin-1", "cp1252", "ascii"]:
-                try:
-                    chunk.decode(encoding)
-                    return True
-                except UnicodeDecodeError:
-                    continue
-            return False
+        # Try to decode using common encodings
+        encodings = ["utf-8", "latin-1", "cp1252", "ascii"]
+        for encoding in encodings:
+            try:
+                chunk.decode(encoding)
+                return True
+            except UnicodeDecodeError:
+                continue
+
+        return False
 
     except Exception:
         return False

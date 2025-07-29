@@ -7,6 +7,7 @@ relationships between files based on import statements.
 
 import os
 import hashlib
+import zlib
 from pathlib import Path
 from typing import Dict, Optional, Union, Any, cast
 from tree_sitter import Parser
@@ -143,14 +144,15 @@ class ASTParser:
                 "error": f"Unsupported file type: {file_path}",
             }
 
-        # Extract blocks using the main extractor
-        blocks = self._extractor.extract_from_ast(ast_tree, language)
+        # Create file ID and extract blocks
+        file_id = zlib.crc32(str(file_path).encode()) & 0xFFFFFFFF
+        blocks = self._extractor.extract_from_ast(ast_tree, language, file_id)
 
         return {
             "ast": ast_tree,
             "blocks": blocks,
             "language": language,
-            "id": hashlib.md5(str(file_path).encode()).hexdigest(),
+            "id": file_id,
             "file_path": str(file_path),
             "content": ast_tree.root_node.text,
             "content_hash": hashlib.sha256(ast_tree.root_node.text).hexdigest(),

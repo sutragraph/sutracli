@@ -310,11 +310,6 @@ class PythonExtractor(BaseExtractor):
                                     names.append(self._get_node_text(name_node))
         return names
 
-    # Note: Interface and enum extraction methods removed as they're not applicable to Python
-    def extract_interfaces(self, root_node: Any) -> List[CodeBlock]:
-        """Extract interfaces (not applicable to Python)."""
-        return []
-
     def extract_enums(self, root_node: Any) -> List[CodeBlock]:
         """Extract enums (Python enum.Enum classes)."""
 
