@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 from tree_sitter_language_pack import SupportedLanguage
+from utils.incremental_hash import IncrementalHashGenerator
 
 
 class BlockType(Enum):
@@ -28,6 +29,7 @@ class BlockType(Enum):
 class CodeBlock:
     """Represents a code block extracted from AST."""
 
+    id: int = 0  # Will be set by extractor
     type: BlockType
     name: str
     content: str
@@ -42,17 +44,21 @@ class CodeBlock:
 class BaseExtractor(ABC):
     """Base class for language-specific AST extractors."""
 
-    def __init__(self, language: SupportedLanguage, symbol_extractor=None):
+    def __init__(
+        self, language: SupportedLanguage, file_id: int = 0, symbol_extractor=None
+    ):
         """Initialize the base extractor.
 
         Args:
             language: Programming language name
+            file_id: Numeric ID of the file being processed
             symbol_extractor: Optional symbol extractor for enhanced analysis
         """
         self.language = language
         self.symbol_extractor = symbol_extractor
         self._all_symbols: List[Any] = []
         self._source_content: str = ""
+        self._hash_generator = IncrementalHashGenerator(file_id)
 
     def _get_node_text(self, node: Any) -> str:
         """Get text content of a node."""
@@ -144,6 +150,7 @@ class BaseExtractor(ABC):
         symbols = self._get_symbols_for_block(start_line, end_line, start_col, end_col)
 
         return CodeBlock(
+            id=self._hash_generator.next_id(),
             type=block_type,
             name=primary_name,
             content=content,
@@ -235,13 +242,14 @@ class Extractor:
         self._extractors[language] = extractor_class
 
     def extract_from_ast(
-        self, ast_tree: Any, language: SupportedLanguage
+        self, ast_tree: Any, language: SupportedLanguage, file_id: int = 0
     ) -> List[CodeBlock]:
         """Extract code blocks from an AST tree using language-specific extractor.
 
         Args:
             ast_tree: The AST tree to extract from
             language: Programming language
+            file_id: Numeric ID of the file being processed
 
         Returns:
             List of extracted CodeBlock objects
@@ -249,7 +257,7 @@ class Extractor:
         if language not in self._extractors:
             return []
 
-        extractor = self._extractors[language](language, self.symbol_extractor)
+        extractor = self._extractors[language](language, file_id, self.symbol_extractor)
         return extractor.extract_all(ast_tree.root_node)
 
     def get_blocks_by_type(
