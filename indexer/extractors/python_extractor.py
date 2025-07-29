@@ -12,8 +12,10 @@ from . import BaseExtractor, CodeBlock, BlockType
 class PythonExtractor(BaseExtractor):
     """Python-specific extractor for code blocks."""
 
-    def __init__(self, language: SupportedLanguage, symbol_extractor=None):
-        super().__init__(language, symbol_extractor)
+    def __init__(
+        self, language: SupportedLanguage, file_id: int = 0, symbol_extractor=None
+    ):
+        super().__init__(language, file_id, symbol_extractor)
 
     # ============================================================================
     # GENERIC HELPER METHODS
@@ -103,6 +105,41 @@ class PythonExtractor(BaseExtractor):
 
         return self._generic_traversal(parent_node, target_types, processor)
 
+    def _replace_nested_functions_with_references(
+        self, original_content: str, nested_functions: List[CodeBlock]
+    ) -> str:
+        """Replace nested function content with block references for Python."""
+        if not nested_functions:
+            return original_content
+
+        # Sort nested functions by start position (descending) to avoid offset issues
+        sorted_functions = sorted(
+            nested_functions, key=lambda f: f.start_line, reverse=True
+        )
+
+        for func in sorted_functions:
+            # Find the nested function in the parent content
+            func_content = func.content
+            func_lines = func_content.split("\n")
+
+            # Create Python comment reference
+            reference = f"# [BLOCK_REF:{func.id}]"
+
+            # For Python, find the function signature (lines ending with :)
+            signature_lines = []
+            for line in func_lines:
+                signature_lines.append(line)
+                if line.strip().endswith(":"):
+                    # Found the end of signature, add reference and stop
+                    signature_lines.append(f"    {reference}")
+                    break
+            replacement = "\n".join(signature_lines)
+
+            # Replace the entire function content with the signature + reference
+            original_content = original_content.replace(func_content, replacement)
+
+        return original_content
+
     # ============================================================================
     # SPECIALIZED NAME EXTRACTION METHODS
     # ============================================================================
@@ -171,23 +208,20 @@ class PythonExtractor(BaseExtractor):
         return self._extract_top_level_exports(root_node)
 
     def extract_functions(self, root_node: Any) -> List[CodeBlock]:
-        """Extract function definitions."""
+        """Extract function definitions with nested function extraction for large functions."""
+
+        function_types = {"function_definition"}
 
         def process_function(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
-            nested_types = {
-                "function_definition": BlockType.FUNCTION,
-                "assignment": BlockType.VARIABLE,
-            }
-            return self._create_block_with_nested(
-                node, BlockType.FUNCTION, names, nested_types
+            # Use the new nested function extraction logic
+            return self._create_function_block_with_nested_extraction(
+                node, BlockType.FUNCTION, names, function_types
             )
 
-        return self._generic_traversal(
-            root_node, {"function_definition"}, process_function
-        )
+        return self._generic_traversal(root_node, function_types, process_function)
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
         """Extract class definitions."""
@@ -222,6 +256,9 @@ class PythonExtractor(BaseExtractor):
 
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
         """Extract all types of code blocks."""
+        # First extract all symbols for enhanced analysis
+        self._extract_all_symbols(root_node)
+
         all_blocks = []
         all_blocks.extend(self.extract_imports(root_node))
         all_blocks.extend(self.extract_exports(root_node))
