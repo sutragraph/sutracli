@@ -60,15 +60,26 @@ Critical: Update your task list in every iteration based on your thinking:
 
 Systematic tool usage flow:
 
-Phase 1: Structure and smart dependency discovery
-- Use `list_files` to explore project structure and identify key directories (src/, routes/, api/, services/, controllers/)
-- Use `database` tool to examine dependency files for data communication packages only:
+Phase 1: Package Discovery and Analysis
+- Use `list_files` to explore project structure and identify package files (package.json, pom.xml, requirements.txt, pyproject.toml, go.mod, etc.)
+- Use `database` tool to examine package files to identify used packages in the current project:
   - Look for HTTP clients, API frameworks for service communication
   - Look for WebSocket libraries, Message queue libraries for service messaging
   - MANDATORY EXCLUSIONS - Ignore these external packages: database drivers, infrastructure SDKs, external API clients, configuration libraries that don't represent inter-service communication
-- Add specific search tasks to Sutra Memory based on found packages
+- Create task list in Sutra Memory about which packages are used and their import statement patterns based on language
 
-Phase 2: Efficient pattern discovery and iterative exploration
+Phase 2: Import Statement Discovery and Pattern Analysis
+- Search for import statements of identified packages using their language-specific import patterns:
+  - JavaScript/Node.js: `require('package-name')`, `import ... from 'package-name'`
+  - Python: `import package_name`, `from package_name import ...`
+  - Java: `import package.name.*`, `import package.name.ClassName`
+  - Go: `import "package-name"`, `import alias "package-name"`
+  - Use search_keyword with regex patterns based on discovered packages
+- After finding imports in files, open any 1 representative file to understand how user is using that package
+- Check user's usage patterns in that project using regex search to get all code snippets where packages are used
+
+Phase 3: Usage Pattern Discovery and Connection Analysis
+- Based on discovered usage patterns, search for wrapper functions or user-defined patterns that use these packages
 - Use efficient regex searches with context and iterative exploration:
   - Set regex=true and after_lines=3 (minimum) to capture complete usage context with line numbers
   - Continuous find-store-explore cycle: As you find patterns, store them in sutra memory and immediately explore further
@@ -111,7 +122,9 @@ Phase 2: Efficient pattern discovery and iterative exploration
     - For WebSocket libraries: "WebSocket connection setup"
     - For message queue libraries: "message queue publisher consumer"
 
-Phase 3: Cleanup and completion
+- Store all discovered code snippets where packages are used in sutra memory for cross-indexing analysis
+
+Phase 4: Cleanup and completion
 - Remove irrelevant stored code from Sutra Memory
 - Mandatory: Use `attempt_completion` tool with JSON format when all inter-service data connections are discovered and verified
 - Critical: Even if no connections are found, you must use attempt_completion with empty arrays to properly complete the analysis
@@ -130,13 +143,6 @@ Critical completion rules:
 - Base library call exclusion: Do not store base library calls that are inside wrapper functions - these are implementation details, not meaningful connection points
 - Parameter documentation: Mention variable names in descriptions, keep code snippets unchanged
 - Complete parameter capture: For calls like `serviceApiCall(endpoint, method, data)`, mention that endpoint, method, and data are variables used in this API call
-
-For detailed examples of tool usage, wrapper function discovery, and variable resolution, refer to the Tool Usage Examples section which provides comprehensive examples of:
-- How to use semantic_search and search_keyword effectively
-- Step-by-step wrapper function analysis approach
-- Environment and configuration variable integration
-- Variable resolution techniques
-- Comprehensive description templates
 
 3. If multiple connection discovery actions are needed, use one tool at a time per message to accomplish the analysis iteratively, with each tool use being informed by the result of the previous tool use. Do not assume the outcome of any tool use. Each step must be informed by the previous step's result and tracked in your Sutra Memory.
 
@@ -189,8 +195,8 @@ By waiting for and carefully considering the user's response after each tool use
     - Variable value resolution: All descriptions must include actual resolved values, not just variable names (e.g., queue name 'user_notifications' not just "queueName variable")
 
 10. Critical storage rules:
-    - Sutra memory: Store full relevant code sections without unnecessary chunking - can include multiple related connections in one code block for analysis
-    - Attempt_completion output: Must have exactly one connection per entry with specific line numbers - separate entries for each API endpoint, HTTP call, or connection
-    - This allows comprehensive analysis in sutra memory while ensuring detailed individual entries in final output
+    - Sutra memory: Store code together in one code block if possible - can include multiple related connections in one code block for analysis purposes without unnecessary chunking
+    - Attempt_completion output: Must return each connection point lines separately with specific line numbers - separate entries for each API endpoint, HTTP call, or connection
+    - This allows comprehensive analysis in sutra memory while ensuring every single connection gets its own detailed entry in final output
 
 """
