@@ -447,10 +447,10 @@ class AgentService:
         self, user_query: str, current_iteration: int
     ) -> Dict[str, Any]:
         """Get XML response from LLM using the new prompt system with retry on XML parsing failures."""
-        if not get_user_confirmation_for_llm_call(f"Agent LLM call (iteration {current_iteration})"):
+        if not get_user_confirmation_for_llm_call():
             logger.info("User cancelled Agent LLM call in debug mode")
             return "User cancelled the operation in debug mode"
-        
+
         max_retries = 5
         retry_count = 0
 

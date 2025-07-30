@@ -23,7 +23,7 @@ def is_debug_mode() -> bool:
     return _debug_mode
 
 
-def get_user_confirmation_for_llm_call(context: str = "LLM call") -> bool:
+def get_user_confirmation_for_llm_call() -> bool:
     """
     Ask user for confirmation before making an LLM call in debug mode.
     
@@ -35,9 +35,8 @@ def get_user_confirmation_for_llm_call(context: str = "LLM call") -> bool:
     """
     if not is_debug_mode():
         return True
-    
+
     try:
-        print(f"\n🔍 DEBUG MODE: About to make {context}")
         response = input("Do you want to make new call? (y/n): ").lower().strip()
         return response in ['yes', 'y']
     except (KeyboardInterrupt, EOFError):

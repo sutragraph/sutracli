@@ -427,10 +427,10 @@ class CrossIndexService:
             LLM response
         """
         try:
-            if not get_user_confirmation_for_llm_call(f"Cross-indexing LLM call (iteration {current_iteration})"):
+            if not get_user_confirmation_for_llm_call():
                 logger.info("User cancelled Cross-indexing LLM call in debug mode")
                 return "User cancelled the operation in debug mode"
-            
+
             # Get cross-index system prompt
             system_prompt = self.prompt_manager.cross_index_system_prompt()
 
@@ -1077,41 +1077,41 @@ class CrossIndexService:
             if not file_path:
                 logger.warning("Empty file_path provided to _get_file_hash_id")
                 return None
-            
+
             # Resolve relative paths to absolute paths
             import os
             from pathlib import Path
-            
+
             # Convert to absolute path if it's relative
             if not os.path.isabs(file_path):
                 absolute_file_path = str(Path(file_path).resolve())
                 logger.debug(f"Resolved relative path {file_path} to absolute path {absolute_file_path}")
             else:
                 absolute_file_path = file_path
-            
+
             # Try with absolute path first
             result = self.db_connection.execute_query(
                 "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
                 (project_id, absolute_file_path),
             )
-            
+
             if result:
                 file_hash_id = result[0]["id"]
                 logger.debug(f"Found file_hash_id {file_hash_id} for {absolute_file_path} in project {project_id}")
                 return file_hash_id
-            
+
             # If not found with absolute path, try with original path (in case it was stored as relative)
             if absolute_file_path != file_path:
                 result = self.db_connection.execute_query(
                     "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
                     (project_id, file_path),
                 )
-                
+
                 if result:
                     file_hash_id = result[0]["id"]
                     logger.debug(f"Found file_hash_id {file_hash_id} for {file_path} (original path) in project {project_id}")
                     return file_hash_id
-            
+
             # If still not found, try to find by filename match (fallback)
             filename = os.path.basename(file_path)
             if filename:
@@ -1119,7 +1119,7 @@ class CrossIndexService:
                     "SELECT id, file_path FROM file_hashes WHERE project_id = ? AND file_path LIKE ?",
                     (project_id, f"%{filename}"),
                 )
-                
+
                 if result:
                     # If multiple matches, prefer exact filename match
                     for row in result:
@@ -1127,10 +1127,10 @@ class CrossIndexService:
                             file_hash_id = row["id"]
                             logger.debug(f"Found file_hash_id {file_hash_id} by filename match for {filename} -> {row['file_path']} in project {project_id}")
                             return file_hash_id
-            
+
             logger.warning(f"No file_hash_id found for {file_path} (absolute: {absolute_file_path}) in project {project_id}")
             return None
-                
+
         except Exception as e:
             logger.error(f"Error getting file_hash_id for {file_path}: {e}")
             return None
@@ -1214,7 +1214,7 @@ class CrossIndexService:
                 incoming_connections, outgoing_connections
             )
 
-            if not get_user_confirmation_for_llm_call("Cross-indexing connection matching LLM call"):
+            if not get_user_confirmation_for_llm_call():
                 logger.info("User cancelled Cross-indexing connection matching LLM call in debug mode")
                 return {
                     "success": False,
