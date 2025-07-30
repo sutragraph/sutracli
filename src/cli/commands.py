@@ -973,6 +973,11 @@ def handle_cross_indexing_command(args) -> None:
                 analysis_result = None
                 break
 
+            elif update_type == "user_cancelled":
+                print(f"❌ User cancelled the operation")
+                analysis_result = None
+                break
+
             elif update_type == "cross_index_error":
                 error = update.get("error", "Critical error")
                 print(f"❌ Critical error: {error}")

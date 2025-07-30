@@ -109,6 +109,15 @@ class CrossIndexService:
                         project_path,
                     )
 
+                    # Check if user cancelled the operation
+                    if isinstance(xml_response, dict) and xml_response.get("user_cancelled"):
+                        yield {
+                            "type": "user_cancelled",
+                            "iteration": current_iteration,
+                            "message": xml_response.get("message", "User cancelled the operation"),
+                        }
+                        return
+
                     # Process XML response using action executor
                     task_complete = False
                     analysis_result = None
@@ -298,6 +307,15 @@ class CrossIndexService:
                                                 )
                                             )
 
+                                            # Check if user cancelled connection matching
+                                            if matching_result.get("user_cancelled"):
+                                                yield {
+                                                    "type": "user_cancelled",
+                                                    "iteration": current_iteration,
+                                                    "message": "User cancelled connection matching",
+                                                }
+                                                return
+
                                             if matching_result.get("success"):
                                                 yield {
                                                     "type": "cross_index_success",
@@ -429,7 +447,8 @@ class CrossIndexService:
         try:
             if not get_user_confirmation_for_llm_call():
                 logger.info("User cancelled Cross-indexing LLM call in debug mode")
-                return "User cancelled the operation in debug mode"
+                # Return a special marker to indicate user cancellation
+                return {"user_cancelled": True, "message": "User cancelled the operation in debug mode"}
 
             # Get cross-index system prompt
             system_prompt = self.prompt_manager.cross_index_system_prompt()
@@ -1218,6 +1237,7 @@ class CrossIndexService:
                 logger.info("User cancelled Cross-indexing connection matching LLM call in debug mode")
                 return {
                     "success": False,
+                    "user_cancelled": True,
                     "error": "User cancelled connection matching in debug mode",
                     "message": "Connection matching cancelled by user in debug mode",
                 }
