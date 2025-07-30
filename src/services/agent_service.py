@@ -1,7 +1,6 @@
 """Agent Service with unified tool status handling."""
 
 import time
-from pathlib import Path
 from typing import Dict, Any, List, Optional, Iterator
 from loguru import logger
 
@@ -17,6 +16,7 @@ from .project_manager import ProjectManager
 from config import config
 from utils.xml_parsing_exceptions import XMLParsingFailedException
 from utils.performance_monitor import get_performance_monitor, performance_timer
+from utils.debug_utils import get_user_confirmation_for_llm_call
 
 
 class AgentService:
@@ -447,6 +447,10 @@ class AgentService:
         self, user_query: str, current_iteration: int
     ) -> Dict[str, Any]:
         """Get XML response from LLM using the new prompt system with retry on XML parsing failures."""
+        if not get_user_confirmation_for_llm_call(f"Agent LLM call (iteration {current_iteration})"):
+            logger.info("User cancelled Agent LLM call in debug mode")
+            return "User cancelled the operation in debug mode"
+        
         max_retries = 5
         retry_count = 0
 

@@ -15,6 +15,7 @@ from ...agent.memory_management.code_fetcher import CodeFetcher
 from ..prompts.cross_index_prompt_manager import CrossIndexPromptManager
 from ...agent.tool_action_executor.tool_action_executor import ActionExecutor
 from ..utils import infer_technology_type
+from utils.debug_utils import get_user_confirmation_for_llm_call
 
 class CrossIndexService:
     """
@@ -426,6 +427,10 @@ class CrossIndexService:
             LLM response
         """
         try:
+            if not get_user_confirmation_for_llm_call(f"Cross-indexing LLM call (iteration {current_iteration})"):
+                logger.info("User cancelled Cross-indexing LLM call in debug mode")
+                return "User cancelled the operation in debug mode"
+            
             # Get cross-index system prompt
             system_prompt = self.prompt_manager.cross_index_system_prompt()
 
@@ -1208,6 +1213,14 @@ class CrossIndexService:
             matching_prompt = self.prompt_manager.get_connection_matching_prompt(
                 incoming_connections, outgoing_connections
             )
+
+            if not get_user_confirmation_for_llm_call("Cross-indexing connection matching LLM call"):
+                logger.info("User cancelled Cross-indexing connection matching LLM call in debug mode")
+                return {
+                    "success": False,
+                    "error": "User cancelled connection matching in debug mode",
+                    "message": "Connection matching cancelled by user in debug mode",
+                }
 
             # Call LLM for connection matching - no system prompt needed, return raw response
             logger.debug("🔗 Starting connection matching analysis...")
