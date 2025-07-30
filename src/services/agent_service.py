@@ -312,11 +312,9 @@ class AgentService:
                         if not validation_result["valid"]:
                             print(f"⚠️  Tool validation failed: {validation_result['issues']}")
                             if validation_result["suggestions"]:
-                                print(f"💡 Suggestions: {validation_result['suggestions']}")
-                        else:
-                            confidence = validation_result["confidence"]
-                            if confidence < 0.7:
-                                print(f"⚠️  Low confidence result: {confidence:.2f}")
+                                print(
+                                    f"💡 Suggestions: {validation_result['suggestions']}"
+                                )
 
                         # Show verification results
                         if not verification_result["verified"]:
@@ -400,7 +398,7 @@ class AgentService:
                 # Check if task is likely complete using SutraMemoryManager
                 if not task_complete:
                     completion_analysis = self.memory_manager.analyze_task_completion(user_query)
-                    if completion_analysis["likely_complete"] and completion_analysis["confidence"] > 0.7:
+                    if completion_analysis["likely_complete"]:
                         print(f"🎯 Task likely complete: {completion_analysis['reason']}")
                         task_complete = True
 
