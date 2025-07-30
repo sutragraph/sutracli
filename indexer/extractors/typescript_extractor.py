@@ -23,10 +23,8 @@ class TypeScriptExtractor(BaseExtractor):
     CLASS_TYPES = {"class_declaration"}
     VARIABLE_TYPES = {"variable_declaration"}
 
-    def __init__(
-        self, language: SupportedLanguage, file_id: int = 0, symbol_extractor=None
-    ):
-        super().__init__(language, file_id, symbol_extractor)
+    def __init__(self, language: SupportedLanguage, file_id: int = 0):
+        super().__init__(language, file_id)
 
     # ============================================================================
     # GENERIC HELPER METHODS
@@ -281,15 +279,11 @@ class TypeScriptExtractor(BaseExtractor):
 
             # Create class block without content (since everything is in nested blocks)
             start_line, end_line, start_col, end_col = self._get_node_position(node)
-            symbols = self._get_symbols_for_block(
-                start_line, end_line, start_col, end_col
-            )
 
             class_block = CodeBlock(
                 type=BlockType.CLASS,
                 name=names[0] if names else "anonymous",
                 content="",  # No content since everything is in nested blocks
-                symbols=symbols,
                 start_line=start_line,
                 end_line=end_line,
                 start_col=start_col,
@@ -380,9 +374,6 @@ class TypeScriptExtractor(BaseExtractor):
 
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
         """Extract all types of code blocks."""
-        # First extract all symbols for enhanced analysis
-        self._extract_all_symbols(root_node)
-
         all_blocks = []
         all_blocks.extend(self.extract_imports(root_node))
         all_blocks.extend(self.extract_exports(root_node))

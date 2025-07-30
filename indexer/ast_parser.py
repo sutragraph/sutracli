@@ -31,17 +31,12 @@ class ASTParser:
     AST parser with code block extraction capabilities.
     """
 
-    def __init__(self, symbol_extractor=None):
+    def __init__(self):
         """
         Initialize the AST parser.
-
-        Args:
-            symbol_extractor: Optional symbol extractor for enhanced code block analysis.
-                            If provided, will be used by code block extractors to identify
-                            symbols within extracted blocks.
         """
         self._parser_cache: Dict[str, Parser] = {}
-        self._extractor = Extractor(symbol_extractor=symbol_extractor)
+        self._extractor = Extractor()
         self._relationship_extractor = RelationshipExtractor()
 
     def _get_parser(self, language: SupportedLanguage) -> Optional[Any]:
@@ -240,7 +235,6 @@ class ASTParser:
                             "source_file": source_file_id,
                             "target_file": target_file_id,
                             "import_content": relationship.import_content,
-                            "symbols": relationship.symbols,
                         }
                     )
 

@@ -32,7 +32,6 @@ class CodeBlock:
     type: BlockType
     name: str
     content: str
-    symbols: List[Dict[str, str]]
     start_line: int
     end_line: int
     start_col: int
@@ -44,20 +43,14 @@ class CodeBlock:
 class BaseExtractor(ABC):
     """Base class for language-specific AST extractors."""
 
-    def __init__(
-        self, language: SupportedLanguage, file_id: int = 0, symbol_extractor=None
-    ):
+    def __init__(self, language: SupportedLanguage, file_id: int = 0):
         """Initialize the base extractor.
 
         Args:
             language: Programming language name
             file_id: Numeric ID of the file being processed
-            symbol_extractor: Optional symbol extractor for enhanced analysis
         """
         self.language = language
-        self.symbol_extractor = symbol_extractor
-        self._all_symbols: List[Any] = []
-        self._source_content: str = ""
         self._hash_generator = IncrementalHashGenerator(file_id)
 
     def _get_node_text(self, node: Any) -> str:
@@ -83,58 +76,7 @@ class BaseExtractor(ABC):
             return start_line, end_line, start_col, end_col
         return 0, 0, 0, 0
 
-    def _extract_all_symbols(self, root_node: Any) -> None:
-        """Extract all symbols from the entire file and store them."""
-        self._all_symbols = []
-        if not self.symbol_extractor:
-            return
 
-        try:
-            # Get the full source content from the root node
-            self._source_content = self._get_node_text(root_node)
-
-            # Extract all symbols from the root node
-            self._all_symbols = self.symbol_extractor.extract_symbols(
-                root_node, self._source_content, self.language
-            )
-        except Exception as e:
-            # Log error but don't fail completely
-            print(f"Warning: Error extracting symbols: {e}")
-            self._all_symbols = []
-
-    def _get_symbols_for_block(
-        self, start_line: int, end_line: int, start_col: int, end_col: int
-    ) -> List[Dict[str, str]]:
-        """Find symbols that fall within the given block boundaries."""
-        if not self._all_symbols:
-            return []
-
-        matching_symbols = []
-        seen_names = set()
-
-        for symbol in self._all_symbols:
-            # Check if symbol position is within block boundaries
-            if (
-                symbol.start_line >= start_line
-                and symbol.start_line <= end_line
-                and symbol.end_line >= start_line
-                and symbol.end_line <= end_line
-            ):
-                # For symbols on boundary lines, check column positions
-                if symbol.start_line == start_line and symbol.start_col < start_col:
-                    continue
-                if symbol.end_line == end_line and symbol.end_col > end_col:
-                    continue
-
-                if symbol.name not in seen_names:
-                    seen_names.add(symbol.name)
-                    symbol_info = {
-                        "name": symbol.name,
-                        "type": symbol.symbol_type.value,
-                    }
-                    matching_symbols.append(symbol_info)
-
-        return sorted(matching_symbols, key=lambda x: x["name"])
 
     def _generic_traversal(
         self,
@@ -290,17 +232,11 @@ class BaseExtractor(ABC):
                 # Use first name as primary name, or "anonymous" if no names
                 primary_name = names[0] if names else "anonymous"
 
-                # Get symbols for this block
-                symbols = self._get_symbols_for_block(
-                    start_line, end_line, start_col, end_col
-                )
-
                 # Create the main block with modified content
                 main_block = CodeBlock(
                     type=block_type,
                     name=primary_name,
                     content=modified_content,
-                    symbols=symbols,
                     start_line=start_line,
                     end_line=end_line,
                     start_col=start_col,
@@ -348,14 +284,10 @@ class BaseExtractor(ABC):
         # Use first name as primary name, or "anonymous" if no names
         primary_name = names[0] if names else "anonymous"
 
-        # Get symbols for this block
-        symbols = self._get_symbols_for_block(start_line, end_line, start_col, end_col)
-
         return CodeBlock(
             type=block_type,
             name=primary_name,
             content=content,
-            symbols=symbols,
             start_line=start_line,
             end_line=end_line,
             start_col=start_col,
@@ -400,10 +332,8 @@ class BaseExtractor(ABC):
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
         """Extract all supported code blocks.
 
-        This method should:
-        1. Call self._extract_all_symbols(root_node) first to extract symbols
-        2. Extract all supported block types for the language
-        3. Return all extracted blocks
+        This method should extract all supported block types for the language
+        and return all extracted blocks.
 
         Returns:
             List of all extracted CodeBlock objects
@@ -414,13 +344,8 @@ class BaseExtractor(ABC):
 class Extractor:
     """Main extractor that uses language-specific extractors."""
 
-    def __init__(self, symbol_extractor=None):
-        """Initialize the extractor.
-
-        Args:
-            symbol_extractor: Optional symbol extractor for enhanced analysis
-        """
-        self.symbol_extractor = symbol_extractor
+    def __init__(self):
+        """Initialize the extractor."""
         self._extractors = {}
         self._setup_extractors()
 
@@ -459,7 +384,7 @@ class Extractor:
         if language not in self._extractors:
             return []
 
-        extractor = self._extractors[language](language, file_id, self.symbol_extractor)
+        extractor = self._extractors[language](language, file_id)
         return extractor.extract_all(ast_tree.root_node)
 
     def get_blocks_by_type(
