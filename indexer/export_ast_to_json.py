@@ -18,7 +18,6 @@ import sys
 import argparse
 from pathlib import Path
 from ast_parser import ASTParser
-from symbol_extractors import Extractor as SymbolExtractor
 
 
 def main():
@@ -63,9 +62,7 @@ Examples:
         print(f"Error: '{dir_path}' is not a directory")
         sys.exit(1)
 
-    symbol_extractor = SymbolExtractor()
-
-    ast_parser = ASTParser(symbol_extractor=symbol_extractor)
+    ast_parser = ASTParser()
 
     if args.verbose:
         print(f"Starting AST extraction from: {dir_path}")
@@ -112,9 +109,7 @@ def demo_usage():
     print("🚀 Demo: Extracting from test_files directory")
     print("-" * 50)
 
-    symbol_extractor = SymbolExtractor()
-
-    ast_parser = ASTParser(symbol_extractor=symbol_extractor)
+    ast_parser = ASTParser()
 
     # Check if test_files directory exists
     test_dir = Path("test_files")

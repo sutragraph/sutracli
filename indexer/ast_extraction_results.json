@@ -1,0 +1,259 @@
+{
+  "metadata": {
+    "export_timestamp": "2025-07-30T22:54:08.957765",
+    "total_files": 3,
+    "extractor_version": "1.0.0"
+  },
+  "files": {
+    "test_relationships/typescript/main.ts": {
+      "blocks": [
+        {
+          "type": "import",
+          "name": "./module1",
+          "content": "import { function1 } from './module1';",
+          "start_line": 6,
+          "end_line": 6,
+          "start_col": 0,
+          "end_col": 38,
+          "id": 3905217252,
+          "children": []
+        },
+        {
+          "type": "import",
+          "name": "./utils/module2",
+          "content": "import * as module2 from './utils/module2';",
+          "start_line": 7,
+          "end_line": 7,
+          "start_col": 0,
+          "end_col": 43,
+          "id": 3905217253,
+          "children": []
+        },
+        {
+          "type": "import",
+          "name": "./module1",
+          "content": "import DefaultClass from './module1';",
+          "start_line": 10,
+          "end_line": 10,
+          "start_col": 0,
+          "end_col": 37,
+          "id": 3905217254,
+          "children": []
+        },
+        {
+          "type": "import",
+          "name": "./utils/module2",
+          "content": "import './utils/module2';",
+          "start_line": 13,
+          "end_line": 13,
+          "start_col": 0,
+          "end_col": 25,
+          "id": 3905217255,
+          "children": []
+        },
+        {
+          "type": "import",
+          "name": "./module1",
+          "content": "import('./module1')",
+          "start_line": 17,
+          "end_line": 17,
+          "start_col": 30,
+          "end_col": 49,
+          "id": 3905217256,
+          "children": []
+        },
+        {
+          "type": "import",
+          "name": "./utils/module2",
+          "content": "require('./utils/module2')",
+          "start_line": 22,
+          "end_line": 22,
+          "start_col": 23,
+          "end_col": 49,
+          "id": 3905217257,
+          "children": []
+        },
+        {
+          "type": "function",
+          "name": "anonymous",
+          "content": "async () => {\n  const dynamicModule = await import('./module1');\n  return dynamicModule.function1();\n}",
+          "start_line": 16,
+          "end_line": 19,
+          "start_col": 19,
+          "end_col": 1,
+          "id": 3905217258,
+          "children": []
+        },
+        {
+          "type": "function",
+          "name": "main",
+          "content": "function main() {\n  console.log('Main module');\n  function1();\n  module2.function2();\n  \n  const instance = new DefaultClass();\n  instance.method();\n  \n  loadModule().then(result => console.log(result));\n  \n  requiredModule.function2();\n}",
+          "start_line": 27,
+          "end_line": 38,
+          "start_col": 0,
+          "end_col": 1,
+          "id": 3905217259,
+          "children": []
+        },
+        {
+          "type": "function",
+          "name": "anonymous",
+          "content": "result => console.log(result)",
+          "start_line": 35,
+          "end_line": 35,
+          "start_col": 20,
+          "end_col": 49,
+          "id": 3905217260,
+          "children": []
+        }
+      ],
+      "language": "typescript",
+      "id": 3905217251,
+      "file_path": "test_relationships/typescript/main.ts",
+      "content": "/**\n * Main module for testing TypeScript relationship extraction.\n */\n\n// Standard imports\nimport { function1 } from './module1';\nimport * as module2 from './utils/module2';\n\n// Default import\nimport DefaultClass from './module1';\n\n// Side-effect import\nimport './utils/module2';\n\n// Dynamic import\nconst loadModule = async () => {\n  const dynamicModule = await import('./module1');\n  return dynamicModule.function1();\n};\n\n// CommonJS require (TypeScript allows this syntax)\nconst requiredModule = require('./utils/module2');\n\n/**\n * Main function\n */\nfunction main() {\n  console.log('Main module');\n  function1();\n  module2.function2();\n  \n  const instance = new DefaultClass();\n  instance.method();\n  \n  loadModule().then(result => console.log(result));\n  \n  requiredModule.function2();\n}\n\nmain();",
+      "content_hash": "e6b9957b58c57110704f1a5f126169e516f3b002187a12c703e68d6416f87973",
+      "relationships": [
+        {
+          "source_file": 3905217251,
+          "target_file": 205214926,
+          "import_content": "import { function1 } from './module1';"
+        },
+        {
+          "source_file": 3905217251,
+          "target_file": 163758972,
+          "import_content": "import * as module2 from './utils/module2';"
+        },
+        {
+          "source_file": 3905217251,
+          "target_file": 205214926,
+          "import_content": "import DefaultClass from './module1';"
+        },
+        {
+          "source_file": 3905217251,
+          "target_file": 163758972,
+          "import_content": "import './utils/module2';"
+        },
+        {
+          "source_file": 3905217251,
+          "target_file": 205214926,
+          "import_content": "import('./module1')"
+        },
+        {
+          "source_file": 3905217251,
+          "target_file": 163758972,
+          "import_content": "require('./utils/module2')"
+        }
+      ]
+    },
+    "test_relationships/typescript/module1.ts": {
+      "blocks": [
+        {
+          "type": "import",
+          "name": "./utils/module2",
+          "content": "import { function2 } from './utils/module2';",
+          "start_line": 6,
+          "end_line": 6,
+          "start_col": 0,
+          "end_col": 44,
+          "id": 205214927,
+          "children": []
+        },
+        {
+          "type": "function",
+          "name": "function1",
+          "content": "function function1(): string {\n  console.log('Function 1 from module1');\n  function2();\n  return 'Result from function1';\n}",
+          "start_line": 11,
+          "end_line": 15,
+          "start_col": 7,
+          "end_col": 1,
+          "id": 205214928,
+          "children": []
+        },
+        {
+          "type": "function",
+          "name": "method",
+          "content": "method(): void {\n    console.log('Method from DefaultClass');\n  }",
+          "start_line": 21,
+          "end_line": 23,
+          "start_col": 2,
+          "end_col": 3,
+          "id": 205214929,
+          "children": []
+        },
+        {
+          "type": "class",
+          "name": "DefaultClass",
+          "content": "",
+          "start_line": 20,
+          "end_line": 24,
+          "start_col": 15,
+          "end_col": 1,
+          "id": 205214930,
+          "children": [
+            {
+              "type": "function",
+              "name": "method",
+              "content": "method(): void {\n    console.log('Method from DefaultClass');\n  }",
+              "start_line": 21,
+              "end_line": 23,
+              "start_col": 2,
+              "end_col": 3,
+              "id": 205214931,
+              "children": []
+            }
+          ]
+        }
+      ],
+      "language": "typescript",
+      "id": 205214926,
+      "file_path": "test_relationships/typescript/module1.ts",
+      "content": "/**\n * Module 1 for testing TypeScript relationship extraction.\n */\n\n// Import from another module\nimport { function2 } from './utils/module2';\n\n/**\n * Example function\n */\nexport function function1(): string {\n  console.log('Function 1 from module1');\n  function2();\n  return 'Result from function1';\n}\n\n/**\n * Default export class\n */\nexport default class DefaultClass {\n  method(): void {\n    console.log('Method from DefaultClass');\n  }\n}",
+      "content_hash": "c03cff4bcaa21d7bf5910c05658ea0fdc63e207792c13ee8a5f818ffc691e9a8",
+      "relationships": [
+        {
+          "source_file": 205214926,
+          "target_file": 163758972,
+          "import_content": "import { function2 } from './utils/module2';"
+        }
+      ]
+    },
+    "test_relationships/typescript/utils/module2.ts": {
+      "blocks": [
+        {
+          "type": "import",
+          "name": "../module1",
+          "content": "import { function1 } from '../module1';",
+          "start_line": 6,
+          "end_line": 6,
+          "start_col": 0,
+          "end_col": 39,
+          "id": 163758973,
+          "children": []
+        },
+        {
+          "type": "function",
+          "name": "function2",
+          "content": "function function2(): void {\n  console.log('Function 2 from module2');\n  console.log(`Current time: ${new Date().toISOString()}`);\n}",
+          "start_line": 11,
+          "end_line": 14,
+          "start_col": 7,
+          "end_col": 1,
+          "id": 163758974,
+          "children": []
+        }
+      ],
+      "language": "typescript",
+      "id": 163758972,
+      "file_path": "test_relationships/typescript/utils/module2.ts",
+      "content": "/**\n * Module 2 for testing TypeScript relationship extraction.\n */\n\n// Import from parent directory\nimport { function1 } from '../module1';\n\n/**\n * Example function\n */\nexport function function2(): void {\n  console.log('Function 2 from module2');\n  console.log(`Current time: ${new Date().toISOString()}`);\n}\n\n/**\n * Side effect when imported\n */\nconsole.log('Module 2 loaded');",
+      "content_hash": "c3f222e6759527b6d5b7df9bfd44bf1caf1430fea036095ff3644086dac40105",
+      "relationships": [
+        {
+          "source_file": 163758972,
+          "target_file": 205214926,
+          "import_content": "import { function1 } from '../module1';"
+        }
+      ]
+    }
+  }
+}
