@@ -32,7 +32,7 @@ class CodeBlock:
     type: BlockType
     name: str
     content: str
-    symbols: List[str]
+    symbols: List[Dict[str, str]]
     start_line: int
     end_line: int
     start_col: int
@@ -104,12 +104,14 @@ class BaseExtractor(ABC):
 
     def _get_symbols_for_block(
         self, start_line: int, end_line: int, start_col: int, end_col: int
-    ) -> List[str]:
+    ) -> List[Dict[str, str]]:
         """Find symbols that fall within the given block boundaries."""
         if not self._all_symbols:
             return []
 
-        matching_symbols = set()  # Use set to avoid duplicates
+        matching_symbols = []
+        seen_names = set()
+
         for symbol in self._all_symbols:
             # Check if symbol position is within block boundaries
             if (
@@ -123,9 +125,16 @@ class BaseExtractor(ABC):
                     continue
                 if symbol.end_line == end_line and symbol.end_col > end_col:
                     continue
-                matching_symbols.add(symbol.name)
 
-        return sorted(list(matching_symbols))
+                if symbol.name not in seen_names:
+                    seen_names.add(symbol.name)
+                    symbol_info = {
+                        "name": symbol.name,
+                        "type": symbol.symbol_type.value,
+                    }
+                    matching_symbols.append(symbol_info)
+
+        return sorted(matching_symbols, key=lambda x: x["name"])
 
     def _generic_traversal(
         self,

@@ -6,10 +6,12 @@ relationships between files based on import statements.
 """
 
 import os
+import json
 import hashlib
 import zlib
 from pathlib import Path
 from typing import Dict, Optional, Union, Any, cast
+from datetime import datetime
 from tree_sitter import Parser
 from tree_sitter_language_pack import get_parser, SupportedLanguage
 
@@ -246,3 +248,119 @@ class ASTParser:
             f"Parsed and extracted from {len(results)} files in directory: {dir_path}"
         )
         return results
+
+    def _make_json_serializable(self, obj: Any) -> Any:
+        """
+        Convert complex objects to JSON-serializable format.
+
+        Args:
+            obj: Object to convert
+
+        Returns:
+            JSON-serializable version of the object
+        """
+        from enum import Enum
+
+        if isinstance(obj, Enum):
+            # Handle Enum objects by returning their value
+            return obj.value
+        elif hasattr(obj, "__dict__"):
+            # Handle custom objects with __dict__
+            result = {}
+            for key, value in obj.__dict__.items():
+                if not key.startswith("_"):  # Skip private attributes
+                    result[key] = self._make_json_serializable(value)
+            return result
+        elif isinstance(obj, dict):
+            return {
+                key: self._make_json_serializable(value) for key, value in obj.items()
+            }
+        elif isinstance(obj, (list, tuple)):
+            return [self._make_json_serializable(item) for item in obj]
+        elif isinstance(obj, bytes):
+            # Convert bytes to string representation
+            try:
+                return obj.decode("utf-8")
+            except UnicodeDecodeError:
+                return f"<bytes: {len(obj)} bytes>"
+        elif isinstance(obj, Path):
+            return str(obj)
+        elif hasattr(obj, "__str__") and not isinstance(
+            obj, (str, int, float, bool, type(None))
+        ):
+            # Handle other complex objects by converting to string
+            return str(obj)
+        else:
+            # Return as-is for basic types (str, int, float, bool, None)
+            return obj
+
+    def export_to_json(
+        self,
+        extraction_results: Dict[str, Dict[str, Any]],
+        output_file: Union[str, Path],
+        indent: int = 2,
+    ) -> bool:
+        """
+        Export extraction results to a JSON file.
+
+        Args:
+            extraction_results: Results from extract_from_directory method
+            output_file: Path to the output JSON file
+            indent: JSON indentation level (default: 2)
+
+        Returns:
+            True if export was successful, False otherwise
+        """
+        try:
+            output_path = Path(output_file)
+
+            # Create output directory if it doesn't exist
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Convert to JSON-serializable format
+            serializable_data = self._make_json_serializable(extraction_results)
+
+            # Add metadata
+            export_data = {
+                "metadata": {
+                    "export_timestamp": datetime.now().isoformat(),
+                    "total_files": len(extraction_results),
+                    "extractor_version": "1.0.0",
+                },
+                "files": serializable_data,
+            }
+
+            # Write to JSON file
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(export_data, f, indent=indent, ensure_ascii=False)
+
+            print(f"Successfully exported extraction results to: {output_path}")
+            print(f"Total files exported: {len(extraction_results)}")
+            return True
+
+        except Exception as e:
+            print(f"Error exporting to JSON: {e}")
+            return False
+
+    def extract_and_export_directory(
+        self, dir_path: Union[str, Path], output_file: Union[str, Path], indent: int = 2
+    ) -> bool:
+        """
+        Extract from directory and directly export to JSON file.
+
+        Args:
+            dir_path: Path to the directory to extract from
+            output_file: Path to the output JSON file
+            indent: JSON indentation level (default: 2)
+
+        Returns:
+            True if extraction and export were successful, False otherwise
+        """
+        print(f"Extracting from directory: {dir_path}")
+        results = self.extract_from_directory(dir_path)
+
+        if not results:
+            print("No results to export")
+            return False
+
+        return self.export_to_json(results, output_file, indent)
