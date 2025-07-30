@@ -321,10 +321,6 @@ class AgentService:
                             print(f"❌ Result verification failed: {verification_result['issues']}")
                             if verification_result["recommendations"]:
                                 print(f"📝 Recommendations: {verification_result['recommendations']}")
-                        elif verification_result["result_quality"] in ["poor", "fair"]:
-                            print(f"⚠️  Result quality: {verification_result['result_quality']}")
-                            if verification_result["recommendations"]:
-                                print(f"📝 Recommendations: {verification_result['recommendations']}")
 
                         # # Show data preview for successful tool use
                         # if event_type == "tool_use" and "data" in event:
