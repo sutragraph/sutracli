@@ -15,15 +15,15 @@ from datetime import datetime
 from tree_sitter import Parser
 from tree_sitter_language_pack import get_parser, SupportedLanguage
 
-from utils.file_utils import (
+from .utils.file_utils import (
     get_language_from_extension,
     should_ignore_file,
     should_ignore_directory,
     is_text_file,
     read_file_content,
 )
-from extractors import Extractor
-from relationship_extractors import RelationshipExtractor
+from .extractors import Extractor
+from .relationship_extractors import RelationshipExtractor
 
 
 class ASTParser:

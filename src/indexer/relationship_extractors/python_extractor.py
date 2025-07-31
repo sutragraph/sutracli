@@ -5,21 +5,20 @@ using Tree-sitter for accurate parsing. Works purely with extraction results dat
 without file system lookups.
 """
 
-
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from tree_sitter_language_pack import get_parser
 
-from extractors import BlockType
+from ..extractors import BlockType
 from . import BaseRelationshipExtractor, Relationship
 
 
 class PythonRelationshipExtractor(BaseRelationshipExtractor):
     """Extractor for relationships between Python files using only extraction results data."""
 
-
-
-    def extract_relationships(self, extraction_results: Dict[str, Dict[str, Any]]) -> List[Relationship]:
+    def extract_relationships(
+        self, extraction_results: Dict[str, Dict[str, Any]]
+    ) -> List[Relationship]:
         """Extract relationships between Python files based on import statements."""
         relationships = []
 
@@ -35,11 +34,17 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
 
             # Get all import blocks from this file
             blocks = result.get("blocks", [])
-            import_blocks = [block for block in blocks if hasattr(block, 'type') and block.type == BlockType.IMPORT]
+            import_blocks = [
+                block
+                for block in blocks
+                if hasattr(block, "type") and block.type == BlockType.IMPORT
+            ]
 
             # Process each import block
             for import_block in import_blocks:
-                content = import_block.content if hasattr(import_block, 'content') else ""
+                content = (
+                    import_block.content if hasattr(import_block, "content") else ""
+                )
 
                 # Parse the import statement to extract detailed information
                 import_info = self._parse_import_statement(content)
@@ -49,13 +54,13 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
                 # Handle special case: when importing symbols from a relative package,
                 # check if any of the symbols correspond to module files
                 resolved_as_module = False
-                if import_info.get('is_relative') and import_info.get('symbols'):
-                    for symbol in import_info['symbols']:
+                if import_info.get("is_relative") and import_info.get("symbols"):
+                    for symbol in import_info["symbols"]:
                         # Try to resolve the symbol as a module in the target package
                         symbol_import_info = {
-                            'module_name': import_info['module_name'] + '.' + symbol,
-                            'symbols': [],
-                            'is_relative': True
+                            "module_name": import_info["module_name"] + "." + symbol,
+                            "symbols": [],
+                            "is_relative": True,
                         }
                         target_file_id = self._resolve_import_from_registry(
                             source_file_path, symbol_import_info, module_registry
@@ -67,7 +72,7 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
                                 source_file=source_file_id,
                                 target_file=target_file_id,
                                 import_content=content,
-                                symbols=[symbol]
+                                symbols=[symbol],
                             )
                             relationships.append(relationship)
                             resolved_as_module = True
@@ -84,13 +89,15 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
                             source_file=source_file_id,
                             target_file=target_file_id,
                             import_content=content,
-                            symbols=import_info.get('symbols', [])
+                            symbols=import_info.get("symbols", []),
                         )
                         relationships.append(relationship)
 
         return relationships
 
-    def _build_module_registry(self, extraction_results: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+    def _build_module_registry(
+        self, extraction_results: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, str]:
         """Build a registry mapping module paths to file IDs from extraction results."""
         registry = {}
 
@@ -118,9 +125,9 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
         path_parts = file_path.parts
 
         # Remove .py extension if present
-        if file_path.suffix == '.py':
+        if file_path.suffix == ".py":
             name = file_path.stem
-            if name == '__init__':
+            if name == "__init__":
                 # For __init__.py files, use the parent directory name
                 path_parts = path_parts[:-1]
             else:
@@ -132,7 +139,7 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
             # Try different starting points in the path
             module_parts = path_parts[i:]
             if module_parts:
-                module_name = '.'.join(module_parts)
+                module_name = ".".join(module_parts)
                 module_names.append(module_name)
 
         return module_names
@@ -154,21 +161,21 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
             import_node = None
             import_type = "import"
             for child in tree.root_node.children:
-                if child.type in ['import_statement', 'import_from_statement']:
+                if child.type in ["import_statement", "import_from_statement"]:
                     import_node = child
                     import_type = "import"
                     break
-                elif child.type == 'expression_statement':
+                elif child.type == "expression_statement":
                     # Check for dynamic imports in expression statements
                     for grandchild in child.children:
-                        if grandchild.type == 'call':
+                        if grandchild.type == "call":
                             if self._is_dynamic_import_call(grandchild):
                                 import_node = grandchild
                                 import_type = "dynamic_import"
                                 break
                     if import_node:
                         break
-                elif child.type == 'call':
+                elif child.type == "call":
                     # Direct call expression (might happen in some parsing contexts)
                     if self._is_dynamic_import_call(child):
                         import_node = child
@@ -182,33 +189,35 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
                 # Handle dynamic imports: importlib.import_module() or __import__()
                 module_name = self._extract_dynamic_import_module_name(import_node)
                 if module_name:
-                    if module_name.startswith('.'):
+                    if module_name.startswith("."):
                         is_relative = True
                     # Dynamic imports typically import the whole module
-                    symbols = ['*']  # Indicate dynamic import
+                    symbols = ["*"]  # Indicate dynamic import
 
-            elif import_node.type == 'import_statement':
+            elif import_node.type == "import_statement":
                 # Handle: import module [as alias]
                 for child in import_node.children:
-                    if child.type == 'dotted_name':
+                    if child.type == "dotted_name":
                         module_name = self._safe_text_extract(child)
-                    elif child.type == 'aliased_import':
+                    elif child.type == "aliased_import":
                         # Handle aliased imports like "import module as alias"
                         for subchild in child.children:
-                            if subchild.type == 'dotted_name':
+                            if subchild.type == "dotted_name":
                                 module_name = self._safe_text_extract(subchild)
-                            elif subchild.type == 'identifier':
+                            elif subchild.type == "identifier":
                                 # This is the alias
                                 if module_name:
-                                    aliases[module_name] = self._safe_text_extract(subchild)
+                                    aliases[module_name] = self._safe_text_extract(
+                                        subchild
+                                    )
 
-            elif import_node.type == 'import_from_statement':
+            elif import_node.type == "import_from_statement":
                 # Handle: from module import symbol [as alias]
                 imported_symbols = []
                 current_symbol = None
 
                 for child in import_node.children:
-                    if child.type == 'dotted_name':
+                    if child.type == "dotted_name":
                         if module_name is None:
                             # This is the module name
                             module_name = self._safe_text_extract(child)
@@ -216,29 +225,31 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
                             # This is an imported symbol
                             current_symbol = self._safe_text_extract(child)
                             imported_symbols.append(current_symbol)
-                    elif child.type == 'relative_import':
+                    elif child.type == "relative_import":
                         module_name = self._safe_text_extract(child)
                         is_relative = True
-                    elif child.type == 'aliased_import':
+                    elif child.type == "aliased_import":
                         # Handle aliased imports in from statements
                         for subchild in child.children:
-                            if subchild.type == 'dotted_name':
+                            if subchild.type == "dotted_name":
                                 current_symbol = self._safe_text_extract(subchild)
                                 imported_symbols.append(current_symbol)
-                            elif subchild.type == 'identifier':
+                            elif subchild.type == "identifier":
                                 # This is the alias for the current symbol
                                 if current_symbol:
-                                    aliases[current_symbol] = self._safe_text_extract(subchild)
+                                    aliases[current_symbol] = self._safe_text_extract(
+                                        subchild
+                                    )
 
                 symbols = imported_symbols
 
             if module_name:
                 return {
-                    'module_name': module_name,
-                    'symbols': symbols,
-                    'aliases': aliases,
-                    'is_relative': is_relative,
-                    'raw_content': import_content.strip()
+                    "module_name": module_name,
+                    "symbols": symbols,
+                    "aliases": aliases,
+                    "is_relative": is_relative,
+                    "raw_content": import_content.strip(),
                 }
 
         except Exception as e:
@@ -250,22 +261,21 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
         self,
         source_file_path: str,
         import_info: Dict[str, Any],
-        module_registry: Dict[str, str]
+        module_registry: Dict[str, str],
     ) -> Optional[str]:
         """Resolve an import to a file ID using the module registry."""
-        module_name = import_info['module_name']
-        is_relative = import_info['is_relative']
+        module_name = import_info["module_name"]
+        is_relative = import_info["is_relative"]
 
         if is_relative:
-            return self._resolve_relative_import(source_file_path, module_name, module_registry)
+            return self._resolve_relative_import(
+                source_file_path, module_name, module_registry
+            )
         else:
             return self._resolve_absolute_import(module_name, module_registry)
 
     def _resolve_relative_import(
-        self,
-        source_file_path: str,
-        module_name: str,
-        module_registry: Dict[str, str]
+        self, source_file_path: str, module_name: str, module_registry: Dict[str, str]
     ) -> Optional[str]:
         """Resolve a relative import using the module registry."""
         source_path = Path(source_file_path)
@@ -274,7 +284,7 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
         # Count dots to determine how many levels to go up
         dot_count = 0
         for char in module_name:
-            if char == '.':
+            if char == ".":
                 dot_count += 1
             else:
                 break
@@ -289,7 +299,7 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
 
         # If there's a module name after the dots, append it to the path
         if relative_module:
-            target_path = target_dir / relative_module.replace('.', '/')
+            target_path = target_dir / relative_module.replace(".", "/")
         else:
             target_path = target_dir
 
@@ -297,11 +307,11 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
         possible_names = []
 
         # Try as a Python file first (prioritize .py files over __init__.py)
-        py_file_path = str(target_path.with_suffix('.py'))
+        py_file_path = str(target_path.with_suffix(".py"))
         possible_names.extend(self._get_potential_module_names(Path(py_file_path)))
 
         # Try as a package (__init__.py)
-        init_file_path = str(target_path / '__init__.py')
+        init_file_path = str(target_path / "__init__.py")
         possible_names.extend(self._get_potential_module_names(Path(init_file_path)))
 
         # Look for matches in registry
@@ -313,46 +323,47 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
 
     def _is_dynamic_import_call(self, node) -> bool:
         """Check if a call node is a dynamic import (importlib.import_module or __import__)."""
-        if not hasattr(node, 'children') or not node.children:
+        if not hasattr(node, "children") or not node.children:
             return False
 
         # Get the function being called
         function_node = node.children[0]
 
         # Check for __import__() calls
-        if (hasattr(function_node, 'type') and function_node.type == 'identifier' and
-            self._safe_text_extract(function_node) == '__import__'):
+        if (
+            hasattr(function_node, "type")
+            and function_node.type == "identifier"
+            and self._safe_text_extract(function_node) == "__import__"
+        ):
             return True
 
         # Check for importlib.import_module() calls
-        if hasattr(function_node, 'type') and function_node.type == 'attribute':
+        if hasattr(function_node, "type") and function_node.type == "attribute":
             # Get the full attribute path
             attr_text = self._safe_text_extract(function_node)
-            if 'importlib.import_module' in attr_text or 'import_module' in attr_text:
+            if "importlib.import_module" in attr_text or "import_module" in attr_text:
                 return True
 
         return False
 
     def _extract_dynamic_import_module_name(self, node) -> Optional[str]:
         """Extract module name from a dynamic import call."""
-        if not hasattr(node, 'children'):
+        if not hasattr(node, "children"):
             return None
 
         # Look for argument_list containing the module path
         for child in node.children:
-            if hasattr(child, 'type') and child.type == 'argument_list':
+            if hasattr(child, "type") and child.type == "argument_list":
                 for arg_child in child.children:
-                    if hasattr(arg_child, 'type') and arg_child.type == 'string':
+                    if hasattr(arg_child, "type") and arg_child.type == "string":
                         # Extract the string content and remove quotes
                         text = self._safe_text_extract(arg_child)
-                        return text.strip('\'"')
+                        return text.strip("'\"")
 
         return None
 
     def _resolve_absolute_import(
-        self,
-        module_name: str,
-        module_registry: Dict[str, str]
+        self, module_name: str, module_registry: Dict[str, str]
     ) -> Optional[str]:
         """Resolve an absolute import using the module registry."""
         # Try direct lookup first
