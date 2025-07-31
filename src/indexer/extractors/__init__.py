@@ -10,7 +10,7 @@ from typing import Any, List, Optional, Set, Callable, Dict
 from dataclasses import dataclass, field
 from enum import Enum
 from tree_sitter_language_pack import SupportedLanguage
-from utils.incremental_hash import IncrementalHashGenerator
+from ..utils.incremental_hash import IncrementalHashGenerator
 
 
 class BlockType(Enum):
@@ -75,8 +75,6 @@ class BaseExtractor(ABC):
             end_col = node.end_point[1]
             return start_line, end_line, start_col, end_col
         return 0, 0, 0, 0
-
-
 
     def _generic_traversal(
         self,
