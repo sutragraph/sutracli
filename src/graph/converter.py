@@ -1,5 +1,5 @@
 """
-Main converter class that orchestrates the conversion process.
+Main converter class that orchestrates the code extraction to SQLite conversion process.
 """
 
 from datetime import datetime
@@ -14,15 +14,15 @@ from processors import GraphDataProcessor
 from utils import load_json_file
 
 
-class TreeSitterToSQLiteConverter:
-    """Main converter class that handles conversion from tree-sitter JSON to SQLite knowledge graph."""
+class ASTToSqliteConverter:
+    """Main converter class that handles conversion from code extraction JSON to SQLite knowledge graph."""
 
     def __init__(self, sqlite_connection: Optional[SQLiteConnection] = None):
         """Initialize converter with optional connection."""
         self.connection = sqlite_connection or SQLiteConnection()
         self.graph_ops = GraphOperations(self.connection)
         self.processor = GraphDataProcessor(self.connection)
-        logger.debug("🛠️ TreeSitterToSQLiteConverter initialized")
+        logger.debug("🛠️ ASTToSqliteConverter initialized")
 
     def convert_json_to_graph(
         self,
@@ -33,11 +33,11 @@ class TreeSitterToSQLiteConverter:
         create_indexes: bool = True,
     ) -> Dict[str, Any]:
         """
-        Convert tree-sitter JSON file to SQLite knowledge graph.
-        Embeddings are automatically generated for all nodes.
+        Convert code extraction JSON file to SQLite knowledge graph.
+        Embeddings are automatically generated for all code blocks.
 
         Args:
-            json_file_path: Path to the tree-sitter JSON file
+            json_file_path: Path to the extraction JSON file
             project_name: Name of the project/codebase (auto-derived if not provided)
             project_config: Project configuration dictionary with metadata
             clear_existing: Whether to clear existing data in the database

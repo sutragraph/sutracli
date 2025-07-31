@@ -3,6 +3,6 @@ Graph module initialization.
 """
 
 from .sqlite_client import SQLiteConnection, GraphOperations
-from .converter import TreeSitterToSQLiteConverter
+from .converter import ASTToSqliteConverter
 
-__all__ = ["SQLiteConnection", "GraphOperations", "TreeSitterToSQLiteConverter"]
+__all__ = ["SQLiteConnection", "GraphOperations", "ASTToSqliteConverter"]
