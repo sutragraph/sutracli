@@ -6,9 +6,10 @@ and specific filenames that should be parsed.
 """
 
 from typing import Dict, List
+from tree_sitter_language_pack import SupportedLanguage
 
 # Supported languages and their file extensions
-SUPPORTED_LANGUAGES: Dict[str, List[str]] = {
+LANGUAGE_EXTENSION_MAP: Dict[SupportedLanguage, List[str]] = {
     "actionscript": [".as", ".mxml"],
     "ada": [".ada", ".adb", ".ads"],
     "agda": [".agda"],

@@ -1,778 +1,517 @@
-"""
-TypeScript AST Extractor
+"""TypeScript Extractor for Code Block Extraction
 
-Extracts TypeScript/JavaScript code constructs from AST trees.
+This module provides TypeScript-specific extraction capabilities for identifying
+and extracting code blocks from TypeScript AST nodes using tree-sitter.
 """
 
-from typing import Any, List
-from . import BaseExtractor, BlockType, CodeBlock
+from typing import List, Any, Dict, Set, Callable, Optional
+from tree_sitter_language_pack import SupportedLanguage
+from . import BaseExtractor, CodeBlock, BlockType
 
 
 class TypeScriptExtractor(BaseExtractor):
-    """Extractor for TypeScript/JavaScript code blocks."""
+    """TypeScript-specific extractor for code blocks."""
 
-    def __init__(self, language: str = "typescript", symbol_extractor=None):
-        super().__init__(language, symbol_extractor)
+    # Define function types once as class constants
+    FUNCTION_TYPES = {
+        "function_declaration",
+        "function_expression",
+        "arrow_function",
+        "method_definition",
+    }
+
+    CLASS_TYPES = {"class_declaration"}
+    VARIABLE_TYPES = {"variable_declaration"}
+
+    def __init__(
+        self, language: SupportedLanguage, file_id: int = 0, symbol_extractor=None
+    ):
+        super().__init__(language, file_id, symbol_extractor)
+
+    # ============================================================================
+    # GENERIC HELPER METHODS
+    # ============================================================================
 
     def _get_identifier_name(self, node: Any) -> str:
-        """Get identifier name from a node."""
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type in [
-                    "identifier",
-                    "type_identifier",
-                ]:
-                    return self._get_node_text(child)
+        """Extract identifier name from a node."""
+        if node.type == "identifier":
+            return self._get_node_text(node)
+        elif node.type == "property_identifier":
+            return self._get_node_text(node)
         return ""
 
-    def extract_imports(self, node: Any) -> List[CodeBlock]:
-        """Extract import statements."""
-        imports = []
+    def _extract_names_from_node(self, node: Any) -> List[str]:
+        """Extract all identifier names from a node (handles various patterns)."""
+        names = []
 
-        def traverse(n):
-            if hasattr(n, "type"):
-                if n.type == "import_statement":
-                    start_line, end_line, start_col, end_col = self._get_node_position(
-                        n
-                    )
-                    content = self._get_node_text(n)
-
-                    # Try to extract the module name
-                    module_name = self._extract_import_name(n)
-
-                    imports.append(
-                        self._create_code_block(
-                            BlockType.IMPORT,
-                            module_name,
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col,
-                            n,
-                        )
-                    )
-                    return  # Don't traverse deeper from this import
-
-            if hasattr(n, "children"):
+        if node.type in ["identifier", "property_identifier"]:
+            names.append(self._get_node_text(node))
+        elif node.type == "variable_declarator":
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                names.extend(self._extract_names_from_node(name_node))
+        elif node.type in ["object_pattern", "array_pattern"]:
+            names.extend(self._extract_destructuring_names(node))
+        elif node.type == "function_declaration":
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                names.append(self._get_node_text(name_node))
+        elif node.type == "class_declaration":
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                names.append(self._get_node_text(name_node))
+        elif node.type == "interface_declaration":
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                names.append(self._get_node_text(name_node))
+        elif node.type == "enum_declaration":
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                names.append(self._get_node_text(name_node))
+        else:
+            # Generic fallback: find all identifiers in the node
+            def find_identifiers(n):
+                if n.type in ["identifier", "property_identifier"]:
+                    names.append(self._get_node_text(n))
                 for child in n.children:
-                    traverse(child)
+                    find_identifiers(child)
 
-        traverse(node)
-        return imports
+            find_identifiers(node)
 
-    def extract_exports(self, node: Any) -> List[CodeBlock]:
-        """Extract export statements with nested elements as children."""
-        exports = self._extract_top_level_exports(node)
-        for export in exports:
-            export.children = self._extract_nested_elements(node, export)
-        return exports
+        return list(set(names))  # Remove duplicates
 
-    def _extract_top_level_exports(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level export declarations."""
-        exports = []
+    def _replace_nested_functions_with_references(
+        self, original_content: str, nested_functions: List[CodeBlock]
+    ) -> str:
+        """Replace nested function content with block references for TypeScript."""
+        if not nested_functions:
+            return original_content
 
-        def traverse(n):
-            if hasattr(n, "type"):
-                if n.type in ["export_statement", "export_declaration"]:
-                    start_line, end_line, start_col, end_col = self._get_node_position(
-                        n
-                    )
-                    content = self._get_node_text(n)
+        # Sort nested functions by start position (descending) to avoid offset issues
+        sorted_functions = sorted(
+            nested_functions, key=lambda f: f.start_line, reverse=True
+        )
 
-                    # Try to extract what's being exported
-                    export_name = self._extract_export_name(n)
+        for func in sorted_functions:
+            # Find the nested function in the parent content
+            func_content = func.content
+            func_lines = func_content.split("\n")
 
-                    exports.append(
-                        self._create_code_block(
-                            BlockType.EXPORT,
-                            export_name
-                            or "default_export",  # Use default_export if no name found
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col,
-                            n,
-                        )
-                    )
-                    return  # Don't traverse deeper from this export
+            # Create TypeScript comment reference
+            reference = f"// [BLOCK_REF:{func.id}]"
 
-            if hasattr(n, "children"):
-                for child in n.children:
-                    traverse(child)
+            # For TypeScript/JavaScript, find the function signature (lines ending with {)
+            signature_lines = []
+            for line in func_lines:
+                if "{" in line:
+                    # Found opening brace, keep everything up to and including it
+                    brace_pos = line.find("{")
+                    signature_part = line[: brace_pos + 1]
+                    signature_lines.append(signature_part)
+                    signature_lines.append(f"    {reference}")
+                    signature_lines.append("}")
+                    break
+                else:
+                    signature_lines.append(line)
+            replacement = "\n".join(signature_lines)
 
-        traverse(node)
-        return exports
+            # Replace the entire function content with the signature + reference
+            original_content = original_content.replace(func_content, replacement)
 
-    def _get_nested_variable_names(self, node: Any) -> List[str]:
-        """Get variable names from a nested node."""
-        names = []
+        return original_content
 
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type"):
-                    if child.type == "identifier":
-                        names.append(self._get_node_text(child))
-                    elif child.type in ["variable_declarator", "property_signature"]:
-                        name = self._get_nested_identifier_name(child)
-                        if name:
-                            names.append(name)
+    # ============================================================================
+    # SPECIALIZED NAME EXTRACTION METHODS
+    # ============================================================================
 
-        return names
-
-    def _extract_nested_exports(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract export declarations nested within a parent node."""
-        nested_exports = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, "type"):
-                export_types = ["export_statement", "export_declaration"]
-
-                if (
-                    node.type in export_types and depth > 0
-                ):  # Skip direct children, only nested
-                    name = self._extract_export_name(node)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(node)
-                        )
-                        content = self._get_node_text(node)
-
-                        nested_exports.append(
-                            self._create_code_block(
-                                BlockType.EXPORT,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                node,
-                            )
-                        )
-                        return  # Don't traverse deeper from this export
-
-            if hasattr(node, "children"):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, "children"):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_exports
-
-    def _extract_import_name(self, import_node: Any) -> str:
-        """Extract the primary name from an import statement."""
-        if hasattr(import_node, "children"):
-            for child in import_node.children:
-                if hasattr(child, "type"):
-                    if child.type == "import_clause":
-                        # Look for default import or named imports
-                        if hasattr(child, "children"):
-                            for grandchild in child.children:
-                                if hasattr(grandchild, "type"):
-                                    if grandchild.type == "identifier":
-                                        return self._get_node_text(grandchild)
-                                    elif grandchild.type == "named_imports":
-                                        # Get first named import
-                                        names = self._extract_named_imports(grandchild)
-                                        return names[0] if names else "unknown"
-                    elif child.type == "string":
-                        # Import without names, use module path
-                        return self._get_node_text(child).strip("\"'")
-
-        return "unknown"
-
-    def _extract_named_imports(self, named_imports_node: Any) -> List[str]:
-        """Extract names from named imports."""
-        names = []
-        if hasattr(named_imports_node, "children"):
-            for child in named_imports_node.children:
-                if hasattr(child, "type") and child.type == "import_specifier":
-                    if hasattr(child, "children"):
-                        for grandchild in child.children:
-                            if (
-                                hasattr(grandchild, "type")
-                                and grandchild.type == "identifier"
-                            ):
-                                names.append(self._get_node_text(grandchild))
-                                break
-        return names
-
-    def _extract_export_name(self, export_node: Any) -> str:
-        """Extract the primary name from an export statement."""
-        if hasattr(export_node, "children"):
-            for child in export_node.children:
-                if hasattr(child, "type"):
-                    if child.type in [
-                        "function_declaration",
-                        "class_declaration",
-                        "interface_declaration",
-                    ]:
-                        return self._get_identifier_name(child)
-                    elif child.type == "variable_declaration":
-                        names = self._extract_variable_names(child)
-                        return names[0] if names else "unknown"
-                    elif child.type == "export_clause":
-                        names = self._extract_export_names(child)
-                        return names[0] if names else "unknown"
-
-        return "default"
-
-    def _extract_export_names(self, export_clause: Any) -> List[str]:
-        """Extract names from export clause."""
-        names = []
-        if hasattr(export_clause, "children"):
-            for child in export_clause.children:
-                if hasattr(child, "type") and child.type == "export_specifier":
-                    if hasattr(child, "children"):
-                        for grandchild in child.children:
-                            if (
-                                hasattr(grandchild, "type")
-                                and grandchild.type == "identifier"
-                            ):
-                                names.append(self._get_node_text(grandchild))
-                                break
-        return names
-
-    def _is_function_assignment(self, declarator_node: Any) -> bool:
-        """Check if a variable declarator is a function assignment."""
-        if hasattr(declarator_node, "children"):
-            for child in declarator_node.children:
-                if hasattr(child, "type") and child.type in [
-                    "function_expression",
-                    "arrow_function",
-                    "async_function_expression",
-                ]:
-                    return True
-        return False
-
-    def _extract_variable_names(self, var_node: Any) -> List[str]:
-        """Extract variable names from variable declaration."""
-        names = []
-        if hasattr(var_node, "children"):
-            for child in var_node.children:
-                if hasattr(child, "type") and child.type == "variable_declarator":
-                    name = self._get_identifier_name(child)
-                    if name:
-                        names.append(name)
-                    else:
-                        # Handle destructuring
-                        names.extend(self._extract_destructuring_names(child))
-        return names
-
-    def _extract_destructuring_names(self, declarator_node: Any) -> List[str]:
+    def _extract_destructuring_names(self, node: Any) -> List[str]:
         """Extract names from destructuring patterns."""
         names = []
-        if hasattr(declarator_node, "children"):
-            for child in declarator_node.children:
-                if hasattr(child, "type"):
-                    if child.type == "object_pattern":
-                        names.extend(self._extract_object_pattern_names(child))
-                    elif child.type == "array_pattern":
-                        names.extend(self._extract_array_pattern_names(child))
+
+        if node.type == "object_pattern":
+            names.extend(self._extract_object_pattern_names(node))
+        elif node.type == "array_pattern":
+            names.extend(self._extract_array_pattern_names(node))
+
         return names
 
-    def _extract_object_pattern_names(self, pattern_node: Any) -> List[str]:
+    def _extract_object_pattern_names(self, node: Any) -> List[str]:
         """Extract names from object destructuring pattern."""
         names = []
-        if hasattr(pattern_node, "children"):
-            for child in pattern_node.children:
-                if hasattr(child, "type") and child.type == "pair_pattern":
-                    if hasattr(child, "children"):
-                        for grandchild in child.children:
-                            if (
-                                hasattr(grandchild, "type")
-                                and grandchild.type == "identifier"
-                            ):
-                                names.append(self._get_node_text(grandchild))
+        for child in node.children:
+            if child.type == "shorthand_property_identifier_pattern":
+                names.append(self._get_node_text(child))
+            elif child.type == "pair_pattern":
+                value_node = child.child_by_field_name("value")
+                if value_node:
+                    names.extend(self._extract_names_from_node(value_node))
         return names
 
-    def _extract_array_pattern_names(self, pattern_node: Any) -> List[str]:
+    def _extract_array_pattern_names(self, node: Any) -> List[str]:
         """Extract names from array destructuring pattern."""
         names = []
-        if hasattr(pattern_node, "children"):
-            for child in pattern_node.children:
-                if hasattr(child, "type") and child.type == "identifier":
-                    names.append(self._get_node_text(child))
+        for child in node.children:
+            if child.type == "identifier":
+                names.append(self._get_node_text(child))
         return names
 
-    def _get_method_name(self, method_node: Any) -> str:
-        """Get the name of a method node."""
-        if hasattr(method_node, "children"):
-            for child in method_node.children:
-                if hasattr(child, "type") and child.type == "property_identifier":
-                    return self._get_node_text(child)
+    def _extract_variable_names(self, node: Any) -> List[str]:
+        """Extract variable names from variable declaration."""
+        names = []
+        if node.type == "variable_declaration":
+            for child in node.children:
+                if child.type == "variable_declarator":
+                    name_node = child.child_by_field_name("name")
+                    if name_node:
+                        names.extend(self._extract_names_from_node(name_node))
+        return names
+
+    def _extract_import_name(self, node: Any) -> str:
+        """Extract module name from import statement."""
+        source_node = node.child_by_field_name("source")
+        if source_node and source_node.type == "string":
+            return self._get_node_text(source_node).strip("\"'")
         return ""
 
-    def extract_enums(self, node: Any) -> List[CodeBlock]:
-        """Extract top-level enum declarations with nested elements as children."""
-        enums = self._extract_top_level_enums(node)
-        for enum in enums:
-            enum.children = self._extract_nested_elements(node, enum)
-        return enums
+    def _extract_named_imports(self, node: Any) -> List[str]:
+        """Extract named import identifiers."""
+        names = []
+        for child in node.children:
+            if child.type == "named_imports":
+                for import_child in child.children:
+                    if import_child.type == "import_specifier":
+                        name_node = import_child.child_by_field_name("name")
+                        if name_node:
+                            names.append(self._get_node_text(name_node))
+        return names
 
-    def _extract_top_level_enums(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level enum declarations from TypeScript module."""
-        blocks = []
+    def _extract_export_names(self, node: Any) -> List[str]:
+        """Extract export names from export statement."""
+        names = []
 
-        # Look for direct children of the module that are enum declarations
-        if hasattr(node, "children"):
+        # Handle different export types
+        if node.type == "export_statement":
             for child in node.children:
-                if hasattr(child, "type") and child.type == "enum_declaration":
-                    name = self._get_identifier_name(child)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(child)
-                        )
-                        content = self._get_node_text(child)
-                        blocks.append(
-                            self._create_code_block(
-                                BlockType.ENUM,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                child,
-                            )
-                        )
+                if child.type == "export_clause":
+                    for export_child in child.children:
+                        if export_child.type == "export_specifier":
+                            name_node = export_child.child_by_field_name("name")
+                            if name_node:
+                                names.append(self._get_node_text(name_node))
+        elif node.type in [
+            "function_declaration",
+            "class_declaration",
+            "interface_declaration",
+            "enum_declaration",
+        ]:
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                names.append(self._get_node_text(name_node))
+
+        return names
+
+    # ============================================================================
+    # MAIN EXTRACTION METHODS
+    # ============================================================================
+
+    def extract_imports(self, root_node: Any) -> List[CodeBlock]:
+        """Extract import statements."""
+
+        def process_import(node):
+            import_name = self._extract_import_name(node)
+            names = [import_name] if import_name else []
+
+            # Add imported symbols
+            names.extend(self._extract_named_imports(node))
+
+            # Handle default imports
+            for child in node.children:
+                if child.type == "identifier":
+                    names.append(self._get_node_text(child))
+
+            return self._create_code_block(node, BlockType.IMPORT, names)
+
+        import_types = {"import_statement"}
+        blocks = self._generic_traversal(root_node, import_types, process_import)
+
+        # Add dynamic imports
+        blocks.extend(self._find_dynamic_imports(root_node))
+        blocks.extend(self._find_require_calls(root_node))
 
         return blocks
 
-    def extract_variables(self, node: Any) -> List[CodeBlock]:
-        """Extract top-level variable declarations with nested elements as children."""
-        variables = self._extract_top_level_variables(node)
-        for variable in variables:
-            variable.children = self._extract_nested_elements(node, variable)
-        return variables
+    def extract_exports(self, root_node: Any) -> List[CodeBlock]:
+        """Extract export statements."""
+
+        def process_export(node):
+            names = self._extract_export_names(node)
+            return (
+                self._create_code_block(node, BlockType.EXPORT, names)
+                if names
+                else None
+            )
+
+        export_types = {
+            "export_statement",
+            "export_default_statement",
+            "export_assignment",
+        }
+        return self._generic_traversal(root_node, export_types, process_export)
+
+    def extract_functions(self, root_node: Any) -> List[CodeBlock]:
+        """Extract function declarations with nested function extraction for large functions."""
+
+        def process_function(node):
+            name_node = node.child_by_field_name("name")
+            names = [self._get_node_text(name_node)] if name_node else []
+
+            # Use the new nested function extraction logic
+            return self._create_function_block_with_nested_extraction(
+                node, BlockType.FUNCTION, names, self.FUNCTION_TYPES
+            )
+
+        return self._generic_traversal(root_node, self.FUNCTION_TYPES, process_function)
+
+    def extract_classes(self, root_node: Any) -> List[CodeBlock]:
+        """Extract class declarations with 300-line check for methods."""
+
+        def process_class(node):
+            name_node = node.child_by_field_name("name")
+            names = [self._get_node_text(name_node)] if name_node else []
+
+            # Create class block without content (since everything is in nested blocks)
+            start_line, end_line, start_col, end_col = self._get_node_position(node)
+            symbols = self._get_symbols_for_block(
+                start_line, end_line, start_col, end_col
+            )
+
+            class_block = CodeBlock(
+                type=BlockType.CLASS,
+                name=names[0] if names else "anonymous",
+                content="",  # No content since everything is in nested blocks
+                symbols=symbols,
+                start_line=start_line,
+                end_line=end_line,
+                start_col=start_col,
+                end_col=end_col,
+                id=self._hash_generator.next_id(),
+            )
+
+            # Extract nested elements with 300-line check for methods
+            nested_blocks = []
+
+            # Extract methods with 300-line nested function extraction
+            def process_method(method_node):
+                if method_node.type == "method_definition":
+                    name_node = method_node.child_by_field_name("name")
+                    method_names = [self._get_node_text(name_node)] if name_node else []
+
+                    # Apply 300-line check to methods
+                    return self._create_function_block_with_nested_extraction(
+                        method_node,
+                        BlockType.FUNCTION,
+                        method_names,
+                        self.FUNCTION_TYPES,
+                    )
+                return None
+
+            methods = self._generic_traversal(
+                node, {"method_definition"}, process_method
+            )
+            nested_blocks.extend(methods)
+
+            # Extract class-level fields only (not variables inside methods)
+            class_level_fields = self._extract_class_level_fields(node)
+            nested_blocks.extend(class_level_fields)
+
+            class_block.children = nested_blocks
+            return class_block
+
+        return self._generic_traversal(root_node, self.CLASS_TYPES, process_class)
+
+    def extract_interfaces(self, root_node: Any) -> List[CodeBlock]:
+        """Extract interface declarations."""
+
+        def process_interface(node):
+            name_node = node.child_by_field_name("name")
+            names = [self._get_node_text(name_node)] if name_node else []
+
+            # Don't extract nested blocks for interfaces
+            return self._create_code_block(node, BlockType.INTERFACE, names)
+
+        return self._generic_traversal(
+            root_node, {"interface_declaration"}, process_interface
+        )
+
+    def extract_enums(self, root_node: Any) -> List[CodeBlock]:
+        """Extract enum declarations."""
+
+        def process_enum(node):
+            name_node = node.child_by_field_name("name")
+            names = [self._get_node_text(name_node)] if name_node else []
+
+            nested_types = {"property_identifier": BlockType.VARIABLE}
+            return self._create_block_with_nested(
+                node, BlockType.ENUM, names, nested_types
+            )
+
+        return self._generic_traversal(root_node, {"enum_declaration"}, process_enum)
+
+    def extract_variables(self, root_node: Any) -> List[CodeBlock]:
+        """Extract variable declarations."""
+        blocks = []
+
+        def process_variable(node):
+            names = self._extract_variable_names(node)
+            return (
+                self._create_code_block(node, BlockType.VARIABLE, names)
+                if names
+                else None
+            )
+
+        # Only look at direct children of root_node
+        for child in root_node.children:
+            if child.type in self.VARIABLE_TYPES:
+                block = process_variable(child)
+                if block:
+                    blocks.append(block)
+
+        return blocks
 
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
-        """TypeScript-specific implementation of extract_all.
-        Extracts all supported code blocks with hierarchical structure.
-        """
-        self._blocks = []
-
-        # First, extract all symbols from the entire file
+        """Extract all types of code blocks."""
+        # First extract all symbols for enhanced analysis
         self._extract_all_symbols(root_node)
 
-        # Then extract top-level blocks with their nested children
-        # TypeScript-specific order and handling
-        self._blocks.extend(self.extract_imports(root_node))
-        self._blocks.extend(self.extract_exports(root_node))
-        self._blocks.extend(
-            self.extract_interfaces(root_node)
-        )  # TypeScript has interfaces
-        self._blocks.extend(self.extract_enums(root_node))  # TypeScript has enums
-        self._blocks.extend(self.extract_variables(root_node))
-        self._blocks.extend(self.extract_functions(root_node))
-        self._blocks.extend(self.extract_classes(root_node))
+        all_blocks = []
+        all_blocks.extend(self.extract_imports(root_node))
+        all_blocks.extend(self.extract_exports(root_node))
+        all_blocks.extend(self.extract_enums(root_node))
+        all_blocks.extend(self.extract_variables(root_node))
+        all_blocks.extend(self.extract_functions(root_node))
+        all_blocks.extend(self.extract_classes(root_node))
+        all_blocks.extend(self.extract_interfaces(root_node))
+        return all_blocks
 
-        return self._blocks
+    # ============================================================================
+    # SPECIALIZED DETECTION METHODS
+    # ============================================================================
 
-    def _extract_top_level_variables(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level variable declarations from TypeScript module."""
+    def _find_dynamic_imports(self, root_node: Any) -> List[CodeBlock]:
+        """Find dynamic import() calls."""
         blocks = []
 
-        # Look for direct children of the module that are variable declarations
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type in [
-                    "variable_declaration",
-                    "lexical_declaration",
-                ]:
-                    # Extract variables but skip function assignments (they'll be handled as functions)
-                    if hasattr(child, "children"):
-                        for grandchild in child.children:
-                            if (
-                                hasattr(grandchild, "type")
-                                and grandchild.type == "variable_declarator"
-                            ):
-                                # Skip if this is a function assignment
-                                if not self._is_function_assignment(grandchild):
-                                    name = self._get_identifier_name(grandchild)
-                                    if name:
-                                        start_line, end_line, start_col, end_col = (
-                                            self._get_node_position(child)
-                                        )
-                                        content = self._get_node_text(child)
-                                        blocks.append(
-                                            self._create_code_block(
-                                                BlockType.VARIABLE,
-                                                name,
-                                                content,
-                                                start_line,
-                                                end_line,
-                                                start_col,
-                                                end_col,
-                                                child,
-                                            )
-                                        )
+        def traverse(node):
+            if self._is_dynamic_import(node):
+                import_name = self._extract_dynamic_import_name(node)
+                if import_name:
+                    block = self._create_code_block(
+                        node, BlockType.IMPORT, [import_name]
+                    )
+                    blocks.append(block)
 
+            for child in node.children:
+                traverse(child)
+
+        traverse(root_node)
         return blocks
 
-    def extract_functions(self, node: Any) -> List[CodeBlock]:
-        """Extract top-level function declarations with nested elements as children."""
-        functions = self._extract_top_level_functions(node)
-        for function in functions:
-            function.children = self._extract_nested_elements(node, function)
-        return functions
-
-    def _extract_top_level_functions(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level function declarations from TypeScript module."""
+    def _find_require_calls(self, root_node: Any) -> List[CodeBlock]:
+        """Find require() calls."""
         blocks = []
 
-        # Look for direct children of the module that are function declarations
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type"):
-                    if child.type == "function_declaration":
-                        name = self._get_identifier_name(child)
-                        if name:
-                            start_line, end_line, start_col, end_col = (
-                                self._get_node_position(child)
-                            )
-                            content = self._get_node_text(child)
-                            blocks.append(
-                                self._create_code_block(
-                                    BlockType.FUNCTION,
-                                    name,
-                                    content,
-                                    start_line,
-                                    end_line,
-                                    start_col,
-                                    end_col,
-                                    child,
-                                )
-                            )
-                    elif child.type in ["variable_declaration", "lexical_declaration"]:
-                        # Check for function expressions assigned to variables
-                        if hasattr(child, "children"):
-                            for grandchild in child.children:
-                                if (
-                                    hasattr(grandchild, "type")
-                                    and grandchild.type == "variable_declarator"
-                                ):
-                                    name = self._get_identifier_name(grandchild)
-                                    if name and self._is_function_assignment(
-                                        grandchild
-                                    ):
-                                        start_line, end_line, start_col, end_col = (
-                                            self._get_node_position(child)
-                                        )
-                                        content = self._get_node_text(child)
-                                        blocks.append(
-                                            self._create_code_block(
-                                                BlockType.FUNCTION,
-                                                name,
-                                                content,
-                                                start_line,
-                                                end_line,
-                                                start_col,
-                                                end_col,
-                                                child,
-                                            )
-                                        )
+        def traverse(node):
+            if self._is_require_call(node):
+                import_name = self._extract_require_name(node)
+                if import_name:
+                    block = self._create_code_block(
+                        node, BlockType.IMPORT, [import_name]
+                    )
+                    blocks.append(block)
 
+            for child in node.children:
+                traverse(child)
+
+        traverse(root_node)
         return blocks
 
-    def _get_nested_identifier_name(self, node: Any) -> str:
-        """Get identifier name from a nested TypeScript node."""
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type in [
-                    "identifier",
-                    "type_identifier",
-                    "property_identifier",
-                ]:
-                    return self._get_node_text(child)
+    def _is_dynamic_import(self, node: Any) -> bool:
+        """Check if node is a dynamic import() call."""
+        if node.type != "call_expression":
+            return False
+
+        function_node = node.child_by_field_name("function")
+        if not function_node:
+            return False
+
+        return self._get_node_text(function_node) == "import"
+
+    def _is_require_call(self, node: Any) -> bool:
+        """Check if node is a require() call."""
+        if node.type != "call_expression":
+            return False
+
+        function_node = node.child_by_field_name("function")
+        if not function_node:
+            return False
+
+        return self._get_node_text(function_node) == "require"
+
+    def _extract_dynamic_import_name(self, node: Any) -> str:
+        """Extract module name from dynamic import."""
+        arguments = node.child_by_field_name("arguments")
+        if arguments and arguments.children:
+            first_arg = arguments.children[1] if len(arguments.children) > 1 else None
+            if first_arg and first_arg.type == "string":
+                return self._get_node_text(first_arg).strip("\"'")
         return ""
 
-    def _extract_nested_functions(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract function/method declarations nested within a TypeScript parent node."""
-        nested_functions = []
+    def _extract_require_name(self, node: Any) -> str:
+        """Extract module name from require call."""
+        arguments = node.child_by_field_name("arguments")
+        if arguments and arguments.children:
+            first_arg = arguments.children[1] if len(arguments.children) > 1 else None
+            if first_arg and first_arg.type == "string":
+                return self._get_node_text(first_arg).strip("\"'")
+        return ""
 
-        def traverse(node, depth=0):
-            if hasattr(node, "type"):
-                # TypeScript function/method node types
-                function_types = [
-                    "method_definition",
-                    "function_declaration",
-                    "function_expression",
-                    "arrow_function",
-                ]
+    def _get_method_name(self, node: Any) -> str:
+        """Extract method name from method definition."""
+        key_node = node.child_by_field_name("name")
+        if key_node:
+            return self._get_node_text(key_node)
+        return ""
 
-                if (
-                    node.type in function_types and depth > 0
-                ):  # Skip direct children, only nested
-                    name = self._get_nested_identifier_name(node)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(node)
-                        )
-                        content = self._get_node_text(node)
+    def _is_function_assignment(self, node: Any) -> bool:
+        """Check if node is a function assignment."""
+        if node.type != "assignment_expression":
+            return False
 
-                        nested_functions.append(
-                            self._create_code_block(
-                                BlockType.FUNCTION,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                node,
+        right_node = node.child_by_field_name("right")
+        return right_node and right_node.type in [
+            "function_expression",
+            "arrow_function",
+        ]
+
+    def _extract_class_level_fields(self, class_node: Any) -> List[CodeBlock]:
+        """Extract only class-level field definitions, not variables inside methods."""
+        fields = []
+
+        # Look for the class body
+        for child in class_node.children:
+            if child.type == "class_body":
+                # Now look at direct children of the class_body for field definitions
+                for body_child in child.children:
+                    if body_child.type in [
+                        "field_definition",
+                        "public_field_definition",
+                    ]:
+                        # This is a class-level field definition
+                        names = self._extract_names_from_node(body_child)
+                        if names:
+                            field_block = self._create_code_block(
+                                body_child, BlockType.VARIABLE, names
                             )
-                        )
-                        return  # Don't traverse deeper from this function
+                            fields.append(field_block)
 
-            if hasattr(node, "children"):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, "children"):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_functions
-
-    def _extract_nested_variables(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract variable/property declarations nested within a TypeScript parent node."""
-        nested_variables = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, "type"):
-                # TypeScript variable/property node types
-                variable_types = [
-                    "public_field_definition",
-                    "property_signature",
-                    "variable_declarator",
-                ]
-
-                if (
-                    node.type in variable_types and depth > 0
-                ):  # Skip direct children, only nested
-                    name = self._get_nested_identifier_name(node)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(node)
-                        )
-                        content = self._get_node_text(node)
-
-                        nested_variables.append(
-                            self._create_code_block(
-                                BlockType.VARIABLE,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                node,
-                            )
-                        )
-
-            if hasattr(node, "children"):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, "children"):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_variables
-
-    def _extract_nested_classes(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract class declarations nested within a TypeScript parent node."""
-        nested_classes = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, "type"):
-                if (
-                    node.type == "class_declaration" and depth > 0
-                ):  # Skip direct children, only nested
-                    name = self._get_nested_identifier_name(node)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(node)
-                        )
-                        content = self._get_node_text(node)
-
-                        nested_classes.append(
-                            self._create_code_block(
-                                BlockType.CLASS,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                node,
-                            )
-                        )
-                        return  # Don't traverse deeper from this class
-
-            if hasattr(node, "children"):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, "children"):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_classes
-
-    def _extract_nested_interfaces(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract interface declarations nested within a TypeScript parent node."""
-        nested_interfaces = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, "type"):
-                if (
-                    node.type == "interface_declaration" and depth > 0
-                ):  # Skip direct children, only nested
-                    name = self._get_nested_identifier_name(node)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(node)
-                        )
-                        content = self._get_node_text(node)
-
-                        nested_interfaces.append(
-                            self._create_code_block(
-                                BlockType.INTERFACE,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                node,
-                            )
-                        )
-                        return  # Don't traverse deeper from this interface
-
-            if hasattr(node, "children"):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, "children"):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_interfaces
-
-    def _extract_nested_enums(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract enum declarations nested within a TypeScript parent node."""
-        nested_enums = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, "type"):
-                if (
-                    node.type == "enum_declaration" and depth > 0
-                ):  # Skip direct children, only nested
-                    name = self._get_nested_identifier_name(node)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(node)
-                        )
-                        content = self._get_node_text(node)
-
-                        nested_enums.append(
-                            self._create_code_block(
-                                BlockType.ENUM,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                node,
-                            )
-                        )
-                        return  # Don't traverse deeper from this enum
-
-            if hasattr(node, "children"):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, "children"):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_enums
-
-    def extract_classes(self, node: Any) -> List[CodeBlock]:
-        """Extract top-level class declarations with nested elements as children."""
-        classes = self._extract_top_level_classes(node)
-        for class_block in classes:
-            class_block.children = self._extract_nested_elements(node, class_block)
-        return classes
-
-    def _extract_top_level_classes(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level class declarations from TypeScript module."""
-        blocks = []
-
-        # Look for direct children of the module that are class declarations
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type == "class_declaration":
-                    name = self._get_identifier_name(child)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(child)
-                        )
-                        content = self._get_node_text(child)
-                        blocks.append(
-                            self._create_code_block(
-                                BlockType.CLASS,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                child,
-                            )
-                        )
-
-        return blocks
-
-    def extract_interfaces(self, node: Any) -> List[CodeBlock]:
-        """Extract top-level interface declarations with nested elements as children."""
-        interfaces = self._extract_top_level_interfaces(node)
-        for interface in interfaces:
-            interface.children = self._extract_nested_elements(node, interface)
-        return interfaces
-
-    def _extract_top_level_interfaces(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level interface declarations from TypeScript module."""
-        blocks = []
-
-        # Look for direct children of the module that are interface declarations
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type == "interface_declaration":
-                    name = self._get_identifier_name(child)
-                    if name:
-                        start_line, end_line, start_col, end_col = (
-                            self._get_node_position(child)
-                        )
-                        content = self._get_node_text(child)
-                        blocks.append(
-                            self._create_code_block(
-                                BlockType.INTERFACE,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                child,
-                            )
-                        )
-
-        return blocks
+        return fields

@@ -7,9 +7,11 @@ relationships between files based on import statements.
 
 import os
 import hashlib
+import zlib
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
-from tree_sitter_language_pack import get_parser
+from typing import Dict, Optional, Union, Any, cast
+from tree_sitter import Parser
+from tree_sitter_language_pack import get_parser, SupportedLanguage
 
 from utils.file_utils import (
     get_language_from_extension,
@@ -18,7 +20,7 @@ from utils.file_utils import (
     is_text_file,
     read_file_content,
 )
-from extractors import Extractor, BlockType
+from extractors import Extractor
 from relationship_extractors import RelationshipExtractor
 
 
@@ -27,13 +29,20 @@ class ASTParser:
     AST parser with code block extraction capabilities.
     """
 
-    def __init__(self, symbol_extractor=None, relationship_extractor=None):
-        """Initialize the AST parser."""
-        self._parser_cache: Dict[str, Any] = {}
-        self._extractor = Extractor(symbol_extractor=symbol_extractor)
-        self._relationship_extractor = relationship_extractor or RelationshipExtractor()
+    def __init__(self, symbol_extractor=None):
+        """
+        Initialize the AST parser.
 
-    def _get_parser(self, language: str) -> Optional[Any]:
+        Args:
+            symbol_extractor: Optional symbol extractor for enhanced code block analysis.
+                            If provided, will be used by code block extractors to identify
+                            symbols within extracted blocks.
+        """
+        self._parser_cache: Dict[str, Parser] = {}
+        self._extractor = Extractor(symbol_extractor=symbol_extractor)
+        self._relationship_extractor = RelationshipExtractor()
+
+    def _get_parser(self, language: SupportedLanguage) -> Optional[Any]:
         """
         Get a tree-sitter parser for the specified language.
         Caches parsers for better performance.
@@ -51,7 +60,7 @@ class ASTParser:
             parser = get_parser(language)
             self._parser_cache[language] = parser
             return parser
-        except Exception as e:
+        except Exception:
             return None
 
     def parse_file(self, file_path: Union[str, Path]) -> Optional[Any]:
@@ -109,55 +118,12 @@ class ASTParser:
             print(f"Error parsing file {file_path}: {e}")
             return None
 
-    def parse_directory(self, dir_path: Union[str, Path]) -> Dict[str, Any]:
-        """
-        Parse all supported files in a directory recursively.
-
-        Args:
-            dir_path: Path to the directory to parse
-
-        Returns:
-            Dictionary with file paths as keys and AST trees as values
-        """
-        dir_path = Path(dir_path)
-        results = {}
-
-        if not dir_path.exists() or not dir_path.is_dir():
-            print(f"Directory not found: {dir_path}")
-            return results
-
-        print(f"Parsing directory: {dir_path}")
-
-        for root, dirs, files in os.walk(dir_path):
-            root_path = Path(root)
-
-            # Filter out ignored directories
-            original_dirs = dirs[:]
-            dirs[:] = [d for d in dirs if not should_ignore_directory(root_path / d)]
-
-            ignored_dirs = set(original_dirs) - set(dirs)
-            for ignored_dir in ignored_dirs:
-                print(f"Ignoring directory: {root_path / ignored_dir}")
-
-            # Parse files in current directory
-            for file in files:
-                file_path = root_path / file
-
-                ast_tree = self.parse_file(file_path)
-                if ast_tree:
-                    results[str(file_path)] = ast_tree
-
-        print(f"Parsed {len(results)} files from directory: {dir_path}")
-        return results
-
-    def parse_and_extract(self, file_path: Union[str, Path],
-                         block_types: Optional[List[BlockType]] = None) -> Dict[str, Any]:
+    def parse_and_extract(self, file_path: Union[str, Path]) -> Dict[str, Any]:
         """
         Parse a file and extract code blocks with hierarchical structure.
 
         Args:
             file_path: Path to the file to parse
-            block_types: List of block types to extract (None for all)
 
         Returns:
             Dictionary containing AST tree and extracted blocks with nested children
@@ -175,34 +141,32 @@ class ASTParser:
             return {
                 "ast": ast_tree,
                 "blocks": [],
-                "error": f"Unsupported file type: {file_path}"
+                "error": f"Unsupported file type: {file_path}",
             }
 
-
-
-        # Extract blocks using the main extractor
-        blocks = self._extractor.extract_from_ast(ast_tree, language, block_types)
+        # Create file ID and extract blocks
+        file_id = zlib.crc32(str(file_path).encode()) & 0xFFFFFFFF
+        blocks = self._extractor.extract_from_ast(ast_tree, language, file_id)
 
         return {
             "ast": ast_tree,
             "blocks": blocks,
             "language": language,
-            "id":hashlib.blake2b(str(file_path).encode()).hexdigest(),
+            "id": file_id,
             "file_path": str(file_path),
             "content": ast_tree.root_node.text,
             "content_hash": hashlib.sha256(ast_tree.root_node.text).hexdigest(),
-
         }
 
-    def extract_from_directory(self, dir_path: Union[str, Path],
-                             block_types: Optional[List[BlockType]] = None) -> Dict[str, Dict[str, Any]]:
+    def extract_from_directory(
+        self, dir_path: Union[str, Path]
+    ) -> Dict[str, Dict[str, Any]]:
         """
         Parse all files in a directory and extract code blocks with hierarchical structure.
         Also extracts relationships between files based on import statements.
 
         Args:
             dir_path: Path to the directory
-            block_types: List of block types to extract (None for all)
 
         Returns:
             Dictionary with file paths as keys and extraction results as values,
@@ -216,6 +180,9 @@ class ASTParser:
             return results
 
         print(f"Parsing and extracting from directory: {dir_path}")
+
+        # Create ID to path mapping for efficient relationship lookup
+        id_to_path = {}
 
         for root, dirs, files in os.walk(dir_path):
             root_path = Path(root)
@@ -231,134 +198,51 @@ class ASTParser:
             # Parse and extract from files in current directory
             for file in files:
                 file_path = root_path / file
-                result = self.parse_and_extract(file_path, block_types)
+                result = self.parse_and_extract(file_path)
                 if result.get("ast") or result.get("error"):
-                    results[str(file_path)] = result
+                    file_path_str = str(file_path)
+                    results[file_path_str] = result
+
+                    # Build ID to path mapping for efficient lookup
+                    file_id = result.get("id")
+                    if file_id:
+                        id_to_path[file_id] = file_path_str
 
         # Extract relationships between files based on import statements
         if results:
             print("Extracting relationships between files...")
             relationships = self._relationship_extractor.extract_relationships(results)
-            
-            # Add relationships to the results
+
+            # Remove AST trees after relationship extraction to save memory
+            # (relationships only need the extracted blocks, not the AST)
+            for result in results.values():
+                if "ast" in result:
+                    del result["ast"]
+
+            # Add relationships to the results using efficient ID mapping
             for relationship in relationships:
                 source_file_id = relationship.source_file
                 target_file_id = relationship.target_file
-                
-                # Find the source file path from its ID
-                source_file_path = None
-                for file_path, result in results.items():
-                    if result.get("id") == source_file_id:
-                        source_file_path = file_path
-                        break
-                
+
+                # Use efficient ID to path mapping instead of O(n) search
+                source_file_path = id_to_path.get(source_file_id)
+
                 if source_file_path:
                     # Initialize relationships list if it doesn't exist
                     if "relationships" not in results[source_file_path]:
                         results[source_file_path]["relationships"] = []
-                    
+
                     # Add the relationship to the source file's results
-                    results[source_file_path]["relationships"].append({
-                        "source_file": source_file_id,
-                        "target_file": target_file_id,
-                        "import_content": relationship.import_content,
-                        "symbols": relationship.symbols
-                    })
+                    results[source_file_path]["relationships"].append(
+                        {
+                            "source_file": source_file_id,
+                            "target_file": target_file_id,
+                            "import_content": relationship.import_content,
+                            "symbols": relationship.symbols,
+                        }
+                    )
 
-        print(f"Parsed and extracted from {len(results)} files in directory: {dir_path}")
+        print(
+            f"Parsed and extracted from {len(results)} files in directory: {dir_path}"
+        )
         return results
-
-
-
-    def get_supported_languages(self) -> List[str]:
-        """
-        Get a list of supported programming languages.
-
-        Returns:
-            List of supported language names
-        """
-        from utils.supported_languages import SUPPORTED_LANGUAGES
-        return list(SUPPORTED_LANGUAGES.keys())
-
-    def get_supported_extraction_languages(self) -> List[str]:
-        """Get languages that support code block extraction."""
-        return self._extractor.get_supported_languages()
-
-    def get_file_count(self, path: Union[str, Path]) -> int:
-        """
-        Count the number of parseable files in a path without parsing them.
-
-        Args:
-            path: Path to file or directory
-
-        Returns:
-            Number of files that would be parsed
-        """
-        path = Path(path)
-        count = 0
-
-        if path.is_file():
-            if not should_ignore_file(path) and get_language_from_extension(path):
-                count = 1
-        elif path.is_dir():
-            for root, dirs, files in os.walk(path):
-                root_path = Path(root)
-
-                # Filter out ignored directories
-                dirs[:] = [
-                    d for d in dirs if not should_ignore_directory(root_path / d)
-                ]
-
-                for file in files:
-                    file_path = root_path / file
-                    if not should_ignore_file(
-                        file_path
-                    ) and get_language_from_extension(file_path):
-                        count += 1
-
-        return count
-
-    def clear_cache(self) -> None:
-        """
-        Clear the parser cache to free memory.
-        """
-        self._parser_cache.clear()
-        print("Parser cache cleared")
-
-    def get_available_languages(self) -> List[str]:
-        """
-        Get a list of actually available languages that can be used for parsing.
-        This method tests which languages are actually available in the current
-        installation of tree-sitter-language-pack.
-
-        Returns:
-            List of available language names
-        """
-        available_languages = []
-        test_languages = self.get_supported_languages()
-
-        for language in test_languages:
-            try:
-                get_parser(language)
-                available_languages.append(language)
-            except Exception:
-                # Language not available in current installation
-                continue
-
-        return available_languages
-
-    def is_language_supported(self, language: str) -> bool:
-        """
-        Check if a specific language is supported by the current installation.
-
-        Args:
-            language: Language name to check
-
-        Returns:
-            True if language is supported, False otherwise
-        """
-        try:
-            get_parser(language)
-            return True
-        except Exception:
-            return False
