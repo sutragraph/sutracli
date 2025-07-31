@@ -146,7 +146,7 @@ FIRST ITERATION RULE:
 - Use database tool to examine package files and identify used connection packages in the current project
 - CRITICAL: Never add task lists just by seeing list of files - first check package.json file and find using imports of used packages and some common patterns which can be used without any packages
 - Create task list in Sutra Memory ONLY after analyzing package files to understand which packages are actually used and their import statement patterns based on language
-- Also consider common built-in patterns that don't require packages (like native fetch(), http modules, WebSocket constructors)
+- Also consider common built-in patterns that don't require packages (like native fetch(), http modules, WebSocket constructors) add those to task list
 - Then proceed with three-phase analysis: package discovery, import statement analysis, and usage pattern discovery
 - Use tools like list_files, database, semantic_search, and search_keyword systematically based on discovered packages and built-in patterns
 
@@ -254,6 +254,6 @@ TASK LIST UPDATES IN SUBSEQUENT ITERATIONS:
    - ZERO TOLERANCE for skipping connections: Every single connection found must be included in attempt_completion
    - MANDATORY: When using search_keyword and finding multiple connection calls, you MUST store every single one
    - NO SAMPLING: Never store "representative examples" - store every single connection discovered
-   - COMPLETE ANALYSIS: If search_keyword returns 100 results and if it is an any connection type, you must store all 100, not just 5-10
+   - COMPLETE ANALYSIS: If search_keyword returns 100 results and if it is an any connection type, you must store all 100 by providing their file paths and line numbers in sutra memory
    - EXAMPLE: If search_keyword finds 40 connections for "callUserApi(" you MUST store ALL 40 connections in sutra memory. This is MANDATORY and NON-NEGOTIABLE. and while giving attempt_completion, you must include all 40 connections with their file paths and line numbers.
 """
