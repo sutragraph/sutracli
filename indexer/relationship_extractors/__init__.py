@@ -60,9 +60,11 @@ class RelationshipExtractor:
         """Setup language-specific extractors."""
         from .python_extractor import PythonRelationshipExtractor
         from .typescript_extractor import TypeScriptRelationshipExtractor
+        from .java_extractor import JavaRelationshipExtractor
 
         self.register_extractor("python", PythonRelationshipExtractor)
         self.register_extractor("typescript", TypeScriptRelationshipExtractor)
+        self.register_extractor("java", JavaRelationshipExtractor)
 
     def register_extractor(
         self, language: SupportedLanguage, extractor_class: type

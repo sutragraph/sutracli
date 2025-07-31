@@ -423,6 +423,7 @@ class Extractor:
 
         self.register_extractor("typescript", TypeScriptExtractor)
         self.register_extractor("python", PythonExtractor)
+        self.register_extractor("java", JavaExtractor)
 
     def register_extractor(
         self, language: SupportedLanguage, extractor_class: type
