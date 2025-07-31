@@ -260,7 +260,9 @@ def main():
     test_dir = Path(__file__).parent / "test_files"
     test_files = [
         test_dir / "test_python.py",
-        test_dir / "test_typescript.ts"
+        test_dir / "test_typescript.ts",
+        test_dir / "test_java.java",
+
     ]
 
     print(f"📁 Test directory: {test_dir}")
