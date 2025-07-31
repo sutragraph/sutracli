@@ -104,6 +104,4 @@ RULES
 
 32. CRITICAL: You MUST select exactly ONE tool in each iteration. Every response must contain exactly one tool call. Never respond with only thinking and sutra_memory without a tool - this violates the system architecture.
 
-33. LIST_FILES TOOL LIMITATION: The list_files tool may not return hidden files like .env, .env.local. When you need to find environment variable files, use search_keyword to search for specific patterns or use database tool if you know the file path.
-
 """
