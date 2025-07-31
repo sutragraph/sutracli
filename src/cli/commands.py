@@ -13,7 +13,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from graph.sqlite_client import SQLiteConnection
 from services.project_manager import ProjectManager
 from services.cross_indexing.core.cross_index_system import CrossIndexSystem
-from graph import TreeSitterToSQLiteConverter
+from graph import ASTToSqliteConverter
 from services.agent_service import AgentService
 from services.auth.token_manager import get_token_manager
 from config import config
@@ -35,13 +35,15 @@ def get_version_from_init():
     try:
         import re
         from pathlib import Path
-        
+
         # Try to read version from sutrakit/__init__.py directly to avoid circular imports
         init_file = Path(__file__).parent.parent / "sutrakit" / "__init__.py"
         if init_file.exists():
-            with open(init_file, 'r') as f:
+            with open(init_file, "r") as f:
                 content = f.read()
-                version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                version_match = re.search(
+                    r'__version__\s*=\s*["\']([^"\']+)["\']', content
+                )
                 if version_match:
                     return version_match.group(1)
     except Exception:
@@ -56,7 +58,7 @@ def handle_single_command(args) -> None:
         logger.error(f"Input file not found: {args.input_file}")
         sys.exit(1)
 
-    with TreeSitterToSQLiteConverter() as converter:
+    with ASTToSqliteConverter() as converter:
         print("Starting conversion to SQLite...")
         result = converter.convert_json_to_graph(
             args.input_file,
@@ -260,12 +262,12 @@ def handle_agent_command(args) -> None:
             try:
                 # Create history and completer for enhanced input
                 history = InMemoryHistory()
-                completer = WordCompleter(['exit', 'quit', 'bye', 'goodbye', 'help'])
+                completer = WordCompleter(["exit", "quit", "bye", "goodbye", "help"])
 
                 # Create key bindings
                 bindings = KeyBindings()
 
-                @bindings.add('c-c')
+                @bindings.add("c-c")
                 def _(event):
                     """Handle Ctrl+C"""
                     raise KeyboardInterrupt
@@ -377,35 +379,37 @@ def handle_index_command(args) -> None:
     from services.project_manager import ProjectManager
     from graph.sqlite_client import SQLiteConnection
     from embeddings.vector_db import VectorDatabase
-    
+
     try:
         # Validate project path
         project_path = Path(args.project_path).absolute()
         if not project_path.exists():
             print(f"❌ Project path does not exist: {project_path}")
             return
-        
+
         if not project_path.is_dir():
             print(f"❌ Project path is not a directory: {project_path}")
             return
-        
+
         # Initialize required components
         db_connection = SQLiteConnection()
         vector_db = VectorDatabase(config.sqlite.embeddings_db)
         project_manager = ProjectManager(db_connection, vector_db)
-        
+
         # Determine project name
         project_name = args.project_name
         if not project_name:
             project_name = project_manager.determine_project_name(str(project_path))
-        
+
         print(f"📁 Indexing project '{project_name}' at: {project_path}")
-        
+
         # Check if project already exists and handle force flag
         if db_connection.project_exists(project_name):
             if not args.force:
                 print(f"⚠️  Project '{project_name}' already exists in database.")
-                print("   Use --force to re-index or choose a different --project-name.")
+                print(
+                    "   Use --force to re-index or choose a different --project-name."
+                )
                 return
             else:
                 print(f"🔄 Force re-indexing existing project '{project_name}'")
@@ -415,18 +419,20 @@ def handle_index_command(args) -> None:
                     if delete_result["success"]:
                         print(f"   ✅ Cleared existing project data")
                     else:
-                        print(f"   ⚠️  Warning: Could not clear existing data: {delete_result['error']}")
+                        print(
+                            f"   ⚠️  Warning: Could not clear existing data: {delete_result['error']}"
+                        )
                 except Exception as e:
                     print(f"   ⚠️  Warning: Could not clear existing data: {e}")
-        
+
         # Perform the indexing
         result = project_manager.index_project_at_path(str(project_path), project_name)
-        
+
         if result["success"]:
             print(f"✅ {result['message']}")
         else:
             print(f"❌ Failed to index project: {result['error']}")
-            
+
     except Exception as e:
         logger.error(f"Error during project indexing: {e}")
         print(f"❌ Unexpected error: {e}")
@@ -519,6 +525,7 @@ def handle_incremental_parse_command(args) -> str:
 
     # Call the regular parse command with the incremental flag set
     return handle_parse_command(args)
+
 
 def handle_auth_command(args) -> None:
     """Handle authentication commands."""
@@ -1000,28 +1007,31 @@ def handle_version_command(args) -> None:
     try:
         # Get version from __init__.py
         version = get_version_from_init()
-        
+
         print(f"\n📦 Sutra Knowledge CLI Version: {version}")
         print("🔧 AI-Powered Repository Assistant")
         print("📚 Intelligent code analysis, indexing, and assistance")
-        
+
         # Show Python version
         import sys
+
         print(f"🐍 Python Version: {sys.version.split()[0]}")
-        
+
         # Show current directory
         from pathlib import Path
+
         print(f"📁 Current Directory: {Path.cwd()}")
-        
+
         # Show configuration info
         import os
+
         config_file = os.getenv("SUTRAKNOWLEDGE_CONFIG", "Not set")
         if config_file != "Not set":
             config_name = Path(config_file).name
             print(f"⚙️  Configuration: {config_name}")
-        
+
         print()
-        
+
     except Exception as e:
         print(f"❌ Error getting version information: {str(e)}")
         sys.exit(1)

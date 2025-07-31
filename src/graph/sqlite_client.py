@@ -1,5 +1,6 @@
 """
-SQLite database connection and operations for tree-sitter data.
+SQLite database connection and operations for code extraction data.
+Stores files, code blocks, and relationships from code parsing.
 """
 
 import json
@@ -11,9 +12,28 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 
 from config import config
-from models import SQLiteNode, SQLiteRelationship, GraphData
-from utils import chunk_list
-from queries.agent_queries import GET_ALL_NODES_FROM_FILE
+from queries.extraction_queries import (
+    CREATE_PROJECTS_TABLE,
+    CREATE_FILES_TABLE,
+    CREATE_CODE_BLOCKS_TABLE,
+    CREATE_RELATIONSHIPS_TABLE,
+    CREATE_INDEXES,
+    INSERT_PROJECT,
+    INSERT_FILE,
+    INSERT_CODE_BLOCK,
+    INSERT_RELATIONSHIP,
+    GET_ALL_PROJECTS,
+    GET_FILE_BY_PATH,
+    GET_BLOCKS_BY_FILE,
+    GET_PROJECT_BLOCK_COUNT,
+    DELETE_PROJECT_RELATIONSHIPS,
+    DELETE_PROJECT_BLOCKS,
+    DELETE_PROJECT_FILES,
+    GET_BLOCK_STATS_BY_TYPE,
+    GET_RELATIONSHIP_STATS_BY_TYPE,
+    GET_FILES_BY_LANGUAGE,
+    GET_FILES_BY_PROJECT,
+)
 
 
 class SQLiteConnection:
@@ -53,7 +73,7 @@ class SQLiteConnection:
             raise
 
     def _create_tables(self) -> None:
-        """Create necessary tables for storing tree-sitter data."""
+        """Create necessary tables for storing code extraction data."""
         tables_sql = [
             # Projects table
             """
@@ -293,11 +313,11 @@ class SQLiteConnection:
                 try:
                     # Quick check for any data
                     cursor = self.connection.cursor()
-                    cursor.execute("SELECT COUNT(*) FROM nodes LIMIT 1")
-                    node_count = cursor.fetchone()[0]
-                    if node_count > 0:
+                    cursor.execute("SELECT COUNT(*) FROM code_blocks LIMIT 1")
+                    block_count = cursor.fetchone()[0]
+                    if block_count > 0:
                         logger.warning(
-                            f"Database contains {node_count} nodes. Use force_clear=True to override."
+                            f"Database contains {block_count} code blocks. Use force_clear=True to override."
                         )
                         return
                 except Exception:
@@ -350,42 +370,8 @@ class SQLiteConnection:
             # This allows the operation to continue even if clearing partially fails
 
     def create_indexes(self) -> None:
-        """Create indexes for better performance."""
-        if not config.sqlite.enable_indexing:
-            return
-
-        indexes = [
-            # Node indexes
-            "CREATE INDEX IF NOT EXISTS idx_nodes_project_id ON nodes(project_id)",
-            "CREATE INDEX IF NOT EXISTS idx_nodes_node_type ON nodes(node_type)",
-            "CREATE INDEX IF NOT EXISTS idx_nodes_name ON nodes(name)",
-            "CREATE INDEX IF NOT EXISTS idx_nodes_name_lower ON nodes(name_lower)",
-            "CREATE INDEX IF NOT EXISTS idx_nodes_file_hash_id ON nodes(file_hash_id)",
-            "CREATE INDEX IF NOT EXISTS idx_nodes_composite ON nodes(node_id, project_id)",
-            "CREATE INDEX IF NOT EXISTS idx_nodes_lines ON nodes(lines)",
-            # Relationship indexes
-            "CREATE INDEX IF NOT EXISTS idx_relationships_project_id ON relationships(project_id)",
-            "CREATE INDEX IF NOT EXISTS idx_relationships_type ON relationships(relationship_type)",
-            "CREATE INDEX IF NOT EXISTS idx_relationships_from_node ON relationships(from_node_id)",
-            "CREATE INDEX IF NOT EXISTS idx_relationships_to_node ON relationships(to_node_id)",
-            # File hashes indexes
-            "CREATE INDEX IF NOT EXISTS idx_file_hashes_project_id ON file_hashes(project_id)",
-            "CREATE INDEX IF NOT EXISTS idx_file_hashes_file_path ON file_hashes(file_path)",
-            "CREATE INDEX IF NOT EXISTS idx_file_hashes_name ON file_hashes(name)",
-            # Project indexes
-            "CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name)",
-            "CREATE INDEX IF NOT EXISTS idx_projects_language ON projects(language)",
-        ]
-
-        for index_sql in indexes:
-            try:
-                self.connection.execute(index_sql)
-                logger.debug(f"Created index: {index_sql}")
-            except Exception as e:
-                logger.warning(f"Failed to create index: {e}")
-
-        self.connection.commit()
-        logger.debug("✅ Database indexes created")
+        """Create indexes for better performance (indexes are now created in _create_tables)."""
+        logger.debug("Indexes are automatically created with tables")
 
     def execute_query(
         self, query: str, parameters: tuple | None = None
@@ -444,8 +430,8 @@ class SQLiteConnection:
                     )
                     time.sleep(1)  # Brief delay before retry
 
-    def get_project_node_count(self, project_name: str) -> int:
-        """Get count of nodes for a specific project."""
+    def get_project_block_count(self, project_name: str) -> int:
+        """Get count of code blocks for a specific project."""
         try:
             # First get project_id from project_name
             project_result = self.execute_query(
@@ -455,22 +441,19 @@ class SQLiteConnection:
                 return 0
 
             project_id = project_result[0]["id"]
-            result = self.execute_query(
-                "SELECT COUNT(*) as count FROM nodes WHERE project_id = ?",
-                (project_id,),
-            )
+            result = self.execute_query(GET_PROJECT_BLOCK_COUNT, (project_id,))
             return result[0]["count"] if result else 0
         except Exception as e:
-            logger.error(f"Failed to get project node count: {e}")
+            logger.error(f"Failed to get project block count: {e}")
             return 0
 
-    def delete_project_nodes(self, project_name: str) -> int:
-        """Delete all nodes for a specific project and return count deleted."""
+    def delete_project_data(self, project_name: str) -> int:
+        """Delete all data for a specific project and return count deleted."""
         try:
             # Get count first
-            node_count = self.get_project_node_count(project_name)
+            block_count = self.get_project_block_count(project_name)
 
-            if node_count == 0:
+            if block_count == 0:
                 return 0
 
             # Get project_id from project_name
@@ -484,38 +467,30 @@ class SQLiteConnection:
 
             # Delete relationships first (foreign key constraints)
             self.connection.execute(
-                "DELETE FROM relationships WHERE project_id = ?", (project_id,)
+                DELETE_PROJECT_RELATIONSHIPS, (project_id, project_id)
             )
 
-            # Delete nodes
-            self.connection.execute(
-                "DELETE FROM nodes WHERE project_id = ?", (project_id,)
-            )
+            # Delete code blocks (will cascade to delete relationships)
+            self.connection.execute(DELETE_PROJECT_BLOCKS, (project_id,))
 
-            # Delete file hashes for the project
-            self.connection.execute(
-                "DELETE FROM file_hashes WHERE project_id = ?", (project_id,)
-            )
+            # Delete files
+            self.connection.execute(DELETE_PROJECT_FILES, (project_id,))
 
             self.connection.commit()
 
-            logger.info(f"Deleted {node_count} nodes for project '{project_name}'")
-            return node_count
+            logger.info(
+                f"Deleted {block_count} code blocks for project '{project_name}'"
+            )
+            return block_count
 
         except Exception as e:
-            logger.error(f"Failed to delete project nodes: {e}")
+            logger.error(f"Failed to delete project data: {e}")
             raise
 
     def list_all_projects(self) -> List[Dict[str, Any]]:
         """List all projects in the database."""
         try:
-            return self.execute_query(
-                """
-                SELECT name, description, language, version, created_at
-                FROM projects
-                ORDER BY name
-                """
-            )
+            return self.execute_query(GET_ALL_PROJECTS)
         except Exception as e:
             logger.debug(f"Failed to list projects (table might not exist): {e}")
             return []
@@ -550,18 +525,10 @@ class SQLiteConnection:
         """Insert or replace a project. Returns project ID."""
         try:
             cursor = self.connection.execute(
-                """
-                INSERT OR REPLACE INTO projects (name, description, language, version, created_at, updated_at, source_file)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
+                INSERT_PROJECT,
                 (
                     project_data["name"],
-                    project_data.get("description"),
-                    project_data.get("language"),
-                    project_data.get("version"),
-                    project_data.get("created_at"),
-                    project_data.get("updated_at"),
-                    project_data.get("source_file"),
+                    project_data.get("version", "1.0.0"),
                 ),
             )
 
@@ -576,228 +543,158 @@ class SQLiteConnection:
             logger.error(f"Error inserting project {project_data['name']}: {e}")
             raise
 
-    def insert_file_hash(
-        self,
-        project_id: int,
-        file_path: str,
-        content_hash: str,
-        file_size: Optional[int] = None,
-        language: Optional[str] = None,
-        name: Optional[str] = None,
-    ) -> int:
-        """Insert a new file hash. Returns file hash ID."""
+    def insert_file(self, file_data: Dict[str, Any]) -> int:
+        """Insert a new file. Returns file ID."""
         try:
-            # Use INSERT OR IGNORE to handle duplicates gracefully
             cursor = self.connection.execute(
-                """
-                INSERT OR IGNORE INTO file_hashes 
-                (project_id, file_path, content_hash, file_size, language, name)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """,
-                (project_id, file_path, content_hash, file_size, language, name),
+                INSERT_FILE,
+                (
+                    file_data["id"],
+                    file_data["project_id"],
+                    file_data["file_path"],
+                    file_data["language"],
+                    file_data["content"],
+                    file_data["content_hash"],
+                ),
             )
 
             self.connection.commit()
-
-            # If lastrowid is None, it means the record already existed
-            if cursor.lastrowid is None:
-                # Get the existing record ID
-                existing = self.get_file_hash_by_path(project_id, file_path)
-                if existing:
-                    file_hash_id = existing["file_hash_id"]
-                    logger.debug(
-                        f"Found existing file hash {file_hash_id} for {file_path} in project {project_id}"
-                    )
-                else:
-                    logger.error(f"Could not find or create file hash for {file_path}")
-                    return 0
-            else:
-                file_hash_id = cursor.lastrowid
-                logger.debug(
-                    f"Inserted new file hash {file_hash_id} for {file_path} in project {project_id}"
-                )
-
-            return int(file_hash_id) if file_hash_id else 0
+            logger.debug(
+                f"Inserted file {file_data['file_path']} with ID: {file_data['id']}"
+            )
+            return file_data["id"]
 
         except Exception as e:
-            logger.error(f"Error inserting file hash for {file_path}: {e}")
+            logger.error(f"Error inserting file {file_data['file_path']}: {e}")
             raise
 
-    def get_file_hash_by_path(
+    def get_file_by_path(
         self, project_id: int, file_path: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Get file hash information by file path.
+        Get file information by file path.
 
         Args:
             project_id: Project ID
             file_path: File path to lookup
 
         Returns:
-            File hash information dictionary or None
+            File information dictionary or None
         """
         try:
-            cursor = self.connection.cursor()
-            cursor.execute(
+            result = self.execute_query(
                 """
-                SELECT id, content_hash, file_size, language, name, created_at, updated_at
-                FROM file_hashes 
+                SELECT id, project_id, file_path, language, content, content_hash
+                FROM files
                 WHERE project_id = ? AND file_path = ?
-            """,
+                """,
                 (project_id, file_path),
             )
-
-            result = cursor.fetchone()
-            if result:
-                return {
-                    "file_hash_id": result[0],
-                    "content_hash": result[1],
-                    "file_size": result[2],
-                    "language": result[3],
-                    "name": result[4],
-                    "created_at": result[5],
-                    "updated_at": result[6],
-                }
-            return None
+            return result[0] if result else None
 
         except Exception as e:
-            logger.error(f"Error getting file hash for {file_path}: {e}")
+            logger.error(f"Error getting file for {file_path}: {e}")
             return None
 
-    def get_or_create_file_hash(
-        self,
-        project_id: int,
-        file_path: str,
-        content_hash: str,
-        file_size: Optional[int] = None,
-        language: Optional[str] = None,
-        name: Optional[str] = None,
-    ) -> int:
-        """Get existing file hash or create new one. Returns file hash ID."""
+    def insert_code_block(self, block_data: Dict[str, Any]) -> int:
+        """Insert a new code block. Returns block ID."""
         try:
-            # First try to get existing file hash
-            existing = self.get_file_hash_by_path(project_id, file_path)
+            cursor = self.connection.execute(
+                INSERT_CODE_BLOCK,
+                (
+                    block_data["id"],
+                    block_data["file_id"],
+                    block_data.get("parent_block_id"),
+                    block_data["type"],
+                    block_data["name"],
+                    block_data["content"],
+                    block_data["start_line"],
+                    block_data["end_line"],
+                    block_data["start_col"],
+                    block_data["end_col"],
+                ),
+            )
 
-            if existing:
-                # If content hash matches, return existing ID
-                if existing["content_hash"] == content_hash:
-                    logger.debug(
-                        f"Found existing file hash {existing['file_hash_id']} for {file_path}"
-                    )
-                    return existing["file_hash_id"]
-                else:
-                    # Content changed, update the existing record
-                    logger.debug(
-                        f"Updating file hash for {file_path} due to content change"
-                    )
-                    cursor = self.connection.execute(
-                        """
-                        UPDATE file_hashes 
-                        SET content_hash = ?, file_size = ?, language = ?, name = ?, updated_at = CURRENT_TIMESTAMP
-                        WHERE project_id = ? AND file_path = ?
-                        """,
-                        (
-                            content_hash,
-                            file_size,
-                            language,
-                            name,
-                            project_id,
-                            file_path,
-                        ),
-                    )
-                    self.connection.commit()
-                    return existing["file_hash_id"]
-            else:
-                # Create new file hash
-                return self.insert_file_hash(
-                    project_id=project_id,
-                    file_path=file_path,
-                    content_hash=content_hash,
-                    file_size=file_size,
-                    language=language,
-                    name=name,
-                )
+            self.connection.commit()
+            logger.debug(
+                f"Inserted code block {block_data['name']} with ID: {block_data['id']}"
+            )
+            return block_data["id"]
 
         except Exception as e:
-            logger.error(f"Error in get_or_create_file_hash for {file_path}: {e}")
-            # Fallback to creating new entry
-            try:
-                return self.insert_file_hash(
-                    project_id=project_id,
-                    file_path=file_path,
-                    content_hash=content_hash,
-                    file_size=file_size,
-                    language=language,
-                    name=name,
-                )
-            except Exception as fallback_e:
-                logger.error(
-                    f"Fallback insert also failed for {file_path}: {fallback_e}"
-                )
-                return 0
+            logger.error(f"Error inserting code block {block_data['name']}: {e}")
+            raise
 
-    def get_all_nodes_from_file(
+    def insert_relationship(self, relationship_data: Dict[str, Any]) -> int:
+        """Insert a new relationship. Returns relationship ID."""
+        try:
+            cursor = self.connection.execute(
+                INSERT_RELATIONSHIP,
+                (
+                    relationship_data["source_id"],
+                    relationship_data["target_id"],
+                    relationship_data["type"],
+                    relationship_data.get("metadata"),
+                ),
+            )
+
+            self.connection.commit()
+            relationship_id = cursor.lastrowid
+            logger.debug(f"Inserted relationship with ID: {relationship_id}")
+            return relationship_id
+
+        except Exception as e:
+            logger.error(f"Error inserting relationship: {e}")
+            raise
+
+    def get_all_blocks_from_file(
         self, file_path: str, project_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        """Get all nodes from a specific file - faster than semantic search when you know the file."""
+        """Get all code blocks from a specific file."""
         try:
-            cursor = self.connection.cursor()
-
             if project_id:
-                query = GET_ALL_NODES_FROM_FILE + " AND n.project_id = ?"
-                cursor.execute(query, (file_path, project_id))
+                query = """
+                SELECT cb.id, cb.type, cb.name, cb.content, cb.start_line, cb.end_line,
+                       cb.start_col, cb.end_col, cb.parent_block_id, f.file_path, f.language
+                FROM code_blocks cb
+                JOIN files f ON cb.file_id = f.id
+                WHERE f.file_path = ? AND f.project_id = ?
+                ORDER BY cb.start_line
+                """
+                result = self.execute_query(query, (file_path, project_id))
             else:
-                cursor.execute(GET_ALL_NODES_FROM_FILE, (file_path,))
+                query = """
+                SELECT cb.id, cb.type, cb.name, cb.content, cb.start_line, cb.end_line,
+                       cb.start_col, cb.end_col, cb.parent_block_id, f.file_path, f.language
+                FROM code_blocks cb
+                JOIN files f ON cb.file_id = f.id
+                WHERE f.file_path = ?
+                ORDER BY cb.start_line
+                """
+                result = self.execute_query(query, (file_path,))
 
-            results = []
-            for row in cursor.fetchall():
-                # Parse lines JSON if available
-                lines_data = row[3]
-                start_line, end_line = None, None
-                if lines_data:
-                    try:
-                        lines_parsed = json.loads(lines_data)
-                        if isinstance(lines_parsed, list) and len(lines_parsed) >= 2:
-                            start_line, end_line = lines_parsed[0], lines_parsed[1]
-                    except:
-                        pass
-
-                results.append(
-                    {
-                        "node_id": row[0],
-                        "node_type": row[1],
-                        "name": row[2],
-                        "start_line": start_line,
-                        "end_line": end_line,
-                        "content": row[4] or "",
-                        "properties": row[5],
-                        "file_path": row[6] or "",
-                        "language": row[7],
-                        "file_size": row[8],
-                        "project_name": row[9],
-                    }
-                )
-
-            logger.info(f"📂 Found {len(results)} nodes in file '{file_path}'")
-            return results
+            logger.info(f"📂 Found {len(result)} code blocks in file '{file_path}'")
+            return result
 
         except Exception as e:
-            logger.error(f"Error in file lookup: {e}")
+            logger.error(f"Error getting blocks from file: {e}")
             return []
 
 
 class GraphOperations:
-    """High-level graph operations for inserting nodes and relationships."""
+    """High-level graph operations for inserting code extraction data."""
 
     def __init__(self, connection: SQLiteConnection):
         self.connection = connection
 
-    def insert_nodes(self, nodes: List[SQLiteNode], project_id: int) -> None:
-        """Insert nodes into the database."""
-        if not nodes:
-            return
+    def insert_extraction_data(
+        self, extraction_data: Dict[str, Any], project_id: int
+    ) -> None:
+        """Insert complete extraction data (files, blocks, relationships) from JSON export."""
+        print(f"🏗️ Inserting extraction data for project ID: {project_id}")
 
-        print(f"🗃️ Inserting {len(nodes)} nodes...")
+        files_data = ast_data.get("files", {})
+        print(f"📁 Processing {len(files_data)} files...")
 
         # Prepare insert query
         insert_sql = """
@@ -921,30 +818,7 @@ class GraphOperations:
         # Verify project exists
         try:
             result = self.connection.execute_query(
-                "SELECT id, name FROM projects WHERE id = ?", (project_id,)
-            )
-            if result:
-                print(f"✅ Verified project exists: {result[0]}")
-            else:
-                logger.error(f"Project {project_id} not found!")
-                raise ValueError(f"Project {project_id} not found")
-        except Exception as e:
-            logger.error(f"Error verifying project: {e}")
-            raise
-
-        # Insert nodes first
-        self.insert_nodes(graph_data.nodes, project_id)
-
-        # Then insert relationships
-        self.insert_relationships(graph_data.relationships, project_id)
-
-        print("📦 Graph data insertion completed")
-
-    def get_node_count(self) -> int:
-        """Get total number of nodes in the database."""
-        try:
-            result = self.connection.execute_query(
-                "SELECT COUNT(*) as count FROM nodes"
+                "SELECT COUNT(*) as count FROM code_blocks"
             )
             return result[0]["count"] if result else 0
         except Exception:
@@ -962,70 +836,59 @@ class GraphOperations:
             # Table might not exist
             return 0
 
-    def get_graph_stats(self) -> Dict[str, Any]:
-        """Get comprehensive graph statistics."""
+    def get_file_count(self) -> int:
+        """Get total number of files in the database."""
         try:
-            # Node counts by type
-            node_stats_result = self.connection.execute_query(
-                """
-                SELECT node_type, COUNT(*) as count
-                FROM nodes
-                GROUP BY node_type
-                ORDER BY count DESC
-            """
+            result = self.connection.execute_query(
+                "SELECT COUNT(*) as count FROM files"
             )
-            node_stats = {row["node_type"]: row["count"] for row in node_stats_result}
+            return result[0]["count"] if result else 0
+        except Exception:
+            # Table might not exist
+            return 0
+
+    def get_extraction_stats(self) -> Dict[str, Any]:
+        """Get comprehensive extraction statistics."""
+        try:
+            # Block counts by type
+            block_stats_result = self.connection.execute_query(GET_BLOCK_STATS_BY_TYPE)
+            block_stats = {row["type"]: row["count"] for row in block_stats_result}
 
             # Relationship counts by type
             rel_stats_result = self.connection.execute_query(
-                """
-                SELECT relationship_type, COUNT(*) as count
-                FROM relationships
-                GROUP BY relationship_type
-                ORDER BY count DESC
-            """
+                GET_RELATIONSHIP_STATS_BY_TYPE
             )
-            rel_stats = {
-                row["relationship_type"]: row["count"] for row in rel_stats_result
+            rel_stats = {row["type"]: row["count"] for row in rel_stats_result}
+
+            # Files by language
+            file_lang_result = self.connection.execute_query(GET_FILES_BY_LANGUAGE)
+            file_by_language = {
+                row["language"]: row["count"] for row in file_lang_result
             }
 
-            # File hash statistics
-            file_hash_count_result = self.connection.execute_query(
-                "SELECT COUNT(*) as count FROM file_hashes"
-            )
-            total_file_hashes = (
-                file_hash_count_result[0]["count"] if file_hash_count_result else 0
-            )
-
-            # File hashes by project
-            file_hash_by_project_result = self.connection.execute_query(
-                """
-                SELECT p.name as project_name, COUNT(fh.id) as count
-                FROM projects p
-                LEFT JOIN file_hashes fh ON p.id = fh.project_id
-                GROUP BY p.id, p.name
-                ORDER BY count DESC
-                """
-            )
-            file_hash_by_project = {
-                row["project_name"]: row["count"] for row in file_hash_by_project_result
+            # Files by project
+            file_by_project_result = self.connection.execute_query(GET_FILES_BY_PROJECT)
+            file_by_project = {
+                row["project_name"]: row["count"] for row in file_by_project_result
             }
 
             return {
-                "total_nodes": self.get_node_count(),
+                "total_files": self.get_file_count(),
+                "total_blocks": self.get_block_count(),
                 "total_relationships": self.get_relationship_count(),
-                "total_file_hashes": total_file_hashes,
-                "node_types": node_stats,
+                "block_types": block_stats,
                 "relationship_types": rel_stats,
-                "file_hashes_by_project": file_hash_by_project,
+                "files_by_language": file_by_language,
+                "files_by_project": file_by_project,
             }
         except Exception:
             # Tables might not exist (e.g., after clearing database)
             return {
-                "total_nodes": 0,
+                "total_files": 0,
+                "total_blocks": 0,
                 "total_relationships": 0,
-                "total_file_hashes": 0,
-                "node_types": {},
+                "block_types": {},
                 "relationship_types": {},
-                "file_hashes_by_project": {},
+                "files_by_language": {},
+                "files_by_project": {},
             }

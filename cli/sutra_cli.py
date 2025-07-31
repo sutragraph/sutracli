@@ -211,9 +211,9 @@ class SutraKnowledgeCLI:
 
         try:
             # Import graph converter
-            from graph import TreeSitterToSQLiteConverter
+            from graph import ASTToSqliteConverter
 
-            converter = TreeSitterToSQLiteConverter()
+            converter = ASTToSqliteConverter()
             result = converter.convert_json_to_graph(
                 parser_output_path,
                 project_name=self.repo_name,
