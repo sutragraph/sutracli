@@ -15,8 +15,8 @@ from tree_sitter_language_pack import SupportedLanguage
 class Relationship:
     """Represents a relationship between two files."""
 
-    source_file: str  # ID of the source file
-    target_file: str  # ID of the target file
+    source_file: int  # ID of the source file
+    target_file: int  # ID of the target file
     import_content: str  # The original import statement
     symbols: List[str]  # Symbols imported
     type: str = "import"  # Type of relationship (default: import)
