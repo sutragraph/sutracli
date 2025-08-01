@@ -136,21 +136,38 @@ class CrossIndexService:
                             }
 
                         elif event_type == "tool_use":
+                            # Handle regular tool_use events (not attempt_completion)
+                            tool_name = event.get("tool_name", "unknown")
+                            
+                            # Store tool result for next iteration context
+                            last_tool_result = event
+
+                            # Update Sutra memory with tool results
+                            self._update_cross_index_memory(event)
+
+                            # Mark memory for update (like agent service)
+                            self._memory_needs_update = True
+
+                            # Yield the original event as-is (like agent service)
+                            yield event
+
+                        elif event_type == "completion":
+                            # Handle completion events from attempt_completion tool
                             tool_name = event.get("tool_name", "unknown")
 
                             if tool_name == "attempt_completion":
+                                print("🎯 attempt_completion detected - starting connection splitting...")
                                 yield {
                                     "type": "data_collection_complete",
                                     "iteration": current_iteration,
                                     "message": "Data collection phase completed, starting connection splitting",
                                 }
-
+                                
+                                # Run connection splitting
                                 splitting_result = self._run_connection_splitting()
 
                                 if splitting_result.get("success"):
-                                    analysis_result = splitting_result.get(
-                                        "analysis_result"
-                                    )
+                                    analysis_result = splitting_result.get("analysis_result")
                                     yield {
                                         "type": "analysis_complete",
                                         "iteration": current_iteration,
@@ -173,19 +190,6 @@ class CrossIndexService:
                                 task_complete = True
                                 # Break out of the event processing loop immediately
                                 break
-                            else:
-                                # Handle other tool_use events
-                                # Store tool result for next iteration context
-                                last_tool_result = event
-
-                                # Update Sutra memory with tool results
-                                self._update_cross_index_memory(event)
-
-                                # Mark memory for update (like agent service)
-                                self._memory_needs_update = True
-
-                                # Yield the original event as-is (like agent service)
-                                yield event
 
                         elif event_type == "error":
                             error_msg = event.get("error", "Unknown error")
