@@ -22,7 +22,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
 
         files_list = []
 
-        if recursive:
+        if recursive == "true" or recursive == "True":
             # Recursive listing using rg
             try:
                 # First, get normal files (respects .gitignore)
@@ -105,7 +105,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                         "--glob",
                         ".env*",
                         "--max-depth",
-                        "1",
+                        "0",
                         directory_path,
                     ],
                     capture_output=True,
