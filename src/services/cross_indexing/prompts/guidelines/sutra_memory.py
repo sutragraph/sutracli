@@ -184,8 +184,7 @@ In <thinking> tags, assess what connection information you already have and what
 - Critical Context for connection code that provides essential context for decision-making
 - NEVER store full implementations - only the specific lines that establish connections
 
-
-7. History Best Practices
+6. History Best Practices
 - Be specific about tool names and parameters used with exact queries/commands for connection discovery
 - Mention key connection findings, results, and outputs in detailed summary format
 - Note any failures or null results to avoid repetition in connection searches
@@ -196,7 +195,7 @@ In <thinking> tags, assess what connection information you already have and what
 - Record file paths from list_files operations if those paths will be referenced in future connection analysis
 - Store connection configuration details, technology information, and system responses
 
-8. Task Management Rules
+7. Task Management Rules
 - Only ONE task can be in "current" status at any time
 - Complete or move current task before assigning new current task
 - Tasks flow through pipeline: pending to current to completed
@@ -204,7 +203,7 @@ In <thinking> tags, assess what connection information you already have and what
 - If a task is finished in the current iteration, it should be added as "completed", not "current" and if there is any pending task that needs to be moved to the current task.
 - Only mark connection analysis tasks as completed AFTER you have documented all connections in the current scope
 
-9. Integration Workflow
+8. Integration Workflow
 - Start of Iteration by reviewing current connection analysis task and pending tasks from previous sutra_memory
 - Tool Selection by checking history to avoid redundant connection discovery operations
 - Result Analysis to determine if current connection analysis task is complete or needs more work
@@ -213,7 +212,7 @@ In <thinking> tags, assess what connection information you already have and what
 - Code Cleanup by removing outdated or completed connection code snippets
 - History Update by recording current iteration's connection analysis actions and findings (MANDATORY)
 
-10. Critical Rules
+9. Critical Rules
 - Sutra Memory MUST be updated in every cross-indexing response alongside exactly one tool call
 - At minimum, add_history must be included in each iteration
 - Task IDs must be unique and sequential across all iterations
