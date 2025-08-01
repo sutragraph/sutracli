@@ -46,7 +46,7 @@ class CrossIndexSystem:
 
         # Set reasoning context for cross-indexing
         self.memory_manager.set_reasoning_context(
-            "Cross-indexing analysis for inter-service connections"
+            "Cross-indexing analysis for incoming/outgoing connections"
         )
 
         # Perform incremental indexing once during initialization if project name is provided
@@ -71,7 +71,7 @@ class CrossIndexSystem:
         # Initialize LLM client
         from ...llm_clients.llm_factory import llm_client_factory
         llm_client = llm_client_factory()
-        
+
         # Initialize components with shared cross-index memory and session manager
         self.cross_index_service = CrossIndexService(
             db_connection, project_manager, self.memory_manager, self.session_manager, llm_client

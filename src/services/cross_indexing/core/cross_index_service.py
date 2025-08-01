@@ -16,6 +16,7 @@ from ..prompts.cross_index_prompt_manager import CrossIndexPromptManager
 from ...agent.tool_action_executor.tool_action_executor import ActionExecutor
 from ..utils import infer_technology_type
 from utils.debug_utils import get_user_confirmation_for_llm_call
+from ..prompts.connection_splitting_prompt import CONNECTION_SPLITTING_PROMPT
 
 class CrossIndexService:
     """
@@ -137,21 +138,40 @@ class CrossIndexService:
                         elif event_type == "tool_use":
                             tool_name = event.get("tool_name", "unknown")
 
-                            # Check if this is attempt_completion tool specifically
                             if tool_name == "attempt_completion":
-                                # Handle attempt_completion tool specifically for cross-indexing
-                                completion_result = event.get("result", "")
                                 yield {
-                                    "type": "analysis_complete",
+                                    "type": "data_collection_complete",
                                     "iteration": current_iteration,
-                                    "message": "Cross-indexing analysis completed with attempt_completion",
+                                    "message": "Data collection phase completed, starting connection splitting",
                                 }
 
-                                # Parse the attempt_completion JSON format
-                                analysis_result = self._parse_attempt_completion_json(
-                                    completion_result
-                                )
+                                splitting_result = self._run_connection_splitting()
+
+                                if splitting_result.get("success"):
+                                    analysis_result = splitting_result.get(
+                                        "analysis_result"
+                                    )
+                                    yield {
+                                        "type": "analysis_complete",
+                                        "iteration": current_iteration,
+                                        "message": "Connection splitting completed successfully",
+                                    }
+                                else:
+                                    yield {
+                                        "type": "splitting_error",
+                                        "iteration": current_iteration,
+                                        "error": splitting_result.get("error"),
+                                        "message": "Connection splitting failed",
+                                    }
+                                    analysis_result = {
+                                        "incoming_connections": [],
+                                        "outgoing_connections": [],
+                                        "potential_matches": [],
+                                        "error": splitting_result.get("error"),
+                                    }
+
                                 task_complete = True
+                                # Break out of the event processing loop immediately
                                 break
                             else:
                                 # Handle other tool_use events
@@ -166,61 +186,6 @@ class CrossIndexService:
 
                                 # Yield the original event as-is (like agent service)
                                 yield event
-
-                        elif event_type == "task_complete":
-                            completion = event.get("completion", {})
-                            result_text = completion.get("result", "")
-
-                            # Try to parse the result_text as JSON first
-                            try:
-                                import json
-
-                                # Try to parse as JSON directly
-                                if result_text.strip().startswith("{"):
-                                    json_data = json.loads(result_text)
-                                    if (
-                                        "incoming_connections" in json_data
-                                        or "outgoing_connections" in json_data
-                                    ):
-                                        logger.debug(
-                                            "Found JSON format in task_complete result"
-                                        )
-                                        analysis_result = (
-                                            self._parse_attempt_completion_json(
-                                                result_text
-                                            )
-                                        )
-                                        task_complete = True
-                                        yield {
-                                            "type": "analysis_complete",
-                                            "iteration": current_iteration,
-                                            "message": "Cross-indexing analysis completed via task_complete with JSON",
-                                        }
-                                        break
-                            except (json.JSONDecodeError, Exception) as e:
-                                logger.debug(
-                                    f"Could not parse task_complete result as JSON: {e}"
-                                )
-
-                            # If not JSON, treat as regular completion without attempt_completion
-                            yield {
-                                "type": "analysis_complete",
-                                "iteration": current_iteration,
-                                "message": "Cross-indexing analysis completed - but no attempt_completion found",
-                            }
-
-                            # No XML parsing - only attempt_completion is supported
-                            logger.warning(
-                                "Task completed without attempt_completion tool - no connections found"
-                            )
-                            analysis_result = {
-                                "incoming_connections": [],
-                                "outgoing_connections": [],
-                                "potential_matches": [],
-                                "error": "Analysis completed without proper attempt_completion format",
-                            }
-                            task_complete = True
-                            break
 
                         elif event_type == "error":
                             error_msg = event.get("error", "Unknown error")
@@ -251,9 +216,9 @@ class CrossIndexService:
                             # Yield other events as-is
                             yield event
 
-                    # Break if task completed
-                    if task_complete and analysis_result:
-                        if "error" not in analysis_result:
+                    # Exit main loop if task completed (regardless of analysis_result success)
+                    if task_complete:
+                        if analysis_result and "error" not in analysis_result:
                             # Check if both incoming and outgoing connections exist before proceeding
                             incoming_count = len(
                                 analysis_result.get("incoming_connections", [])
@@ -379,15 +344,14 @@ class CrossIndexService:
                                 }
                                 return
                         else:
-                            # Don't retry on errors - run only once
-                            logger.warning(
-                                f"Analysis completed with errors: {analysis_result.get('error')}"
+                            logger.info(
+                                f"Analysis completed with some issues: {analysis_result.get('error')}"
                             )
                             yield {
-                                "type": "analysis_error",
+                                "type": "analysis_warning",
                                 "iteration": current_iteration,
-                                "error": analysis_result.get("error"),
-                                "message": "Analysis completed with errors - no retry",
+                                "warning": analysis_result.get("error"),
+                                "message": "Analysis completed with warnings but continuing",
                             }
                             return
 
@@ -713,20 +677,22 @@ class CrossIndexService:
                 query = event.get("query", "")
                 count = event.get("count", 0)
                 if count > 0:
-                    memory_entry = f"Cross-Index: Found {count} nodes for query '{query}' - analyzing for connection patterns"
+                    memory_entry = (
+                        f"Cross-Index: Found {count} nodes for query '{query}'"
+                    )
                     self.memory_manager.add_history(memory_entry)
 
             elif tool_name == "search_keyword":
                 keyword = event.get("keyword", "")
                 matches = event.get("matches_found", False)
                 if matches:
-                    memory_entry = f"Cross-Index: Found keyword '{keyword}' - potential connection indicator"
+                    memory_entry = f"Cross-Index: Found keyword '{keyword}'"
                     self.memory_manager.add_history(memory_entry)
 
             elif tool_name == "list_files":
                 directory = event.get("directory", "")
                 count = event.get("count", 0)
-                memory_entry = f"Cross-Index: Listed {count} files in {directory} - scanning for connection files"
+                memory_entry = f"Cross-Index: Listed {count} files in {directory}"
                 self.memory_manager.add_history(memory_entry)
 
         except Exception as e:
@@ -754,49 +720,42 @@ class CrossIndexService:
         except Exception as e:
             logger.error(f"Error updating cross-index session memory: {e}")
 
-    def _parse_attempt_completion_json(self, completion_content: str) -> Dict[str, Any]:
+    def _parse_connection_splitting_json(self, response_content: str) -> Dict[str, Any]:
         """
-        Parse attempt_completion JSON format for cross-indexing.
+        Parse connection splitting JSON response format.
 
         Args:
-            completion_content: Content from attempt_completion tool
+            response_content: Raw JSON response from connection splitting prompt
 
         Returns:
             Parsed analysis data in the expected format
         """
         try:
-            # Extract JSON from attempt_completion XML tags or raw JSON
             import re
 
-            # Try to find JSON in attempt_completion tags first
-            pattern = r"<attempt_completion>\s*(\{.*?\})\s*</attempt_completion>"
-            match = re.search(pattern, completion_content, re.DOTALL)
+            # Clean up response content - remove any markdown formatting
+            response_text = response_content.strip()
+            if response_text.startswith("```json"):
+                start = response_text.find("```json") + 7
+                end = response_text.find("```", start)
+                if end != -1:
+                    response_text = response_text[start:end].strip()
+            elif response_text.startswith("```"):
+                start = response_text.find("```") + 3
+                end = response_text.find("```", start)
+                if end != -1:
+                    response_text = response_text[start:end].strip()
 
-            if match:
-                json_content = match.group(1)
-            else:
-                # Try to find raw JSON in the content
-                json_pattern = r"(\{[^{}]*\"incoming_connections\"[^{}]*\})"
-                json_match = re.search(json_pattern, completion_content, re.DOTALL)
-                if json_match:
-                    json_content = json_match.group(1)
-                else:
-                    # If no JSON found, try to parse the entire content as JSON
-                    json_content = completion_content.strip()
-
-            # Parse JSON
+            # Parse JSON directly
             try:
-                json_data = json.loads(json_content)
+                json_data = json.loads(response_text)
             except json.JSONDecodeError as e:
-                logger.warning(
-                    f"Failed to parse JSON, trying to extract from text: {e}"
-                )
-                # If JSON parsing fails, return empty result but don't error
+                logger.warning(f"Failed to parse connection splitting JSON: {e}")
                 return {
                     "incoming_connections": [],
                     "outgoing_connections": [],
                     "potential_matches": [],
-                    "error": f"Could not parse completion format: {str(e)}",
+                    "error": f"Could not parse connection splitting response: {str(e)}",
                 }
 
             # Convert the JSON format to our expected format
@@ -881,19 +840,134 @@ class CrossIndexService:
                                         )
 
             logger.debug(
-                f"Parsed attempt_completion: {len(result['incoming_connections'])} incoming, {len(result['outgoing_connections'])} outgoing connections"
+                f"Parsed connection splitting response: {len(result['incoming_connections'])} incoming, {len(result['outgoing_connections'])} outgoing connections"
             )
             return result
 
         except Exception as e:
-            logger.error(f"Error parsing attempt_completion JSON: {e}")
-            logger.error(f"Raw content: {completion_content}")
+            logger.error(f"Error parsing connection splitting JSON: {e}")
+            logger.error(f"Raw content: {response_content}")
             return {
                 "error": str(e),
-                "raw_content": completion_content,
+                "raw_content": response_content,
                 "incoming_connections": [],
                 "outgoing_connections": [],
                 "potential_matches": [],
+            }
+
+    def _run_connection_splitting(self) -> Dict[str, Any]:
+        """
+        Run the connection splitting phase using only code snippets from sutra memory with 5 retry attempts.
+
+        Returns:
+            Result dictionary with splitting status and analysis data
+        """
+        try:
+            logger.info("Starting connection splitting phase")
+
+            formatted_code = self.memory_manager.get_code_snippets_for_llm()
+
+            if not formatted_code or not formatted_code.strip():
+                return {
+                    "success": False,
+                    "error": "No code snippets available in sutra memory for connection splitting",
+                    "analysis_result": {
+                        "incoming_connections": [],
+                        "outgoing_connections": [],
+                        "potential_matches": [],
+                    },
+                }
+            splitting_prompt = f"{CONNECTION_SPLITTING_PROMPT}\n\n## CODE SNIPPETS \n\n{formatted_code}\n\nPlease process this code data and return the JSON format as specified above."
+
+            if not get_user_confirmation_for_llm_call():
+                logger.info(
+                    "User cancelled connection splitting LLM call in debug mode"
+                )
+                return {
+                    "success": False,
+                    "user_cancelled": True,
+                    "error": "User cancelled connection splitting in debug mode",
+                    "analysis_result": {
+                        "incoming_connections": [],
+                        "outgoing_connections": [],
+                        "potential_matches": [],
+                    },
+                }
+
+            # Retry logic for connection splitting
+            max_retries = 5
+            last_error = None
+
+            for attempt in range(max_retries):
+                try:
+                    logger.debug(
+                        f"Connection splitting attempt {attempt + 1}/{max_retries}"
+                    )
+
+                    # Call LLM for connection splitting
+                    response = self.llm_client.call_llm(
+                        "", splitting_prompt, return_raw=True
+                    )
+
+                    # Use the connection splitting JSON parsing method
+                    analysis_result = self._parse_connection_splitting_json(response)
+
+                    # Check if we got valid results
+                    if analysis_result and not analysis_result.get("error"):
+                        logger.info(
+                            f"Connection splitting completed successfully on attempt {attempt + 1}: {len(analysis_result['incoming_connections'])} incoming, {len(analysis_result['outgoing_connections'])} outgoing"
+                        )
+
+                        return {
+                            "success": True,
+                            "analysis_result": analysis_result,
+                            "attempts_used": attempt + 1,
+                        }
+                    else:
+                        last_error = analysis_result.get(
+                            "error", "Invalid analysis result"
+                        )
+                        logger.warning(
+                            f"Connection splitting attempt {attempt + 1} failed: {last_error}"
+                        )
+
+                except Exception as e:
+                    last_error = str(e)
+                    logger.warning(
+                        f"Connection splitting attempt {attempt + 1} failed with exception: {e}"
+                    )
+
+                # If not the last attempt, continue to retry
+                if attempt < max_retries - 1:
+                    logger.info(
+                        f"Retrying connection splitting (attempt {attempt + 2}/{max_retries})"
+                    )
+
+            # All retries failed
+            logger.error(
+                f"Connection splitting failed after {max_retries} attempts. Last error: {last_error}"
+            )
+            return {
+                "success": False,
+                "error": f"Connection splitting failed after {max_retries} attempts. Last error: {last_error}",
+                "analysis_result": {
+                    "incoming_connections": [],
+                    "outgoing_connections": [],
+                    "potential_matches": [],
+                },
+                "attempts_used": max_retries,
+            }
+
+        except Exception as e:
+            logger.error(f"Error during connection splitting: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "analysis_result": {
+                    "incoming_connections": [],
+                    "outgoing_connections": [],
+                    "potential_matches": [],
+                },
             }
 
     def get_existing_connections_with_ids(self) -> Dict[str, List[Dict[str, Any]]]:

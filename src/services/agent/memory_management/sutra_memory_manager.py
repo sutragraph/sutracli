@@ -180,6 +180,10 @@ class SutraMemoryManager:
         """Get current memory state formatted for LLM context in text format"""
         return self.memory_formatter.get_memory_for_llm()
 
+    def get_code_snippets_for_llm(self) -> str:
+        """Get only the code snippets formatted for LLM context"""
+        return self.memory_formatter.get_code_snippets_for_llm()
+
     # Memory Update Methods
     def update_memory_for_file_changes(
         self, changed_files: set, deleted_files: set, project_id: int

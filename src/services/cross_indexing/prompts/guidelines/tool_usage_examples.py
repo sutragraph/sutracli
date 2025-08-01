@@ -11,50 +11,56 @@ TOOL USAGE EXAMPLES
 
 This section provides comprehensive examples of how to use different tools effectively and how to include environment and configuration variable information in connection descriptions.
 
-1. SEMANTIC SEARCH EXAMPLES
+1. TOOL SELECTION STRATEGY FOR PHASE 3
 
-Use semantic_search for finding connection-related concepts:
+Choose the right tool based on the number of files with imports discovered in Phase 2:
 
-Example 1: Finding API endpoints
-- Query: "API endpoint implementation"
-- Usage: When you found API framework packages in dependencies, search for API endpoint patterns
-- Result: Finds route definitions, endpoint handlers, API middleware for user's own services
+**DATABASE TOOL EXAMPLES (Use when 3-5 files have imports)**
 
-Example 2: Finding HTTP client calls
-- Query: "HTTP client calls to services"
-- Usage: When you found HTTP client packages in dependencies, search for HTTP client usage
-- Result: Finds HTTP client calls to localhost, user domains, relative paths - excludes external APIs
+Example 1: Few files with Express imports
+- After finding `const express = require('express')` in only 3 files in Phase 2
+- Use database tool to read each file completely: `database(query_type="GET_CODE_FROM_FILE", file_path="src/routes/api.js")`
+- Purpose: Read entire file content and analyze all express usage patterns within that file
+- Result: Get complete context of all route definitions and handlers
 
-Example 3: Finding WebSocket connections
-- Query: "WebSocket connection setup"
-- Usage: When you found WebSocket packages in dependencies, search for socket patterns
-- Result: Finds WebSocket connections between user's own services, socket implementations
+Example 2: Few files with Axios imports
+- After finding `import axios from 'axios'` in only 4 files in Phase 2
+- Use database tool to read each file: `database(query_type="GET_CODE_FROM_FILE", file_path="src/services/httpClient.js")`
+- Purpose: Read entire file and analyze all axios method calls within that file
+- Result: Get complete context of all HTTP client calls with parameters
 
-2. KEYWORD SEARCH EXAMPLES
+**SEARCH_KEYWORD EXAMPLES (Use when 6+ files have imports OR for wrapper functions)**
 
-Use search_keyword for specific patterns with regex and context:
+Example 3: Many files with socket.io imports
+- After finding socket.io imports in 8+ files in Phase 2
+- search_keyword("io\\(|socket\\.(emit|on|connect)", regex=true, after_lines=2)
+- Purpose: Find socket.io usage across many files efficiently
+- Result: Captures socket connections with endpoint and event context
 
-Example 1: API endpoint patterns
-- search_keyword("app\\.(get|post|put|delete|use)\\(|router\\.(get|post|put|delete|use)\\(", regex=true, after_lines=2)
-- Purpose: Find Express route definitions with context
-- Result: Captures route handlers with parameter and response context
+Example 4: Wrapper function analysis (ALWAYS use search_keyword)
+- After discovering custom wrapper function `makeApiCall` in Phase 2
+- search_keyword("makeApiCall\\(", regex=true, after_lines=3)
+- Purpose: Find all usage sites of wrapper functions across the entire codebase
+- Result: Captures all wrapper function calls with actual parameters
 
-Example 2: HTTP client patterns
-- search_keyword("fetch\\(|http\\.get|HttpClient|requests\\.", regex=true, after_lines=2)
-- Purpose: Find HTTP client calls with request details
-- Result: Captures HTTP calls with URL, method, and data context
+**BUILT-IN PATTERNS (ALWAYS use search_keyword - these don't require imports/packages)**
 
-Example 3: WebSocket patterns
-- search_keyword("WebSocket|socket\\.io|ws://|wss://|io\\(", regex=true, after_lines=2)
-- Purpose: Find WebSocket connections with configuration
-- Result: Captures socket connections with endpoint and auth context
+Example 5: Native JavaScript patterns
+- search_keyword("fetch\\(|XMLHttpRequest|new WebSocket\\(", regex=true, after_lines=2)
+- Purpose: Find native JavaScript connection patterns that don't require imports
+- Result: Captures native HTTP calls, WebSocket connections
 
-Example 4: Message queue patterns
-- search_keyword("publish|subscribe|queue|topic|amqp://", regex=true, after_lines=2)
-- Purpose: Find message queue operations with queue details
-- Result: Captures queue operations with queue names and message context
+Example 6: Node.js built-in patterns
+- search_keyword("http\\.request\\(|https\\.request\\(|net\\.createConnection", regex=true, after_lines=2)
+- Purpose: Find Node.js built-in HTTP and network connections
+- Result: Captures built-in HTTP client calls and socket connections
 
-3. WRAPPER FUNCTION DISCOVERY EXAMPLES
+Example 7: Python built-in patterns
+- search_keyword("urllib\\.request|http\\.client|socket\\.socket\\(", regex=true, after_lines=2)
+- Purpose: Find Python built-in connection patterns
+- Result: Captures built-in HTTP and socket connections
+
+2. WRAPPER FUNCTION DISCOVERY EXAMPLES
 
 Step-by-step approach for wrapper function analysis:
 
@@ -102,8 +108,6 @@ const result = await makeApiCall("/admin/users", "POST", requestData)
 How to include environment and configuration variable information in descriptions and focus on actual function calls:
 
 Priority: Store higher-level wrapper function calls, not base library calls
-
-Critical rule: When both wrapper function calls and base library calls exist, always prioritize the wrapper function calls because they contain the actual endpoints and business logic. This applies to HTTP wrappers, socket wrappers, queue wrappers, and any service communication wrappers.
 
 Example 1: Direct call with LITERAL connection identifier (BEST - STORE IMMEDIATELY)
 - Code: `queue.consume("user-adding-queue", addUserHandler)`
@@ -156,15 +160,6 @@ Step 4: Include both variable name and resolved value in description
 Step 5: Store the actual call line with comprehensive description
 
 6. VARIABLE RESOLUTION EXAMPLES
-
-CRITICAL: FOCUS ON ACTUAL CALLS, NOT VARIABLE DEFINITIONS
-
-WHY RESOLVE VARIABLES:
-Variables in code often contain the actual connection endpoints and configuration. We need to resolve them because:
-- Code might use `const API_URL = process.env.BASE_URL + '/api'` instead of hardcoded URLs
-- Environment variables contain the real endpoints like `process.env.USER_SERVICE_URL = "http://localhost:3001"`
-- Configuration files store actual queue names, service URLs, and connection details
-- Without resolution, we only see variable names, not the actual connection information needed for matching
 
 ENVIRONMENT VARIABLE SEARCH STRATEGY
 
