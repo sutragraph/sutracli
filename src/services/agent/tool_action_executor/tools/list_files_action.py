@@ -23,7 +23,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         files_list = []
 
         if recursive == "true" or recursive == "True":
-            # Recursive listing using rg
+            # Recursive listing using rg 
             try:
                 # First, get normal files (respects .gitignore)
                 result = subprocess.run(

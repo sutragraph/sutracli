@@ -158,6 +158,8 @@ In <thinking> tags, assess what connection information you already have and what
 - Mark completed tasks and move them from current to completed status
 - Update task descriptions with more specific information when available
 - Remove tasks that are no longer relevant or needed
+- Remove redundant tasks as well, for example if you have already seen/stored a file and a future task is exploring the same file, mark that task as completed as well.
+- You dont need to list files in phase 2, you will find the relevant files through search_keyword tool in the first phase.
 
 4. When to Add Tasks
 - Connection Dependencies when discovering connections that might affect other connection points
