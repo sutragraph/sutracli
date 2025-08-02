@@ -154,7 +154,7 @@ In <thinking> tags, assess what connection information you already have and what
 
 8. Code Removal Guidelines
 - Remove code snippets that are discovered to be external API calls or third-party service integrations
-- Remove code that doesn't represent actual connections between user's own services
+- Remove code that doesn't represent actual connections
 - Remove duplicate or redundant code snippets that provide no additional connection information
 - Remove code that was incorrectly identified as connection code during initial analysis
 - Use <remove>code_id</remove> format to remove specific code snippets by their ID

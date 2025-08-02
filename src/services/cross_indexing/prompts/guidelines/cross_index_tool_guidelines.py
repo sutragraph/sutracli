@@ -4,7 +4,7 @@ Cross-Index Tool Usage Guidelines
 Specific guidelines for using tools effectively in connection analysis.
 """
 
-CROSS_INDEX_TOOL_GUIDELINES = """# Cross-Index Tool Use Guidelines
+CROSS_INDEX_TOOL_GUIDELINES = """#Guidelines about which tool to use for Cross-Indexing
 
 1. In <thinking> tags, first review your Sutra Memory to understand current connection analysis progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what connection information you already have and what you need to discover next.
 
@@ -39,6 +39,7 @@ Phase 1: Package Discovery and Analysis
   - Look for HTTP clients, API frameworks for service communication (axios, express, requests, flask, and any other HTTP libraries)
   - Look for WebSocket libraries for real-time communication (socket.io, socket-io-client, ws, websockets and any other websocket libraries)
   - Look for Message queue libraries ONLY if they exist (amqplib, rabbitmq, kafka, and any other message queue libraries)
+  - Look for any other libraries which can be used to connect to another repository/project.
   - MANDATORY EXCLUSIONS - Ignore these external packages: database drivers, infrastructure SDKs, external API clients, configuration libraries that don't represent data communication
 - Create comprehensive task list in Sutra Memory about ALL packages found (including client variants and communication libraries):
   - Include ALL packages found in package files, not just a subset

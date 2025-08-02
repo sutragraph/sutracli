@@ -10,21 +10,19 @@ RULES
 
 1. Focus EXCLUSIVELY on DATA COMMUNICATION between different user repositories, projects, or folders within the same codebase ecosystem.
 
-2. CRITICAL SCOPE: Only identify connections where one user service/repository sends/receives data to/from another user service/repository within the user's own codebase.
+2. CRITICAL SCOPE: Only identify connections where one user service/repository sends/receives data to/from another user service/repository.
 
 3. MANDATORY EXCLUSIONS - NEVER include these:
-   - External APIs: Third-party API services (e.g., AI services, cloud providers, payment processors)
-   - Third-party services: External service integrations that cannot be matched as incoming/outgoing pairs
    - Infrastructure services: Database connections (Redis, PostgreSQL, MongoDB), caching systems, cloud storage that don't represent data communication
-   - External packages: Third-party SDKs and libraries that connect to external services
    - NON-EXISTENT PACKAGES: Never search for patterns from packages that don't exist in the project (e.g., don't search for axios patterns if axios package is not in package.json)
 
 4. CONNECTION CRITERIA - ONLY include these:
-   - REST API calls between user's own services (HTTP client calls to localhost, relative paths, or user's domain names)
-   - WebSocket connections between user's own services
-   - Message queue publishers/consumers between user's own services (ONLY if messaging packages exist)
+   - REST API calls (HTTP client calls to localhost, relative paths, or user's domain names)
+   - WebSocket connections
+   - Message queue publishers/consumers (ONLY if messaging packages exist)
    - File-based data exchange between user repositories/folders
-   - Custom wrapper functions on top of existing technologies like Axios, Socket.io, RabbitMQ, etc. that facilitate communication between user's own services
+   - Custom wrapper functions on top of existing technologies like Axios, Socket.io, RabbitMQ, etc. that facilitate communication
+   - Other technologies/libraries used for service communication
 
 5. ADAPTIVE SEARCH STRATEGY - CRITICAL RULE:
    - ALWAYS analyze package files FIRST to determine what technologies are actually available
@@ -36,9 +34,9 @@ RULES
 
 5. ENDPOINT VALIDATION RULES:
    - INCLUDE: localhost endpoints, relative paths, user's own domain names
-   - INCLUDE: Environment variables pointing to user's own services
+   - INCLUDE: Environment variables
    - EXCLUDE: External domains, third-party API endpoints, cloud service URLs
-   - EXCLUDE: Endpoints that cannot be matched as incoming/outgoing pairs within user's codebase
+   - EXCLUDE: Endpoints that cannot be matched as incoming/outgoing
 
 6. All file paths must be relative to the project root directory. When storing connection findings in Sutra Memory, always use relative paths for consistency.
 

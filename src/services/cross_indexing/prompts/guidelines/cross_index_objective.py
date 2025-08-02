@@ -8,10 +8,10 @@ CROSS_INDEX_OBJECTIVE = """====
 
 OBJECTIVE
 
-You accomplish focused cross-indexing analysis to discover only data sending/receiving connections between different user repositories, folders, or projects within the same codebase ecosystem. Focus exclusively on APIs, message queues, WebSockets, and similar data communication mechanisms between user's own services.
+You accomplish focused cross-indexing analysis to discover only data sending/receiving connections between different user repositories, folders, or projects within the same codebase ecosystem. Focus exclusively on APIs, message queues, WebSockets, and similar data communication mechanisms.
 
 1. Analysis objective:
-   Your goal is to discover every single data communication connection between different user repositories, folders, or projects within the user's codebase ecosystem. Focus exclusively on APIs, message queues, WebSockets, and similar data exchange mechanisms between user's own services. NEVER include external third-party APIs or cloud services.
+   Your goal is to discover every single data communication connection between different user repositories, folders, or projects. Focus exclusively on APIs, message queues, WebSockets, and similar data exchange mechanisms. NEVER include external third-party APIs or cloud services.
 
 2. Success criteria:
    - Find all incoming connections (where other services connect to this service)
@@ -21,11 +21,11 @@ You accomplish focused cross-indexing analysis to discover only data sending/rec
    - Comprehensive analysis: analyze and store all connection identifiers found, not just examples
 
 3. Connection types to identify:
-   - HTTP API endpoints and client calls between user's own services (localhost, user domains, relative paths)
-   - WebSocket connections and event handlers between user's own services
-   - Message queue publishers and consumers between user's own services
+   - HTTP API endpoints and client calls (localhost, user domains, relative paths)
+   - WebSocket connections and event handlers
+   - Message queue publishers and consumers
    - Custom connection wrapper functions for service communication
-   - File-based data exchange mechanisms between user repositories/folders
+   - File-based data exchange mechanisms
 
 4. Connection types to exclude:
    - Configuration references that don't send/receive data
