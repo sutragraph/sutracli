@@ -60,8 +60,6 @@ Example 7: Python built-in patterns
 - Purpose: Find Python built-in connection patterns
 - Result: Captures built-in HTTP and socket connections
 
-**ADAPTIVE SEARCH STRATEGY**
-
 Example 8: Basic HTTP project (like express + axios only)
 - After Phase 1: Found only express, axios, cors in package.json
 - Phase 3 Priority: Focus on express routes, axios calls, and native fetch patterns
