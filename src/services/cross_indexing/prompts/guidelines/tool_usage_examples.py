@@ -69,28 +69,7 @@ Example 8: Basic HTTP project (like express + axios only)
 - Purpose: Find actual HTTP communication patterns instead of searching for non-existent packages
 - Result: Captures real connection patterns available in the project
 
-2. PACKAGE-BASED SEARCH STRATEGY
-
-**CRITICAL RULE: Only search for patterns that match the packages found in Phase 1**
-
-Example: Basic Node.js project with express + axios
-- Package.json contains: express, axios, cors, body-parser, dotenv
-- CORRECT searches: express routes, axios calls, native fetch
-- WRONG searches: RabbitMQ, AMQP, Kafka (these packages don't exist)
-- search_keyword("app\\.(get|post|put|delete)\\(|axios\\.(get|post|put|delete)\\(|fetch\\(|axios|express", regex=true, after_lines=2)
-
-Example: Advanced messaging project
-- Package.json contains: express, axios, amqplib, socket.io
-- CORRECT searches: express routes, axios calls, RabbitMQ operations,socket.io events
-- search_keyword("rabbitmq|amqp|queue|publish|subscribe|channel\\.send|channel\\.consume|axios|express|socket", regex=true, after_lines=2)
-
-**ADAPTIVE LOGIC: Match search patterns to actual packages**
-- IF package.json has amqplib → search for RabbitMQ patterns
-- IF package.json has socket.io → search for WebSocket patterns
-- IF package.json has ONLY basic HTTP packages → search for HTTP patterns and native fetch
-- NEVER search for patterns from packages that don't exist in the project
-
-3. WRAPPER FUNCTION DISCOVERY EXAMPLES
+2. WRAPPER FUNCTION DISCOVERY EXAMPLES
 
 Step-by-step approach for wrapper function analysis:
 
@@ -133,7 +112,7 @@ const result = await makeApiCall("/admin/users", "POST", requestData)
 - Identify variable sources for connection identifiers when they use environment variables
 - Purpose: Analyze actual connection identifiers, not generic variable-based calls
 
-4. ENVIRONMENT VARIABLE INTEGRATION EXAMPLES
+3. ENVIRONMENT VARIABLE INTEGRATION EXAMPLES
 
 How to include environment and configuration variable information in descriptions:
 
@@ -149,7 +128,7 @@ Example 2: Wrapper function call with environment variable
 - Environment: API_URL=http://localhost:3000
 - Description: "API call for admin user management using endpoint '/admin/users' with environment variable API_URL"
 
-5. ENVIRONMENT VARIABLE RESOLUTION WORKFLOW
+4. ENVIRONMENT VARIABLE RESOLUTION WORKFLOW
 
 Step 1: Find actual function calls (not definitions)
 Step 2: Identify environment variables used in the calls
@@ -162,7 +141,7 @@ Common environment variable patterns to search for:
 - Use list_files to find environment files (.env, .env.local, etc.)
 - Use list_files to find config files (config.js, config.json, config.yaml)
 
-6. DESCRIPTION TEMPLATES
+5. DESCRIPTION TEMPLATES
 
 Template for direct API calls:
 "[HTTP method] call to [service_name] using environment variable [env_var] configured as [actual_value] for endpoint [endpoint_path] for [purpose]"

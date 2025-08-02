@@ -39,13 +39,17 @@ Example 1: Task management for connection analysis
 <add_history>Used database tool to analyze src/api/routes.py - found 30+ incoming connection endpoints. All endpoints use Flask decorators and accept external HTTP requests.</add_history>
 </sutra_memory>
 
-Example 2: Connection discovery progress tracking (adaptive to actual packages)
+Example 2: Comprehensive task creation for all discovered packages
 <sutra_memory>
 <task>
-<add id="3" to="completed">Analyze package.json - found only express, axios, cors (no messaging packages)</add>
-<add id="4" to="current">Search for express routes and axios calls using search_keyword since no advanced messaging libraries exist</add>
+<add id="3" to="completed">Analyze package.json - found express, axios, cors, data-client, communication-lib</add>
+<add id="4" to="current">Search for import statements of express using search_keyword for require/import patterns</add>
+<add id="5" to="pending">Search for import statements of axios using search_keyword for require/import patterns</add>
+<add id="6" to="pending">Search for import statements of data-client using search_keyword for require/import patterns</add>
+<add id="7" to="pending">Search for import statements of communication-lib using search_keyword for require/import patterns</add>
+<add id="8" to="pending">Search for native fetch and built-in HTTP patterns using search_keyword</add>
 </task>
-<add_history>Used database tool to examine package.json - project has basic HTTP packages only (express, axios, cors). focusing on HTTP patterns and native fetch.</add_history>
+<add_history>Used database tool to examine package.json - found ALL packages including client variants and communication libraries. Created comprehensive task list for all discovered packages.</add_history>
 </sutra_memory>
 
 Example 3: Task completion scenario
@@ -56,10 +60,19 @@ Example 3: Task completion scenario
 <add_history>Used attempt_completion - provided brief summary of connection types discovered and analyzed, all connection analysis completed</add_history>
 </sutra_memory>
 
-Example 4: Removing irrelevant code from memory
+Example 4: Import-based search pattern execution
 <sutra_memory>
 <task>
-<add id="6" to="current">Analyze remaining HTTP client wrapper functions</add>
+<add id="9" to="completed">Search for import statements of data-client - found imports in 3 files</add>
+<add id="10" to="current">Use import-based search patterns for data-client usage: search for Client() and client.connect() patterns</add>
+</task>
+<add_history>Found imports 'import { Client } from 'data-client'' in 3 files. Now using import-based search patterns to find actual usage of Client() and client methods rather than opening whole files.</add_history>
+</sutra_memory>
+
+Example 5: Removing irrelevant code from memory
+<sutra_memory>
+<task>
+<add id="11" to="current">Analyze remaining HTTP client wrapper functions</add>
 </task>
 <code>
 <remove>code_3</remove>
@@ -77,7 +90,9 @@ In <thinking> tags, assess what connection information you already have and what
 - Start with a tool call (list_files) to explore the project structure first and identify package files (package.json, pom.xml, requirements.txt, setup.py, pyproject.toml, go.mod, etc.)
 - Use database tool to examine package files and identify used connection packages in the current project
 - CRITICAL: Never add task lists just by seeing list of files - first check package.json file and find using imports of used packages and some common patterns which can be used without any packages
-- Create task list in Sutra Memory ONLY after analyzing package files to understand which packages are actually used and their import statement patterns based on language
+- Create comprehensive task list in Sutra Memory ONLY after analyzing package files to understand which packages are actually used:
+  - Include ALL packages found in package files, not just a subset
+  - Create tasks for communication libraries with descriptive names indicating their purpose
 - ALWAYS consider common built-in patterns that don't require packages (like native fetch(), http modules, WebSocket constructors) and add those to task list
 - ADAPTIVE STRATEGY: If no advanced packages are found, prioritize built-in patterns over searching for non-existent libraries
 - Then proceed with three-phase analysis: package discovery, import statement analysis, and usage pattern discovery and collection

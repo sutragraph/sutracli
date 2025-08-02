@@ -36,12 +36,14 @@ Critical: Update your task list in every iteration based on your thinking:
 Phase 1: Package Discovery and Analysis
 - Use `list_files` to explore project structure and identify package files (package.json, pom.xml, requirements.txt, pyproject.toml, go.mod, etc.)
 - Use `database` tool to examine package files to identify used packages in the current project:
-  - Look for HTTP clients, API frameworks for service communication (axios, express, requests, flask, etc.)
-  - Look for WebSocket libraries for real-time communication (socket.io, ws, websockets, etc.)
-  - Look for Message queue libraries ONLY if they exist (amqplib, rabbitmq, kafka, etc.)
+  - Look for HTTP clients, API frameworks for service communication (axios, express, requests, flask, and any other HTTP libraries)
+  - Look for WebSocket libraries for real-time communication (socket.io, socket-io-client, ws, websockets and any other websocket libraries)
+  - Look for Message queue libraries ONLY if they exist (amqplib, rabbitmq, kafka, and any other message queue libraries)
   - MANDATORY EXCLUSIONS - Ignore these external packages: database drivers, infrastructure SDKs, external API clients, configuration libraries that don't represent data communication
-- Create task list in Sutra Memory about which packages are used and their import statement patterns based on language
-- ADAPTIVE STRATEGY: If no advanced messaging packages are found, focus on built-in HTTP patterns and basic communication methods
+- Create comprehensive task list in Sutra Memory about ALL packages found (including client variants and communication libraries):
+  - Include ALL packages found in package files, not just a subset
+  - For communication packages, create tasks for both sending and receiving patterns
+  - Use descriptive task names that indicate the communication purpose rather than specific package names
 
 Phase 2: Import Statement Discovery and Pattern Analysis
 - Search for import statements of identified packages using their language-specific import patterns:
@@ -50,8 +52,9 @@ Phase 2: Import Statement Discovery and Pattern Analysis
   - Java: `import package.name.*`, `import package.name.ClassName`
   - Go: `import "package-name"`, `import alias "package-name"`
   - Use search_keyword with regex patterns based on discovered packages
-- After finding imports in files, open any 1 representative file to understand how user is using that package
-- Check user's usage patterns in that project using regex search to get all code snippets where packages are used
+- CRITICAL: Extract specific imported methods/objects from import statements to create targeted search patterns
+- For each import found, identify what specific methods are imported (e.g., `import { get, post } from 'axios'` → focus on `get` and `post` methods)
+- Create targeted search patterns based on actual imports rather than opening whole files or blind searching
 
 Phase 3: Connection Data Collection
 - Based on discovered import statements and usage patterns from Phase 2, analyze actual usage of imported methods in files that have those imports
@@ -73,15 +76,18 @@ Phase 3: Connection Data Collection
     - Go: `http.Get(`, `http.Post(`, `net.Dial(`
     - C#: `HttpClient`, `WebRequest`
   - These built-in patterns should be included in Phase 3 analysis using search_keyword since they represent actual connection code
-- METHOD EXTRACTION STRATEGY for targeted searches:
+- IMPORT-BASED SEARCH STRATEGY for targeted searches:
+  - CRITICAL: Use import-based search patterns rather than opening whole files or blind searching
   - When you find import statements in Phase 2, extract the specific methods/objects being imported
-  - Examples:
-    - `import { get, post } from 'axios'` → search for `get(` and `post(` calls only in that file
-    - `const express = require('express')` → search for `express.` usage patterns in that file
-    - `import io from 'socket.io-client'` → search for `io(` calls in that file
-    - `from requests import get, post` → search for `get(` and `post(` calls only in that file
-    - `import axios from 'axios'` → search for `axios.get`, `axios.post`, etc. in that file
+  - Create targeted search patterns using the imported method names with the package prefix
+  - Examples of import-based search patterns:
+    - `import { get, post } from 'axios'` → search for `get\\(|post\\(` patterns in that specific file
+    - `import io from 'socket.io-client'` → search for `io\\(|io\\.(connect|emit|on)\\(` patterns
+    - `from requests import get, post` → search for `get\\(|post\\(` patterns in that specific file
+    - `import axios from 'axios'` → search for `axios\\.(get|post|put|delete)\\(` patterns
+    - `import { Client } from 'communication-package'` → search for `Client\\(|new Client\\(` patterns
   - NEVER search for methods that weren't actually imported
+  - ALWAYS use the imported method names with appropriate package prefixes in search patterns
 - BUILT-IN PATTERNS (no imports required) - ALWAYS include these in Phase 3 analysis regardless of packages:
   - JavaScript: native `fetch()`, `XMLHttpRequest`, `WebSocket` constructor, Node.js built-in `http`, `https`, `net` modules
   - Python: built-in `urllib`, `http.client`, `socket` module

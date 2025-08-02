@@ -28,11 +28,11 @@ RULES
 
 5. ADAPTIVE SEARCH STRATEGY - CRITICAL RULE:
    - ALWAYS analyze package files FIRST to determine what technologies are actually available
-   - ONLY search for patterns that match the packages found in the project
+   - Create comprehensive task lists for ALL packages found
+   - ONLY search for patterns that match the packages found in the project using import-based search patterns
    - If project has basic HTTP packages (express, axios, requests, flask): Focus on HTTP patterns and native fetch/XMLHttpRequest
-   - If project has messaging packages (amqplib, socket.io): Include messaging patterns in addition to HTTP
    - If project has NO packages installed: Focus exclusively on built-in language patterns (native fetch, http modules, urllib)
-   - NEVER waste time searching for RabbitMQ patterns if those packages don't exist in package.json/requirements.txt and similarly for other technologies
+   - NEVER waste time searching for communication patterns if those packages don't exist in package.json/requirements.txt/other package files
 
 5. ENDPOINT VALIDATION RULES:
    - INCLUDE: localhost endpoints, relative paths, user's own domain names
