@@ -9,390 +9,131 @@ from . import BaseExtractor, BlockType, CodeBlock
 
 
 class JavaExtractor(BaseExtractor):
-    """Extractor for Java code blocks."""
+    """Java-specific extractor for code blocks (new convention)."""
 
-    def __init__(self, language: str = "java", symbol_extractor=None):
-        super().__init__(language, symbol_extractor)
+    FUNCTION_TYPES = {"method_declaration", "constructor_declaration"}
+    CLASS_TYPES = {"class_declaration"}
+    INTERFACE_TYPES = {"interface_declaration"}
+    ENUM_TYPES = {"enum_declaration"}
+    VARIABLE_TYPES = {"field_declaration"}
+    IMPORT_TYPES = {"import_declaration"}
+
+    def __init__(self, language: str = "java", file_id: int = 0, symbol_extractor=None):
+        super().__init__(language, file_id, symbol_extractor)
 
     def _get_identifier_name(self, node: Any) -> str:
         """Get identifier name from a node."""
-        if node and hasattr(node, 'children'):
+        if hasattr(node, "children"):
             for child in node.children:
                 if hasattr(child, "type") and child.type == "identifier":
                     return self._get_node_text(child)
         return ""
 
-    def extract_imports(self, node: Any) -> List[CodeBlock]:
-        """Extract import statements."""
-        try:
-            blocks = []
-            import_nodes = self._traverse_nodes(node, ["import_declaration"])
-            for import_node in import_nodes:
-                start_line, end_line, start_col, end_col = self._get_node_position(import_node)
-                content = self._get_node_text(import_node)
-                # Extract the module name or first imported name as the identifier
-                name = self._extract_import_name(import_node)
-                blocks.append(
-                    self._create_code_block(
-                        BlockType.IMPORT,
-                        name,
-                        content,
-                        start_line,
-                        end_line,
-                        start_col,
-                        end_col,
-                        import_node,
-                    )
-                )
-
-            return blocks
-        except Exception as e:
-            print(f"[extract_imports] Exception: {e}")
-            raise
-
-    def _extract_import_name(self, import_node: Any) -> str:
+    def _extract_import_name(self, node: Any) -> str:
         """Extract the imported package or class name from an import statement (Java)."""
-        if import_node and hasattr(import_node, 'children'):
-            for child in import_node.children:
-                if hasattr(child, 'type') and child.type == 'scoped_identifier':
+        if hasattr(node, "children"):
+            for child in node.children:
+                if hasattr(child, "type") and child.type == "scoped_identifier":
                     return self._get_node_text(child)
-                elif hasattr(child, 'type') and child.type == 'identifier':
+                elif hasattr(child, "type") and child.type == "identifier":
                     return self._get_node_text(child)
-        return 'unknown'
+        return "unknown"
 
+    def extract_imports(self, root_node: Any) -> List[CodeBlock]:
+        """Extract import statements."""
+        def process_import(node):
+            name = self._extract_import_name(node)
+            names = [name] if name else []
+            return self._create_code_block(node, BlockType.IMPORT, names)
+        return self._generic_traversal(root_node, self.IMPORT_TYPES, process_import)
 
-    def extract_interfaces(self, node: Any) -> List[CodeBlock]:
+    def extract_interfaces(self, root_node: Any) -> List[CodeBlock]:
         """Extract interface declarations from Java AST."""
-        try:
-            blocks = []
-            interface_nodes = self._traverse_nodes(node, ['interface_declaration'])
-            for interface_node in interface_nodes:
-                name = self._get_identifier_name(interface_node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(interface_node)
-                    content = self._get_node_text(interface_node)
-                    blocks.append(
-                        self._create_code_block(
-                            BlockType.INTERFACE,
-                            name,
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col,
-                            interface_node
-                        )
-                    )
-            return blocks
-        except Exception as e:
-            print(f"[extract_interfaces] Exception: {e}")
-            raise
+        def process_interface(node):
+            name = self._get_identifier_name(node)
+            names = [name] if name else []
+            return self._create_code_block(node, BlockType.INTERFACE, names)
+        return self._generic_traversal(root_node, self.INTERFACE_TYPES, process_interface)
 
-    def extract_enums(self, node: Any) -> List[CodeBlock]:
+    def extract_enums(self, root_node: Any) -> List[CodeBlock]:
         """Extract enum declarations from Java AST."""
-        try:
-            blocks = []
-            enum_nodes = self._traverse_nodes(node, ['enum_declaration'])
-            for enum_node in enum_nodes:
-                name = self._get_identifier_name(enum_node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(enum_node)
-                    content = self._get_node_text(enum_node)
-                    blocks.append(
-                        self._create_code_block(
-                            BlockType.ENUM,
-                            name,
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col
-                        )
-                    )
-            return blocks
-        except Exception as e:
-            print(f"[extract_enums] Exception: {e}")
-            raise
+        def process_enum(node):
+            name = self._get_identifier_name(node)
+            names = [name] if name else []
+            return self._create_code_block(node, BlockType.ENUM, names)
+        return self._generic_traversal(root_node, self.ENUM_TYPES, process_enum)
 
-
-    def extract_functions(self, node: Any) -> List[CodeBlock]:
+    def extract_functions(self, root_node: Any) -> List[CodeBlock]:
         """Extract method declarations with nested elements as children."""
-        functions = self._extract_top_level_functions(node)
-        for function in functions:
-            function.children = self._extract_nested_elements(node, function)
-        return functions
+        def process_function(node):
+            name = self._get_identifier_name(node)
+            names = [name] if name else []
+            return self._create_function_block_with_nested_extraction(
+                node, BlockType.FUNCTION, names, self.FUNCTION_TYPES
+            )
+        return self._generic_traversal(root_node, self.FUNCTION_TYPES, process_function)
 
-    def extract_classes(self, node: Any) -> List[CodeBlock]:
+    def extract_classes(self, root_node: Any) -> List[CodeBlock]:
         """Extract class declarations with nested elements as children."""
-        classes = self._extract_top_level_classes(node)
-        for class_block in classes:
-            class_block.children = self._extract_nested_elements(node, class_block)
-        return classes
+        def process_class(node):
+            name = self._get_identifier_name(node)
+            names = [name] if name else []
+            start_line, end_line, start_col, end_col = self._get_node_position(node)
+            symbols = self._get_symbols_for_block(start_line, end_line, start_col, end_col)
+            class_block = CodeBlock(
+                type=BlockType.CLASS,
+                name=names[0] if names else "anonymous",
+                content="",
+                symbols=symbols,
+                start_line=start_line,
+                end_line=end_line,
+                start_col=start_col,
+                end_col=end_col,
+                id=self._hash_generator.next_id(),
+            )
+            # Nested: methods, variables, interfaces, enums, classes
+            nested_blocks = []
+            nested_blocks.extend(self._generic_traversal(node, self.FUNCTION_TYPES, process_function))
+            nested_blocks.extend(self._extract_class_level_variables(node))
+            nested_blocks.extend(self._generic_traversal(node, self.INTERFACE_TYPES, process_interface))
+            nested_blocks.extend(self._generic_traversal(node, self.ENUM_TYPES, process_enum))
+            nested_blocks.extend(self._generic_traversal(node, self.CLASS_TYPES, process_class))
+            class_block.children = nested_blocks
+            return class_block
+        def process_function(node):
+            name = self._get_identifier_name(node)
+            names = [name] if name else []
+            return self._create_function_block_with_nested_extraction(
+                node, BlockType.FUNCTION, names, self.FUNCTION_TYPES
+            )
+        def process_interface(node):
+            name = self._get_identifier_name(node)
+            names = [name] if name else []
+            return self._create_code_block(node, BlockType.INTERFACE, names)
+        def process_enum(node):
+            name = self._get_identifier_name(node)
+            names = [name] if name else []
+            return self._create_code_block(node, BlockType.ENUM, names)
+        return self._generic_traversal(root_node, self.CLASS_TYPES, process_class)
 
-    def extract_variables(self, node: Any) -> List[CodeBlock]:
+    def extract_variables(self, root_node: Any) -> List[CodeBlock]:
         """Extract field declarations."""
-        return self._extract_top_level_variables(node)
+        def process_variable(node):
+            names = self._extract_field_names(node)
+            return self._create_code_block(node, BlockType.VARIABLE, names) if names else None
+        return self._generic_traversal(root_node, self.VARIABLE_TYPES, process_variable)
 
     def extract_all(self, root_node: Any) -> List[CodeBlock]:
         """Java-specific implementation of extract_all."""
-        self._blocks = []
         self._extract_all_symbols(root_node)
-
-        # Java-specific order
-        self._blocks.extend(self.extract_imports(root_node))
-        self._blocks.extend(self.extract_variables(root_node))
-        self._blocks.extend(self.extract_classes(root_node))
-        self._blocks.extend(self.extract_functions(root_node))
-
-        return self._blocks
-
-    def _extract_top_level_functions(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level method declarations."""
-        blocks = []
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type == "method_declaration":
-                    name = self._get_identifier_name(child)
-                    if name:
-                        start_line, end_line, start_col, end_col = self._get_node_position(
-                            child
-                        )
-                        content = self._get_node_text(child)
-                        blocks.append(
-                            self._create_code_block(
-                                BlockType.FUNCTION,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                child,
-                            )
-                        )
-        return blocks
-
-    def _extract_nested_functions(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract method and constructor declarations nested within a Java parent node (not top-level)."""
-        nested_methods = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, 'type') and node.type in ['method_declaration', 'constructor_declaration'] and depth > 0:
-                name = self._get_identifier_name(node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(node)
-                    content = self._get_node_text(node)
-                    nested_methods.append(
-                        self._create_code_block(
-                            BlockType.FUNCTION,
-                            name,
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col,
-                            node
-                        )
-                    )
-                    return
-            if hasattr(node, 'children'):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, 'children'):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_methods
-
-    def _extract_nested_variables(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract field (variable) declarations nested within a Java parent node (not top-level)."""
-        nested_variables = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, 'type') and node.type == 'field_declaration' and depth > 0:
-                # Java fields can have multiple variable_declarators
-                if hasattr(node, 'children'):
-                    for child in node.children:
-                        if hasattr(child, 'type') and child.type == 'variable_declarator':
-                            name = self._get_identifier_name(child)
-                            if name:
-                                start_line, end_line, start_col, end_col = self._get_node_position(child)
-                                content = self._get_node_text(child)
-                                nested_variables.append(
-                                    self._create_code_block(
-                                        BlockType.VARIABLE,
-                                        name,
-                                        content,
-                                        start_line,
-                                        end_line,
-                                        start_col,
-                                        end_col,
-                                        node
-                                    )
-                                )
-            if hasattr(node, 'children'):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, 'children'):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_variables
-
-    def _extract_nested_classes(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract class declarations nested within a Java parent node (not top-level)."""
-        nested_classes = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, 'type') and node.type == 'class_declaration' and depth > 0:
-                name = self._get_identifier_name(node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(node)
-                    content = self._get_node_text(node)
-                    nested_classes.append(
-                        self._create_code_block(
-                            BlockType.CLASS,
-                            name,
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col,
-                            node
-                        )
-                    )
-                    return  # Do not traverse deeper from this class
-            if hasattr(node, 'children'):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, 'children'):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_classes
-
-    def _extract_nested_interfaces(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract interface declarations nested within a Java parent node (not top-level)."""
-        nested_interfaces = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, 'type') and node.type == 'interface_declaration' and depth > 0:
-                name = self._get_identifier_name(node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(node)
-                    content = self._get_node_text(node)
-                    nested_interfaces.append(
-                        self._create_code_block(
-                            BlockType.INTERFACE,
-                            name,
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col,
-                            node
-                        )
-                    )
-                    return
-            if hasattr(node, 'children'):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, 'children'):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_interfaces
-
-    def _extract_nested_enums(self, parent_node: Any) -> List[CodeBlock]:
-        """Extract enum declarations nested within a Java parent node (not top-level)."""
-        nested_enums = []
-
-        def traverse(node, depth=0):
-            if hasattr(node, 'type') and node.type == 'enum_declaration' and depth > 0:
-                name = self._get_identifier_name(node)
-                if name:
-                    start_line, end_line, start_col, end_col = self._get_node_position(node)
-                    content = self._get_node_text(node)
-                    nested_enums.append(
-                        self._create_code_block(
-                            BlockType.ENUM,
-                            name,
-                            content,
-                            start_line,
-                            end_line,
-                            start_col,
-                            end_col,
-                            node
-                        )
-                    )
-                    return
-            if hasattr(node, 'children'):
-                for child in node.children:
-                    traverse(child, depth + 1)
-
-        if hasattr(parent_node, 'children'):
-            for child in parent_node.children:
-                traverse(child, 0)
-
-        return nested_enums
-
-
-    def _extract_top_level_classes(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level class declarations."""
-        blocks = []
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type == "class_declaration":
-                    name = self._get_identifier_name(child)
-                    if name:
-                        start_line, end_line, start_col, end_col = self._get_node_position(
-                            child
-                        )
-                        content = self._get_node_text(child)
-                        blocks.append(
-                            self._create_code_block(
-                                BlockType.CLASS,
-                                name,
-                                content,
-                                start_line,
-                                end_line,
-                                start_col,
-                                end_col,
-                                child,
-                            )
-                        )
-        return blocks
-
-    def _extract_top_level_variables(self, node: Any) -> List[CodeBlock]:
-        """Extract only top-level field declarations."""
-        blocks = []
-        if hasattr(node, "children"):
-            for child in node.children:
-                if hasattr(child, "type") and child.type == "field_declaration":
-                    names = self._extract_field_names(child)
-                    if names:
-                        start_line, end_line, start_col, end_col = self._get_node_position(
-                            child
-                        )
-                        content = self._get_node_text(child)
-                        for name in names:
-                            blocks.append(
-                                self._create_code_block(
-                                    BlockType.VARIABLE,
-                                    name,
-                                    content,
-                                    start_line,
-                                    end_line,
-                                    start_col,
-                                    end_col,
-                                    child,
-                                )
-                            )
-        return blocks
+        all_blocks = []
+        all_blocks.extend(self.extract_imports(root_node))
+        all_blocks.extend(self.extract_exports(root_node))
+        all_blocks.extend(self.extract_enums(root_node))
+        all_blocks.extend(self.extract_variables(root_node))
+        all_blocks.extend(self.extract_functions(root_node))
+        all_blocks.extend(self.extract_classes(root_node))
+        return all_blocks
 
     def _extract_field_names(self, field_node: Any) -> List[str]:
         """Extract variable names from field declaration."""
@@ -405,3 +146,150 @@ class JavaExtractor(BaseExtractor):
                         names.append(name)
         return names
 
+    def _extract_class_level_variables(self, class_node: Any) -> List[CodeBlock]:
+        """Extract field declarations that are direct children of a class (not nested)."""
+        variables = []
+        for child in class_node.children:
+            if hasattr(child, "type") and child.type == "field_declaration":
+                names = self._extract_field_names(child)
+                if names:
+                    variable_block = self._create_code_block(child, BlockType.VARIABLE, names)
+                    variables.append(variable_block)
+        return variables
+
+    def _extract_names_from_node(self, node: Any) -> List[str]:
+        """Extract all identifier names from a Java node (handles various patterns)."""
+        names = []
+        if hasattr(node, "type"):
+            if node.type == "identifier":
+                names.append(self._get_node_text(node))
+            elif node.type == "variable_declarator":
+                # Extract identifier from variable declarator
+                name = self._get_identifier_name(node)
+                if name:
+                    names.append(name)
+            elif node.type == "field_declaration":
+                # Extract field names from field declaration
+                names.extend(self._extract_field_names(node))
+            elif node.type in ["method_declaration", "constructor_declaration"]:
+                # Extract method name
+                name = self._get_identifier_name(node)
+                if name:
+                    names.append(name)
+            elif node.type in ["class_declaration", "interface_declaration", "enum_declaration"]:
+                # Extract class/interface/enum name
+                name = self._get_identifier_name(node)
+                if name:
+                    names.append(name)
+            else:
+                # Generic fallback: find all identifiers in the node
+                def find_identifiers(n):
+                    if hasattr(n, "type") and n.type == "identifier":
+                        names.append(self._get_node_text(n))
+                    if hasattr(n, "children"):
+                        for child in n.children:
+                            find_identifiers(child)
+                find_identifiers(node)
+        return list(set(names))  # Remove duplicates
+
+    def _replace_nested_functions_with_references(self, original_content: str, nested_functions: List[CodeBlock]) -> str:
+        """Replace nested method content with block references for Java."""
+        if not nested_functions:
+            return original_content
+        # Sort nested functions by start position (descending) to avoid offset issues
+        sorted_functions = sorted(nested_functions, key=lambda f: f.start_line, reverse=True)
+        for func in sorted_functions:
+            func_content = func.content
+            func_lines = func_content.split("\n")
+            reference = f"// [BLOCK_REF:{func.id}]"
+            signature_lines = []
+            brace_found = False
+            for line in func_lines:
+                signature_lines.append(line)
+                stripped_line = line.strip()
+                if stripped_line.endswith("{"):
+                    signature_lines.append(f"    {reference}")
+                    brace_found = True
+                    break
+                elif stripped_line.endswith(";"):
+                    signature_lines.append(f"    {reference}")
+                    brace_found = True
+                    break
+            if not brace_found and signature_lines:
+                signature_lines.append(f"    {reference}")
+            replacement = "\n".join(signature_lines)
+            original_content = original_content.replace(func_content, replacement)
+        return original_content
+
+    def extract_exports(self, root_node: Any) -> List[CodeBlock]:
+        """Extract export statements (Java public classes, interfaces, and methods)."""
+        blocks = []
+        def has_public_modifier(node: Any) -> bool:
+            """Check if a node has public modifier."""
+            if hasattr(node, "children"):
+                for child in node.children:
+                    if hasattr(child, "type") and child.type == "modifiers":
+                        modifiers_text = self._get_node_text(child)
+                        return "public" in modifiers_text
+            return False
+        def process_export(node: Any, block_type: BlockType) -> CodeBlock:
+            """Process a node as an export block."""
+            name = self._get_identifier_name(node)
+            if name:
+                start_line, end_line, start_col, end_col = self._get_node_position(node)
+                content = self._get_node_text(node)
+                symbols = self._get_symbols_for_block(start_line, end_line, start_col, end_col)
+                return CodeBlock(
+                    type=block_type,
+                    name=name,
+                    content=content,
+                    symbols=symbols,
+                    start_line=start_line,
+                    end_line=end_line,
+                    start_col=start_col,
+                    end_col=end_col,
+                    id=self._hash_generator.next_id(),
+                )
+            return None
+        # Find public classes
+        for child in root_node.children:
+            if hasattr(child, "type") and child.type == "class_declaration":
+                if has_public_modifier(child):
+                    export_block = process_export(child, BlockType.EXPORT)
+                    if export_block:
+                        blocks.append(export_block)
+        # Find public interfaces
+        for child in root_node.children:
+            if hasattr(child, "type") and child.type == "interface_declaration":
+                if has_public_modifier(child):
+                    export_block = process_export(child, BlockType.EXPORT)
+                    if export_block:
+                        blocks.append(export_block)
+        # Find public enums
+        for child in root_node.children:
+            if hasattr(child, "type") and child.type == "enum_declaration":
+                if has_public_modifier(child):
+                    export_block = process_export(child, BlockType.EXPORT)
+                    if export_block:
+                        blocks.append(export_block)
+        # Find public methods (static methods in classes can be considered exports)
+        def find_public_methods(node: Any, depth: int = 0):
+            if hasattr(node, "children"):
+                for child in node.children:
+                    if hasattr(child, "type") and child.type == "method_declaration":
+                        if has_public_modifier(child):
+                            # Check if it's also static (common for utility methods)
+                            modifiers_text = ""
+                            for grandchild in child.children:
+                                if hasattr(grandchild, "type") and grandchild.type == "modifiers":
+                                    modifiers_text = self._get_node_text(grandchild)
+                                    break
+                            if "static" in modifiers_text:
+                                export_block = process_export(child, BlockType.EXPORT)
+                                if export_block:
+                                    blocks.append(export_block)
+                    # Recursively search in nested structures
+                    if depth < 2:  # Limit depth to avoid deep nesting
+                        find_public_methods(child, depth + 1)
+        find_public_methods(root_node)
+        return blocks

@@ -1,6 +1,6 @@
-"""Python Relationship Extractor
+"""Java Relationship Extractor
 
-Extracts relationships between Python files based on import statements
+Extracts relationships between Java files based on import statements
 using Tree-sitter for accurate parsing. Works purely with extraction results data
 without file system lookups.
 """
@@ -14,13 +14,13 @@ from extractors import BlockType
 from . import BaseRelationshipExtractor, Relationship
 
 
-class PythonRelationshipExtractor(BaseRelationshipExtractor):
-    """Extractor for relationships between Python files using only extraction results data."""
+class JavaRelationshipExtractor(BaseRelationshipExtractor):
+    """Extractor for relationships between Java files using only extraction results data."""
 
 
 
     def extract_relationships(self, extraction_results: Dict[str, Dict[str, Any]]) -> List[Relationship]:
-        """Extract relationships between Python files based on import statements."""
+        """Extract relationships between Java files based on import statements."""
         relationships = []
 
         # Build a registry of available modules from extraction results
@@ -46,52 +46,25 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
                 if not import_info:
                     continue
 
-                # Handle special case: when importing symbols from a relative package,
-                # check if any of the symbols correspond to module files
-                resolved_as_module = False
-                if import_info.get('is_relative') and import_info.get('symbols'):
-                    for symbol in import_info['symbols']:
-                        # Try to resolve the symbol as a module in the target package
-                        symbol_import_info = {
-                            'module_name': import_info['module_name'] + '.' + symbol,
-                            'symbols': [],
-                            'is_relative': True
-                        }
-                        target_file_id = self._resolve_import_from_registry(
-                            source_file_path, symbol_import_info, module_registry
-                        )
+                # Resolve the import to a target file using our module registry
+                target_file_id = self._resolve_import_from_registry(
+                    source_file_path, import_info, module_registry
+                )
 
-                        if target_file_id:
-                            # Create a relationship for the module file
-                            relationship = Relationship(
-                                source_file=source_file_id,
-                                target_file=target_file_id,
-                                import_content=content,
-                                symbols=[symbol]
-                            )
-                            relationships.append(relationship)
-                            resolved_as_module = True
-
-                # Only try standard resolution if we didn't resolve symbols as modules
-                if not resolved_as_module:
-                    target_file_id = self._resolve_import_from_registry(
-                        source_file_path, import_info, module_registry
+                if target_file_id:
+                    # Create a relationship
+                    relationship = Relationship(
+                        source_file=source_file_id,
+                        target_file=target_file_id,
+                        import_content=content,
+                        symbols=import_info.get('symbols', [])
                     )
-
-                    if target_file_id:
-                        # Create a relationship
-                        relationship = Relationship(
-                            source_file=source_file_id,
-                            target_file=target_file_id,
-                            import_content=content,
-                            symbols=import_info.get('symbols', [])
-                        )
-                        relationships.append(relationship)
+                    relationships.append(relationship)
 
         return relationships
 
     def _build_module_registry(self, extraction_results: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
-        """Build a registry mapping module paths to file IDs from extraction results."""
+        """Build a registry mapping Java package names to file IDs from extraction results."""
         registry = {}
 
         for file_path, result in extraction_results.items():
@@ -99,150 +72,109 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
             if not file_id:
                 continue
 
-            # Convert file path to potential module names
+            # Convert file path to potential Java package names
             path_obj = Path(file_path)
 
-            # Get the module path relative to different possible roots
-            module_names = self._get_potential_module_names(path_obj)
+            # Get the package names relative to different possible roots
+            package_names = self._get_potential_module_names(path_obj)
 
-            for module_name in module_names:
-                registry[module_name] = file_id
+            for package_name in package_names:
+                registry[package_name] = file_id
 
         return registry
 
     def _get_potential_module_names(self, file_path: Path) -> List[str]:
-        """Get potential module names for a file path."""
-        module_names = []
+        """Get potential Java package names for a file path."""
+        package_names = []
 
-        # Convert path separators to dots and remove .py extension
+        # Convert path separators to dots and remove .java extension
         path_parts = file_path.parts
 
-        # Remove .py extension if present
-        if file_path.suffix == '.py':
+        # Remove .java extension if present
+        if file_path.suffix == '.java':
             name = file_path.stem
-            if name == '__init__':
-                # For __init__.py files, use the parent directory name
-                path_parts = path_parts[:-1]
-            else:
-                # For regular .py files, replace the last part with the stem
-                path_parts = path_parts[:-1] + (name,)
+            # For Java files, replace the last part with the class name
+            path_parts = path_parts[:-1] + (name,)
 
-        # Generate module names by considering different root levels
+        # Generate package names by considering different root levels
         for i in range(len(path_parts)):
             # Try different starting points in the path
-            module_parts = path_parts[i:]
-            if module_parts:
-                module_name = '.'.join(module_parts)
-                module_names.append(module_name)
+            package_parts = path_parts[i:]
+            if package_parts:
+                package_name = '.'.join(package_parts)
+                package_names.append(package_name)
 
-        return module_names
+        return package_names
 
     def _parse_import_statement(self, import_content: str) -> Optional[Dict[str, Any]]:
-        """Parse a Python import statement using manual AST traversal to extract detailed information."""
+        """Parse a Java import statement using manual AST traversal to extract detailed information."""
         try:
-            # Get the Python parser
-            parser = get_parser("python")
+            # Get the Java parser
+            parser = get_parser("java")
             tree = parser.parse(bytes(import_content.strip(), "utf-8"))
 
             # Extract information using manual traversal
-            module_name = None
+            package_name = None
             symbols = []
-            aliases = {}
-            is_relative = False
+            is_static = False
+            is_wildcard = False
 
-            # Find the import statement node
+            # Find the import declaration node
             import_node = None
-            import_type = "import"
             for child in tree.root_node.children:
-                if child.type in ['import_statement', 'import_from_statement']:
+                if child.type == 'import_declaration':
                     import_node = child
-                    import_type = "import"
                     break
-                elif child.type == 'expression_statement':
-                    # Check for dynamic imports in expression statements
-                    for grandchild in child.children:
-                        if grandchild.type == 'call':
-                            if self._is_dynamic_import_call(grandchild):
-                                import_node = grandchild
-                                import_type = "dynamic_import"
-                                break
-                    if import_node:
-                        break
-                elif child.type == 'call':
-                    # Direct call expression (might happen in some parsing contexts)
-                    if self._is_dynamic_import_call(child):
-                        import_node = child
-                        import_type = "dynamic_import"
-                        break
 
             if not import_node:
                 return None
 
-            if import_type == "dynamic_import":
-                # Handle dynamic imports: importlib.import_module() or __import__()
-                module_name = self._extract_dynamic_import_module_name(import_node)
-                if module_name:
-                    if module_name.startswith('.'):
-                        is_relative = True
-                    # Dynamic imports typically import the whole module
-                    symbols = ['*']  # Indicate dynamic import
+            # Parse the import declaration
+            for child in import_node.children:
+                if child.type == 'static':
+                    # This is a static import
+                    is_static = True
+                elif child.type == 'scoped_identifier':
+                    # This is the package.Class or package.Class.method
+                    package_name = self._safe_text_extract(child)
+                elif child.type == 'identifier':
+                    # This could be a simple class name
+                    if package_name is None:
+                        package_name = self._safe_text_extract(child)
+                elif child.type == 'asterisk':
+                    # This is a wildcard import (import package.*)
+                    is_wildcard = True
+                    symbols = ['*']
 
-            elif import_node.type == 'import_statement':
-                # Handle: import module [as alias]
-                for child in import_node.children:
-                    if child.type == 'dotted_name':
-                        module_name = self._safe_text_extract(child)
-                    elif child.type == 'aliased_import':
-                        # Handle aliased imports like "import module as alias"
-                        for subchild in child.children:
-                            if subchild.type == 'dotted_name':
-                                module_name = self._safe_text_extract(subchild)
-                            elif subchild.type == 'identifier':
-                                # This is the alias
-                                if module_name:
-                                    aliases[module_name] = self._safe_text_extract(subchild)
+            # For non-wildcard imports, extract the imported symbol
+            if package_name and not is_wildcard:
+                # Extract the last part as the symbol (class name or method name)
+                parts = package_name.split('.')
+                if len(parts) > 1:
+                    if is_static:
+                        # For static imports, the last part is the method/field name
+                        symbols = [parts[-1]]
+                        # The package name should be everything except the last part
+                        package_name = '.'.join(parts[:-1])
+                    else:
+                        # For regular imports, the last part is the class name
+                        symbols = [parts[-1]]
+                        # Keep the full package name including the class
+                        # package_name remains as is
 
-            elif import_node.type == 'import_from_statement':
-                # Handle: from module import symbol [as alias]
-                imported_symbols = []
-                current_symbol = None
-
-                for child in import_node.children:
-                    if child.type == 'dotted_name':
-                        if module_name is None:
-                            # This is the module name
-                            module_name = self._safe_text_extract(child)
-                        else:
-                            # This is an imported symbol
-                            current_symbol = self._safe_text_extract(child)
-                            imported_symbols.append(current_symbol)
-                    elif child.type == 'relative_import':
-                        module_name = self._safe_text_extract(child)
-                        is_relative = True
-                    elif child.type == 'aliased_import':
-                        # Handle aliased imports in from statements
-                        for subchild in child.children:
-                            if subchild.type == 'dotted_name':
-                                current_symbol = self._safe_text_extract(subchild)
-                                imported_symbols.append(current_symbol)
-                            elif subchild.type == 'identifier':
-                                # This is the alias for the current symbol
-                                if current_symbol:
-                                    aliases[current_symbol] = self._safe_text_extract(subchild)
-
-                symbols = imported_symbols
-
-            if module_name:
+            if package_name:
                 return {
-                    'module_name': module_name,
+                    'module_name': package_name,
                     'symbols': symbols,
-                    'aliases': aliases,
-                    'is_relative': is_relative,
+                    'aliases': {},  # Java doesn't support import aliases
+                    'is_relative': False,  # Java doesn't have relative imports
+                    'is_static': is_static,
+                    'is_wildcard': is_wildcard,
                     'raw_content': import_content.strip()
                 }
 
         except Exception as e:
-            print(f"Error parsing import statement '{import_content}': {e}")
+            print(f"Error parsing Java import statement '{import_content}': {e}")
 
         return None
 
@@ -252,118 +184,28 @@ class PythonRelationshipExtractor(BaseRelationshipExtractor):
         import_info: Dict[str, Any],
         module_registry: Dict[str, str]
     ) -> Optional[str]:
-        """Resolve an import to a file ID using the module registry."""
-        module_name = import_info['module_name']
-        is_relative = import_info['is_relative']
+        """Resolve a Java import to a file ID using the module registry."""
+        package_name = import_info['module_name']
+        
+        # Java only has absolute imports
+        return self._resolve_absolute_import(package_name, module_registry)
 
-        if is_relative:
-            return self._resolve_relative_import(source_file_path, module_name, module_registry)
-        else:
-            return self._resolve_absolute_import(module_name, module_registry)
-
-    def _resolve_relative_import(
-        self,
-        source_file_path: str,
-        module_name: str,
-        module_registry: Dict[str, str]
-    ) -> Optional[str]:
-        """Resolve a relative import using the module registry."""
-        source_path = Path(source_file_path)
-        source_dir = source_path.parent
-
-        # Count dots to determine how many levels to go up
-        dot_count = 0
-        for char in module_name:
-            if char == '.':
-                dot_count += 1
-            else:
-                break
-
-        # Remove leading dots
-        relative_module = module_name[dot_count:]
-
-        # Calculate target directory by going up the required levels
-        target_dir = source_dir
-        for _ in range(dot_count - 1):
-            target_dir = target_dir.parent
-
-        # If there's a module name after the dots, append it to the path
-        if relative_module:
-            target_path = target_dir / relative_module.replace('.', '/')
-        else:
-            target_path = target_dir
-
-        # Try to find matching module names in registry
-        possible_names = []
-
-        # Try as a Python file first (prioritize .py files over __init__.py)
-        py_file_path = str(target_path.with_suffix('.py'))
-        possible_names.extend(self._get_potential_module_names(Path(py_file_path)))
-
-        # Try as a package (__init__.py)
-        init_file_path = str(target_path / '__init__.py')
-        possible_names.extend(self._get_potential_module_names(Path(init_file_path)))
-
-        # Look for matches in registry
-        for name in possible_names:
-            if name in module_registry:
-                return module_registry[name]
-
-        return None
-
-    def _is_dynamic_import_call(self, node) -> bool:
-        """Check if a call node is a dynamic import (importlib.import_module or __import__)."""
-        if not hasattr(node, 'children') or not node.children:
-            return False
-
-        # Get the function being called
-        function_node = node.children[0]
-
-        # Check for __import__() calls
-        if (hasattr(function_node, 'type') and function_node.type == 'identifier' and
-            self._safe_text_extract(function_node) == '__import__'):
-            return True
-
-        # Check for importlib.import_module() calls
-        if hasattr(function_node, 'type') and function_node.type == 'attribute':
-            # Get the full attribute path
-            attr_text = self._safe_text_extract(function_node)
-            if 'importlib.import_module' in attr_text or 'import_module' in attr_text:
-                return True
-
-        return False
-
-    def _extract_dynamic_import_module_name(self, node) -> Optional[str]:
-        """Extract module name from a dynamic import call."""
-        if not hasattr(node, 'children'):
-            return None
-
-        # Look for argument_list containing the module path
-        for child in node.children:
-            if hasattr(child, 'type') and child.type == 'argument_list':
-                for arg_child in child.children:
-                    if hasattr(arg_child, 'type') and arg_child.type == 'string':
-                        # Extract the string content and remove quotes
-                        text = self._safe_text_extract(arg_child)
-                        return text.strip('\'"')
-
-        return None
 
     def _resolve_absolute_import(
         self,
-        module_name: str,
+        package_name: str,
         module_registry: Dict[str, str]
     ) -> Optional[str]:
-        """Resolve an absolute import using the module registry."""
+        """Resolve a Java absolute import using the module registry."""
         # Try direct lookup first
-        if module_name in module_registry:
-            return module_registry[module_name]
+        if package_name in module_registry:
+            return module_registry[package_name]
 
         # Try looking for partial matches (in case of different root paths)
         for registered_name, file_id in module_registry.items():
-            if registered_name.endswith(module_name):
+            if registered_name.endswith(package_name):
                 return file_id
-            if module_name.endswith(registered_name):
+            if package_name.endswith(registered_name):
                 return file_id
 
         return None
