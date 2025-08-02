@@ -7,21 +7,26 @@ from typing import Dict, List, Any, Optional, Iterator
 from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection
+from services.agent.session_management import SessionManager
 from services.project_manager import ProjectManager
+from services.llm_clients.llm_client_base import LLMClientBase
 from services.agent.xml_service.xml_parser import XMLParser
 from services.agent.xml_service.xml_repair import XMLRepair
-from ...agent.memory_management.sutra_memory_manager import SutraMemoryManager
-from ...agent.memory_management.code_fetcher import CodeFetcher
+from services.agent.xml_service import XMLService
+from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
+from services.agent.memory_management.code_fetcher import CodeFetcher
 from ..prompts.cross_index_prompt_manager import CrossIndexPromptManager
 from ...agent.tool_action_executor.tool_action_executor import ActionExecutor
 from ..utils import infer_technology_type
 from utils.debug_utils import get_user_confirmation_for_llm_call
 from ..prompts.connection_splitting_prompt import CONNECTION_SPLITTING_PROMPT
+from ...code_manager.prompts.code_manager_prompt_manager import CodeManagerPromptManager
+
 
 class CrossIndexService:
     """
     Enhanced service for managing cross-project connection analysis and storage.
-    
+
     Key improvements:
     - Uses file_hash_id as foreign key instead of file paths
     - Stores only technology field, not library field
@@ -35,8 +40,8 @@ class CrossIndexService:
         db_connection: SQLiteConnection,
         project_manager: ProjectManager,
         memory_manager: SutraMemoryManager,
-        session_manager=None,
-        llm_client=None,
+        session_manager: SessionManager,
+        llm_client: LLMClientBase,
     ):
         self.db_connection = db_connection
         self.project_manager = project_manager
@@ -45,10 +50,15 @@ class CrossIndexService:
         self.llm_client = llm_client
         self.xml_parser = XMLParser()
         self.xml_repair = XMLRepair(llm_client)
+        self.xml_service = XMLService(llm_client)
         self.prompt_manager = CrossIndexPromptManager()
+        self.code_manager_prompt_manager = CodeManagerPromptManager()
         self.code_fetcher = CodeFetcher(db_connection)
         self.action_executor = ActionExecutor(
-            db_connection, self.project_manager.vector_db, self.memory_manager, "cross_index"
+            db_connection,
+            self.project_manager.vector_db,
+            self.memory_manager,
+            "cross_index",
         )
         self._memory_needs_update = False
 
@@ -110,12 +120,27 @@ class CrossIndexService:
                         project_path,
                     )
 
+                    if last_tool_result and last_tool_result.get("tool_name") in [
+                        "database",
+                        "search_keyword",
+                    ]:
+                        logger.debug(
+                            f"Processing previous tool result ({last_tool_result.get('tool_name')}) with code manager after XML response but before processing"
+                        )
+                        self._process_previous_tool_results_with_code_manager(
+                            last_tool_result
+                        )
+
                     # Check if user cancelled the operation
-                    if isinstance(xml_response, dict) and xml_response.get("user_cancelled"):
+                    if isinstance(xml_response, dict) and xml_response.get(
+                        "user_cancelled"
+                    ):
                         yield {
                             "type": "user_cancelled",
                             "iteration": current_iteration,
-                            "message": xml_response.get("message", "User cancelled the operation"),
+                            "message": xml_response.get(
+                                "message", "User cancelled the operation"
+                            ),
                         }
                         return
 
@@ -136,10 +161,8 @@ class CrossIndexService:
                             }
 
                         elif event_type == "tool_use":
-                            # Handle regular tool_use events (not attempt_completion)
                             tool_name = event.get("tool_name", "unknown")
-                            
-                            # Store tool result for next iteration context
+
                             last_tool_result = event
 
                             # Update Sutra memory with tool results
@@ -156,18 +179,22 @@ class CrossIndexService:
                             tool_name = event.get("tool_name", "unknown")
 
                             if tool_name == "attempt_completion":
-                                print("🎯 attempt_completion detected - starting connection splitting...")
+                                print(
+                                    "🎯 attempt_completion detected - starting connection splitting..."
+                                )
                                 yield {
                                     "type": "data_collection_complete",
                                     "iteration": current_iteration,
                                     "message": "Data collection phase completed, starting connection splitting",
                                 }
-                                
+
                                 # Run connection splitting
                                 splitting_result = self._run_connection_splitting()
 
                                 if splitting_result.get("success"):
-                                    analysis_result = splitting_result.get("analysis_result")
+                                    analysis_result = splitting_result.get(
+                                        "analysis_result"
+                                    )
                                     yield {
                                         "type": "analysis_complete",
                                         "iteration": current_iteration,
@@ -201,7 +228,7 @@ class CrossIndexService:
                                 "message": f"Tool error in iteration {current_iteration}, continuing...",
                             }
 
-                            # Continue with next iteration instead of failing immediately
+                            # Update last_tool_result with the error event so it shows in next iteration's tool status
                             last_tool_result = event
 
                         elif event_type == "sutra_memory_update":
@@ -416,7 +443,10 @@ class CrossIndexService:
             if not get_user_confirmation_for_llm_call():
                 logger.info("User cancelled Cross-indexing LLM call in debug mode")
                 # Return a special marker to indicate user cancellation
-                return {"user_cancelled": True, "message": "User cancelled the operation in debug mode"}
+                return {
+                    "user_cancelled": True,
+                    "message": "User cancelled the operation in debug mode",
+                }
 
             # Get cross-index system prompt
             system_prompt = self.prompt_manager.cross_index_system_prompt()
@@ -553,6 +583,15 @@ class CrossIndexService:
         """Build semantic search status for cross-indexing."""
         status = "Tool: semantic_search\n"
 
+        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
+        event_type = result.get("type", "unknown")
+
+        if event_type == "tool_error":
+            # Handle error events - they only have error and tool_name fields
+            error = result.get("error", "Unknown error")
+            status += f"ERROR: {error}\n"
+
+        # Handle successful tool_use events
         query = result.get("query")
         if query and query != "fetch_next_code":
             status += f"Query: '{query}'\n"
@@ -569,19 +608,25 @@ class CrossIndexService:
         if data:
             status += f"Results:\n{data}"
 
-        status += "\n\nNOTE: Store all connection-related code snippets in Sutra memory, as search results will not persist to subsequent iterations."
         return status.rstrip()
 
     def _build_search_keyword_status_cross_index(self, result: Dict[str, Any]) -> str:
         """Build keyword search status for cross-indexing."""
         status = "Tool: search_keyword\n"
 
+        event_type = result.get("type", "unknown")
+
+        if event_type == "tool_error":
+            error = result.get("error", "Unknown error")
+            status += f"ERROR: {error}\n"
+
+        # Handle successful tool_use events
         keyword = result.get("keyword")
         if keyword:
             status += f"Keyword: '{keyword}'\n"
 
         matches_found = result.get("matches_found")
-        if matches_found:
+        if matches_found is not None:
             matches_status = "Found" if matches_found else "Not Found"
             status += f"Matches Status: '{matches_status}'\n"
 
@@ -593,13 +638,21 @@ class CrossIndexService:
         if data:
             status += f"Results:\n{data}"
 
-        status += "\n\nNOTE: Store all connection-related code snippets in Sutra memory, as search results will not persist to subsequent iterations."
         return status.rstrip()
 
     def _build_list_files_status_cross_index(self, result: Dict[str, Any]) -> str:
         """Build list files status for cross-indexing."""
         status = "Tool: list_files\n"
 
+        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
+        event_type = result.get("type", "unknown")
+
+        if event_type == "tool_error":
+            # Handle error events - they only have error and tool_name fields
+            error = result.get("error", "Unknown error")
+            status += f"ERROR: {error}\n"
+
+        # Handle successful tool_use events
         directory = result.get("directory")
         if directory:
             status += f"Directory: {directory}\n"
@@ -616,13 +669,22 @@ class CrossIndexService:
         if data:
             status += f"Results:\n{data}"
 
-        status += "\n\nNOTE: Store relevant file/folder information in Sutra memory's history section for connection analysis, as directory listings will not persist to subsequent iterations."
+        status += "\n\nNOTE: Store relevant file/folder information in Sutra memory's history section for connection analysis, as directory listings will not persist in next iterations."
         return status.rstrip()
 
     def _build_database_status_cross_index(self, result: Dict[str, Any]) -> str:
         """Build database status for cross-indexing."""
         status = "Tool: database\n"
 
+        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
+        event_type = result.get("type", "unknown")
+
+        if event_type == "tool_error":
+            # Handle error events - they only have error and tool_name fields
+            error = result.get("error", "Unknown error")
+            status += f"ERROR: {error}\n"
+
+        # Handle successful tool_use events
         query_name = result.get("query_name")
         if query_name:
             status += f"Query Name: {query_name}\n"
@@ -643,7 +705,6 @@ class CrossIndexService:
         if data:
             status += f"Results:\n{data}"
 
-        status += "\n\nNOTE: Store all connection-related code snippets in Sutra memory, as database query results will not persist to subsequent iterations."
         return status.rstrip()
 
     def _build_generic_status_cross_index(
@@ -652,17 +713,26 @@ class CrossIndexService:
         """Build generic status for unknown tools in cross-indexing."""
         status = f"Tool: {tool_name}\n"
 
-        error = result.get("error")
-        if error:
+        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
+        event_type = result.get("type", "unknown")
+
+        if event_type == "tool_error":
+            # Handle error events - they only have error and tool_name fields
+            error = result.get("error", "Unknown error")
             status += f"ERROR: {error}\n"
+        else:
+            # Handle successful tool_use events or other event types
+            error = result.get("error")
+            if error:
+                status += f"ERROR: {error}\n"
 
-        success = result.get("success")
-        if success is not None:
-            status += f"Status: {'success' if success else 'failed'}\n"
+            success = result.get("success")
+            if success is not None:
+                status += f"Status: {'success' if success else 'failed'}\n"
 
-        data = result.get("data", "")
-        if data:
-            status += f"Results:\n{data}"
+            data = result.get("data", "")
+            if data:
+                status += f"Results:\n{data}"
 
         return status.rstrip()
 
@@ -701,6 +771,120 @@ class CrossIndexService:
 
         except Exception as e:
             logger.error(f"Error updating cross-index memory: {e}")
+
+    def _process_previous_tool_results_with_code_manager(
+        self, event: Dict[str, Any]
+    ) -> None:
+        """
+        Process previous tool results with code manager to extract connection code.
+        Only processes database and search_keyword tools.
+
+        Args:
+            event: Tool execution event with results from previous iteration
+        """
+        try:
+            tool_name = event.get("tool_name", "unknown")
+            tool_result = event.get("data", "")
+
+            if tool_name not in ["database", "search_keyword"]:
+                logger.debug(
+                    f"Skipping code manager processing for tool: {tool_name} (not database or search_keyword)"
+                )
+                return
+
+            if not tool_result or tool_result.strip() == "":
+                logger.debug(
+                    f"Skipping code manager processing for tool: {tool_name} (no result data)"
+                )
+                return
+
+            logger.info(
+                f"Processing previous tool results with code manager for tool: {tool_name}"
+            )
+
+            formatted_tool_results = self._format_tool_results_for_code_manager(event)
+
+            system_prompt = self.code_manager_prompt_manager.get_system_prompt()
+            user_prompt = self.code_manager_prompt_manager.get_user_prompt(
+                formatted_tool_results
+            )
+
+            logger.info(
+                "Calling LLM with code manager prompt (separate system/user prompts)"
+            )
+            response = self.llm_client.call_llm(
+                system_prompt, user_prompt, return_raw=True
+            )
+
+            if response:
+                # Process code manager response to extract connection code
+                self._process_code_manager_response(response)
+                logger.info("Code manager processing completed")
+            else:
+                logger.warning("Empty response from code manager LLM call")
+
+        except Exception as e:
+            logger.error(
+                f"Error processing previous tool results with code manager: {e}"
+            )
+
+    def _format_tool_results_for_code_manager(self, event: Dict[str, Any]) -> str:
+        """
+        Format tool execution event for code manager analysis.
+
+        Args:
+            event: Tool execution event
+
+        Returns:
+            Formatted tool results string
+        """
+        tool_result = event.get("data", "")
+
+        result = f"""
+Tool Results:
+{tool_result}
+"""
+
+        return result
+
+    def _process_code_manager_response(self, response: str) -> None:
+        """
+        Process code manager response and extract connection code XML.
+
+        Args:
+            response: Raw response from code manager LLM
+        """
+        try:
+            logger.debug("Processing code manager response for connection code XML")
+
+            # Parse XML response using existing XML service
+            xml_blocks = self.xml_service.parse_xml_response(response)
+
+            if xml_blocks:
+                # Process connection code XML through memory manager
+                for xml_block in xml_blocks:
+                    if isinstance(xml_block, dict) and "connection_code" in xml_block:
+                        logger.info("Found connection_code XML from code manager")
+
+                        result = (
+                            self.memory_manager.xml_processor.process_sutra_memory_data(
+                                xml_block
+                            )
+                        )
+
+                        if result.get("success"):
+                            logger.info(
+                                f"Successfully processed connection code: {len(result.get('changes_applied', {}).get('code', []))} code snippets added"
+                            )
+                        else:
+                            logger.warning(
+                                f"Failed to process connection code: {result.get('errors', [])}"
+                            )
+            else:
+                logger.debug("No connection code XML found in code manager response")
+
+        except Exception as e:
+            logger.error(f"Error processing code manager response: {e}")
 
     def _update_session_memory(self):
         """Update session memory with current memory state (like agent service)."""
@@ -977,7 +1161,7 @@ class CrossIndexService:
     def get_existing_connections_with_ids(self) -> Dict[str, List[Dict[str, Any]]]:
         """
         Retrieve existing connections with IDs and file_hash_id references.
-        
+
         Returns:
             Dictionary with 'incoming' and 'outgoing' connection lists including IDs
         """
@@ -1006,10 +1190,7 @@ class CrossIndexService:
             """
             outgoing_results = self.db_connection.execute_query(outgoing_query)
 
-            return {
-                "incoming": incoming_results,
-                "outgoing": outgoing_results
-            }
+            return {"incoming": incoming_results, "outgoing": outgoing_results}
 
         except Exception as e:
             logger.error(f"Error retrieving existing connections: {e}")
@@ -1020,11 +1201,11 @@ class CrossIndexService:
     ) -> Dict[str, Any]:
         """
         Store discovered connections using file_hash_id as foreign key.
-        
+
         Args:
             project_id: ID of the project being analyzed
             connections_data: Dictionary containing connection data with file_hash_ids
-            
+
         Returns:
             Result dictionary with success status and stored connection IDs
         """
@@ -1112,7 +1293,7 @@ class CrossIndexService:
                 "success": True,
                 "incoming_ids": stored_incoming,
                 "outgoing_ids": stored_outgoing,
-                "message": f"Successfully stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
+                "message": f"Successfully stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections",
             }
 
         except Exception as e:
@@ -1120,16 +1301,18 @@ class CrossIndexService:
             return {
                 "success": False,
                 "error": str(e),
-                "message": "Failed to store connections"
+                "message": "Failed to store connections",
             }
 
-    def create_connection_mappings_by_ids(self, matches: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def create_connection_mappings_by_ids(
+        self, matches: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Create connection mappings using only IDs (no snippets or technology info).
-        
+
         Args:
             matches: List of matches with sender_id and receiver_id
-            
+
         Returns:
             Result dictionary with mapping creation status
         """
@@ -1144,11 +1327,11 @@ class CrossIndexService:
                     """,
                     (
                         match.get("sender_id"),
-                        match.get("receiver_id"), 
+                        match.get("receiver_id"),
                         match.get("connection_type", "unknown"),
                         match.get("description", "Auto-detected connection"),
-                        match.get("match_confidence", 0.0)
-                    )
+                        match.get("match_confidence", 0.0),
+                    ),
                 )
                 created_mappings.append(cursor.lastrowid)
 
@@ -1157,7 +1340,7 @@ class CrossIndexService:
             return {
                 "success": True,
                 "mapping_ids": created_mappings,
-                "message": f"Created {len(created_mappings)} connection mappings"
+                "message": f"Created {len(created_mappings)} connection mappings",
             }
 
         except Exception as e:
@@ -1165,7 +1348,7 @@ class CrossIndexService:
             return {
                 "success": False,
                 "error": str(e),
-                "message": "Failed to create connection mappings"
+                "message": "Failed to create connection mappings",
             }
 
     def _get_file_hash_id(self, project_id: int, file_path: str) -> Optional[int]:
@@ -1182,7 +1365,9 @@ class CrossIndexService:
             # Convert to absolute path if it's relative
             if not os.path.isabs(file_path):
                 absolute_file_path = str(Path(file_path).resolve())
-                logger.debug(f"Resolved relative path {file_path} to absolute path {absolute_file_path}")
+                logger.debug(
+                    f"Resolved relative path {file_path} to absolute path {absolute_file_path}"
+                )
             else:
                 absolute_file_path = file_path
 
@@ -1194,7 +1379,9 @@ class CrossIndexService:
 
             if result:
                 file_hash_id = result[0]["id"]
-                logger.debug(f"Found file_hash_id {file_hash_id} for {absolute_file_path} in project {project_id}")
+                logger.debug(
+                    f"Found file_hash_id {file_hash_id} for {absolute_file_path} in project {project_id}"
+                )
                 return file_hash_id
 
             # If not found with absolute path, try with original path (in case it was stored as relative)
@@ -1206,7 +1393,9 @@ class CrossIndexService:
 
                 if result:
                     file_hash_id = result[0]["id"]
-                    logger.debug(f"Found file_hash_id {file_hash_id} for {file_path} (original path) in project {project_id}")
+                    logger.debug(
+                        f"Found file_hash_id {file_hash_id} for {file_path} (original path) in project {project_id}"
+                    )
                     return file_hash_id
 
             # If still not found, try to find by filename match (fallback)
@@ -1222,10 +1411,14 @@ class CrossIndexService:
                     for row in result:
                         if os.path.basename(row["file_path"]) == filename:
                             file_hash_id = row["id"]
-                            logger.debug(f"Found file_hash_id {file_hash_id} by filename match for {filename} -> {row['file_path']} in project {project_id}")
+                            logger.debug(
+                                f"Found file_hash_id {file_hash_id} by filename match for {filename} -> {row['file_path']} in project {project_id}"
+                            )
                             return file_hash_id
 
-            logger.warning(f"No file_hash_id found for {file_path} (absolute: {absolute_file_path}) in project {project_id}")
+            logger.warning(
+                f"No file_hash_id found for {file_path} (absolute: {absolute_file_path}) in project {project_id}"
+            )
             return None
 
         except Exception as e:
@@ -1312,7 +1505,9 @@ class CrossIndexService:
             )
 
             if not get_user_confirmation_for_llm_call():
-                logger.info("User cancelled Cross-indexing connection matching LLM call in debug mode")
+                logger.info(
+                    "User cancelled Cross-indexing connection matching LLM call in debug mode"
+                )
                 return {
                     "success": False,
                     "user_cancelled": True,
@@ -1480,16 +1675,11 @@ class CrossIndexService:
                     {
                         "id": str(result["id"]),
                         "type": connection_type,
-                        "endpoint": self._extract_endpoint_from_description(
-                            result["description"]
-                        ),
-                        "method": self._extract_method_from_description(
-                            result["description"]
-                        ),
                         "file_path": result["file_path"],
-                        "line_number": "N/A",  # Could be extracted from snippet_lines if needed
+                        "line_number": "N/A",
                         "technology": result["technology_name"],
                         "description": result["description"],
+                        "code_snippet": result["code_snippet"],
                     }
                 )
 
@@ -1498,22 +1688,6 @@ class CrossIndexService:
         except Exception as e:
             logger.error(f"Error getting connections by IDs: {e}")
             return []
-
-    def _extract_endpoint_from_description(self, description: str) -> str:
-        """Extract endpoint path from connection description."""
-        import re
-
-        # Look for patterns like "/api/users", "/health", etc.
-        endpoint_match = re.search(r"(/[a-zA-Z0-9/_-]+)", description)
-        return endpoint_match.group(1) if endpoint_match else "N/A"
-
-    def _extract_method_from_description(self, description: str) -> str:
-        """Extract HTTP method from connection description."""
-        description_upper = description.upper()
-        for method in ["GET", "POST", "PUT", "DELETE", "PATCH"]:
-            if method in description_upper:
-                return method
-        return "N/A"
 
     def _convert_confidence_to_float(self, confidence: str) -> float:
         """Convert confidence level string to float."""

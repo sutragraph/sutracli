@@ -87,7 +87,7 @@ class AWSClient(LLMClientBase):
                         chunk_data = json.loads(chunk.get("bytes").decode())
                         if chunk_data["type"] == "content_block_delta":
                             raw_response += chunk_data["delta"]["text"]
-
+                print()
                 logger.debug(f"📥 Received response from AWS model: {raw_response}")
                 # Return raw response or parse XML based on return_raw parameter
                 if return_raw:

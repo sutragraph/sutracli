@@ -26,7 +26,6 @@ You accomplish focused cross-indexing analysis to discover only data sending/rec
    - Message queue publishers and consumers between user's own services
    - Custom connection wrapper functions for service communication
    - File-based data exchange mechanisms between user repositories/folders
-   - Inter-service communication within user's codebase ecosystem
 
 4. Connection types to exclude:
    - Configuration references that don't send/receive data

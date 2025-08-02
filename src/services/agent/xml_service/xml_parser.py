@@ -119,6 +119,8 @@ class XMLParser:
             # Handle different root elements
             if root_element == "sutra_memory":
                 return self._parse_sutra_memory_regex(xml_block)
+            elif root_element == "connection_code":
+                return self._parse_connection_code_regex(xml_block)
             else:
                 # Generic XML parsing for other elements
                 return self._parse_generic_xml_regex(xml_block, root_element)
@@ -204,6 +206,20 @@ class XMLParser:
             code_data["add"] = adds
             
         return code_data
+
+    def _parse_connection_code_regex(self, xml_block: str) -> Dict[str, Any]:
+        """Parse connection_code XML structure using regex patterns."""
+        logger.debug("Parsing connection_code XML with regex fallback")
+
+        result = {"connection_code": {}}
+
+        # Extract code section
+        code_match = re.search(r'<code>(.*?)</code>', xml_block, re.DOTALL)
+        if code_match:
+            code_content = code_match.group(1).strip()
+            result["connection_code"]["code"] = self._parse_code_section_regex(code_content)
+
+        return result
 
     def _parse_generic_xml_regex(self, xml_block: str, root_element: str) -> Dict[str, Any]:
         """Parse generic XML structure using regex patterns."""

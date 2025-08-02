@@ -85,6 +85,11 @@ class XMLProcessor:
             # Handle sutra_memory wrapper
             if "sutra_memory" in data:
                 sutra_data = data["sutra_memory"]
+            # Handle connection_code wrapper (from code manager)
+            elif "connection_code" in data:
+                sutra_data = data["connection_code"]
+                # For connection_code, we only process code snippets (no tasks or history)
+                return self._process_connection_code_data(sutra_data, results)
             else:
                 sutra_data = data
 
@@ -117,6 +122,29 @@ class XMLProcessor:
         except Exception as e:
             results["success"] = False
             results["errors"].append(f"Error processing dict data: {str(e)}")
+            return results
+
+    def _process_connection_code_data(
+        self, connection_data: Dict[str, Any], results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Process connection_code format (from code manager)"""
+        try:
+            # Process code snippets from connection_code format
+            if "code" in connection_data:
+                code_data = connection_data["code"]
+                self._process_code_dict(code_data, results)
+
+            # Add a default history entry for connection code processing
+            results["changes_applied"]["history"].append({
+                "action": "add_history",
+                "content": "Processed connection code from code manager - extracted connection snippets for storage"
+            })
+
+            return results
+
+        except Exception as e:
+            results["success"] = False
+            results["errors"].append(f"Error processing connection_code data: {str(e)}")
             return results
 
     def _process_task_dict(self, task_data: Any, results: Dict[str, Any]):
@@ -396,6 +424,9 @@ class XMLProcessor:
                 # Check for sutra_memory tag
                 if "sutra_memory" in xml_block:
                     return xml_block["sutra_memory"]
+                # Check for connection_code tag (from code manager)
+                elif "connection_code" in xml_block:
+                    return xml_block["connection_code"]
         return None
 
     def _process_et_element(self, data: Any, results: Dict[str, Any]) -> Dict[str, Any]:

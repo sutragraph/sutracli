@@ -8,22 +8,16 @@ CROSS_INDEX_TOOL_GUIDELINES = """# Cross-Index Tool Use Guidelines
 
 1. In <thinking> tags, first review your Sutra Memory to understand current connection analysis progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what connection information you already have and what you need to discover next.
 
-CRITICAL STORAGE DECISION PROCESS: In your <thinking> tags, always ask yourself: "Should I store this discovered code/connection in sutra memory? Will this information be needed for analysis and future reference?" If yes, store it immediately with complete parameter details.
+CRITICAL ANALYSIS DECISION PROCESS: In your <thinking> tags, always ask yourself: "Should I track this discovered connection pattern in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details.
 
-STORAGE DECISION CRITERIA:
-- Store any connection patterns, API endpoints, HTTP calls, or wrapper functions discovered
-- Store search results that reveal important connection information
-- Store any code that is related to incoming/outgoing connections
-- Store environment variable configurations and their resolved values
-- Remember: If information is not stored in sutra memory, it will not be available for future analysis and reference
+ANALYSIS DECISION CRITERIA:
+- Track any connection patterns, API endpoints, HTTP calls, or wrapper functions discovered
+- Track search results that reveal important connection information
+- Track any patterns that are related to incoming/outgoing connections
+- Track environment variable configurations and their resolved values
+- Remember: If information is not tracked in sutra memory, it will not be available for future analysis and reference
 
-Follow the systematic analysis flow and store every single connection pattern in Sutra Memory immediately after discovering it with complete parameter details.
-
-Mandatory sutra memory storage rules:
-- Store every single connection point discovered, no matter how small or similar
-- For wrapper function calls like `makeApiCall(endpoint, method, data)`, `publishToQueue(queueName, message)`, `emitSocketEvent(event, data)`, store the exact line number and include comprehensive variable descriptions with actual resolved values
-- Code snippets remain exactly as they appear in source code - do not modify the actual code
-- In descriptions, include actual variable values and environment variable values (e.g., "API call using endpoint '/admin/users' for admin user management, method 'POST' for creating new user, data variable userData from form, environment variable API_BASE_URL configured as 'https://api.com'")
+Follow the systematic analysis flow and track every single connection pattern in Sutra Memory immediately after discovering it with complete parameter details.
 
 First iteration rule:
 - If you have empty sutra memory and no information about the codebase, do not create any tasks
@@ -42,10 +36,12 @@ Critical: Update your task list in every iteration based on your thinking:
 Phase 1: Package Discovery and Analysis
 - Use `list_files` to explore project structure and identify package files (package.json, pom.xml, requirements.txt, pyproject.toml, go.mod, etc.)
 - Use `database` tool to examine package files to identify used packages in the current project:
-  - Look for HTTP clients, API frameworks for service communication
-  - Look for WebSocket libraries, Message queue libraries for service messaging
-  - MANDATORY EXCLUSIONS - Ignore these external packages: database drivers, infrastructure SDKs, external API clients, configuration libraries that don't represent inter-service communication
+  - Look for HTTP clients, API frameworks for service communication (axios, express, requests, flask, etc.)
+  - Look for WebSocket libraries for real-time communication (socket.io, ws, websockets, etc.)
+  - Look for Message queue libraries ONLY if they exist (amqplib, rabbitmq, kafka, etc.)
+  - MANDATORY EXCLUSIONS - Ignore these external packages: database drivers, infrastructure SDKs, external API clients, configuration libraries that don't represent data communication
 - Create task list in Sutra Memory about which packages are used and their import statement patterns based on language
+- ADAPTIVE STRATEGY: If no advanced messaging packages are found, focus on built-in HTTP patterns and basic communication methods
 
 Phase 2: Import Statement Discovery and Pattern Analysis
 - Search for import statements of identified packages using their language-specific import patterns:
@@ -86,12 +82,13 @@ Phase 3: Connection Data Collection
     - `from requests import get, post` → search for `get(` and `post(` calls only in that file
     - `import axios from 'axios'` → search for `axios.get`, `axios.post`, etc. in that file
   - NEVER search for methods that weren't actually imported
-- BUILT-IN PATTERNS (no imports required) - include these in Phase 3 analysis:
+- BUILT-IN PATTERNS (no imports required) - ALWAYS include these in Phase 3 analysis regardless of packages:
   - JavaScript: native `fetch()`, `XMLHttpRequest`, `WebSocket` constructor, Node.js built-in `http`, `https`, `net` modules
   - Python: built-in `urllib`, `http.client`, `socket` module
   - Java: `HttpURLConnection`, `Socket` classes from standard library
   - Go: `net/http`, `net` packages from standard library
   - C#: `HttpClient`, `WebRequest` from System.Net namespace
+- PRIORITY STRATEGY: When no advanced packages are found, prioritize built-in patterns over searching for non-existent libraries
 - Wrapper function analysis (high priority): When you find custom wrapper functions that make network connections, these are more important than base library calls:
   - HTTP request wrapper functions: Functions that wrap HTTP client libraries for API calls
   - Queue wrapper functions: Functions that wrap message queue operations
@@ -105,8 +102,7 @@ Phase 3: Connection Data Collection
     - Step 5: For each wrapper function call found, extract and store complete details using line numbers and file_path in sutra memory
 
 3. Summary on attempt_completion tool usage:
-- Remove irrelevant stored code from Sutra Memory which is not related to incoming/outgoing connections
-- Mandatory: Use `attempt_completion` tool with a brief 3-4 line summary when all connection data is collected in sutra memory
+- Mandatory: Use `attempt_completion` tool with a brief 3-4 line summary when all connection analysis is completed
 - Never complete analysis without using the attempt_completion tool - the system requires this specific format
 
 4. If multiple connection discovery actions are needed, use one tool at a time per message to accomplish the analysis iteratively, with each tool use being informed by the result of the previous tool use. Do not assume the outcome of any tool use. Each step must be informed by the previous step's result and tracked in your Sutra Memory.
@@ -123,7 +119,7 @@ Phase 3: Connection Data Collection
 
 8. After receiving tool results, always update your Sutra Memory with:
    - A history entry summarizing the tool use and its connection-related results
-   - Any important connection findings stored for future reference using XML format with proper file paths, line numbers, technology names, and connection direction
+   - Any important connection findings tracked for future reference with proper file paths, line numbers, technology names, and connection direction
    - Connection analysis task status updates (moving from pending to current to completed)
    - New connection discovery tasks identified during the analysis
 

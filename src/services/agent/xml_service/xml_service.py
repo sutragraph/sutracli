@@ -38,8 +38,6 @@ class XMLService:
     def parse_xml_response(self, response_text: str) -> List[Dict[str, Any]]:
         """Parse LLM response and extract only XML data."""
         try:
-            logger.debug(f"Parsing XML response: {response_text[:200]}...")
-
             # Clean and fix common XML spacing issues
             cleaned_text = self.cleaner.clean_xml_spacing(response_text)
 
@@ -92,14 +90,13 @@ class XMLService:
         for i, match in enumerate(xml_matches):
             xml_block = match.group(0)
             try:
-                logger.debug(f"Parsing XML block {i+1}: {xml_block}")
                 parsed_xml = self.parser.parse_single_xml_block(xml_block)
                 parsed_xml_list.append(parsed_xml)
                 logger.debug(f"Successfully parsed XML block {i+1}")
             except Exception as e:
                 logger.error(f"Failed to parse XML block {i+1}: {e}")
                 raise XMLParsingFailedException(
-                    f"Failed to parse XML block {i+1}: {e}",
+                    f"Failed to parse XML block {i+1} - {xml_block}: {e}",
                     failed_block_index=i + 1,
                     original_error=e,
                 )

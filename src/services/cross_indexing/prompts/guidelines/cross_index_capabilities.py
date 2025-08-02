@@ -24,19 +24,21 @@ CAPABILITIES
    - Webhook integrations: HTTP callbacks between different applications/repositories (NOT external webhook providers)
    - File-based integrations: Shared file systems, data exchange between different projects in the same ecosystem
 
-7. You can analyze package files systematically to identify connection technologies used in the project:
+7. You can analyze package files systematically to identify connection technologies ACTUALLY used in the project:
    - Python: requirements.txt, Pipfile, pyproject.toml for packages like requests, flask, fastapi, aiohttp
    - JavaScript/Node.js: package.json for packages like axios, express, socket.io, ws, amqplib
    - Java: pom.xml, build.gradle for dependencies like spring-boot, okhttp, rabbitmq-client
    - Go: go.mod for packages like net/http, gorilla/mux, gorilla/websocket, amqp
    - C#: .csproj, packages.config for packages like HttpClient, SignalR, RabbitMQ.Client
+   - CRITICAL: Only search for patterns that match packages actually found in the project files
 
-8. You understand language-specific connection patterns that may not appear in dependency files:
+8. You understand language-specific connection patterns that may not appear in dependency files (HIGH PRIORITY when packages are limited):
    - JavaScript: await fetch(), XMLHttpRequest, WebSocket, built-in HTTP modules, native fetch API
    - Python: urllib, http.client, socket module for low-level connections, built-in http.server
    - Java: HttpURLConnection, Socket classes from standard library, java.net packages
    - Go: net/http, net packages for HTTP and network connections, built-in HTTP client/server
    - C#: HttpClient, WebRequest from System.Net namespace, built-in networking classes
+   - ADAPTIVE PRIORITY: When project has only basic packages, these built-in patterns become the primary focus
 
 9. You can identify and analyze custom wrapper functions that abstract connection logic:
    - HTTP request wrapper functions: Functions that wrap fetch(), axios, http.request() for API calls
