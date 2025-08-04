@@ -11,7 +11,8 @@ from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
 
 from .ast_parser import ASTParser
-from .utils.json_serializer import make_json_serializable
+from utils.json_serializer import make_json_serializable
+from utils.file_utils import get_extraction_file_path, get_last_extraction_file_path
 from .export_ast_to_json import main as export_ast_to_json
 
 
@@ -118,11 +119,67 @@ def compute_file_hash(file_path: Union[str, Path]) -> Optional[str]:
         if not file_path.exists() or not file_path.is_file():
             return None
 
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             content = f.read()
             return hashlib.sha256(content).hexdigest()
     except (OSError, IOError, PermissionError):
         return None
+
+
+def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
+    """
+    Compute SHA256 hashes for all relevant files in a directory.
+    Uses the same filtering logic as the AST parser.
+
+    Args:
+        dir_path: Path to the directory
+
+    Returns:
+        Dictionary mapping absolute file Path objects to their content hashes
+    """
+    import os
+    from utils.file_utils import should_ignore_file, should_ignore_directory, is_text_file
+
+    dir_path = Path(dir_path)
+    file_hashes = {}
+
+    if not dir_path.exists() or not dir_path.is_dir():
+        print(f"Directory not found: {dir_path}")
+        return file_hashes
+
+    try:
+        # Walk through directory using the same logic as ASTParser.extract_from_directory
+        for root, dirs, files in os.walk(dir_path):
+            root_path = Path(root)
+
+            # Filter out ignored directories (modifies dirs in-place to skip them)
+            dirs[:] = [d for d in dirs if not should_ignore_directory(root_path / d)]
+
+            # Process files in current directory
+            for file in files:
+                file_path = root_path / file
+
+                # Skip ignored files
+                if should_ignore_file(file_path):
+                    continue
+
+                # Skip non-text files
+                if not is_text_file(file_path):
+                    continue
+
+                # Compute hash for this file
+                file_hash = compute_file_hash(file_path)
+                if file_hash:
+                    # Store absolute Path object
+                    absolute_path = file_path.resolve()
+                    file_hashes[absolute_path] = file_hash
+
+        print(f"Computed hashes for {len(file_hashes)} files in directory: {dir_path}")
+        return file_hashes
+
+    except Exception as e:
+        print(f"Error computing directory hashes: {e}")
+        return {}
 
 
 def load_previous_results(json_file: Union[str, Path]) -> Dict[str, Dict[str, Any]]:
@@ -140,19 +197,19 @@ def load_previous_results(json_file: Union[str, Path]) -> Dict[str, Dict[str, An
         if not json_path.exists():
             return {}
 
-        with open(json_path, 'r', encoding='utf-8') as f:
+        with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return data.get('files', {})
+            return data.get("files", {})
     except (OSError, IOError, PermissionError, ValueError, KeyError) as e:
         print(f"Error loading previous results: {e}")
         return {}
 
 
 def incremental_parse(
-    file_paths: List[Union[str, Path]],
-    previous_json_file: Union[str, Path],
-    output_json_file: Union[str, Path],
-    deleted_paths: Optional[List[Union[str, Path]]] = None,
+    file_paths: List[Path],
+    previous_json_file: Path,
+    output_json_file: Path,
+    deleted_paths: Optional[List[Path]] = None,
     indent: int = 2,
 ) -> Dict[str, Dict[str, Any]]:
     """
@@ -163,9 +220,10 @@ def incremental_parse(
     2. Compares file hashes to detect changes
     3. Parses only changed/new files
     4. Removes deleted files from results
-    5. Runs relationship extraction for affected files
-    6. Saves complete updated results to JSON
-    7. Returns only the data for input file paths
+    5. Runs relationship extraction only for changed files (but can reference all files)
+    6. Preserves existing relationships for unchanged files
+    7. Saves complete updated results to JSON
+    8. Returns only the data for input file paths
 
     Args:
         file_paths: List of file paths to check and potentially re-parse
@@ -209,7 +267,7 @@ def incremental_parse(
 
         # Check if file is new or changed
         previous_data = previous_results.get(file_path_str, {})
-        previous_hash = previous_data.get('content_hash')
+        previous_hash = previous_data.get("content_hash")
 
         if previous_hash != current_hash:
             files_to_parse.append(file_path)
@@ -233,21 +291,107 @@ def incremental_parse(
                 updated_results[file_path_str] = result
                 print(f"Updated: {file_path_str}")
 
-    # Run relationship extraction if there were changes
+    # Run relationship extraction only for changed files
     if changed_files or deleted_paths:
-        print("Running relationship extraction for updated files...")
+        print(
+            f"🔄 Running relationship extraction for {len(changed_files)} changed files..."
+        )
+        print(f"📝 Changed files: {changed_files}")
         if parser is None:
             parser = ASTParser()
 
-        # Create ID to path mapping for relationship processing
-        id_to_path = {}
-        for file_path_str, result in updated_results.items():
-            file_id = result.get("id")
-            if file_id:
-                id_to_path[file_id] = file_path_str
+        # First, clear relationships for changed files to avoid stale data
+        print("🧹 Clearing existing relationships for changed files...")
+        for file_path_str in changed_files:
+            if (
+                file_path_str in updated_results
+                and "relationships" in updated_results[file_path_str]
+            ):
+                old_rel_count = len(updated_results[file_path_str]["relationships"])
+                del updated_results[file_path_str]["relationships"]
+                print(f"   Cleared {old_rel_count} relationships from {file_path_str}")
 
-        # Process relationships for the entire updated dataset
-        parser.process_relationships(updated_results, id_to_path)
+        # Create a subset of results containing only changed files for relationship processing
+        # But the relationship extractor needs access to all files to resolve imports correctly
+        changed_results = {}
+        for file_path_str in changed_files:
+            if file_path_str in updated_results:
+                changed_results[file_path_str] = updated_results[file_path_str]
+
+        if changed_results:
+            print(
+                f"📊 Processing {len(changed_results)} changed files for relationships..."
+            )
+
+            # The relationship extractor needs all files to resolve imports, but we only want
+            # to extract relationships FROM the changed files TO any other files
+            # So we pass all files but only process relationships for changed files
+
+            # Create ID to path mapping for all files (needed for import resolution)
+            all_id_to_path = {}
+            for file_path_str, result in updated_results.items():
+                file_id = result.get("id")
+                if file_id:
+                    all_id_to_path[file_id] = file_path_str
+            print(f"🗂️  Created ID mapping for {len(all_id_to_path)} total files")
+
+            # Extract relationships from ALL files (needed for import resolution)
+            print("🔍 Extracting relationships from ALL files for import resolution...")
+            relationships = parser._relationship_extractor.extract_relationships(
+                updated_results
+            )
+            print(f"📈 Total relationships extracted: {len(relationships)}")
+
+            # Filter relationships to only include those FROM changed files
+            print("🎯 Filtering relationships to only those FROM changed files...")
+            changed_file_ids = set()
+            for file_path_str in changed_files:
+                if file_path_str in updated_results:
+                    file_id = updated_results[file_path_str].get("id")
+                    if file_id:
+                        changed_file_ids.add(file_id)
+                        print(f"   Changed file ID: {file_id} ({file_path_str})")
+
+            # Only keep relationships that originate from changed files
+            filtered_relationships = [
+                rel for rel in relationships if rel.source_id in changed_file_ids
+            ]
+            print(
+                f"✂️  Filtered relationships: {len(filtered_relationships)} (from {len(relationships)} total)"
+            )
+
+            # Log the filtered relationships
+            for i, rel in enumerate(filtered_relationships):
+                source_path = all_id_to_path.get(rel.source_id, "unknown")
+                target_path = all_id_to_path.get(rel.target_id, "unknown")
+                print(
+                    f"   {i+1}. {source_path} -> {target_path} ({rel.import_content})"
+                )
+
+            # Add the filtered relationships back to the results
+            print("💾 Adding filtered relationships back to results...")
+            for relationship in filtered_relationships:
+                source_file_id = relationship.source_id
+                source_file_path = all_id_to_path.get(source_file_id)
+
+                if source_file_path and source_file_path in updated_results:
+                    # Initialize relationships list if it doesn't exist
+                    if "relationships" not in updated_results[source_file_path]:
+                        updated_results[source_file_path]["relationships"] = []
+
+                    # Add the relationship
+                    updated_results[source_file_path]["relationships"].append(
+                        {
+                            "source_id": source_file_id,
+                            "target_id": relationship.target_id,
+                            "import_content": relationship.import_content,
+                        }
+                    )
+                    print(
+                        f"   Added relationship: {source_file_path} -> {all_id_to_path.get(relationship.target_id, 'unknown')}"
+                    )
+
+            print("✅ Relationship processing complete!")
 
     # Save complete updated results
     export_success = export_to_json(updated_results, output_json_file, indent)
@@ -263,7 +407,9 @@ def incremental_parse(
         if file_path_str in updated_results:
             input_results[file_path_str] = updated_results[file_path_str]
 
-    print(f"Incremental parsing complete. Returning data for {len(input_results)} files.")
+    print(
+        f"Incremental parsing complete. Returning data for {len(input_results)} files."
+    )
     return input_results
 
 
@@ -275,7 +421,10 @@ __all__ = [
     "incremental_parse",
     # Utility functions
     "compute_file_hash",
+    "compute_directory_hashes",
     "load_previous_results",
     # Legacy function
     "export_ast_to_json",
+    "get_extraction_file_path",
+    "get_last_extraction_file_path",
 ]

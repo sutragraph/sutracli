@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Generator
 from pathlib import Path
 
 
-def load_json_file(file_path: str) -> Dict[str, Any]:
+def load_json_file(file_path: Path) -> Dict[str, Any]:
     """Load and parse a JSON file."""
     path = Path(file_path)
     if not path.exists():

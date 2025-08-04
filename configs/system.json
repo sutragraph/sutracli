@@ -5,8 +5,6 @@
     "connection_timeout": 60,
     "max_retry_attempts": 5,
     "batch_size": 1000,
-    "enable_indexing": true,
-    "create_tables": true,
     "enable_wal_mode": true
   },
   "storage": {

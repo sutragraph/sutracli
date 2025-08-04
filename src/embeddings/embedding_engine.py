@@ -1,0 +1,499 @@
+"""
+Code block embedding engine for generating strategic embeddings for FileData and its nested CodeBlocks.
+Moved from processors/ to embeddings/ for better organization.
+"""
+
+from typing import List, Dict
+from pathlib import Path
+
+from loguru import logger
+from tqdm import tqdm
+
+from models.schema import CodeBlock, FileData
+from embeddings.vector_store import get_vector_store
+
+
+class EmbeddingEngine:
+    """
+    Processes FileData and embeds its nested code blocks.
+
+    Strategy:
+    1. Embed the entire file for high-level context
+    2. Embed all extracted code blocks (they were deemed important during extraction)
+    3. Recursively embed nested blocks
+    4. Provide fallback file embedding when block extraction fails
+    """
+
+    def __init__(self, max_tokens: int = 150, overlap_tokens: int = 25):
+        """Initialize the embedding engine with chunking parameters."""
+        self.max_tokens = max_tokens
+        self.overlap_tokens = overlap_tokens
+        self.vector_store = get_vector_store()
+
+    def _should_embed_block(self, block: CodeBlock) -> bool:
+        """
+        Determine if a code block should be embedded.
+        All extracted blocks are embedded since they were deemed important during extraction.
+
+        Args:
+            block: CodeBlock to evaluate
+
+        Returns:
+            True if block should be embedded, False otherwise
+        """
+        # Embed all blocks that have content
+        return bool(block.content and block.content.strip())
+
+    def _generate_file_embedding_text(self, file_data: FileData) -> str:
+        """Generate embedding text for the entire file."""
+        text_parts = []
+
+        # Add file metadata
+        if file_data.file_path:
+            file_path = Path(file_data.file_path)
+            text_parts.append(f"File: {file_path.name}")
+            text_parts.append(f"Directory: {file_path.parent.name}")
+            text_parts.append(f"Path: {file_data.file_path}")
+
+        if file_data.language:
+            text_parts.append(f"Language: {file_data.language}")
+
+        # Add file content
+        if file_data.content:
+            text_parts.append(f"Content:\n{file_data.content}")
+
+        return "\n".join(text_parts)
+
+    def _generate_block_embedding_text(
+        self, block: CodeBlock, file_data: FileData
+    ) -> str:
+        """Generate embedding text for a specific code block with context."""
+        text_parts = []
+
+        # Add file context
+        if file_data.file_path:
+            file_path = Path(file_data.file_path)
+            text_parts.append(f"File: {file_path.name}")
+
+        if file_data.language:
+            text_parts.append(f"Language: {file_data.language}")
+
+        # Add hierarchical context
+        hierarchy_path = self._get_block_hierarchy_path(block, file_data)
+        if hierarchy_path:
+            text_parts.append(f"Context: {hierarchy_path}")
+
+        # Add block metadata
+        text_parts.append(f"Type: {block.type.value}")
+        text_parts.append(f"Name: {block.name}")
+
+        # Add line information
+        if block.start_line == block.end_line:
+            text_parts.append(f"Line: {block.start_line}")
+        else:
+            text_parts.append(f"Lines: {block.start_line}-{block.end_line}")
+
+        # Add block content
+        if block.content:
+            text_parts.append(f"Code:\n{block.content}")
+
+        return "\n".join(text_parts)
+
+    def _store_embeddings_batch_for_blocks(
+        self, blocks: List[CodeBlock], file_data: FileData, project_id: int
+    ) -> Dict[str, int]:
+        """
+        Generate and store embeddings for multiple blocks in a single batch.
+        This provides massive performance improvement by processing all blocks together.
+
+        Args:
+            blocks: List of code blocks to embed
+            file_data: File data for context
+            project_id: Project ID
+
+        Returns:
+            Dictionary with embedding statistics
+        """
+        if not blocks:
+            return {"total_embeddings": 0}
+
+        logger.debug(f"Batch processing {len(blocks)} blocks for {file_data.file_path}")
+
+        # Collect all text chunks from all blocks (without generating embeddings yet)
+        all_chunk_texts = []
+        block_chunk_mapping = []  # Track which chunks belong to which block
+
+        for block in blocks:
+            # Generate embedding text with hierarchical context
+            block_embedding_text = self._generate_block_embedding_text(block, file_data)
+
+            # Get text chunks for this block (without embeddings)
+            text_chunks = self.vector_store.chunk_text(
+                block_embedding_text,
+                max_tokens=self.max_tokens,
+                overlap_tokens=self.overlap_tokens,
+            )
+
+            # Track which chunks belong to this block
+            for chunk_idx, chunk_metadata in enumerate(text_chunks):
+                all_chunk_texts.append(chunk_metadata["text"])
+                block_chunk_mapping.append({
+                    'block': block,
+                    'chunk_index': chunk_idx,
+                    'embedding_text': block_embedding_text,
+                })
+
+        # Generate ALL embeddings in one batch - this is the key performance improvement!
+        if not all_chunk_texts:
+            logger.debug("No chunk texts to embed")
+            return {"total_embeddings": 0, "blocks_processed": 0}
+
+        logger.debug(f"Generating embeddings for {len(all_chunk_texts)} chunks in one batch")
+        all_embeddings = self.vector_store.embedding_model.get_embeddings_batch(all_chunk_texts)
+
+        if all_embeddings is None:
+            logger.error("Embedding generation returned None")
+            return {"total_embeddings": 0, "blocks_processed": 0}
+
+        # Prepare all embedding data for batch database insertion
+        batch_embedding_data = []
+        for i, embedding in enumerate(all_embeddings):
+            mapping = block_chunk_mapping[i]
+            block = mapping['block']
+            chunk_index = mapping['chunk_index']
+
+            # Use the actual block line numbers from AST parsing
+            # For chunks within a block, we use the block's line range
+            # (Individual chunks within a block don't have meaningful separate line ranges)
+            chunk_start_line = block.start_line
+            chunk_end_line = block.end_line
+
+            batch_embedding_data.append({
+                'node_id': f"block_{block.id}",
+                'project_id': project_id,
+                'embedding': embedding,
+                'chunk_index': chunk_index,
+                'chunk_start_line': chunk_start_line,
+                'chunk_end_line': chunk_end_line,
+                'block_id': block.id,
+            })
+
+        # Store ALL embeddings in a single database transaction - MASSIVE speedup!
+        embedding_ids = self.vector_store.store_embeddings_batch(batch_embedding_data)
+
+        # Log batch results
+        for i, embedding_id in enumerate(embedding_ids):
+            data = batch_embedding_data[i]
+            logger.debug(
+                f"Stored embedding {embedding_id} for block {data['block_id']} chunk {data['chunk_index']} "
+                f"(lines {data['chunk_start_line']}-{data['chunk_end_line']})"
+            )
+
+        total_embeddings = len(embedding_ids)
+
+        logger.debug(f"Batch processed {len(blocks)} blocks, generated {total_embeddings} embeddings")
+        return {"total_embeddings": total_embeddings}
+
+    def _get_block_hierarchy_path(self, target_block: CodeBlock, file_data: FileData) -> str:
+        """Get the hierarchical path to a block (e.g., 'ClassName.method_name')."""
+        def find_parent_path(block_id: int, blocks: List[CodeBlock], path: List[str] = None) -> List[str]:
+            if path is None:
+                path = []
+
+            for block in blocks:
+                if block.id == block_id:
+                    return path + [block.name]
+
+                # Check if target is in children
+                if block.children:
+                    child_path = find_parent_path(block_id, block.children, path + [block.name])
+                    if child_path:
+                        return child_path
+
+            return []
+
+        # Find the hierarchical path
+        hierarchy = find_parent_path(target_block.id, file_data.blocks)
+
+        # Remove the target block's own name (it's already in the metadata)
+        if hierarchy and hierarchy[-1] == target_block.name:
+            hierarchy = hierarchy[:-1]
+
+        return " > ".join(hierarchy) if hierarchy else ""
+
+    def _store_embeddings(
+        self,
+        entity_id: str,
+        project_id: int,
+        embedding_text: str,
+        content: str,
+        is_file: bool = False,
+    ) -> List[int]:
+        """
+        Generate and store chunked embeddings for an entity.
+
+        Args:
+            entity_id: Unique identifier (file ID or block ID)
+            project_id: Project ID
+            embedding_text: Rich text with metadata for semantic search (file path, language, etc.)
+            content: Raw code content for accurate line number calculation
+            is_file: True if this is a file embedding, False if it's a block embedding
+
+        Returns:
+            List of embedding IDs that were stored
+        """
+        if not embedding_text.strip():
+            logger.debug(f"No content to embed for entity {entity_id}")
+            return []
+
+        # Add prefix to distinguish file vs block IDs during retrieval
+        prefix = "file" if is_file else "block"
+        prefixed_entity_id = f"{prefix}_{entity_id}"
+
+        try:
+            # Generate embeddings using the full embedding_text (with metadata)
+            embeddings_with_metadata = self.vector_store.get_chunked_embeddings(
+                embedding_text,
+                max_tokens=self.max_tokens,
+                overlap_tokens=self.overlap_tokens,
+            )
+
+            if not embeddings_with_metadata:
+                logger.warning(f"No embeddings generated for entity {entity_id}")
+                return []
+
+            # Also chunk the content directly to get accurate line numbers
+            content_chunks = self.vector_store.chunk_text(
+                content,
+                max_tokens=self.max_tokens,
+                overlap_tokens=self.overlap_tokens,
+            )
+
+            embedding_ids = []
+
+            for chunk_index, (embedding, chunk_metadata) in enumerate(
+                embeddings_with_metadata
+            ):
+                try:
+                    # Calculate line numbers
+                    if chunk_index < len(content_chunks):
+                        content_chunk = content_chunks[chunk_index]
+                        chunk_start_line = content_chunk["start_line"]
+                        chunk_end_line = content_chunk["end_line"]
+                    else:
+                        # Fallback calculation
+                        char_start = chunk_metadata.get("start", 0)
+                        text_up_to_start = content[:char_start]
+                        lines_before_chunk = text_up_to_start.count("\n")
+                        chunk_text = chunk_metadata.get("text", "")
+                        chunk_line_count = len(chunk_text.split("\n"))
+                        chunk_start_line = lines_before_chunk + 1
+                        chunk_end_line = chunk_start_line + chunk_line_count - 1
+
+                    # Store embedding with prefixed ID
+                    embedding_id = self.vector_store.store_embedding(
+                        node_id=prefixed_entity_id,  # "file_123" or "block_456"
+                        project_id=project_id,
+                        chunk_index=chunk_index,
+                        embedding=embedding,
+                        chunk_start_line=chunk_start_line,
+                        chunk_end_line=chunk_end_line,
+                    )
+
+                    embedding_ids.append(embedding_id)
+                    logger.debug(
+                        f"Stored embedding {embedding_id} for {prefix} {entity_id} "
+                        f"chunk {chunk_index} (lines {chunk_start_line}-{chunk_end_line})"
+                    )
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to store embedding for {prefix} {entity_id} "
+                        f"chunk {chunk_index}: {e}"
+                    )
+                    continue
+
+            return embedding_ids
+
+        except Exception as e:
+            logger.error(f"Failed to generate embeddings for entity {entity_id}: {e}")
+            return []
+
+    def _collect_blocks_to_embed(self, blocks: List[CodeBlock]) -> List[CodeBlock]:
+        """
+        Collect all blocks that should be embedded.
+
+        Args:
+            blocks: List of code blocks to evaluate
+
+        Returns:
+            List of blocks that should be embedded
+        """
+        blocks_to_embed = []
+
+        for block in blocks:
+            if self._should_embed_block(block):
+                blocks_to_embed.append(block)
+
+                # Recursively check nested blocks
+                if block.children:
+                    nested_blocks = self._collect_blocks_to_embed(block.children)
+                    blocks_to_embed.extend(nested_blocks)
+
+        return blocks_to_embed
+
+
+    def process_file_data(self, file_data: FileData, project_id: int) -> Dict[str, int]:
+        """
+        Process a FileData object and generate embeddings for the file and its strategic blocks.
+
+        Args:
+            file_data: FileData object to process
+            project_id: Project ID
+
+        Returns:
+            Dictionary with embedding statistics
+        """
+        stats = {
+            "file_embeddings": 0,
+            "block_embeddings": 0,
+            "total_chunks": 0,
+            "blocks_processed": 0,
+        }
+
+        try:
+            # Collect blocks to embed first
+            blocks_to_embed = self._collect_blocks_to_embed(file_data.blocks)
+            logger.debug(
+                f"Found {len(blocks_to_embed)} blocks to embed in {file_data.file_path}"
+            )
+
+            if blocks_to_embed:
+                # If we have extracted blocks, embed them with hierarchical context
+                # Skip file-level chunking to avoid redundancy
+                logger.debug(f"Embedding {len(blocks_to_embed)} hierarchical blocks for {file_data.file_path}")
+            elif getattr(file_data, 'unsupported', False):
+                # Only embed entire file for unsupported file types
+                logger.debug(f"Unsupported file type, embedding entire file: {file_data.file_path}")
+                file_embedding_text = self._generate_file_embedding_text(file_data)
+                file_embedding_ids = self._store_embeddings(
+                    entity_id=str(file_data.id),
+                    project_id=project_id,
+                    embedding_text=file_embedding_text,
+                    content=file_data.content,
+                    is_file=True,
+                )
+                stats["file_embeddings"] = len(file_embedding_ids)
+                stats["total_chunks"] += len(file_embedding_ids)
+            else:
+                # Supported file type but no blocks extracted - skip embedding
+                logger.debug(f"Supported file with no extractable blocks, skipping: {file_data.file_path}")
+
+            # Process all blocks in a single batch for massive performance improvement
+            if blocks_to_embed:
+                block_embedding_stats = self._store_embeddings_batch_for_blocks(
+                    blocks_to_embed, file_data, project_id
+                )
+                stats["block_embeddings"] += block_embedding_stats["total_embeddings"]
+                stats["total_chunks"] += block_embedding_stats["total_embeddings"]
+                stats["blocks_processed"] += len(blocks_to_embed)
+
+            logger.info(
+                f"Processed {file_data.file_path}: "
+                f"{stats['file_embeddings']} file chunks, "
+                f"{stats['block_embeddings']} block chunks, "
+                f"{stats['blocks_processed']} blocks"
+            )
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error processing file {file_data.file_path}: {e}")
+            return stats
+
+    def process_multiple_files(
+        self, file_data_list: List[FileData], project_id: int, batch_size: int = 50
+    ) -> Dict[str, int]:
+        """
+        Process multiple FileData objects in batches.
+
+        Args:
+            file_data_list: List of FileData objects to process
+            project_id: Project ID
+            batch_size: Number of files to process in each batch
+
+        Returns:
+            Dictionary with total embedding statistics
+        """
+        total_stats = {
+            "files_processed": 0,
+            "file_embeddings": 0,
+            "block_embeddings": 0,
+            "total_chunks": 0,
+            "blocks_processed": 0,
+        }
+
+        logger.info(f"Processing {len(file_data_list)} files for embeddings")
+
+        with tqdm(
+            total=len(file_data_list), desc="Embedding files", unit="file"
+        ) as pbar:
+            for i in range(0, len(file_data_list), batch_size):
+                batch_files = file_data_list[i : i + batch_size]
+
+                for file_data in batch_files:
+                    file_stats = self.process_file_data(file_data, project_id)
+
+                    # Accumulate stats
+                    total_stats["files_processed"] += 1
+                    total_stats["file_embeddings"] += file_stats["file_embeddings"]
+                    total_stats["block_embeddings"] += file_stats["block_embeddings"]
+                    total_stats["total_chunks"] += file_stats["total_chunks"]
+                    total_stats["blocks_processed"] += file_stats["blocks_processed"]
+
+                    pbar.update(1)
+
+        logger.info(
+            f"Completed embedding {total_stats['files_processed']} files: "
+            f"{total_stats['total_chunks']} total chunks, "
+            f"{total_stats['blocks_processed']} blocks processed"
+        )
+
+        return total_stats
+
+
+def parse_entity_id(prefixed_id: str) -> tuple[str, str]:
+    """
+    Parse a prefixed entity ID to extract the type and original ID.
+
+    Args:
+        prefixed_id: ID with prefix like "file_123" or "block_456"
+
+    Returns:
+        Tuple of (entity_type, original_id) where entity_type is "file" or "block"
+
+    Example:
+        parse_entity_id("file_123") -> ("file", "123")
+        parse_entity_id("block_456") -> ("block", "456")
+    """
+    if prefixed_id.startswith("file_"):
+        return "file", prefixed_id[5:]  # Remove "file_" prefix
+    elif prefixed_id.startswith("block_"):
+        return "block", prefixed_id[6:]  # Remove "block_" prefix
+    else:
+        # Fallback for IDs without prefix (backward compatibility)
+        return "unknown", prefixed_id
+
+
+# Global instance
+_embedding_engine = None
+
+
+def get_embedding_engine(
+    max_tokens: int = 150, overlap_tokens: int = 25
+) -> EmbeddingEngine:
+    """Return singleton instance of EmbeddingEngine."""
+    global _embedding_engine
+    if _embedding_engine is None:
+        _embedding_engine = EmbeddingEngine(max_tokens, overlap_tokens)
+    return _embedding_engine

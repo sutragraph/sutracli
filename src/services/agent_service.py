@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional, Iterator
 from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection
-from embeddings.vector_db import VectorDatabase
+
 from .agent.agent_prompt.system import get_base_system_prompt
 from .llm_clients.llm_factory import llm_client_factory
 from .agent.tool_action_executor.tool_action_executor import ActionExecutor
@@ -31,7 +31,7 @@ class AgentService:
         """
         self.llm_client = llm_client_factory()
         self.db_connection = SQLiteConnection()
-        self.vector_db = VectorDatabase(config.sqlite.embeddings_db)
+
 
         self.session_manager = SessionManager.get_or_create_session(session_id)
         self.memory_manager = SutraMemoryManager(db_connection=self.db_connection)
@@ -43,12 +43,12 @@ class AgentService:
 
         # Initialize project manager for centralized project operations
         self.project_manager = ProjectManager(
-            self.db_connection, self.vector_db, self.memory_manager
+            self.db_connection, self.memory_manager
         )
 
-        # XML-based action executor with shared sutra memory manager
+        # XML-based action executor with shared sutra memory manager and shared project indexer
         self.xml_action_executor = ActionExecutor(
-            self.db_connection, self.vector_db, self.memory_manager
+            self.db_connection, self.memory_manager, self.project_manager.project_indexer
         )
 
         # Track last tool result for context -
@@ -65,13 +65,19 @@ class AgentService:
         self.result_verifier = ResultVerifier()
 
         # Determine current project name from specified or working directory
-        self.current_project_name = self.project_manager.determine_project_name(project_path)
+        from pathlib import Path
+        if project_path:
+            project_path_obj = Path(project_path)
+        else:
+            project_path_obj = Path.cwd()
+
+        self.current_project_name = self.project_manager.determine_project_name(project_path_obj)
 
         # Performance monitoring
         self.performance_monitor = get_performance_monitor()
 
         # Check if project exists in database and auto-index if needed
-        self.project_manager.ensure_project_indexed(self.current_project_name, project_path)
+        self.project_manager.ensure_project_indexed(self.current_project_name, project_path_obj)
 
     def _perform_incremental_indexing(self) -> Iterator[Dict[str, Any]]:
         """Perform incremental reindexing of the database using the current project name."""
@@ -913,5 +919,4 @@ class AgentService:
         """Context manager exit."""
         if hasattr(self, "db_connection"):
             self.db_connection.__exit__(exc_type, exc_val, exc_tb)
-        if hasattr(self, "vector_db"):
-            self.vector_db.__exit__(exc_type, exc_val, exc_tb)
+

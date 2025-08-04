@@ -8,7 +8,8 @@ from loguru import logger
 
 from graph import ASTToSqliteConverter
 from graph.sqlite_client import SQLiteConnection
-from processors.node_embedding_processor import get_node_embedding_processor
+from embeddings import get_embedding_engine
+from models import Project
 
 
 def load_project_config(config_file: str) -> Dict[str, Any]:
@@ -175,10 +176,9 @@ def list_projects():
             logger.debug(f"Found {len(projects)} projects in the database:")
             for project in projects:
                 logger.debug(
-                    f"  - {project['name']} ({project.get('language', 'Unknown')}) v{project.get('version', '1.0.0')}"
+                    f"  - {project.name} (path: {project.path})"
                 )
-                if project.get("description"):
-                    logger.debug(f"    Description: {project['description']}")
+                logger.debug(f"    Created: {project.created_at}, Updated: {project.updated_at}")
         else:
             logger.debug("No projects found in the database")
 
@@ -186,7 +186,7 @@ def list_projects():
 def show_database_stats():
     """Display comprehensive database and embedding statistics."""
     try:
-        processor = get_node_embedding_processor()
+        embedding_engine = get_embedding_engine()
         db_connection = SQLiteConnection()
 
         print("\n📊 Sutra Knowledge Database Statistics")

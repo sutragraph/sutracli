@@ -4,14 +4,35 @@ Main converter class that orchestrates the code extraction to SQLite conversion 
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
+from pydantic import BaseModel
 
 from loguru import logger
 
-from .sqlite_client import SQLiteConnection, GraphOperations
-from models import ParsedCodebase, CodeNode, CodeEdge, Project
-from processors import GraphDataProcessor
+from graph.sqlite_client import SQLiteConnection, GraphOperations
+from models.schema import Project, ExtractionData
 from utils import load_json_file
+
+
+class ConversionResult(BaseModel):
+    """Result of the conversion process."""
+
+    status: str
+    input_file: str
+    project_name: str
+    project_id: int
+    files_processed: int
+    blocks_processed: int
+    relationships_processed: int
+    database_stats: Dict[str, Any]
+
+
+class ConversionError(BaseModel):
+    """Error result of the conversion process."""
+
+    status: str
+    error: str
+    input_file: str
 
 
 class ASTToSqliteConverter:
@@ -21,191 +42,97 @@ class ASTToSqliteConverter:
         """Initialize converter with optional connection."""
         self.connection = sqlite_connection or SQLiteConnection()
         self.graph_ops = GraphOperations(self.connection)
-        self.processor = GraphDataProcessor(self.connection)
         logger.debug("🛠️ ASTToSqliteConverter initialized")
 
     def convert_json_to_graph(
         self,
-        json_file_path: str,
+        json_file_path: Path,
         project_name: Optional[str] = None,
-        project_config: Optional[Dict[str, Any]] = None,
         clear_existing: bool = False,
-        create_indexes: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> Union[ConversionResult, ConversionError]:
         """
         Convert code extraction JSON file to SQLite knowledge graph.
-        Embeddings are automatically generated for all code blocks.
 
         Args:
             json_file_path: Path to the extraction JSON file
             project_name: Name of the project/codebase (auto-derived if not provided)
-            project_config: Project configuration dictionary with metadata
             clear_existing: Whether to clear existing data in the database
-            create_indexes: Whether to create indexes for better performance
 
         Returns:
-            Dictionary with conversion statistics
+            ConversionResult on success, ConversionError on failure
         """
-        logger.debug("\n🚀 Starting conversion of:", json_file_path)
+        logger.info(f"🚀 Starting conversion of: {json_file_path}")
 
         try:
             # Auto-derive project name if not provided
             if project_name is None:
                 project_name = Path(json_file_path).stem
-                logger.debug(f"📁 Project name: {project_name}")
+                logger.info(f"📁 Project name: {project_name}")
 
             # Load and parse JSON data
-            logger.debug("📦 Loading JSON data...")
+            logger.info("📦 Loading JSON data...")
             json_data = load_json_file(json_file_path)
-            parsed_data = self._parse_json_data(
-                json_data, project_name, json_file_path, project_config
-            )
+
+            # Convert to ExtractionData model
+            extraction_data = ExtractionData(**json_data)
 
             # Clear database if requested
             if clear_existing:
-                logger.debug("🧹 Clearing existing database...")
-                self.connection.clear_database(force_clear=True)
-                # Recreate tables after clearing
-                logger.debug("🗂️ Recreating database tables...")
-                self.connection._create_tables()
+                logger.info("🧹 Clearing existing database...")
+                self.connection.clear_database()
 
-            # Prepare project data for database
-            project_data = {
-                "name": project_name,
-                "description": (
-                    parsed_data.project.description if parsed_data.project else None
-                ),
-                "language": (
-                    parsed_data.project.language if parsed_data.project else None
-                ),
-                "version": (
-                    parsed_data.project.version if parsed_data.project else "1.0.0"
-                ),
-                "created_at": (
-                    parsed_data.project.created_at if parsed_data.project else None
-                ),
-                "updated_at": (
-                    parsed_data.project.updated_at if parsed_data.project else None
-                ),
-                "source_file": json_file_path,
-            }
+            # Create project with all required fields
+            from datetime import datetime
+            current_time = datetime.now().isoformat()
 
-            # Create project and get its ID FIRST
-            project_id = self.connection.insert_project(project_data)
-
-            # Process data into graph format (embeddings are generated automatically)
-            logger.debug("🧩 Processing data into graph format with embeddings...")
-            graph_data = self.processor.process_codebase(
-                parsed_data, project_id, project_name
+            project = Project(
+                id=1,  # Will be auto-assigned by database
+                name=project_name,
+                path=str(json_file_path.parent),  # Use the directory containing the JSON file
+                created_at=current_time,
+                updated_at=current_time
             )
 
-            # Insert data into SQLite
-            logger.debug("🗃️ Inserting data into SQLite...")
-            self.graph_ops.insert_graph_data(graph_data, project_data)
+            # Insert project and get its ID
+            project_id = self.connection.insert_project(project)
+            logger.info(f"📁 Created project '{project_name}' with ID: {project_id}")
 
-            # Create indexes
-            if create_indexes:
-                logger.debug("🔢 Creating database indexes...")
-                self.connection.create_indexes()
+            # Insert extraction data into SQLite
+            logger.info("🗃️ Inserting extraction data into SQLite...")
+            self.graph_ops.insert_extraction_data(extraction_data, project_id)
 
             # Get final statistics
-            stats = self.graph_ops.get_graph_stats()
+            stats = self.graph_ops.get_extraction_stats()
 
-            logger.debug("✅ Conversion completed successfully!")
-            logger.debug(f"📊 Final statistics: {stats}")
+            logger.info("✅ Conversion completed successfully!")
+            logger.info(f"📊 Final statistics: {stats}")
 
-            return {
-                "status": "success",
-                "input_file": json_file_path,
-                "nodes_processed": len(graph_data.nodes),
-                "relationships_processed": len(graph_data.relationships),
-                "database_stats": stats,
-            }
+            # Count total items processed
+            total_files = len(extraction_data.files)
+            total_blocks = sum(
+                len(file_data.blocks) for file_data in extraction_data.files.values()
+            )
+            total_relationships = sum(
+                len(file_data.relationships)
+                for file_data in extraction_data.files.values()
+            )
+
+            return ConversionResult(
+                status="success",
+                input_file=str(json_file_path),
+                project_name=project_name,
+                project_id=project_id,
+                files_processed=total_files,
+                blocks_processed=total_blocks,
+                relationships_processed=total_relationships,
+                database_stats=stats,
+            )
 
         except Exception as e:
             logger.error(f"Conversion failed: {e}")
-            return {"status": "failed", "error": str(e), "input_file": json_file_path}
-
-    def _parse_json_data(
-        self,
-        json_data: Dict[str, Any],
-        project_name: str,
-        source_file: str,
-        project_config: Optional[Dict[str, Any]] = None,
-    ) -> ParsedCodebase:
-        """
-        Parse raw JSON data into structured format.
-
-        Args:
-            json_data: Raw JSON data from tree-sitter
-            project_name: Name of the project
-            source_file: Path to the source JSON file
-            project_config: Project configuration with metadata
-
-        Returns:
-            Parsed codebase structure
-        """
-        logger.debug("Parsing JSON data structure...")
-
-        # Detect language from JSON data or config
-        detected_language = "Unknown"
-        if project_config and project_config.get("language"):
-            detected_language = project_config["language"]
-        else:
-            # Try to detect from file extensions in the JSON
-            nodes_data = json_data.get("nodes", [])
-            for node in nodes_data[:100]:
-                if "language" in node:
-                    detected_language = node["language"]
-                    break
-
-        # Create project info
-
-        project_data = {
-            "name": project_name,
-            "source_file": source_file,
-            "created_at": datetime.now().isoformat(),
-            "language": detected_language,
-        }
-
-        # Add additional config data if provided
-        if project_config:
-            for key in ["description", "version"]:
-                if key in project_config:
-                    project_data[key] = project_config[key]
-
-        project = Project(**project_data)
-
-        # Extract nodes
-        nodes_data = json_data.get("nodes", [])
-        nodes = []
-
-        for node_data in nodes_data:
-            try:
-                # Handle different possible field names and structures
-                node = CodeNode(**node_data)
-                nodes.append(node)
-            except Exception as e:
-                logger.warning(
-                    f"Failed to parse node: {node_data.get('id', 'unknown')} - {e}"
-                )
-
-        # Extract edges/relationships
-        edges_data = json_data.get("edges", json_data.get("relationships", []))
-        edges = []
-
-        for edge_data in edges_data:
-            try:
-                edge = CodeEdge(**edge_data)
-                edges.append(edge)
-            except Exception as e:
-                logger.warning(f"Failed to parse edge: {edge_data} - {e}")
-
-        logger.debug(
-            f"🔍 Parsed {len(nodes)} nodes and {len(edges)} edges for project '{project_name}'"
-        )
-
-        return ParsedCodebase(nodes=nodes, edges=edges, project=project)
+            return ConversionError(
+                status="failed", error=str(e), input_file=str(json_file_path)
+            )
 
     def close(self):
         """Close the database connection."""
