@@ -13,7 +13,8 @@ from embeddings import get_embedding_engine
 
 from utils.helpers import load_json_file
 from config.settings import config
-from services.agent.memory_management import SutraMemoryManager
+
+# Import will be done lazily to avoid circular imports
 
 # Import indexer functions for file processing
 from indexer import (
@@ -49,7 +50,7 @@ class ProjectIndexer:
     def __init__(
         self,
         sqlite_connection: Optional[SQLiteConnection] = None,
-        sutra_memory_manager: Optional[SutraMemoryManager] = None,
+        sutra_memory_manager=None,
     ):
         """Initialize with optional connection and optional shared memory manager."""
         self.connection = sqlite_connection or SQLiteConnection()
@@ -60,9 +61,13 @@ class ProjectIndexer:
             overlap_tokens=config.embedding.overlap_tokens,
         )
 
-        # Use provided memory manager or create new one
-        # This allows sharing memory instances across components
-        self.sutra_memory = sutra_memory_manager or SutraMemoryManager(self.connection)
+        # Use provided memory manager or create new one (lazy import to avoid circular imports)
+        if sutra_memory_manager:
+            self.sutra_memory = sutra_memory_manager
+        else:
+            from services.agent.memory_management import SutraMemoryManager
+
+            self.sutra_memory = SutraMemoryManager(self.connection)
         logger.debug("🔄 ProjectIndexer initialized")
 
     def full_index_project(self, project_name: str, project_path: Path) -> None:
@@ -99,10 +104,6 @@ class ProjectIndexer:
             # Step 2: Generate embeddings for the stored data
             print("   Step 2: Generating embeddings for semantic search...")
             self._generate_embeddings_for_project(parser_output_path, project_name)
-
-            # Clean up temporary file
-            if os.path.exists(parser_output_path):
-                os.unlink(parser_output_path)
 
             print("\n✅ Project indexing completed successfully!")
             print("   The agent is now ready to provide intelligent assistance.\n")
@@ -760,10 +761,15 @@ class ProjectIndexer:
             clear_existing=False,
         )
 
-        if not result or result.get("status") != "success":
+        # Check if result is a ConversionError or failed result
+        if not result:
+            raise Exception("Knowledge graph generation failed: No result returned")
+        elif hasattr(result, "status") and result.status == "failed":
+            raise Exception(f"Knowledge graph generation failed: {result.error}")
+        elif isinstance(result, dict) and result.get("status") != "success":
             raise Exception("Knowledge graph generation failed")
 
-        stats = result.get("database_stats", {})
+        stats = result.database_stats
         print(f"   ✅ SQL storage completed!")
         print(
             f"      Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships"
@@ -788,11 +794,14 @@ class ProjectIndexer:
 
         json_data = load_json_file(parser_output_path)
         # ExtractionData already imported at top
+
         extraction_data = ExtractionData(**json_data)
 
         # Generate embeddings using the embedding engine
+        # Convert dictionary to list of FileData objects
+        file_data_list = list(extraction_data.files.values())
         embedding_stats = self.embedding_engine.process_multiple_files(
-            extraction_data.files, project_id
+            file_data_list, project_id
         )
 
         print(f"   ✅ Embeddings generated successfully!")

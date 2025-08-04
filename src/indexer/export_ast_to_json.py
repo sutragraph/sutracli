@@ -17,7 +17,7 @@ Examples:
 import sys
 import argparse
 from pathlib import Path
-from ast_parser import ASTParser
+from indexer.ast_parser import ASTParser
 
 
 def main():

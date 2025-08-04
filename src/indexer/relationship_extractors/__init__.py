@@ -7,19 +7,8 @@ Supports TypeScript and Python initially, with extensible design for other langu
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass
 from tree_sitter_language_pack import SupportedLanguage
-
-
-@dataclass
-class Relationship:
-    """Represents a relationship between two files."""
-
-    source_file: int  # ID of the source file
-    target_file: int  # ID of the target file
-    import_content: str  # The original import statement
-    symbols: List[str]  # Symbols imported
-    type: str = "import"  # Type of relationship (default: import)
+from models.schema import Relationship
 
 
 class BaseRelationshipExtractor(ABC):

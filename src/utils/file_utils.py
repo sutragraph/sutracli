@@ -156,3 +156,50 @@ def read_file_content(file_path: Union[str, Path]) -> Optional[str]:
             return None
 
     return None
+
+
+def get_extraction_file_path(project_name: str) -> Path:
+    """
+    Get the path to the extraction file for a given project.
+    Args:
+        project_name: Name of the project
+    Returns:
+        Absolute path to the extraction file
+    """
+    import time
+    from config import config
+
+    if not project_name:
+        raise ValueError("project_name is required and cannot be None or empty")
+
+    if not isinstance(project_name, str):
+        raise ValueError("project_name must be a string")
+
+    base_path = config.storage.parser_results_dir
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+
+    # Ensure we return an absolute path
+    return Path(base_path).resolve() / f"{project_name}_extraction_{timestamp}.json"
+
+
+def get_last_extraction_file_path(project_name: str) -> Union[Path | None]:
+    """
+    Get the most recent extraction file path for a given project.
+
+    Args:
+        project_name: Name of the project
+
+    Returns:
+        Path to the most recent extraction file, or None if not found
+    """
+    import glob
+    from config import config
+
+    if not project_name:
+        return None
+
+    base_path = config.storage.parser_results_dir
+    pattern = f"{base_path}/{project_name}_extraction_*.json"
+    files = sorted(glob.glob(pattern), reverse=True)
+
+    return Path(files[0]) if files else None

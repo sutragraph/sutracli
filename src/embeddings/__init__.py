@@ -1,14 +1,19 @@
 """
-Embeddings module initialization.
-Contains only core embedding functionality - no processing logic.
+Embeddings module - unified embedding generation and vector storage.
+Clean architecture with proper separation of concerns.
 """
 
-from .simple_processor import SimpleEmbeddingProcessor, get_embedding_processor
-from .vector_db import VectorDatabase, get_vector_db
+from embeddings.vector_store import VectorStore, get_vector_store
+from embeddings.embedding_engine import (
+    EmbeddingEngine,
+    get_embedding_engine,
+    parse_entity_id,
+)
 
 __all__ = [
-    "SimpleEmbeddingProcessor",
-    "get_embedding_processor", 
-    "VectorDatabase",
-    "get_vector_db"
+    "VectorStore",
+    "get_vector_store",
+    "EmbeddingEngine",
+    "get_embedding_engine",
+    "parse_entity_id",
 ]

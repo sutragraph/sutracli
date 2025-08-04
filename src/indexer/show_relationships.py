@@ -54,8 +54,8 @@ def show_relationships(directory_path: str):
         print()
 
         for i, rel in enumerate(relationships, 1):
-            source_id = rel.get("source_file", "Unknown")
-            target_id = rel.get("target_file", "Unknown")
+            source_id = rel.get("source_id", "Unknown")
+            target_id = rel.get("target_id", "Unknown")
             import_content = rel.get("import_content", "")
             symbols = rel.get("symbols", [])
 
@@ -103,7 +103,7 @@ def show_detailed_summary(directory_path: str):
         relationships = result.get("relationships", [])
         for rel in relationships:
             source_path = file_path
-            target_path = id_to_path.get(rel.get("target_file"), "Unknown")
+            target_path = id_to_path.get(rel.get("target_id"), "Unknown")
             all_relationships.append({
                 "source": source_path,
                 "target": target_path,
@@ -185,7 +185,7 @@ def test_both_directories():
                     for rel in relationships:  # Show max 2 per file
                         target_path = "Unknown"
                         for fp, res in results.items():
-                            if res.get("id") == rel.get("target_file"):
+                            if res.get("id") == rel.get("target_id"):
                                 target_path = Path(fp).name
                                 break
                         symbols = rel.get("symbols", [])

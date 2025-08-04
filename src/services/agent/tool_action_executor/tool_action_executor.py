@@ -9,11 +9,11 @@ from loguru import logger
 from pathlib import Path
 
 from config import config
-from embeddings.vector_db import VectorDatabase
+from embeddings import get_vector_store
 from graph.sqlite_client import SQLiteConnection
 from services.agent.agentic_core import AgentAction
 from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
-from graph.incremental_indexing import IncrementalIndexing
+from graph.project_indexer import ProjectIndexer
 from .tools.semantic_search_action import execute_semantic_search_action
 from .tools.database_executor import execute_database_action
 from .tools.terminal_action import execute_terminal_action
@@ -35,20 +35,20 @@ class ActionExecutor:
     def __init__(
         self,
         db_connection: Optional[SQLiteConnection] = None,
-        vector_db: Optional[VectorDatabase] = None,
         sutra_memory_manager: Optional[SutraMemoryManager] = None,
+        project_indexer: Optional[ProjectIndexer] = None,
         context: str = "agent",
     ):
         self.db_connection = db_connection or SQLiteConnection()
-        self.vector_db = vector_db or VectorDatabase(config.sqlite.embeddings_db)
+
         self.sutra_memory_manager = sutra_memory_manager or SutraMemoryManager(
             db_connection=self.db_connection
         )
         self.project_id = None  # Will be set when needed
         self.context = context  # Store context for database operations
 
-        # Create shared incremental indexer with the same memory manager
-        self.incremental_indexer = IncrementalIndexing(
+        # Use shared project indexer if provided, otherwise create new one
+        self.project_indexer = project_indexer or ProjectIndexer(
             self.db_connection, self.sutra_memory_manager
         )
 
@@ -364,7 +364,7 @@ class ActionExecutor:
     def _execute_semantic_search(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
         """Execute semantic search tool using existing comprehensive executor."""
         yield from execute_semantic_search_action(
-            action, self.vector_db, self.db_connection, project_id=self.project_id
+            action, self.db_connection, project_id=self.project_id
         )
 
     def _execute_database(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
@@ -380,7 +380,7 @@ class ActionExecutor:
         yield from execute_apply_diff_action(action)
         # Trigger incremental indexing silently after diff apply using shared indexer
         try:
-            self.incremental_indexer.reindex_database(Path.cwd().name)
+            self.project_indexer.incremental_index_project(Path.cwd().name)
             logger.debug("Incremental indexing completed after apply_diff")
         except Exception as e:
             logger.error(f"Incremental indexing failed after apply_diff: {e}")
@@ -390,7 +390,7 @@ class ActionExecutor:
         yield from execute_write_to_file_action(action)
         # Trigger incremental indexing silently after write using shared indexer
         try:
-            self.incremental_indexer.reindex_database(Path.cwd().name)
+            self.project_indexer.incremental_index_project(Path.cwd().name)
             logger.debug("Incremental indexing completed after write_to_file")
         except Exception as e:
             logger.error(f"Incremental indexing failed after write_to_file: {e}")

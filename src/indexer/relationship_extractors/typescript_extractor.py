@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 from tree_sitter_language_pack import get_parser, get_language
 
-from ..extractors import BlockType
-from . import BaseRelationshipExtractor, Relationship
+from indexer.extractors import BlockType
+from indexer.relationship_extractors import BaseRelationshipExtractor, Relationship
 
 
 class TypeScriptRelationshipExtractor(BaseRelationshipExtractor):
@@ -60,8 +60,8 @@ class TypeScriptRelationshipExtractor(BaseRelationshipExtractor):
                 if target_file_id:
                     # Create a relationship
                     relationship = Relationship(
-                        source_file=source_file_id,
-                        target_file=target_file_id,
+                        source_id=source_file_id,
+                        target_id=target_file_id,
                         import_content=content,
                         symbols=import_info.get("symbols", []),
                     )

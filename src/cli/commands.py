@@ -17,7 +17,7 @@ from graph import ASTToSqliteConverter
 from services.agent_service import AgentService
 from services.auth.token_manager import get_token_manager
 from config import config
-from embeddings.vector_db import VectorDatabase
+from embeddings import get_vector_store
 from services.agent.tool_action_executor.utils.code_processing_utils import (
     add_line_numbers_to_code,
 )
@@ -64,25 +64,22 @@ def handle_single_command(args) -> None:
             args.input_file,
             project_name=args.project_name or None,
             clear_existing=args.clear,
-            create_indexes=not args.no_indexes,
         )
 
-        if result["status"] == "success":
+        if result.status == "success":
             print("✅ Conversion completed successfully!")
+            print(f"Project: {result.project_name} (ID: {result.project_id})")
             print(
-                f"Processed {result['nodes_processed']} nodes and {result['relationships_processed']} relationships"
-            )
-            print(
-                "🔍 Chunked embeddings generated automatically for all nodes (optimized for 95+ accuracy semantic search)"
+                f"Processed {result.files_processed} files, {result.blocks_processed} code blocks, and {result.relationships_processed} relationships"
             )
 
-            stats = result["database_stats"]
+            stats = result.database_stats
             print(
-                f"Database now contains {stats['total_nodes']} nodes and {stats['total_relationships']} relationships"
+                f"Database now contains {stats.get('total_files', 0)} files, {stats.get('total_blocks', 0)} code blocks and {stats.get('total_relationships', 0)} relationships"
             )
         else:
             logger.error("❌ Conversion failed")
-            logger.error(f"Error: {result['error']}")
+            logger.error(f"Error: {result.error}")
             sys.exit(1)
 
 
@@ -378,8 +375,6 @@ def handle_index_command(args) -> None:
     from pathlib import Path
     from services.project_manager import ProjectManager
     from graph.sqlite_client import SQLiteConnection
-    from embeddings.vector_db import VectorDatabase
-
     try:
         # Validate project path
         project_path = Path(args.project_path).absolute()
@@ -393,8 +388,7 @@ def handle_index_command(args) -> None:
 
         # Initialize required components
         db_connection = SQLiteConnection()
-        vector_db = VectorDatabase(config.sqlite.embeddings_db)
-        project_manager = ProjectManager(db_connection, vector_db)
+        project_manager = ProjectManager(db_connection)
 
         # Determine project name
         project_name = args.project_name
@@ -446,11 +440,11 @@ def handle_search_command(args) -> None:
         print("📁 Searching through file nodes with embeddings...")
         print("-" * 40)
 
-        # Initialize vector database
-        vector_db = VectorDatabase()
+        # Initialize vector store
+        vector_store = get_vector_store()
 
         # Perform search
-        chunks = vector_db.search_chunks_with_code(
+        chunks = vector_store.search_similar_chunks(
             query_text=args.query,
             limit=args.limit,
             threshold=args.threshold,
@@ -849,14 +843,13 @@ def handle_cross_indexing_command(args) -> None:
 
         # Initialize required components
         db_connection = SQLiteConnection()
-        vector_db = VectorDatabase(config.sqlite.embeddings_db)
-        project_manager = ProjectManager(db_connection, vector_db)
+        project_manager = ProjectManager(db_connection)
 
         # Get or create project first to determine project name
         project_name = (
             args.project_name
             if args.project_name
-            else project_manager.determine_project_name(str(project_path))
+            else project_manager.determine_project_name(project_path)
         )
 
         # Initialize cross-index system with project name for incremental indexing
@@ -868,7 +861,7 @@ def handle_cross_indexing_command(args) -> None:
         )
         print(f"✅ Cross-indexing system initialized with up-to-date database")
         project_id = project_manager.get_or_create_project_id(
-            project_name, str(project_path)
+            project_name, project_path
         )
 
         print(f"✅ Project: {project_name} (ID: {project_id})")

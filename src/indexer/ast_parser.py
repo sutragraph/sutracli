@@ -13,7 +13,7 @@ from typing import Dict, Optional, Union, Any, cast
 from tree_sitter import Parser
 from tree_sitter_language_pack import get_parser, SupportedLanguage
 
-from .utils.file_utils import (
+from utils.file_utils import (
     get_language_from_extension,
     should_ignore_file,
     should_ignore_directory,
@@ -125,22 +125,60 @@ class ASTParser:
         """
         file_path = Path(file_path)
 
+        # Create file ID first (needed for all cases)
+        file_id = zlib.crc32(str(file_path).encode()) & 0xFFFFFFFF
+
         # Parse the file first
         ast_tree = self.parse_file(file_path)
         if not ast_tree:
-            return {"ast": None, "blocks": [], "error": "Failed to parse file"}
+            # Return a complete object with all required fields for failed parsing
+            return {
+                "ast": None,
+                "blocks": [],
+                "language": "unknown",
+                "id": file_id,
+                "file_path": str(file_path),
+                "content": "",
+                "content_hash": hashlib.sha256(b"").hexdigest(),
+                "relationships": [],
+                "error": "Failed to parse file"
+            }
 
-        # Get language and create extractor
+        # Get language and check if extractor is available
         language = get_language_from_extension(file_path)
         if not language:
+            # Return a complete object with all required fields for unsupported files
             return {
                 "ast": ast_tree,
                 "blocks": [],
+                "language": "unknown",
+                "id": file_id,
+                "file_path": str(file_path),
+                "content": "",
+                "content_hash": hashlib.sha256(b"").hexdigest(),
+                "relationships": [],
+                "unsupported": True,  # Mark as unsupported file type
                 "error": f"Unsupported file type: {file_path}",
             }
 
-        # Create file ID and extract blocks
-        file_id = zlib.crc32(str(file_path).encode()) & 0xFFFFFFFF
+        # Check if we have an extractor for this language
+        supported_languages = self._extractor.get_supported_languages()
+        if language not in supported_languages:
+            # Language detected but no extractor available - mark as unsupported
+            return {
+                "ast": ast_tree,
+                "blocks": [],
+                "language": language,
+                "id": file_id,
+                "file_path": str(file_path),
+                "content": ast_tree.root_node.text,
+                "content_hash": hashlib.sha256(ast_tree.root_node.text).hexdigest(),
+                "relationships": [],
+                "unsupported": True,  # Mark as unsupported - no extractor available
+                "error": f"No extractor available for language '{language}': {file_path}",
+            }
+
+        # Extract blocks
         blocks = self._extractor.extract_from_ast(ast_tree, language, file_id)
 
         return {
@@ -151,6 +189,8 @@ class ASTParser:
             "file_path": str(file_path),
             "content": ast_tree.root_node.text,
             "content_hash": hashlib.sha256(ast_tree.root_node.text).hexdigest(),
+            "relationships": [],  # Initialize empty relationships list
+            "unsupported": False,  # Mark as supported file type
         }
 
     def process_relationships(
@@ -177,8 +217,8 @@ class ASTParser:
 
         # Add relationships to the results using efficient ID mapping
         for relationship in relationships:
-            source_file_id = relationship.source_file
-            target_file_id = relationship.target_file
+            source_file_id = relationship.source_id
+            target_file_id = relationship.target_id
 
             # Use efficient ID to path mapping instead of O(n) search
             source_file_path = id_to_path.get(source_file_id)
@@ -191,8 +231,8 @@ class ASTParser:
                 # Add the relationship to the source file's results
                 results[source_file_path]["relationships"].append(
                     {
-                        "source_file": source_file_id,
-                        "target_file": target_file_id,
+                        "source_id": source_file_id,
+                        "target_id": target_file_id,
                         "import_content": relationship.import_content,
                     }
                 )

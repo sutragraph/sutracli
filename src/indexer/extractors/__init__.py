@@ -7,37 +7,9 @@ Supports TypeScript and Python initially, with extensible design for other langu
 
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Set, Callable, Dict
-from dataclasses import dataclass, field
-from enum import Enum
 from tree_sitter_language_pack import SupportedLanguage
-from ..utils.incremental_hash import IncrementalHashGenerator
-
-
-class BlockType(Enum):
-    """Types of code blocks that can be extracted."""
-
-    ENUM = "enum"
-    VARIABLE = "variable"
-    FUNCTION = "function"
-    CLASS = "class"
-    INTERFACE = "interface"
-    IMPORT = "import"
-    EXPORT = "export"
-
-
-@dataclass
-class CodeBlock:
-    """Represents a code block extracted from AST."""
-
-    type: BlockType
-    name: str
-    content: str
-    start_line: int
-    end_line: int
-    start_col: int
-    end_col: int
-    id: int = 0  # Will be set by extractor
-    children: List["CodeBlock"] = field(default_factory=list)
+from utils.incremental_hash import IncrementalHashGenerator
+from models.schema import CodeBlock, BlockType
 
 
 class BaseExtractor(ABC):
@@ -349,8 +321,8 @@ class Extractor:
 
     def _setup_extractors(self):
         """Setup language-specific extractors."""
-        from .typescript_extractor import TypeScriptExtractor
-        from .python_extractor import PythonExtractor
+        from indexer.extractors.typescript_extractor import TypeScriptExtractor
+        from indexer.extractors.python_extractor import PythonExtractor
 
         self.register_extractor("typescript", TypeScriptExtractor)
         self.register_extractor("python", PythonExtractor)

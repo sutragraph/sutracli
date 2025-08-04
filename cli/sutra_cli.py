@@ -218,19 +218,18 @@ class SutraKnowledgeCLI:
                 parser_output_path,
                 project_name=self.repo_name,
                 clear_existing=False,  # Preserve existing data, add new project to database
-                create_indexes=True,
             )
 
-            if result and result.get("status") == "success":
-                stats = result.get("database_stats", {})
+            if result and result.status == "success":
+                stats = result.database_stats
                 print(f"SUCCESS: Knowledge graph generated successfully!")
-                print(
-                    f"Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships"
-                )
-                print(f"Embeddings: Generated for semantic search")
+                print(f"Project: {result.project_name} (ID: {result.project_id})")
+                print(f"Processed: {result.files_processed} files, {result.blocks_processed} code blocks, {result.relationships_processed} relationships")
+                print(f"Database totals: {stats.get('total_files', 0)} files, {stats.get('total_blocks', 0)} blocks, {stats.get('total_relationships', 0)} relationships")
                 return True
             else:
-                print("ERROR: Knowledge graph generation failed")
+                error_msg = result.error if hasattr(result, 'error') else "Unknown error"
+                print(f"ERROR: Knowledge graph generation failed: {error_msg}")
                 return False
 
         except Exception as e:

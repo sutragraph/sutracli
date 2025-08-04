@@ -1,19 +1,15 @@
 """Project Manager - Centralized project management functionality."""
 
 import time
-import tempfile
-import json
-import asyncio
+import re
 import os
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Iterator
+from typing import Dict, Any, List, Optional, Iterator, Union
 from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection
-from graph.incremental_indexing import IncrementalIndexing
-from embeddings.vector_db import VectorDatabase
-from graph import ASTToSqliteConverter
-from config import config
+from graph.project_indexer import ProjectIndexer
+from models import Project
 
 
 class ProjectManager:
@@ -22,42 +18,126 @@ class ProjectManager:
     def __init__(
         self,
         db_connection: SQLiteConnection,
-        vector_db: VectorDatabase,
         memory_manager=None,
     ):
         """Initialize the project manager.
 
         Args:
             db_connection: Database connection for project operations
-            vector_db: Vector database for embeddings
+
             memory_manager: Optional memory manager for incremental indexing
         """
         self.db_connection = db_connection
-        self.vector_db = vector_db
+
         self.memory_manager = memory_manager
 
-        # Initialize incremental indexing with memory manager if provided
-        self.incremental_indexer = (
-            IncrementalIndexing(self.db_connection, self.memory_manager)
+        # Initialize project indexer with memory manager if provided
+        self.project_indexer = (
+            ProjectIndexer(self.db_connection, self.memory_manager)
             if memory_manager
-            else IncrementalIndexing(self.db_connection)
+            else ProjectIndexer(self.db_connection)
         )
 
-        # Initialize converter for code extraction to SQLite conversion
-        self.converter = ASTToSqliteConverter()
+        # Use the converter from project indexer to avoid duplication
+        self.converter = self.project_indexer.converter
 
         # Cache for project directories to avoid repeated calculations
         self._project_dir_cache: Dict[str, Optional[Path]] = {}
 
-    def determine_project_name(self, project_path: Optional[str] = None) -> str:
+    def create_project_name(self, project_path: Path) -> str:
+        """Create a project name based on the provided path using a custom readable algorithm.
+
+        Args:
+            project_path: Absolute path to the project directory
+
+        Returns:
+            A readable project name derived from the path
+        """
+        if not project_path or not isinstance(project_path, Path):
+            raise ValueError("Invalid project path provided")
+
+        # Convert to absolute path to ensure consistency
+        abs_path = project_path.resolve()
+        path_str = str(abs_path)
+
+        # Get the directory name as base
+        dir_name = abs_path.name or "project"
+
+        # Clean and normalize the directory name
+        clean_dir = re.sub(r"[^a-zA-Z0-9]", "", dir_name.lower())
+
+        # Create a custom "hash" using path characteristics
+        path_signature = self._generate_path_signature(path_str)
+
+        # Combine for final name
+        return f"{clean_dir}_{path_signature}"
+
+    def _generate_path_signature(self, path_str: str) -> str:
+        """Generate a readable signature from path string."""
+
+        # Convert path to numbers based on character positions and values
+        char_sum = sum(ord(c) for c in path_str)
+        char_count = len(path_str)
+
+        # Create meaningful components
+        depth = path_str.count("/")  # Unix-style, adjust for Windows if needed
+        vowel_count = sum(1 for c in path_str.lower() if c in "aeiou")
+        consonant_count = sum(
+            1 for c in path_str.lower() if c.isalpha() and c not in "aeiou"
+        )
+
+        # Generate readable components
+        # Use modulo operations to create bounded, meaningful values
+
+        # Size indicator (xs, s, m, l, xl based on path length)
+        size_map = ["xs", "s", "m", "l", "xl", "xxl"]
+        size = size_map[min(char_count // 10, len(size_map) - 1)]
+
+        # Location indicator based on depth
+        depth_names = ["root", "sub", "deep", "nested", "buried", "hidden"]
+        location = depth_names[min(depth, len(depth_names) - 1)]
+
+        # Pattern based on character distribution
+        ratio = (
+            (vowel_count * 100) // max(consonant_count, 1) if consonant_count > 0 else 0
+        )
+        pattern_map = {
+            range(0, 25): "compact",
+            range(25, 50): "balanced",
+            range(50, 75): "flowing",
+            range(75, 150): "verbose",
+        }
+
+        pattern = "unique"
+        for r, name in pattern_map.items():
+            if ratio in r:
+                pattern = name
+                break
+
+        # Version number based on character sum (keeps it deterministic)
+        version = (char_sum % 99) + 1
+
+        return f"{size}{location}{pattern}v{version}"
+
+    def determine_project_name(self, project_path: Path) -> str:
         """Determine the correct project name from the database or specified directory.
 
         Args:
-            project_path: Optional path to the project directory. If None, uses current directory.
+            project_path: Path object to the project directory (required).
+
+        Raises:
+            ValueError: If project_path is not provided or is invalid.
         """
-        target_path = (
-            Path(project_path).absolute() if project_path else Path.cwd().absolute()
-        )
+        if not project_path:
+            raise ValueError("project_path is required and cannot be None")
+
+        if not isinstance(project_path, Path):
+            raise ValueError("project_path must be a Path object")
+
+        target_path = project_path.absolute()
+
+        if not target_path.exists():
+            raise ValueError(f"Project path does not exist: {target_path}")
 
         try:
             projects = self.db_connection.list_all_projects()
@@ -68,17 +148,18 @@ class ProjectManager:
                     logger.debug(f"Found parent project: {existing_project}")
                     return existing_project
 
-            # If no parent project found or no projects exist, use current directory name
-            target_name = target_path.name
-            logger.debug(f"Using directory name as project name: {target_name}")
+            # If no parent project found or no projects exist, create a new project name
+            # using the custom hashing algorithm instead of just directory name
+            target_name = self.create_project_name(target_path)
+            logger.debug(f"Generated new project name: {target_name}")
             return target_name
 
         except Exception as e:
-            logger.warning(f"Error determining project name: {e}")
-            return target_path.name if "target_path" in locals() else Path.cwd().name
+            logger.error(f"Error determining project name: {e}")
+            raise
 
     def find_parent_project(
-        self, projects: List[Dict[str, Any]], target_path: Optional[Path] = None
+        self, projects: List[Project], target_path: Path
     ) -> Optional[str]:
         """Find if target directory is a subdirectory of any existing project.
 
@@ -86,16 +167,15 @@ class ProjectManager:
             projects: List of existing projects from database
             target_path: Path to check. If None, uses current directory.
         """
-        check_dir = target_path.absolute() if target_path else Path.cwd().absolute()
 
         for project in projects:
-            project_name = project["name"]
+            project_name = project.name
             try:
                 # Get the project's root directory by finding the common root of all file paths
                 project_dir = self.get_project_directory(project_name)
-                if project_dir and check_dir.is_relative_to(project_dir):
+                if project_dir and target_path.is_relative_to(project_dir):
                     logger.debug(
-                        f"Directory {check_dir} is within project {project_name} at {project_dir}"
+                        f"Directory {target_path} is within project {project_name} at {project_dir}"
                     )
                     return project_name
             except Exception as e:
@@ -104,15 +184,51 @@ class ProjectManager:
 
         return None
 
-    def get_project_directory(self, project_name: str) -> Optional[Path]:
+    def get_project_name_from_path(self, project_path: Path) -> str:
+        """Get or create a project name for the given path.
+
+        This is a convenience method that combines path resolution and project name creation.
+
+        Args:
+            project_path: Path object to the project directory (required).
+
+        Returns:
+            A project name for the given path
+
+        Raises:
+            ValueError: If project_path is not provided or is invalid.
+        """
+        if not project_path:
+            raise ValueError("project_path is required and cannot be None")
+
+        if not isinstance(project_path, Path):
+            raise ValueError("project_path must be a Path object")
+
+        target_path = project_path.absolute()
+
+        if not target_path.exists():
+            raise ValueError(f"Project path does not exist: {target_path}")
+
+        return self.create_project_name(target_path)
+
+    def get_project_directory(self, project_name: str) -> Union[Path, None]:
         """Get the root directory of a project by analyzing its file paths.
 
         Args:
-            project_name: Name of the project
+            project_name: Name of the project (required)
 
         Returns:
             Path to the project directory or None if not found
+
+        Raises:
+            ValueError: If project_name is not provided or is invalid
         """
+        if not project_name:
+            raise ValueError("project_name is required and cannot be None or empty")
+
+        if not isinstance(project_name, str):
+            raise ValueError("project_name must be a string")
+
         # Check cache first
         if project_name in self._project_dir_cache:
             return self._project_dir_cache[project_name]
@@ -122,7 +238,7 @@ class ProjectManager:
             file_paths = self.db_connection.execute_query(
                 """
                 SELECT DISTINCT file_path 
-                FROM file_hashes 
+                FROM files 
                 WHERE project_id = (SELECT id FROM projects WHERE name = ?)
                 """,
                 (project_name,),
@@ -164,9 +280,10 @@ class ProjectManager:
             return result
 
         except Exception as e:
-            logger.debug(f"Error getting project directory for {project_name}: {e}")
+            logger.error(f"Error getting project directory for {project_name}: {e}")
+            # Cache the failure to avoid repeated queries
             self._project_dir_cache[project_name] = None
-            return None
+            raise
 
     def ensure_project_indexed(
         self, project_name: str, project_path: Optional[str] = None
@@ -188,31 +305,16 @@ class ProjectManager:
             print(f"❌ Error checking project status: {e}")
             print("   Continuing with limited functionality...")
 
-    def auto_index_project(
-        self, project_name: str, project_path: Optional[str] = None
-    ) -> None:
+    def auto_index_project(self, project_name: str, project_path: Path) -> None:
         """Automatically index the specified project if not found in database.
 
         Args:
             project_name: Name of the project
-            project_path: Optional path to the project directory
+            project_path: Path to the project directory
         """
         try:
-            print(f"⚠️  Project '{project_name}' not found in database")
-            print("🔄 Starting automatic indexing...")
-            print(
-                "   This will analyze the codebase and generate embeddings for better responses."
-            )
-            print("   Please wait while the project is being indexed...\n")
-
-            # Phase 1: Parse repository
-            parser_output_path = self.run_parser(project_name, project_path)
-
-            # Phase 2: Generate embeddings and knowledge graph
-            self.run_embedding_generation(project_name, parser_output_path)
-
-            print("\n✅ Project indexing completed successfully!")
-            print("   The agent is now ready to provide intelligent assistance.\n")
+            # Delegate to ProjectIndexer for full indexing
+            self.project_indexer.full_index_project(project_name, project_path)
 
             # Clear cache for this project since we just indexed it
             self._project_dir_cache.pop(project_name, None)
@@ -221,101 +323,6 @@ class ProjectManager:
             logger.error(f"Error during auto-indexing: {e}")
             print(f"❌ Auto-indexing failed: {e}")
             print("   Continuing with limited functionality.")
-
-    def run_parser(self, project_name: str, project_path: Optional[str] = None) -> str:
-        """Run the parser phase of indexing.
-
-        Args:
-            project_name: Name of the project to parse
-            project_path: Optional path to the project directory
-
-        Returns:
-            Path to the generated parser output file
-        """
-        print("PHASE 1: Parsing Repository")
-        print("-" * 40)
-
-        try:
-            # Import correct parser components
-            from parser.analyzer.analyzer import Analyzer
-
-            # Initialize analyzer
-            analyzer = Analyzer(repo_id=project_name)
-
-            # Determine target directory
-            target_dir = (
-                Path(project_path).absolute() if project_path else Path.cwd().absolute()
-            )
-            print(f"   Parsing directory: {target_dir}")
-
-            # Run the async analyze_directory method
-            results = asyncio.run(analyzer.analyze_directory(str(target_dir)))
-
-            # Save results to temporary file
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".json", delete=False
-            ) as f:
-                json.dump(results, f, indent=2)
-                parser_output_path = f.name
-
-            print(f"✅ Repository parsed successfully")
-            print(f"   Generated analysis for project: {project_name}")
-
-            return parser_output_path
-
-        except Exception as e:
-            logger.error(f"Parser error: {e}")
-            print(f"❌ Failed to parse repository: {e}")
-            raise
-
-    def run_embedding_generation(
-        self, project_name: str, parser_output_path: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Run the embedding generation phase of indexing.
-
-        Args:
-            project_name: Name of the project
-            parser_output_path: Path to parser output file (if None, will run parser first)
-
-        Returns:
-            Result dictionary from the conversion process
-        """
-        print("\nPHASE 2: Generating Embeddings & Knowledge Graph")
-        print("-" * 40)
-
-        try:
-            # If no parser output path provided, run parser first
-            if parser_output_path is None:
-                parser_output_path = self.run_parser(project_name)
-
-            # Generate embeddings and knowledge graph
-            result = self.converter.convert_json_to_graph(
-                parser_output_path,
-                project_name=project_name,
-                clear_existing=False,
-                create_indexes=True,
-            )
-
-            if result and result.get("status") == "success":
-                stats = result.get("database_stats", {})
-                print(f"✅ Knowledge graph generated successfully!")
-                print(
-                    f"   Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships"
-                )
-                print(f"   Embeddings: Generated for semantic search")
-
-                # Clean up temporary file
-                if os.path.exists(parser_output_path):
-                    os.unlink(parser_output_path)
-
-                return result
-            else:
-                raise Exception("Knowledge graph generation failed")
-
-        except Exception as e:
-            logger.error(f"Graph generation error: {e}")
-            print(f"❌ Failed to generate knowledge graph: {e}")
-            raise
 
     def perform_incremental_indexing(
         self, project_name: str
@@ -328,59 +335,19 @@ class ProjectManager:
         Yields:
             Indexing status and statistics
         """
-        logger.debug(f"🔄 Running database reindex for project {project_name}")
-        stats = self.incremental_indexer.reindex_database(project_name)
+        logger.debug(f"🔄 Running incremental indexing for project {project_name}")
+        stats = self.project_indexer.incremental_index_project(project_name)
         yield {
             "type": "incremental_indexing",
             "stats": stats,
             "timestamp": time.time(),
         }
 
-    def create_project(
-        self, project_name: str, project_path: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Create a new project entry in the database.
-
-        Args:
-            project_name: Name of the project
-            project_path: Optional path to the project (defaults to current directory)
-
-        Returns:
-            Dictionary with project creation result
-        """
-        try:
-            if project_path is None:
-                project_path = str(Path.cwd())
-
-            # Check if project already exists
-            if self.db_connection.project_exists(project_name):
-                return {
-                    "success": False,
-                    "error": f"Project '{project_name}' already exists",
-                }
-
-            # Create project entry (assuming SQLiteConnection has a method for this)
-            # Note: This might need to be adjusted based on actual SQLiteConnection API
-            project_id = self.db_connection.create_project(project_name, project_path)
-
-            logger.info(f"Created project '{project_name}' with ID {project_id}")
-
-            return {
-                "success": True,
-                "project_id": project_id,
-                "project_name": project_name,
-                "project_path": project_path,
-            }
-
-        except Exception as e:
-            logger.error(f"Error creating project {project_name}: {e}")
-            return {"success": False, "error": str(e)}
-
-    def list_projects(self) -> List[Dict[str, Any]]:
+    def list_projects(self) -> List[Project]:
         """List all projects in the database.
 
         Returns:
-            List of project dictionaries
+            List of Project objects
         """
         try:
             return self.db_connection.list_all_projects()
@@ -480,7 +447,7 @@ class ProjectManager:
 
             # Determine project name
             if project_name is None:
-                project_name = self.determine_project_name(str(target_path))
+                project_name = self.determine_project_name(target_path)
 
             logger.info(f"Indexing project '{project_name}' at path: {target_path}")
 
@@ -492,7 +459,7 @@ class ProjectManager:
                 }
 
             # Perform the indexing
-            self.auto_index_project(project_name, str(target_path))
+            self.auto_index_project(project_name, target_path)
 
             return {
                 "success": True,
@@ -505,14 +472,12 @@ class ProjectManager:
             logger.error(f"Error indexing project at {project_path}: {e}")
             return {"success": False, "error": f"Failed to index project: {str(e)}"}
 
-    def get_or_create_project_id(
-        self, project_name: str, project_path: Optional[str] = None
-    ) -> int:
+    def get_or_create_project_id(self, project_name: str, project_path: Path) -> int:
         """Get existing project ID or create a new project and return its ID.
 
         Args:
             project_name: Name of the project
-            project_path: Optional path to the project (defaults to current directory)
+            project_path: Absolute path to the project directory
 
         Returns:
             Project ID (integer)
@@ -533,22 +498,13 @@ class ProjectManager:
                 )
                 return project_id
 
-            # Project doesn't exist, create it
-            if project_path is None:
-                project_path = str(Path.cwd())
-
-            # Create project data
-            import time
-
-            project_data = {
-                "name": project_name,
-                "description": f"Auto-created project for {project_name}",
-                "language": None,
-                "version": None,
-                "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "source_file": project_path,
-            }
+            project_data = Project(
+                id=0,  # Will be set by database
+                name=project_name,
+                path=str(project_path),
+                created_at=time.strftime("%Y-%m-%d %H:%M:%S"),
+                updated_at=time.strftime("%Y-%m-%d %H:%M:%S"),
+            )
 
             project_id = self.db_connection.insert_project(project_data)
             logger.info(f"Created new project '{project_name}' with ID {project_id}")
