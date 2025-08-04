@@ -75,15 +75,18 @@ class JavaExtractor(BaseExtractor):
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
         """Extract class declarations with nested elements as children."""
+
         def process_class(node):
-            name = self._get_identifier_name(node)
-            names = [name] if name else []
+            name_node = self._get_identifier_name(node)
+            names = [name_node] if name_node else []
+
             start_line, end_line, start_col, end_col = self._get_node_position(node)
             symbols = self._get_symbols_for_block(start_line, end_line, start_col, end_col)
+
             class_block = CodeBlock(
                 type=BlockType.CLASS,
                 name=names[0] if names else "anonymous",
-                content="",
+                content="", 
                 symbols=symbols,
                 start_line=start_line,
                 end_line=end_line,
@@ -91,31 +94,45 @@ class JavaExtractor(BaseExtractor):
                 end_col=end_col,
                 id=self._hash_generator.next_id(),
             )
-            # Nested: methods, variables, interfaces, enums, classes
+
             nested_blocks = []
-            nested_blocks.extend(self._generic_traversal(node, self.FUNCTION_TYPES, process_function))
+
+            # Methods
+            def process_method(method_node):
+                if method_node.type in self.FUNCTION_TYPES:
+                    name = self._get_identifier_name(method_node)
+                    method_names = [name] if name else []
+                    return self._create_function_block_with_nested_extraction(
+                        method_node, BlockType.FUNCTION, method_names, self.FUNCTION_TYPES
+                    )
+                return None
+
+            nested_blocks.extend(self._generic_traversal(node, self.FUNCTION_TYPES, process_method))
+
+            # Variables
             nested_blocks.extend(self._extract_class_level_variables(node))
+
+            # Interfaces
+            def process_interface(interface_node):
+                name = self._get_identifier_name(interface_node)
+                names = [name] if name else []
+                return self._create_code_block(interface_node, BlockType.INTERFACE, names)
+
             nested_blocks.extend(self._generic_traversal(node, self.INTERFACE_TYPES, process_interface))
+
+            # Enums
+            def process_enum(enum_node):
+                name = self._get_identifier_name(enum_node)
+                names = [name] if name else []
+                return self._create_code_block(enum_node, BlockType.ENUM, names)
+
             nested_blocks.extend(self._generic_traversal(node, self.ENUM_TYPES, process_enum))
-            nested_blocks.extend(self._generic_traversal(node, self.CLASS_TYPES, process_class))
+
+            # Nested classes are already handled by _generic_traversal — no manual loop needed
             class_block.children = nested_blocks
             return class_block
-        def process_function(node):
-            name = self._get_identifier_name(node)
-            names = [name] if name else []
-            return self._create_function_block_with_nested_extraction(
-                node, BlockType.FUNCTION, names, self.FUNCTION_TYPES
-            )
-        def process_interface(node):
-            name = self._get_identifier_name(node)
-            names = [name] if name else []
-            return self._create_code_block(node, BlockType.INTERFACE, names)
-        def process_enum(node):
-            name = self._get_identifier_name(node)
-            names = [name] if name else []
-            return self._create_code_block(node, BlockType.ENUM, names)
-        return self._generic_traversal(root_node, self.CLASS_TYPES, process_class)
 
+        return self._generic_traversal(root_node, self.CLASS_TYPES, process_class)
     def extract_variables(self, root_node: Any) -> List[CodeBlock]:
         """Extract field declarations."""
         def process_variable(node):
