@@ -285,9 +285,7 @@ class ProjectManager:
             self._project_dir_cache[project_name] = None
             raise
 
-    def ensure_project_indexed(
-        self, project_name: str, project_path: Optional[str] = None
-    ) -> None:
+    def ensure_project_indexed(self, project_name: str, project_path: Path) -> None:
         """Ensure the specified project is indexed in the database.
 
         Args:
@@ -385,31 +383,6 @@ class ProjectManager:
 
         except Exception as e:
             logger.error(f"Error deleting project {project_name}: {e}")
-            return {"success": False, "error": str(e)}
-
-    def get_project_stats(self, project_name: str) -> Dict[str, Any]:
-        """Get statistics for a specific project.
-
-        Args:
-            project_name: Name of the project
-
-        Returns:
-            Dictionary with project statistics
-        """
-        try:
-            if not self.db_connection.project_exists(project_name):
-                return {
-                    "success": False,
-                    "error": f"Project '{project_name}' not found",
-                }
-
-            # Get project statistics (this might need to be implemented in SQLiteConnection)
-            stats = self.db_connection.get_project_statistics(project_name)
-
-            return {"success": True, "project_name": project_name, "stats": stats}
-
-        except Exception as e:
-            logger.error(f"Error getting project stats for {project_name}: {e}")
             return {"success": False, "error": str(e)}
 
     def clear_cache(self) -> None:

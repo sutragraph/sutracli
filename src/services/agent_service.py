@@ -22,16 +22,17 @@ from utils.debug_utils import get_user_confirmation_for_llm_call
 class AgentService:
     """Agent Service with unified tool status handling."""
 
-    def __init__(self, session_id: Optional[str] = None, project_path: Optional[str] = None):
+    def __init__(
+        self, session_id: Optional[str] = None, project_path: Optional[str] = None
+    ):
         """Initialize the Agent Service.
-        
+
         Args:
             session_id: Optional session ID for conversation continuity
             project_path: Optional path to the project directory. If None, uses current directory.
         """
         self.llm_client = llm_client_factory()
         self.db_connection = SQLiteConnection()
-
 
         self.session_manager = SessionManager.get_or_create_session(session_id)
         self.memory_manager = SutraMemoryManager(db_connection=self.db_connection)
@@ -42,13 +43,13 @@ class AgentService:
         self.project_path = project_path
 
         # Initialize project manager for centralized project operations
-        self.project_manager = ProjectManager(
-            self.db_connection, self.memory_manager
-        )
+        self.project_manager = ProjectManager(self.db_connection, self.memory_manager)
 
         # XML-based action executor with shared sutra memory manager and shared project indexer
         self.xml_action_executor = ActionExecutor(
-            self.db_connection, self.memory_manager, self.project_manager.project_indexer
+            self.db_connection,
+            self.memory_manager,
+            self.project_manager.project_indexer,
         )
 
         # Track last tool result for context -
@@ -66,22 +67,29 @@ class AgentService:
 
         # Determine current project name from specified or working directory
         from pathlib import Path
+
         if project_path:
             project_path_obj = Path(project_path)
         else:
             project_path_obj = Path.cwd()
 
-        self.current_project_name = self.project_manager.determine_project_name(project_path_obj)
+        self.current_project_name = self.project_manager.determine_project_name(
+            project_path_obj
+        )
 
         # Performance monitoring
         self.performance_monitor = get_performance_monitor()
 
         # Check if project exists in database and auto-index if needed
-        self.project_manager.ensure_project_indexed(self.current_project_name, project_path_obj)
+        self.project_manager.ensure_project_indexed(
+            self.current_project_name, project_path_obj
+        )
 
     def _perform_incremental_indexing(self) -> Iterator[Dict[str, Any]]:
         """Perform incremental reindexing of the database using the current project name."""
-        yield from self.project_manager.perform_incremental_indexing(self.current_project_name)
+        yield from self.project_manager.perform_incremental_indexing(
+            self.current_project_name
+        )
 
     def _update_session_memory(self):
         """Update session memory with current memory state."""
@@ -116,7 +124,7 @@ class AgentService:
             "access denied",
             "command not found",
             "syntax error",
-            "compilation error"
+            "compilation error",
         ]
 
         # Stop if critical tool fails
@@ -129,7 +137,7 @@ class AgentService:
                 return True
 
         # Stop if multiple consecutive failures (indicates systemic issue)
-        if hasattr(self, '_consecutive_failures'):
+        if hasattr(self, "_consecutive_failures"):
             self._consecutive_failures += 1
             if self._consecutive_failures >= 3:
                 return True
@@ -316,7 +324,9 @@ class AgentService:
 
                         # Show validation results
                         if not validation_result["valid"]:
-                            print(f"⚠️  Tool validation failed: {validation_result['issues']}")
+                            print(
+                                f"⚠️  Tool validation failed: {validation_result['issues']}"
+                            )
                             if validation_result["suggestions"]:
                                 print(
                                     f"💡 Suggestions: {validation_result['suggestions']}"
@@ -324,9 +334,13 @@ class AgentService:
 
                         # Show verification results
                         if not verification_result["verified"]:
-                            print(f"❌ Result verification failed: {verification_result['issues']}")
+                            print(
+                                f"❌ Result verification failed: {verification_result['issues']}"
+                            )
                             if verification_result["recommendations"]:
-                                print(f"📝 Recommendations: {verification_result['recommendations']}")
+                                print(
+                                    f"📝 Recommendations: {verification_result['recommendations']}"
+                                )
 
                         # # Show data preview for successful tool use
                         # if event_type == "tool_use" and "data" in event:
@@ -340,8 +354,14 @@ class AgentService:
                         #     print(f"   Output: {output_preview}...")
 
                         # Check for tool failures and stop if critical
-                        if event.get("type") == "error" or event.get("success") is False or event.get("type") == "tool_error":
-                            error_msg = event.get("error", event.get("message", "Unknown error"))
+                        if (
+                            event.get("type") == "error"
+                            or event.get("success") is False
+                            or event.get("type") == "tool_error"
+                        ):
+                            error_msg = event.get(
+                                "error", event.get("message", "Unknown error")
+                            )
                             logger.error(f"Tool {tool_name} failed: {error_msg}")
                             print(f"❌ Tool {tool_name} failed: {error_msg}")
 
@@ -352,7 +372,7 @@ class AgentService:
                                     "type": "critical_error",
                                     "message": f"Critical tool failure: {error_msg}",
                                     "tool": tool_name,
-                                    "iteration": current_iteration
+                                    "iteration": current_iteration,
                                 }
                                 break
                         else:
@@ -368,14 +388,16 @@ class AgentService:
                         if not self.memory_manager.should_continue_execution(
                             validation_result, self._consecutive_failures
                         ):
-                            logger.warning(f"🛑 Stopping execution due to validation failure")
+                            logger.warning(
+                                f"🛑 Stopping execution due to validation failure"
+                            )
                             tool_failed = True
                             yield {
                                 "type": "validation_failure",
                                 "message": f"Execution stopped due to validation failure",
                                 "tool": tool_name,
                                 "validation": validation_result,
-                                "iteration": current_iteration
+                                "iteration": current_iteration,
                             }
                             break
 
@@ -399,18 +421,24 @@ class AgentService:
 
                 # Check if task is likely complete using SutraMemoryManager
                 if not task_complete:
-                    completion_analysis = self.memory_manager.analyze_task_completion(user_query)
+                    completion_analysis = self.memory_manager.analyze_task_completion(
+                        user_query
+                    )
                     if completion_analysis["likely_complete"]:
-                        print(f"🎯 Task likely complete: {completion_analysis['reason']}")
+                        print(
+                            f"🎯 Task likely complete: {completion_analysis['reason']}"
+                        )
                         task_complete = True
 
                 # Break if tool failed critically
                 if tool_failed:
-                    logger.error(f"💥 Critical tool failure in iteration {current_iteration}, stopping loop")
+                    logger.error(
+                        f"💥 Critical tool failure in iteration {current_iteration}, stopping loop"
+                    )
                     yield {
                         "type": "execution_stopped",
                         "reason": "critical_tool_failure",
-                        "iteration": current_iteration
+                        "iteration": current_iteration,
                     }
                     break
 
@@ -419,7 +447,9 @@ class AgentService:
                     logger.debug(
                         f"🎯 Task completed in iteration {current_iteration}, stopping loop"
                     )
-                    print(f"✅ Task completed successfully in {current_iteration} iterations")
+                    print(
+                        f"✅ Task completed successfully in {current_iteration} iterations"
+                    )
                     # Log performance summary
                     self.performance_monitor.log_performance_summary()
                     break
@@ -502,9 +532,13 @@ class AgentService:
                 user_message_parts.append(f"\n====\nTOOL STATUS\n\n{tool_status}\n====")
 
                 # Add reasoning prompt from SutraMemoryManager
-                reasoning_prompt = self.memory_manager.generate_reasoning_prompt(user_query)
+                reasoning_prompt = self.memory_manager.generate_reasoning_prompt(
+                    user_query
+                )
                 if reasoning_prompt != "No previous tool executions found.":
-                    user_message_parts.append(f"\n====\nREASONING CHECKPOINT\n\n{reasoning_prompt}\n====")
+                    user_message_parts.append(
+                        f"\n====\nREASONING CHECKPOINT\n\n{reasoning_prompt}\n===="
+                    )
 
                 user_message = "\n".join(user_message_parts)
 
@@ -529,11 +563,14 @@ class AgentService:
             except XMLParsingFailedException as xml_error:
                 retry_count += 1
                 # Handle XML parsing error
-                error_info = self.error_handler.handle_error(xml_error, {
-                    "context": "XML parsing",
-                    "iteration": current_iteration,
-                    "retry_count": retry_count
-                })
+                error_info = self.error_handler.handle_error(
+                    xml_error,
+                    {
+                        "context": "XML parsing",
+                        "iteration": current_iteration,
+                        "retry_count": retry_count,
+                    },
+                )
 
                 logger.warning(
                     f"XML parsing failed on attempt {retry_count}/{max_retries}: {xml_error.message}"
@@ -553,11 +590,14 @@ class AgentService:
 
             except Exception as e:
                 # Handle general errors
-                error_info = self.error_handler.handle_error(e, {
-                    "context": "LLM response generation",
-                    "iteration": current_iteration,
-                    "user_query": user_query
-                })
+                error_info = self.error_handler.handle_error(
+                    e,
+                    {
+                        "context": "LLM response generation",
+                        "iteration": current_iteration,
+                        "user_query": user_query,
+                    },
+                )
 
                 logger.error(f"Failed to get valid response from LLM: {e}")
                 if self.error_handler.should_stop_execution(error_info):
@@ -919,4 +959,3 @@ class AgentService:
         """Context manager exit."""
         if hasattr(self, "db_connection"):
             self.db_connection.__exit__(exc_type, exc_val, exc_tb)
-
