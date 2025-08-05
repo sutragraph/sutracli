@@ -14,16 +14,15 @@ Tool uses are formatted using XML-style tags. The tool name itself becomes the X
 ...
 </actual_tool_name>
 
-For example, to use the insert_content tool:
+For example, to use the search_keyword tool:
 
-<insert_content>
-<path>src/app.js</path>
-<line>1</line>
-<content>
-const express = require('express');
-const cors = require('cors');
-</content>
-</insert_content>
+<search_keyword>
+<keyword>defaultRouter.get</keyword>
+<before_lines>0</before_lines>  
+<after_lines>2</after_lines>
+<case_sensitive>true</case_sensitive>
+<regex>false</regex>
+</search_keyword>
 
 Always use the actual tool name as the XML tag name for proper parsing and execution.
 """

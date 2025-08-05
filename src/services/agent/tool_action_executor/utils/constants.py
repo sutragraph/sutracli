@@ -71,7 +71,7 @@ DATABASE_ERROR_GUIDANCE = {
 
 # Guidance message templates
 GUIDANCE_MESSAGES = {
-    "FETCH_NEXT_CODE_NOTE": "\nNOTE: Use <fetch_next_code>true</fetch_next_code> to get next codes as there are more results available for your current query. Use same query with fetch_next_code to get next code.",
+    "FETCH_NEXT_CODE_NOTE": "\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query.",
     "NO_RESULTS_FOUND": "No results found for {search_type} search. Try different search terms or methods.",
     "NODE_MISSING_CODE": "Node found but code content is not available.",
 }

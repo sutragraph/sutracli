@@ -1,6 +1,7 @@
+import json
 from loguru import logger
 from typing import Iterator, Dict, Any, List
-from embeddings.vector_db import VectorDatabase
+from embeddings import get_vector_store
 from services.agent.tool_action_executor.utils import (
     get_node_details,
     beautify_node_result,
@@ -30,7 +31,7 @@ def _extract_search_parameters(action: AgentAction) -> str:
 
 
 def _perform_vector_search(
-    vector_db: VectorDatabase, query: str, project_id=None
+    vector_store, query: str, project_id=None
 ) -> List[Dict[str, Any]]:
     """Perform vector database search with chunk-specific results."""
     config = SEMANTIC_SEARCH_CONFIG
@@ -40,7 +41,7 @@ def _perform_vector_search(
         f"Semantic search: fetching {limit} chunk-specific nodes with code snippets"
     )
 
-    return vector_db.search_similar_chunks(
+    return vector_store.search_similar_chunks(
         query, limit=limit, threshold=config["similarity_threshold"], project_id=project_id
     )
 
@@ -181,8 +182,6 @@ def _extract_chunk_specific_code(
     # Parse node lines to get the node's starting line
     node_lines = node_details.get("lines")
     if node_lines:
-        import json
-
         try:
             lines_data = json.loads(node_lines)
             if isinstance(lines_data, list) and len(lines_data) >= 1:
@@ -218,7 +217,7 @@ def _extract_chunk_specific_code(
 
 
 def execute_semantic_search_action(
-    action: AgentAction, vector_db=None, db_connection=None, project_id=None
+    action: AgentAction, db_connection=None, project_id=None
 ) -> Iterator[Dict[str, Any]]:
     logger.debug(f"Executing semantic search action: {action}")
 
@@ -340,11 +339,11 @@ def execute_semantic_search_action(
         # Extract parameters using helper function
         query = _extract_search_parameters(action)
 
-        # Initialize vector database
-        vector_db = vector_db or VectorDatabase()
+        # Initialize vector store
+        vector_store = get_vector_store()
 
         # Perform search using helper function
-        vector_results = _perform_vector_search(vector_db, query, project_id)
+        vector_results = _perform_vector_search(vector_store, query, project_id)
         total_nodes = len(vector_results)
 
         # Yield tool usage information for logging

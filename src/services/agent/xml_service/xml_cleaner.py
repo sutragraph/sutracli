@@ -15,9 +15,12 @@ class XMLCleaner:
         (re.compile(r"(<diff>)(.*?)(</diff>)", re.DOTALL), "diff"),
         (re.compile(r"(<content>)(.*?)(</content>)", re.DOTALL), "content"),
         (re.compile(r"(<command>)(.*?)(</command>)", re.DOTALL), "command"),
+        (re.compile(r"(<thinking>)(.*?)(</thinking>)", re.DOTALL), "thinking"),
     ]
 
-    PROBLEMATIC_CHARS = ["<<<<<<<", ">>>>>>>", "=======", "-------", "<", ">", "%"]
+    PROBLEMATIC_CHARS = ["<<<<<<<", ">>>>>>>", "=======", "-------", "<", ">", "%", "&", "'", '"', "\\"]
+
+
 
 
 

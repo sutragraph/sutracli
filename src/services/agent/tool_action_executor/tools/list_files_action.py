@@ -25,7 +25,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         if recursive:
             # Recursive listing using rg
             try:
-                # Use rg to list all files recursively
+                # First, get normal files (respects .gitignore)
                 result = subprocess.run(
                     ['rg', '--files', directory_path],
                     capture_output=True,
@@ -33,15 +33,33 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                     check=True
                 )
 
-                # Get relative paths for files
+                # Get relative paths for normal files
                 for file_path in result.stdout.strip().split('\n'):
                     if file_path:  # Skip empty lines
                         rel_path = os.path.relpath(file_path, directory_path)
                         files_list.append(rel_path)
 
-                # Extract unique directories from file paths
+                # Now get .env* files specifically
+                env_result = subprocess.run(
+                    ["rg", "--files", "--glob", ".env*", directory_path],
+                    capture_output=True,
+                    text=True,
+                    check=False,  # Don't fail if no .env files found
+                )
+
+                # Add .env* files to the list
+                for file_path in env_result.stdout.strip().split("\n"):
+                    if file_path:  # Skip empty lines
+                        rel_path = os.path.relpath(file_path, directory_path)
+                        if rel_path not in files_list:  # Avoid duplicates
+                            files_list.append(rel_path)
+
+                # Extract unique directories from all file paths
                 dirs_set = set()
-                for file_path in result.stdout.strip().split('\n'):
+                all_files = result.stdout.strip().split(
+                    "\n"
+                ) + env_result.stdout.strip().split("\n")
+                for file_path in all_files:
                     if file_path:
                         rel_path = os.path.relpath(file_path, directory_path)
                         dir_parts = rel_path.split(os.sep)[:-1]  # Remove filename
@@ -63,7 +81,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         else:
             # Top-level only - use rg with max-depth
             try:
-                # Use rg to list files in current directory only
+                # First, get normal files (respects .gitignore)
                 result = subprocess.run(
                     ['rg', '--files', '--max-depth', '1', directory_path],
                     capture_output=True,
@@ -77,6 +95,30 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                         rel_path = os.path.relpath(file_path, directory_path)
                         # Only include files that are directly in the directory (no subdirectories)
                         if os.sep not in rel_path:
+                            files_list.append(rel_path)
+
+                # Now get .env* files specifically at top level
+                env_result = subprocess.run(
+                    [
+                        "rg",
+                        "--files",
+                        "--glob",
+                        ".env*",
+                        "--max-depth",
+                        "1",
+                        directory_path,
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,  # Don't fail if no .env files found
+                )
+
+                # Add .env* files to the list
+                for file_path in env_result.stdout.strip().split("\n"):
+                    if file_path:  # Skip empty lines
+                        rel_path = os.path.relpath(file_path, directory_path)
+                        # Only include files that are directly in the directory (no subdirectories)
+                        if os.sep not in rel_path and rel_path not in files_list:
                             files_list.append(rel_path)
 
                 # Add directories manually for top-level

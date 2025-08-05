@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Dict, Any
 from loguru import logger
 
-from graph import TreeSitterToSQLiteConverter
+from graph import ASTToSqliteConverter
 from graph.sqlite_client import SQLiteConnection
-from processors.node_embedding_processor import get_node_embedding_processor
+from embeddings import get_embedding_engine
+from models import Project
 
 
 def load_project_config(config_file: str) -> Dict[str, Any]:
@@ -33,7 +34,7 @@ def process_multiple_projects(config_data: Dict[str, Any]) -> Dict[str, Any]:
     total_nodes = 0
     total_relationships = 0
 
-    with TreeSitterToSQLiteConverter() as converter:
+    with ASTToSqliteConverter() as converter:
         clear_db = db_settings.get("clear_before_import", False)
 
         for i, project_config in enumerate(projects):
@@ -100,7 +101,7 @@ def clear_database_data(
     project_name: str | None = None, force: bool = False
 ) -> Dict[str, Any]:
     """Clear data from the database."""
-    with TreeSitterToSQLiteConverter() as converter:
+    with ASTToSqliteConverter() as converter:
         if project_name:
             # Clear specific project
             if not force:
@@ -168,17 +169,16 @@ def clear_database_data(
 
 def list_projects():
     """List all projects in the database."""
-    with TreeSitterToSQLiteConverter() as converter:
+    with ASTToSqliteConverter() as converter:
         projects = converter.connection.list_all_projects()
 
         if projects:
             logger.debug(f"Found {len(projects)} projects in the database:")
             for project in projects:
                 logger.debug(
-                    f"  - {project['name']} ({project.get('language', 'Unknown')}) v{project.get('version', '1.0.0')}"
+                    f"  - {project.name} (path: {project.path})"
                 )
-                if project.get("description"):
-                    logger.debug(f"    Description: {project['description']}")
+                logger.debug(f"    Created: {project.created_at}, Updated: {project.updated_at}")
         else:
             logger.debug("No projects found in the database")
 
@@ -186,7 +186,7 @@ def list_projects():
 def show_database_stats():
     """Display comprehensive database and embedding statistics."""
     try:
-        processor = get_node_embedding_processor()
+        embedding_engine = get_embedding_engine()
         db_connection = SQLiteConnection()
 
         print("\n📊 Sutra Knowledge Database Statistics")

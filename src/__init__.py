@@ -7,20 +7,10 @@ import os
 # Set tokenizers parallelism before any imports to avoid warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from .graph import TreeSitterToSQLiteConverter, SQLiteConnection, GraphOperations
-from .models import CodeNode, CodeEdge, ParsedCodebase
-from .processors import GraphDataProcessor
-from .parser.analyzer import Analyzer
-
 __version__ = "1.0.0"
 
-__all__ = [
-    "TreeSitterToSQLiteConverter",
-    "CodeNode",
-    "CodeEdge",
-    "ParsedCodebase",
-    "SQLiteConnection",
-    "GraphOperations",
-    "GraphDataProcessor",
-    "Analyzer",
-]
+# Note: Imports removed to avoid circular dependencies
+# Import modules directly when needed:
+# from graph import ASTToSqliteConverter, SQLiteConnection, GraphOperations
+# from models import Project, File, FileData, BlockType, CodeBlock, Relationship, ExtractionData
+# from indexer import export_ast_to_json

@@ -46,27 +46,31 @@ class AWSClient(LLMClientBase):
 
         for attempt in range(max_retries + 1):
             try:
-                body = json.dumps(
-                    {
-                        "anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 65000,
-                        "system": [
-                            {
-                                "type": "text",
-                                "text": system_prompt,
-                                "cache_control": {"type": "ephemeral"},
-                            },
-                        ],
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": [{"type": "text", "text": user_message}],
-                            }
-                        ],
-                    }
-                )
+                # Build request body - only include system prompt if it's not empty
+                request_body = {
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 65000,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [{"type": "text", "text": user_message}],
+                        }
+                    ],
+                }
+
+                # Only add system prompt if it's not empty to avoid validation error
+                if system_prompt and system_prompt.strip():
+                    request_body["system"] = [
+                        {
+                            "type": "text",
+                            "text": system_prompt,
+                            "cache_control": {"type": "ephemeral"},
+                        },
+                    ]
+
+                body = json.dumps(request_body)
                 logger.debug(
-                    f"📦 Sending request to AWS model {self.model_id} with body: {body[-500:]}"
+                    f"📦 Sending request to AWS model {self.model_id} with user_message: {user_message}"
                 )
                 response = self.bedrock_client.invoke_model_with_response_stream(
                     body=body,

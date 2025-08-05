@@ -340,6 +340,27 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Output format: text, html, or markdown (default: text)",
     )
 
+    # Cross-indexing command
+    cross_index_parser = subparsers.add_parser(
+        "cross-indexing", help="Analyze project for cross-service connections"
+    )
+    cross_index_parser.add_argument(
+        "--directory",
+        "-d",
+        default=".",
+        help="Directory to analyze (default: current directory)",
+    )
+    cross_index_parser.add_argument(
+        "--project-name",
+        help="Custom project name (default: directory name)",
+    )
+    cross_index_parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Set the logging level",
+    )
+
     # Version command
     version_parser = subparsers.add_parser("version", help="Show version information")
 

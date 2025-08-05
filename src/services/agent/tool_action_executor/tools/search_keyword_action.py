@@ -21,67 +21,77 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             }
             return
 
-        # Build ripgrep command
-        cmd = ["rg"]
+        def build_base_cmd():
+            """Build base ripgrep command with common options."""
+            cmd = ["rg"]
+            
+            # Add context lines
+            if before_lines > 0:
+                cmd.extend(["-B", str(before_lines)])
+            if after_lines > 0:
+                cmd.extend(["-A", str(after_lines)])
 
-        # Add context lines
-        if before_lines > 0:
-            cmd.extend(["-B", str(before_lines)])
-        if after_lines > 0:
-            cmd.extend(["-A", str(after_lines)])
+            # Case sensitivity
+            if not case_sensitive:
+                cmd.append("-i")
 
-        # Case sensitivity
-        if not case_sensitive:
-            cmd.append("-i")
+            # Line numbers
+            cmd.append("-n")
 
-        # Line numbers
-        cmd.append("-n")
+            # Add keyword
+            if use_regex:
+                cmd.append(keyword)
+            else:
+                cmd.extend(["-F", keyword])  # Fixed string search
 
-        # Add keyword
-        if use_regex:
-            cmd.append(keyword)
-        else:
-            cmd.extend(["-F", keyword])  # Fixed string search
+            return cmd
 
-        # Add file path if specified
+        all_results = []
+        commands_run = []
+
+        # Search in normal files (respects .gitignore)
+        cmd1 = build_base_cmd()
         if file_path:
-            cmd.append(file_path)
+            cmd1.append(file_path)
+        
+        result1 = subprocess.run(cmd1, capture_output=True, text=True, cwd=".")
+        if result1.returncode == 0:
+            all_results.append(result1.stdout)
+        commands_run.append(" ".join(cmd1))
 
-        # Execute command
-        result = subprocess.run(
-            cmd, 
-            capture_output=True, 
-            text=True, 
-            cwd="."
-        )
+        # Search in .env* files specifically (if no specific file path given)
+        if not file_path:
+            cmd2 = build_base_cmd()
+            cmd2.extend(["--glob", ".env*"])
+            
+            result2 = subprocess.run(cmd2, capture_output=True, text=True, cwd=".")
+            if result2.returncode == 0:
+                all_results.append(result2.stdout)
+            commands_run.append(" ".join(cmd2))
 
-        if result.returncode == 0:
+        # Combine results
+        combined_output = "\n".join(all_results).strip()
+
+        if combined_output:
             yield {
                 "type": "tool_use",
                 "tool_name": "search_keyword",
                 "keyword": keyword,
-                "file_path": file_path or "all files",
+                "file_path": file_path or "all files (including .env*)",
                 "matches_found": True,
-                "data": result.stdout,
-                "command": " ".join(cmd),
+                "data": combined_output,
+                "command": " | ".join(commands_run),
             }
-        elif result.returncode == 1:
+        else:
             # No matches found
             yield {
                 "type": "tool_use",
                 "tool_name": "search_keyword",
                 "keyword": keyword,
-                "file_path": file_path or "all files",
+                "file_path": file_path or "all files (including .env*)",
                 "matches_found": False,
                 "data": f"No matches found for '{keyword}'",
-                "command": " ".join(cmd),
-            }
-        else:
-            # Error occurred
-            yield {
-                "type": "tool_error",
-                "error": f"Search failed: {result.stderr}",
-                "tool_name": "search_keyword"
+                "command": " | ".join(commands_run),
             }
 
     except Exception as e:
