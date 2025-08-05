@@ -4,35 +4,13 @@ Main converter class that orchestrates the code extraction to SQLite conversion 
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, Union
-from pydantic import BaseModel
+from typing import Optional, Dict, Any
 
 from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection, GraphOperations
 from models.schema import Project, ExtractionData
 from utils import load_json_file
-
-
-class ConversionResult(BaseModel):
-    """Result of the conversion process."""
-
-    status: str
-    input_file: str
-    project_name: str
-    project_id: int
-    files_processed: int
-    blocks_processed: int
-    relationships_processed: int
-    database_stats: Dict[str, Any]
-
-
-class ConversionError(BaseModel):
-    """Error result of the conversion process."""
-
-    status: str
-    error: str
-    input_file: str
 
 
 class ASTToSqliteConverter:
@@ -49,7 +27,7 @@ class ASTToSqliteConverter:
         json_file_path: Path,
         project_name: Optional[str] = None,
         clear_existing: bool = False,
-    ) -> Union[ConversionResult, ConversionError]:
+    ) -> Dict[str, str | int | float]:
         """
         Convert code extraction JSON file to SQLite knowledge graph.
 
@@ -59,7 +37,10 @@ class ASTToSqliteConverter:
             clear_existing: Whether to clear existing data in the database
 
         Returns:
-            ConversionResult on success, ConversionError on failure
+            Dictionary with conversion statistics
+
+        Raises:
+            Exception: If conversion fails
         """
         logger.info(f"🚀 Starting conversion of: {json_file_path}")
 
@@ -83,14 +64,17 @@ class ASTToSqliteConverter:
 
             # Create project with all required fields
             from datetime import datetime
+
             current_time = datetime.now().isoformat()
 
             project = Project(
                 id=1,  # Will be auto-assigned by database
                 name=project_name,
-                path=str(json_file_path.parent),  # Use the directory containing the JSON file
+                path=str(
+                    json_file_path.parent
+                ),  # Use the directory containing the JSON file
                 created_at=current_time,
-                updated_at=current_time
+                updated_at=current_time,
             )
 
             # Insert project and get its ID
@@ -117,22 +101,23 @@ class ASTToSqliteConverter:
                 for file_data in extraction_data.files.values()
             )
 
-            return ConversionResult(
-                status="success",
-                input_file=str(json_file_path),
-                project_name=project_name,
-                project_id=project_id,
-                files_processed=total_files,
-                blocks_processed=total_blocks,
-                relationships_processed=total_relationships,
-                database_stats=stats,
-            )
+            # Return simple stats dictionary
+            return {
+                "status": "success",
+                "input_file": str(json_file_path),
+                "project_name": project_name,
+                "project_id": project_id,
+                "files_processed": total_files,
+                "blocks_processed": total_blocks,
+                "relationships_processed": total_relationships,
+                "total_nodes": stats.get("total_nodes", 0),
+                "total_relationships": stats.get("total_relationships", 0),
+            }
 
         except Exception as e:
             logger.error(f"Conversion failed: {e}")
-            return ConversionError(
-                status="failed", error=str(e), input_file=str(json_file_path)
-            )
+            # Let the exception propagate instead of wrapping it
+            raise
 
     def close(self):
         """Close the database connection."""

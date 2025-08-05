@@ -6,6 +6,7 @@ This module ensures that stored code snippets remain accurate when files are mod
 """
 
 from typing import Dict, List, Optional, Set, Tuple, Any
+from pathlib import Path
 from loguru import logger
 from dataclasses import dataclass
 
@@ -40,9 +41,9 @@ class MemoryUpdater:
         self.db_connection = db_connection
 
     def update_memory_for_file_changes(
-        self, 
-        changed_files: Set[str], 
-        deleted_files: Set[str],
+        self,
+        changed_files: Set[Path],
+        deleted_files: Set[Path],
         project_id: int
     ) -> Dict[str, Any]:
         """
@@ -78,19 +79,21 @@ class MemoryUpdater:
             
             # Process deleted files first
             for file_path in deleted_files:
-                removed_count = self._remove_code_snippets_for_file(file_path)
+                file_path_str = str(file_path)
+                removed_count = self._remove_code_snippets_for_file(file_path_str)
                 updates_made["codes_removed"] += removed_count
                 if removed_count > 0:
                     updates_made["files_processed"] += 1
                     logger.info(f"🗑️  Removed {removed_count} code snippets for deleted file: {file_path}")
-            
+
             # Process changed files
             for file_path in changed_files:
-                file_updates = self._update_code_snippets_for_file(file_path, project_id)
+                file_path_str = str(file_path)
+                file_updates = self._update_code_snippets_for_file(file_path_str, project_id)
                 updates_made["codes_updated"] += file_updates["codes_updated"]
                 updates_made["line_number_updates"] += file_updates["line_number_updates"]
                 updates_made["content_updates"] += file_updates["content_updates"]
-                
+
                 if file_updates["codes_updated"] > 0:
                     updates_made["files_processed"] += 1
                     logger.info(f"🔄 Updated {file_updates['codes_updated']} code snippets for file: {file_path}")

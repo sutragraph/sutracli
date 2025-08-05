@@ -12,7 +12,8 @@ This is the main interface that combines all the modular components:
 - Memory Formatting (LLM context formatting)
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Set
+from pathlib import Path
 from .models import Task, TaskStatus, CodeSnippet, HistoryEntry, ReasoningContext
 from .memory_operations import MemoryOperations
 from .xml_processor import XMLProcessor
@@ -190,7 +191,7 @@ class SutraMemoryManager:
 
     # Memory Update Methods
     def update_memory_for_file_changes(
-        self, changed_files: set, deleted_files: set, project_id: int
+        self, changed_files: Set[Path], deleted_files: Set[Path], project_id: int
     ) -> Dict[str, Any]:
         """Update Sutra memory when files change during incremental indexing"""
         return self.memory_updater.update_memory_for_file_changes(

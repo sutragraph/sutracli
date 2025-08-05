@@ -99,7 +99,7 @@ class ProjectIndexer:
 
             # Step 1: Store parsed data to SQL tables
             print("   Step 1: Storing parsed data to SQL tables...")
-            result = self._store_to_database(parser_output_path, project_name)
+            self._store_to_database(parser_output_path, project_name)
 
             # Step 2: Generate embeddings for the stored data
             print("   Step 2: Generating embeddings for semantic search...")
@@ -640,7 +640,7 @@ class ProjectIndexer:
             logger.error(f"Error deleting node embeddings: {e}")
 
     def _update_sutra_memory_for_changes(
-        self, changes: Dict[str, Set[str]], project_id: int
+        self, changes: Dict[str, Set[Path]], project_id: int
     ) -> Dict[str, Any]:
         """
         Update Sutra memory when files change during incremental indexing.
@@ -755,27 +755,18 @@ class ProjectIndexer:
 
         converter = ASTToSqliteConverter(self.connection)
 
-        result = converter.convert_json_to_graph(
+        # Convert to database - returns stats dict or raises exception
+        stats = converter.convert_json_to_graph(
             parser_output_path,
             project_name=project_name,
             clear_existing=False,
         )
 
-        # Check if result is a ConversionError or failed result
-        if not result:
-            raise Exception("Knowledge graph generation failed: No result returned")
-        elif hasattr(result, "status") and result.status == "failed":
-            raise Exception(f"Knowledge graph generation failed: {result.error}")
-        elif isinstance(result, dict) and result.get("status") != "success":
-            raise Exception("Knowledge graph generation failed")
-
-        stats = result.database_stats
         print(f"   ✅ SQL storage completed!")
         print(
             f"      Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships"
         )
-
-        return result
+        return stats
 
     def _generate_embeddings_for_project(
         self, parser_output_path: Path, project_name: str
