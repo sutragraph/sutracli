@@ -22,8 +22,6 @@ class XMLCleaner:
 
 
 
-
-
     def clean_xml_spacing(self, text: str) -> str:
         """Clean and fix common XML spacing issues."""
         # Fix spacing in XML tags
