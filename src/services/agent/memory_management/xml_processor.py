@@ -372,10 +372,10 @@ class XMLProcessor:
         self, xml_response: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
-        Extract and process sutra memory from parsed XML response (compatible with tool_action_executor).
+        Extract and process sutra memory from parsed XML response (compatible with ActionExecutor).
 
         This method is designed to work with the existing _extract_sutra_memory method
-        from tool_action_executor.py to process sutra memory updates.
+        from ActionExecutor to process sutra memory updates.
 
         Args:
             xml_response: List of parsed XML blocks from LLM response
@@ -384,7 +384,7 @@ class XMLProcessor:
             Dict containing processing results and any errors
         """
         try:
-            # Extract sutra memory data using the same logic as tool_action_executor
+            # Extract sutra memory data using the same logic as ActionExecutor
             sutra_memory_data = self._extract_sutra_memory_from_response(xml_response)
 
             if sutra_memory_data:
@@ -420,7 +420,7 @@ class XMLProcessor:
         self, xml_response: List[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         """
-        Extract sutra memory data from XML response (mirrors tool_action_executor logic).
+        Extract sutra memory data from XML response (mirrors ActionExecutor logic).
 
         Args:
             xml_response: List of parsed XML blocks from LLM response

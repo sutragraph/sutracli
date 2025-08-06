@@ -17,7 +17,7 @@ from .code_fetcher import CodeFetcher
 class MemoryOperations:
     """Handles core memory operations for tasks, code snippets, and file changes"""
 
-    def __init__(self, db_connection: Optional[Any] = None):
+    def __init__(self):
         self.tasks: Dict[str, Task] = {}
         self.code_snippets: Dict[str, CodeSnippet] = {}
         self.history: List[HistoryEntry] = []
@@ -25,7 +25,7 @@ class MemoryOperations:
         self.task_id_counter = 0
         self.code_id_counter = 0
         self.max_history_entries = 50
-        self.code_fetcher = CodeFetcher(db_connection)
+        self.code_fetcher = CodeFetcher()
 
     def get_next_task_id(self) -> str:
         """Generate next unique task ID"""
@@ -270,10 +270,14 @@ class MemoryOperations:
                 pass
 
             # Fall back to basename comparison (filename only)
-            if os.path.basename(normalized_stored) == os.path.basename(normalized_input):
+            if os.path.basename(normalized_stored) == os.path.basename(
+                normalized_input
+            ):
                 # Additional check: ensure they're likely the same file
                 # by checking if the relative path ends with the same structure
-                if normalized_input.endswith(normalized_stored) or normalized_stored.endswith(os.path.basename(normalized_input)):
+                if normalized_input.endswith(
+                    normalized_stored
+                ) or normalized_stored.endswith(os.path.basename(normalized_input)):
                     matching_snippets.append(snippet)
 
         return matching_snippets

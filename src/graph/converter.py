@@ -16,10 +16,10 @@ from utils import load_json_file
 class ASTToSqliteConverter:
     """Main converter class that handles conversion from code extraction JSON to SQLite knowledge graph."""
 
-    def __init__(self, sqlite_connection: Optional[SQLiteConnection] = None):
-        """Initialize converter with optional connection."""
-        self.connection = sqlite_connection or SQLiteConnection()
-        self.graph_ops = GraphOperations(self.connection)
+    def __init__(self):
+        """Initialize converter with singleton connection."""
+        self.connection = SQLiteConnection()
+        self.graph_ops = GraphOperations()
         logger.debug("🛠️ ASTToSqliteConverter initialized")
 
     def convert_json_to_graph(

@@ -48,13 +48,12 @@ class ProjectIndexer:
 
     def __init__(
         self,
-        sqlite_connection: Optional[SQLiteConnection] = None,
         sutra_memory_manager: Optional[SutraMemoryManager] = None,
     ):
-        """Initialize with optional connection and optional shared memory manager."""
-        self.connection = sqlite_connection or SQLiteConnection()
-        self.converter = ASTToSqliteConverter(self.connection)
-        self.graphOperations = GraphOperations(self.connection)
+        """Initialize with optional shared memory manager."""
+        self.connection = SQLiteConnection()
+        self.converter = ASTToSqliteConverter()
+        self.graphOperations = GraphOperations()
         self.embedding_engine = get_embedding_engine(
             max_tokens=config.embedding.max_tokens,
             overlap_tokens=config.embedding.overlap_tokens,
@@ -62,7 +61,7 @@ class ProjectIndexer:
 
         # Use provided memory manager or create new one
         # This allows sharing memory instances across components
-        self.sutra_memory = sutra_memory_manager or SutraMemoryManager(self.connection)
+        self.sutra_memory = sutra_memory_manager or SutraMemoryManager()
         logger.debug("🔄 ProjectIndexer initialized")
 
     def full_index_project(self, project_name: str, project_path: Path) -> None:
@@ -752,7 +751,7 @@ class ProjectIndexer:
         """Store parsed data to SQL tables."""
         from graph import ASTToSqliteConverter
 
-        converter = ASTToSqliteConverter(self.connection)
+        converter = ASTToSqliteConverter()
 
         result = converter.convert_json_to_graph(
             parser_output_path,

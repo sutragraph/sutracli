@@ -9,13 +9,14 @@ from pathlib import Path
 from loguru import logger
 from queries.agent_queries import GET_CODE_FROM_FILE
 from .query_cache import get_query_cache
+from graph.sqlite_client import SQLiteConnection
 
 
 class CodeFetcher:
     """Handles code fetching operations from database"""
 
-    def __init__(self, db_connection: Optional[Any] = None):
-        self.db_connection = db_connection
+    def __init__(self):
+        self.db_connection = SQLiteConnection()
 
     def fetch_code_from_file(
         self, file_path: str, start_line: int, end_line: int
@@ -99,7 +100,7 @@ class CodeFetcher:
                 file_start_line = 1
                 logger.debug(f"Failed to parse lines data, using default file_start_line: 1")
 
-            from services.agent.tool_action_executor.utils.code_processing_utils import (
+            from tools.utils.code_processing_utils import (
                 process_code_with_line_filtering,
             )
 

@@ -8,11 +8,13 @@ Handles the workflow of matching incoming and outgoing connections and storing r
 from ..prompts.phase5_connection_matching.connection_matching_prompt import (
     CONNECTION_MATCHING_PROMPT,
 )
+from graph.sqlite_client import SQLiteConnection
+
 
 class ConnectionMatchingManager:
     """
     Manages the connection matching workflow that runs after cross-indexing analysis.
-    
+
     This class handles:
     1. Processing incoming and outgoing connection lists
     2. Formatting data for the LLM prompt
@@ -21,9 +23,9 @@ class ConnectionMatchingManager:
     5. Storing matched connections in database
     """
 
-    def __init__(self, db_client=None):
+    def __init__(self):
         self.matching_prompt = CONNECTION_MATCHING_PROMPT
-        self.db_client = db_client
+        self.db_client = SQLiteConnection()
 
     def fetch_incoming_connections_from_db(self, project_id=None):
         """
@@ -153,11 +155,11 @@ Remember: Return ONLY valid JSON with no additional text or explanations.
     def _format_connections(self, connections, connection_type):
         """
         Format connection list for prompt display.
-        
+
         Args:
             connections (list): List of connection objects
             connection_type (str): "INCOMING" or "OUTGOING"
-            
+
         Returns:
             str: Formatted connection list
         """
@@ -182,14 +184,14 @@ code_snippet:
     def validate_matching_response(self, response_json):
         """
         Validate the JSON response from connection matching analysis.
-        
+
         Args:
             response_json (dict): JSON response from LLM
-            
+
         Returns:
             tuple: (is_valid, error_message)
         """
-        required_fields = ['matches', 'total_matches']
+        required_fields = ["matches", "total_matches"]
 
         # Check required top-level fields
         for field in required_fields:
@@ -197,47 +199,54 @@ code_snippet:
                 return False, f"Missing required field: {field}"
 
         # Validate matches structure
-        if not isinstance(response_json['matches'], list):
+        if not isinstance(response_json["matches"], list):
             return False, "Matches field must be a list"
 
-        for match in response_json['matches']:
-            required_match_fields = ['outgoing_id', 'incoming_id', 'match_confidence', 
-                                   'match_reason', 'connection_type']
+        for match in response_json["matches"]:
+            required_match_fields = [
+                "outgoing_id",
+                "incoming_id",
+                "match_confidence",
+                "match_reason",
+                "connection_type",
+            ]
             for field in required_match_fields:
                 if field not in match:
                     return False, f"Missing required match field: {field}"
 
             # Validate confidence level
-            if match['match_confidence'] not in ['high', 'medium', 'low']:
+            if match["match_confidence"] not in ["high", "medium", "low"]:
                 return False, f"Invalid confidence level: {match['match_confidence']}"
 
         # Validate total_matches count
-        if response_json['total_matches'] != len(response_json['matches']):
+        if response_json["total_matches"] != len(response_json["matches"]):
             return False, "total_matches count doesn't match matches list length"
 
         return True, None
 
-    def process_matching_results(self, response_json, incoming_connections, outgoing_connections):
+    def process_matching_results(
+        self, response_json, incoming_connections, outgoing_connections
+    ):
         """
         Process and validate matching results against original connection data.
-        
+
         Args:
             response_json (dict): JSON response from LLM
             incoming_connections (list): Original incoming connections
             outgoing_connections (list): Original outgoing connections
-            
+
         Returns:
             dict: Processed and validated matching results
         """
         # Create ID lookup maps
-        incoming_map = {conn['id']: conn for conn in incoming_connections}
-        outgoing_map = {conn['id']: conn for conn in outgoing_connections}
+        incoming_map = {conn["id"]: conn for conn in incoming_connections}
+        outgoing_map = {conn["id"]: conn for conn in outgoing_connections}
 
         # Validate and enrich matches
         validated_matches = []
-        for match in response_json['matches']:
-            outgoing_id = match['outgoing_id']
-            incoming_id = match['incoming_id']
+        for match in response_json["matches"]:
+            outgoing_id = match["outgoing_id"]
+            incoming_id = match["incoming_id"]
 
             # Check if IDs exist
             if outgoing_id not in outgoing_map:
@@ -248,30 +257,32 @@ code_snippet:
             # Enrich match with connection details
             enriched_match = {
                 **match,
-                'outgoing_connection': outgoing_map[outgoing_id],
-                'incoming_connection': incoming_map[incoming_id]
+                "outgoing_connection": outgoing_map[outgoing_id],
+                "incoming_connection": incoming_map[incoming_id],
             }
             validated_matches.append(enriched_match)
 
         # Update response with validated matches
         processed_response = {
             **response_json,
-            'matches': validated_matches,
-            'total_matches': len(validated_matches),
-            'validation_status': 'processed'
+            "matches": validated_matches,
+            "total_matches": len(validated_matches),
+            "validation_status": "processed",
         }
 
         return processed_response
 
-    def validate_and_process_matching_results(self, response_json, incoming_connections, outgoing_connections):
+    def validate_and_process_matching_results(
+        self, response_json, incoming_connections, outgoing_connections
+    ):
         """
         Validate and process connection matching results.
-        
+
         Args:
             response_json (dict): JSON response from LLM
             incoming_connections (list): Original incoming connections
             outgoing_connections (list): Original outgoing connections
-            
+
         Returns:
             tuple: (is_valid, processed_results_or_error)
         """
@@ -329,11 +340,16 @@ def run_connection_matching(
 
             # Parse JSON response from raw text
             import json
+
             # Handle both string response and dict response
             if isinstance(response, str):
                 response_text = response
             else:
-                response_text = response.get("content", "") if isinstance(response, dict) else str(response)
+                response_text = (
+                    response.get("content", "")
+                    if isinstance(response, dict)
+                    else str(response)
+                )
 
             # Clean up response text - remove any markdown formatting
             response_text = response_text.strip()
@@ -359,26 +375,26 @@ def run_connection_matching(
                 return {
                     "success": True,
                     "results": processed_results,
-                    "message": f"Successfully matched {len(processed_results.get('matches', []))} connections"
+                    "message": f"Successfully matched {len(processed_results.get('matches', []))} connections",
                 }
             else:
                 return {
                     "success": False,
                     "error": processed_results,
-                    "message": "Connection matching failed due to invalid response"
+                    "message": "Connection matching failed due to invalid response",
                 }
 
         except json.JSONDecodeError as e:
             return {
                 "success": False,
                 "error": f"Invalid JSON response from LLM: {str(e)}",
-                "message": "Connection matching failed due to invalid response format"
+                "message": "Connection matching failed due to invalid response format",
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": "Connection matching failed due to unexpected error"
+                "message": "Connection matching failed due to unexpected error",
             }
     else:
         # Fallback: return prompt if no LLM client provided (for testing)
@@ -386,5 +402,5 @@ def run_connection_matching(
             "success": False,
             "error": "No LLM client provided",
             "prompt": prompt,
-            "message": "Connection matching skipped - no LLM client available"
+            "message": "Connection matching skipped - no LLM client available",
         }

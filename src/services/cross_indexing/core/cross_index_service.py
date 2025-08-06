@@ -17,7 +17,7 @@ from services.agent.memory_management.sutra_memory_manager import SutraMemoryMan
 from services.agent.memory_management.code_fetcher import CodeFetcher
 from services.agent.memory_management.models import TaskStatus
 from ..prompts.cross_index_prompt_manager_5phase import CrossIndex5PhasePromptManager
-from ...agent.tool_action_executor.tool_action_executor import ActionExecutor
+from tools import ActionExecutor
 from ..utils import infer_technology_type
 from utils.debug_utils import get_user_confirmation_for_llm_call
 from services.cross_indexing.code_manager.prompts.code_manager_prompt_manager import (
@@ -39,13 +39,12 @@ class CrossIndexService:
 
     def __init__(
         self,
-        db_connection: SQLiteConnection,
         project_manager: ProjectManager,
         memory_manager: SutraMemoryManager,
         session_manager: SessionManager,
         llm_client: LLMClientBase,
     ):
-        self.db_connection = db_connection
+        self.db_connection = SQLiteConnection()
         self.project_manager = project_manager
         self.memory_manager = memory_manager
         self.session_manager = session_manager
@@ -55,7 +54,7 @@ class CrossIndexService:
         self.xml_service = XMLService(llm_client)
         self.prompt_manager = CrossIndex5PhasePromptManager(db_connection)
         self.code_manager_prompt_manager = CodeManagerPromptManager()
-        self.code_fetcher = CodeFetcher(db_connection)
+        self.code_fetcher = CodeFetcher()
         self.action_executor = ActionExecutor(
             db_connection,
             self.project_manager.vector_db,

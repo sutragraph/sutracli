@@ -8,7 +8,7 @@ from graph.sqlite_client import SQLiteConnection
 
 from .agent.agent_prompt.system import get_base_system_prompt
 from .llm_clients.llm_factory import llm_client_factory
-from .agent.tool_action_executor.tool_action_executor import ActionExecutor
+from tools import ActionExecutor
 from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from .agent.error_handler import ErrorHandler, ResultVerifier
@@ -32,10 +32,9 @@ class AgentService:
             project_path: Optional path to the project directory. If None, uses current directory.
         """
         self.llm_client = llm_client_factory()
-        self.db_connection = SQLiteConnection()
 
         self.session_manager = SessionManager.get_or_create_session(session_id)
-        self.memory_manager = SutraMemoryManager(db_connection=self.db_connection)
+        self.memory_manager = SutraMemoryManager()
 
         self.session_data: List[Dict[str, Any]] = []
 
@@ -43,11 +42,10 @@ class AgentService:
         self.project_path = project_path
 
         # Initialize project manager for centralized project operations
-        self.project_manager = ProjectManager(self.db_connection, self.memory_manager)
+        self.project_manager = ProjectManager(self.memory_manager)
 
         # XML-based action executor with shared sutra memory manager and shared project indexer
         self.xml_action_executor = ActionExecutor(
-            self.db_connection,
             self.memory_manager,
             self.project_manager.project_indexer,
         )

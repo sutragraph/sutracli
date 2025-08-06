@@ -25,12 +25,11 @@ class CrossIndexSystem:
 
     def __init__(
         self,
-        db_connection: SQLiteConnection,
         project_manager: ProjectManager,
         session_id: Optional[str] = None,
         project_name: Optional[str] = None,
     ):
-        self.db_connection = db_connection
+        self.db_connection = SQLiteConnection()
         self.project_manager = project_manager
 
         # Store project name for incremental indexing
@@ -42,7 +41,7 @@ class CrossIndexSystem:
         self.session_manager = SessionManager.get_or_create_session(session_id)
 
         # Initialize shared memory manager for cross-indexing (like agent service)
-        self.memory_manager = SutraMemoryManager(db_connection=db_connection)
+        self.memory_manager = SutraMemoryManager()
 
         # Set reasoning context for cross-indexing
         self.memory_manager.set_reasoning_context(

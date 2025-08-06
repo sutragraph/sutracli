@@ -12,6 +12,10 @@ from models.schema import (
     ExtractionData,
     BlockType,
 )
+from models.agent import (
+    AgentAction,
+    AgentThought,
+)
 
 __all__ = [
     "Project",
@@ -21,4 +25,6 @@ __all__ = [
     "CodeBlock",
     "Relationship",
     "ExtractionData",
+    "AgentAction",
+    "AgentThought",
 ]

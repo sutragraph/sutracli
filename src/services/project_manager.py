@@ -17,7 +17,6 @@ class ProjectManager:
 
     def __init__(
         self,
-        db_connection: SQLiteConnection,
         memory_manager=None,
     ):
         """Initialize the project manager.
@@ -27,13 +26,13 @@ class ProjectManager:
 
             memory_manager: Optional memory manager for incremental indexing
         """
-        self.db_connection = db_connection
+        self.db_connection = SQLiteConnection()
 
         self.memory_manager = memory_manager
 
         # Initialize project indexer with memory manager if provided
         self.project_indexer = (
-            ProjectIndexer(self.db_connection, self.memory_manager)
+            ProjectIndexer(self.memory_manager)
             if memory_manager
             else ProjectIndexer(self.db_connection)
         )

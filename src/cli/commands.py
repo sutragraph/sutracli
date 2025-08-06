@@ -18,16 +18,16 @@ from services.agent_service import AgentService
 from services.auth.token_manager import get_token_manager
 from config import config
 from embeddings import get_vector_store
-from services.agent.tool_action_executor.utils.code_processing_utils import (
+from tools.utils.code_processing_utils import (
     add_line_numbers_to_code,
 )
-from services.agent.tool_action_executor.tools.web_search_action import (
+from tools.tool_web_search.action import (
     WebSearch,
     TimeFilter,
     SafeSearch,
     SearchType,
 )
-from services.agent.tool_action_executor.tools.web_scrap_action import WebScraper
+from tools.tool_web_scrap.action import WebScraper
 
 
 def get_version_from_init():

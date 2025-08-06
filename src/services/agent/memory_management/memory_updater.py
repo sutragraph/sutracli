@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 from pathlib import Path
 from loguru import logger
 from dataclasses import dataclass
+from graph.sqlite_client import SQLiteConnection
 
 from .models import CodeSnippet
 from .memory_operations import MemoryOperations
@@ -36,9 +37,9 @@ class CodeUpdate:
 class MemoryUpdater:
     """Handles updating Sutra memory when code changes occur"""
 
-    def __init__(self, memory_ops: MemoryOperations, db_connection: Optional[Any] = None):
+    def __init__(self, memory_ops: MemoryOperations):
         self.memory_ops = memory_ops
-        self.db_connection = db_connection
+        self.db_connection = SQLiteConnection()
 
     def update_memory_for_file_changes(
         self,

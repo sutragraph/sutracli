@@ -6,6 +6,7 @@ Stores files, code blocks, and relationships from code parsing.
 import json
 import sqlite3
 import time
+import threading
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Union
 
@@ -19,11 +20,24 @@ from queries.creation_queries import CREATE_TABLES, CREATE_INDEXES
 
 class SQLiteConnection:
     """Manages SQLite database connections and operations."""
+    
+    _instance = None
+    _lock = threading.Lock()
 
-    def __init__(self):
-        self.database_path = config.sqlite.knowledge_graph_db
-        self.connection = self._connect()
-        self._create_tables()
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    logger.debug("🔧 Creating new SQLiteConnection singleton instance")
+                    instance = super(SQLiteConnection, cls).__new__(cls)
+                    instance.database_path = config.sqlite.knowledge_graph_db
+                    instance.connection = instance._connect()
+                    instance._create_tables()
+                    logger.debug("✅ SQLiteConnection singleton initialization complete")
+                    cls._instance = instance
+        else:
+            logger.debug("♻️ Reusing existing SQLiteConnection singleton instance")
+        return cls._instance
 
     def _connect(self) -> sqlite3.Connection:
         """Establish connection to SQLite database."""
@@ -441,15 +455,11 @@ class SQLiteConnection:
             logger.debug(f"Failed to get project ID for '{project_name}': {e}")
             return None
 
-
-# Duplicate method removed - already defined above
-
-
 class GraphOperations:
     """High-level operations for inserting code extraction data."""
 
-    def __init__(self, connection: SQLiteConnection):
-        self.connection = connection
+    def __init__(self):
+        self.connection = SQLiteConnection()
 
     def insert_extraction_data_from_dict(
         self, extraction_data: Dict[str, Any], project_id: int
