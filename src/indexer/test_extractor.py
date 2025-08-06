@@ -81,8 +81,9 @@ def main():
     print("=" * 50)
 
     test_files = [
-        # "test_files/test_python.py",
+        "test_files/test_python.py",
         "test_files/test_typescript.ts"
+        "test_files/test_java.java"
     ]
 
     for file_path in test_files:

@@ -152,6 +152,7 @@ def test_both_directories():
     test_dirs = [
         ("test_relationships/python", "Python"),
         ("test_relationships/typescript", "TypeScript")
+        ("test_relationships/java", "Java")
     ]
 
     print("🧪 QUICK TEST - BOTH DIRECTORIES")

@@ -321,11 +321,13 @@ class Extractor:
 
     def _setup_extractors(self):
         """Setup language-specific extractors."""
-        from indexer.extractors.typescript_extractor import TypeScriptExtractor
-        from indexer.extractors.python_extractor import PythonExtractor
+        from .typescript_extractor import TypeScriptExtractor
+        from .python_extractor import PythonExtractor
+        from .java_extractor import JavaExtractor
 
         self.register_extractor("typescript", TypeScriptExtractor)
         self.register_extractor("python", PythonExtractor)
+        self.register_extractor("java", JavaExtractor)
 
     def register_extractor(
         self, language: SupportedLanguage, extractor_class: type
