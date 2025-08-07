@@ -2,11 +2,17 @@
 Available tools for the Roadmap Agent
 """
 
-# Tool list for the roadmap agent (using string values directly to avoid import dependencies)
-TOOL_LIST = [
-    "tool_semantic_search",      # Find relevant code by similarity
-    "tool_list_files",          # Explore project structure
-    "tool_database_search",     # Query structured codebase data
-    "tool_search_keyword",      # Search for patterns and symbols (ripgrep)
-    "tool_terminal_commands",   # Execute commands for exploration
+from tools import ToolName
+
+
+TOOL_LIST_ENUM = [
+    ToolName.COMPLETION,
+    ToolName.SEMANTIC_SEARCH,
+    ToolName.LIST_FILES,
+    ToolName.DATABASE_SEARCH,
+    ToolName.SEARCH_KEYWORD,
+    ToolName.TERMINAL_COMMANDS,
 ]
+
+
+TOOL_LIST = [tool.value for tool in TOOL_LIST_ENUM]

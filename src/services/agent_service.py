@@ -17,6 +17,7 @@ from config import config
 from utils.xml_parsing_exceptions import XMLParsingFailedException
 from utils.performance_monitor import get_performance_monitor, performance_timer
 from utils.debug_utils import get_user_confirmation_for_llm_call
+from agents import get_agent_system_prompt, AgentName
 
 
 class AgentService:
@@ -485,7 +486,7 @@ class AgentService:
         while retry_count < max_retries:
             try:
                 # Get base system prompt
-                system_prompt = get_base_system_prompt()
+                system_prompt = get_agent_system_prompt(AgentName.ROADMAP)
 
                 # Build tool status from last tool result -
                 tool_status = self._build_tool_status(self.last_tool_result)

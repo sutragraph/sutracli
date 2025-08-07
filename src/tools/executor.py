@@ -176,18 +176,22 @@ class ActionExecutor:
                 elif tool_name == "database":
                     # Database search context is handled internally now
                     pass
-                
+
                 # Get and execute the tool action
                 tool_action = get_tool_action(tool_enum)
                 yield from tool_action(action)
-                
+
                 # Handle post-execution tasks for file modification tools
                 if tool_name in ["apply_diff", "write_to_file"]:
                     try:
                         self.project_indexer.incremental_index_project(Path.cwd().name)
-                        logger.debug(f"Incremental indexing completed after {tool_name}")
+                        logger.debug(
+                            f"Incremental indexing completed after {tool_name}"
+                        )
                     except Exception as e:
-                        logger.error(f"Incremental indexing failed after {tool_name}: {e}")
+                        logger.error(
+                            f"Incremental indexing failed after {tool_name}: {e}"
+                        )
             else:
                 yield {
                     "type": "tool_error",
@@ -223,6 +227,7 @@ class ActionExecutor:
 
         return AgentAction(
             tool_type=tool_name,
+            command=clean_data.get("command", ""),
             description=f"Execute {tool_name}",
             query=(
                 clean_data.get("query", user_query)
@@ -246,7 +251,9 @@ class ActionExecutor:
                         return thinking_data["#text"]
         return None
 
-    def _extract_completion(self, xml_response: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def _extract_completion(
+        self, xml_response: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
         """Extract completion data from XML response."""
         for xml_block in xml_response:
             if isinstance(xml_block, dict):
@@ -255,7 +262,9 @@ class ActionExecutor:
                     return xml_block["completion"]
         return None
 
-    def _extract_tool(self, xml_response: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def _extract_tool(
+        self, xml_response: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
         """Extract tool data from XML response."""
         for xml_block in xml_response:
             if isinstance(xml_block, dict):
@@ -283,7 +292,9 @@ class ActionExecutor:
                             return {"_tool_name": tool_tag, "content": tool_data}
         return None
 
-    def _extract_sutra_memory(self, xml_response: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def _extract_sutra_memory(
+        self, xml_response: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
         """Extract sutra memory update from XML response."""
         for xml_block in xml_response:
             if isinstance(xml_block, dict):

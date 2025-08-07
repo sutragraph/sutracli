@@ -2,35 +2,15 @@
 Available tools and capabilities for the Roadmap Agent
 """
 
-CAPABILITIES = """You have access to these specific tools for roadmap generation:
-
-## DISCOVERY TOOLS
-- **semantic_search**: Find relevant code by similarity to your query
-  - Returns: node_id results that get auto-converted to actual code blocks
-  - Use for: Finding existing implementations related to user request
-
-- **list_files**: Explore project structure and file organization
-  - Use for: Understanding project layout and finding related files
-
-## ANALYSIS TOOLS
-- **database_query**: Query structured codebase data
-  - Available queries: GET_FILE_BLOCK_SUMMARY, GET_CHILD_BLOCKS, GET_PARENT_BLOCK,
-    GET_FILE_IMPACT_SCOPE, GET_FILE_IMPORTS, GET_DEPENDENCY_CHAIN,
-    GET_EXTERNAL_CONNECTIONS, GET_PROJECT_EXTERNAL_CONNECTIONS, GET_CONNECTION_IMPACT
-  - Use for: Understanding file structure, dependencies, and cross-project impacts
-
-- **ripgrep**: Search for symbol usage and code patterns
-  - Use for: Finding where functions are called, symbol definitions, usage patterns
-  - Required for: Symbol searches that database cannot provide
-
-- **terminal**: Execute commands to explore and verify project state
-  - Use for: File system exploration, running project-specific commands
-
-## WHAT YOU CANNOT DO
-- You cannot write or modify code files
-- You cannot execute code or run applications
-- You cannot access external APIs or services directly
-- You cannot make assumptions about code that you haven't analyzed
-
-## OUTPUT FORMAT
-Your roadmap must be structured, specific, and actionable - not vague suggestions."""
+CAPABILITIES = """
+- You have access to tools that let you execute CLI commands on the user's computer, list files, search/read files using semantic search and database queries, read and write files. These tools help you effectively accomplish a wide range of tasks, such as writing code, making edits or improvements to existing files, understanding the current state of a project, performing system operations, and much more. You also have access to a Sutra Memory system that tracks your progress, prevents redundant operations, and maintains context across iterations.
+- You can use semantic search to search across the full codebase for any content, providing intelligent context-aware results that understand code semantics and relationships. When you find relevant code during searches, consider storing important findings in your Sutra Memory for future reference.
+- You can use the search_known_keyword tool to search code/variable using specific keywords with different parameters like before/after lines, case sensitivity, and regex patterns. This tool offers flexible search capabilities for finding specific code patterns and implementations. Use this tool when you found something in code that you want to explore further in other files, or when you know actual names or keywords to search for. This tool is faster than terminal commands like grep. Before using this tool, check your Sutra Memory history to avoid repeating the same searches.
+- You can use database queries to access comprehensive file data and code structure information. The database tool provides multiple features:
+    - To list all functions, classes, files, and methods, use database search with parameter code_content: false
+    - Query specific nodes by exact name (function, class, file, method)
+    - Get code snippets from files with specific line ranges
+    - Find function callers and callees to understand code dependencies
+    - Analyze file dependencies and relationships
+    - For example, when asked to make edits or improvements you might analyze the file structure in the initial WORKSPACE STRUCTURE to get an overview of the project, then use semantic search first to find the relevant files if you don't know exactly which files need changes (never guess which files to modify), then use database queries to get code the contents of relevant files/functions/class/methods, analyze the code and suggest improvements or make necessary edits, then use the apply_diff or write_to_file tool to apply the changes. You could use search_known_keyword when you know specific names or keywords, or semantic search for broader exploration to ensure you update other files as needed. Store important code findings in Sutra Memory and track your analysis tasks to ensure thorough coverage. When you can't make changes directly with apply_diff and need to explore more code or other files first, always store the required code in Sutra Memory using XML format with proper file paths, line numbers as it won't be available in the next iteration. Also remove stored code when no longer needed and update your task list accordingly.
+- You can use the execute_command tool to run commands on the user's computer using foreground terminal sessions with intelligent session reuse. Sessions automatically reuse existing compatible sessions (same working directory, no running tasks) or create new ones as needed. Sessions maintain working directory and environment variables across commands, enabling seamless continuation of work in the same directory context without manual session management."""

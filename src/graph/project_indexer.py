@@ -98,7 +98,7 @@ class ProjectIndexer:
 
             # Step 1: Store parsed data to SQL tables
             print("   Step 1: Storing parsed data to SQL tables...")
-            self._store_to_database(parser_output_path, project_name)
+            self._store_to_database(parser_output_path, project_name, project_path)
 
             # Step 2: Generate embeddings for the stored data
             print("   Step 2: Generating embeddings for semantic search...")
@@ -446,7 +446,7 @@ class ProjectIndexer:
         try:
             results = self.connection.execute_query(
                 """SELECT file_path, content_hash
-                   FROM file_hashes
+                   FROM files
                    WHERE project_id = ?""",
                 (project_id,),
             )
@@ -747,7 +747,7 @@ class ProjectIndexer:
             raise
 
     def _store_to_database(
-        self, parser_output_path: Path, project_name: str
+        self, parser_output_path: Path, project_name: str, project_path: Path
     ) -> Dict[str, Any]:
         """Store parsed data to SQL tables."""
         from graph import ASTToSqliteConverter
@@ -756,7 +756,8 @@ class ProjectIndexer:
 
         # Convert to database - returns stats dict or raises exception
         stats = converter.convert_json_to_graph(
-            parser_output_path,
+            json_file_path=parser_output_path,
+            project_path=project_path,
             project_name=project_name,
             clear_existing=False,
         )

@@ -25,6 +25,7 @@ class ASTToSqliteConverter:
     def convert_json_to_graph(
         self,
         json_file_path: Path,
+        project_path: Path,
         project_name: Optional[str] = None,
         clear_existing: bool = False,
     ) -> Dict[str, str | int | float]:
@@ -33,6 +34,7 @@ class ASTToSqliteConverter:
 
         Args:
             json_file_path: Path to the extraction JSON file
+            project_path: Absolute path to the project directory
             project_name: Name of the project/codebase (auto-derived if not provided)
             clear_existing: Whether to clear existing data in the database
 
@@ -71,8 +73,8 @@ class ASTToSqliteConverter:
                 id=1,  # Will be auto-assigned by database
                 name=project_name,
                 path=str(
-                    json_file_path.parent
-                ),  # Use the directory containing the JSON file
+                    project_path.absolute()
+                ),  # Use the actual project directory path
                 created_at=current_time,
                 updated_at=current_time,
             )

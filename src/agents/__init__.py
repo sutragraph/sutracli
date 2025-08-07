@@ -8,6 +8,7 @@ from functools import lru_cache
 import importlib
 from pathlib import Path
 
+
 class AgentName(Enum):
     ROADMAP = "agent_roadmap"
 
@@ -16,39 +17,49 @@ class AgentName(Enum):
 def _import_agent_module(agent_name: AgentName, module_name: str):
     """Import and cache agent module."""
     try:
-        return importlib.import_module(f"agents.{agent_name.value}.prompts.{module_name}")
+        return importlib.import_module(
+            f"agents.{agent_name.value}.prompts.{module_name}"
+        )
     except ImportError as e:
-        raise ImportError(f"Failed to import agent '{agent_name.value}' module '{module_name}': {e}")
+        raise ImportError(
+            f"Failed to import agent '{agent_name.value}' module '{module_name}': {e}"
+        )
 
 
 def get_agent_identity(agent_name: AgentName) -> str:
     """Get agent identity prompt."""
-    module = _import_agent_module(agent_name, 'identity')
-    if not hasattr(module, 'IDENTITY'):
-        raise AttributeError(f"Agent '{agent_name.value}' missing 'IDENTITY' in identity.py")
+    module = _import_agent_module(agent_name, "identity")
+    if not hasattr(module, "IDENTITY"):
+        raise AttributeError(
+            f"Agent '{agent_name.value}' missing 'IDENTITY' in identity.py"
+        )
     return module.IDENTITY
 
 
 def get_agent_objective(agent_name: AgentName) -> str:
     """Get agent objective prompt."""
-    module = _import_agent_module(agent_name, 'objective')
-    if not hasattr(module, 'OBJECTIVE'):
-        raise AttributeError(f"Agent '{agent_name.value}' missing 'OBJECTIVE' in objective.py")
+    module = _import_agent_module(agent_name, "objective")
+    if not hasattr(module, "OBJECTIVE"):
+        raise AttributeError(
+            f"Agent '{agent_name.value}' missing 'OBJECTIVE' in objective.py"
+        )
     return module.OBJECTIVE
 
 
 def get_agent_capabilities(agent_name: AgentName) -> str:
     """Get agent capabilities prompt."""
-    module = _import_agent_module(agent_name, 'capabilities')
-    if not hasattr(module, 'CAPABILITIES'):
-        raise AttributeError(f"Agent '{agent_name.value}' missing 'CAPABILITIES' in capabilities.py")
+    module = _import_agent_module(agent_name, "capabilities")
+    if not hasattr(module, "CAPABILITIES"):
+        raise AttributeError(
+            f"Agent '{agent_name.value}' missing 'CAPABILITIES' in capabilities.py"
+        )
     return module.CAPABILITIES
 
 
 def get_agent_rules(agent_name: AgentName) -> str:
     """Get agent rules prompt."""
-    module = _import_agent_module(agent_name, 'rules')
-    if not hasattr(module, 'RULES'):
+    module = _import_agent_module(agent_name, "rules")
+    if not hasattr(module, "RULES"):
         raise AttributeError(f"Agent '{agent_name.value}' missing 'RULES' in rules.py")
     return module.RULES
 
@@ -60,8 +71,10 @@ def get_agent_tools(agent_name: AgentName) -> List[str]:
     except ImportError as e:
         raise ImportError(f"Failed to import agent '{agent_name.value}' tool_list: {e}")
 
-    if not hasattr(module, 'TOOL_LIST'):
-        raise AttributeError(f"Agent '{agent_name.value}' missing 'TOOL_LIST' in tool_list.py")
+    if not hasattr(module, "TOOL_LIST"):
+        raise AttributeError(
+            f"Agent '{agent_name.value}' missing 'TOOL_LIST' in tool_list.py"
+        )
     return module.TOOL_LIST
 
 
@@ -85,6 +98,7 @@ def get_agent_system_prompt(agent_name: AgentName) -> str:
     for tool_name in tool_names:
         tool_enum = ToolName(tool_name)
         tool_prompt = get_tool_prompt(tool_enum)
+        print("adding tool prompt:", tool_name)  # Debugging line
         tools_section += f"{tool_prompt}\n\n"
 
     # Combine all sections
@@ -118,5 +132,14 @@ def get_base_system_prompt(agent_name: AgentName) -> str:
 
 AVAILABLE_AGENTS = list(AgentName)
 
-__all__ = ["AgentName", "get_agent_system_prompt", "get_base_system_prompt", "get_agent_identity",
-           "get_agent_objective", "get_agent_capabilities", "get_agent_rules", "get_agent_tools", "AVAILABLE_AGENTS"]
+__all__ = [
+    "AgentName",
+    "get_agent_system_prompt",
+    "get_base_system_prompt",
+    "get_agent_identity",
+    "get_agent_objective",
+    "get_agent_capabilities",
+    "get_agent_rules",
+    "get_agent_tools",
+    "AVAILABLE_AGENTS",
+]

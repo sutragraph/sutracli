@@ -74,7 +74,7 @@ class BaseExtractor(ABC):
         node: Any,
         block_type: BlockType,
         names: List[str],
-        nested_types: Dict[str, BlockType] = None,
+        nested_types: Dict[str, BlockType] = {},
     ) -> CodeBlock:
         """Create a code block and extract nested elements."""
         block = self._create_code_block(node, block_type, names)
