@@ -10,9 +10,9 @@ import logging
 from typing import Dict, List,Any, Optional
 from datetime import datetime
 
-from ..prompts.connection_matching_manager import ConnectionMatchingManager
+from ..prompts.phase5_connection_matching.phase5_prompt_manager import Phase5PromptManager
 from ...llm_clients.llm_factory import llm_client_factory
-from ....graph.sqlite_client import SQLiteConnection
+from graph.sqlite_client import SQLiteConnection
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class ConnectionMatchingService:
     
     def __init__(self):
         self.db_client = SQLiteConnection()
-        self.matching_manager = ConnectionMatchingManager(self.db_client)
+        self.matching_manager = Phase5PromptManager(self.db_client)
         
     def match_connections(self, incoming_connections: List[Dict] = None, outgoing_connections: List[Dict] = None,
                          project_id: str = None) -> Dict[str, Any]:

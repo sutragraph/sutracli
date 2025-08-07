@@ -351,6 +351,11 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         default="INFO",
         help="Set the logging level",
     )
+    cross_index_parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="Skip confirmation prompts when used with --log-level DEBUG",
+    )
 
     # Version command
     version_parser = subparsers.add_parser(

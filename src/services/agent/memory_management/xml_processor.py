@@ -5,17 +5,17 @@ Handles XML parsing and processing for Sutra Memory data.
 """
 
 from typing import Dict, List, Optional, Any
-from loguru import logger
-
 from .models import TaskStatus
 from .memory_operations import MemoryOperations
-
 
 class XMLProcessor:
     """Handles XML processing for Sutra Memory data"""
 
-    def __init__(self, memory_ops: MemoryOperations):
+    def __init__(
+        self, memory_ops: MemoryOperations, memory_manager: Optional[Any] = None
+    ):
         self.memory_ops = memory_ops
+        self.memory_manager = memory_manager
 
     def process_sutra_memory_data(
         self, parsed_xml_data: Dict[str, Any]
@@ -191,11 +191,16 @@ class XMLProcessor:
     def _process_add_task_dict(self, add_data: Dict[str, Any], results: Dict[str, Any]):
         """Process add task operation from dict"""
         try:
-            task_id = add_data.get("@id")
+            task_id = self.memory_ops.get_next_task_id()
+
             status = TaskStatus(add_data.get("@to"))
             description = add_data.get("#text", "").strip()
 
-            self.memory_ops.add_task(task_id, description, status)
+            # Use memory_manager if available (for inheritance), otherwise use memory_ops
+            if hasattr(self, "memory_manager") and self.memory_manager:
+                self.memory_manager.add_task(task_id, description, status)
+            else:
+                self.memory_ops.add_task(task_id, description, status)
             results["changes_applied"]["tasks"].append(
                 f"Added task {task_id} with status {status.value}"
             )
@@ -211,7 +216,11 @@ class XMLProcessor:
             from_status = move_data.get("@from")
             to_status = TaskStatus(move_data.get("@to"))
 
-            self.memory_ops.move_task(task_id, to_status)
+            # Use memory_manager if available (for inheritance), otherwise use memory_ops
+            if hasattr(self, "memory_manager") and self.memory_manager:
+                self.memory_manager.move_task(task_id, to_status)
+            else:
+                self.memory_ops.move_task(task_id, to_status)
             results["changes_applied"]["tasks"].append(
                 f"Moved task {task_id} from {from_status} to {to_status.value}"
             )
@@ -269,26 +278,26 @@ class XMLProcessor:
         """Process add code operation from dict"""
         try:
             code_id = add_data.get("@id")
-            
+
             # Handle both nested dict format and direct string format
             file_path_data = add_data.get("file", "")
             if isinstance(file_path_data, dict):
                 file_path = file_path_data.get("#text", "").strip()
             else:
                 file_path = str(file_path_data).strip()
-            
+
             start_line_data = add_data.get("start_line", "0")
             if isinstance(start_line_data, dict):
                 start_line = int(start_line_data.get("#text", "0"))
             else:
                 start_line = int(str(start_line_data))
-            
+
             end_line_data = add_data.get("end_line", "0")
             if isinstance(end_line_data, dict):
                 end_line = int(end_line_data.get("#text", "0"))
             else:
                 end_line = int(str(end_line_data))
-            
+
             description_data = add_data.get("description", "")
             if isinstance(description_data, dict):
                 description = description_data.get("#text", "").strip()

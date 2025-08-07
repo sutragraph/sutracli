@@ -1,0 +1,104 @@
+"""
+Tool Usage Examples for Import Analysis
+
+Comprehensive examples of how to use tools effectively for import analysis.
+"""
+
+IMPORT_DISCOVERY_TOOL_USAGE_EXAMPLES = """====
+
+TOOL USAGE EXAMPLES
+
+This section provides comprehensive examples of how to use different tools effectively for import analysis and implementation task creation.
+
+1. IMPORT PATTERN ANALYSIS EXAMPLES
+
+**DIFFERENT IMPORT SYNTAX EXAMPLES**
+
+Example 1: JavaScript/Node.js import variations
+For Example:
+- const axios = require('axios')
+- import axios from 'axios'
+- import { get, post } from 'axios'
+- const { get, post } = require('axios')
+
+Example 2: Python import variations
+For Example:
+- import requests
+- from requests import get, post
+- import requests as req
+- from requests.auth import HTTPBasicAuth
+
+Example 3: Java import pattern examples
+For Example:
+- import org.springframework.web.client.RestTemplate
+- import retrofit2.http.GET
+- import okhttp3.OkHttpClient
+
+Example 4: Go import pattern examples
+For Example:
+- import "net/http"
+- import "github.com/gorilla/mux"
+- import ( "net/http" "encoding/json" )
+
+2. IMPLEMENTATION TASK CREATION EXAMPLES
+
+**IMPLEMENTATION ANALYSIS TASK CREATION**
+
+Example 1: After finding axios imports in 3 files
+Create 3 separate implementation tasks (database tool - individual tasks per file):
+- Task 1: "Found axios imports in src/api/client.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
+- Task 2: "Found axios imports in src/services/http.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
+- Task 3: "Found axios imports in src/utils/request.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
+
+Example 2: After finding express imports in 8 files
+Create implementation task: "Found express imports in 8 files. Use search_keyword tool with pattern 'app\\.(get|post|put|delete)\\(|router\\.(get|post|put|delete)\\(' and regex=true, after_lines=2 to find express route definitions across all files. Look for actual route handlers with real endpoint paths. This server framework receives requests from other services."
+
+Example 3: After finding Spring imports in 6 files
+Create implementation task: "Found Spring framework imports in 6 files. Use search_keyword tool with pattern '@RequestMapping|@GetMapping|@PostMapping' and regex=true, after_lines=2 to find Spring controller endpoints across all files. Look for actual REST endpoints with real paths."
+
+3. BUILT-IN PATTERN TASK CREATION (ALWAYS REQUIRED)
+
+**MULTI-LANGUAGE BUILT-IN PATTERN EXAMPLES**
+
+Example 1: JavaScript built-in pattern task creation
+Create implementation task: "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\(|XMLHttpRequest|new WebSocket\\(' and regex=true, after_lines=2 to find native JavaScript connection patterns across all files."
+
+Example 2: Python built-in pattern task creation
+Create implementation task: "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\.|http\\.client|socket\\.' and regex=true, after_lines=2 to find Python built-in connection patterns across all files."
+
+Example 3: Java built-in pattern task creation
+Create implementation task: "Create built-in pattern task for Java: Use search_keyword with pattern 'HttpURLConnection|new Socket\\(' and regex=true, after_lines=2 to find Java built-in connection patterns across all files."
+
+4. TOOL SELECTION STRATEGY FOR IMPLEMENTATION TASKS
+
+**DATABASE TOOL TASK CREATION (3-5 files)**
+When imports found in few files, create separate tasks for each file:
+For Example:
+- Task 1: "Use database tool to read file1 and analyze [package] usage patterns"
+- Task 2: "Use database tool to read file2 and analyze [package] usage patterns"
+- Task 3: "Use database tool to read file3 and analyze [package] usage patterns"
+
+**SEARCH_KEYWORD TASK CREATION (6+ files)**
+When imports found in many files, create combined tasks:
+For Example: "Use search_keyword to find [package] usage patterns across [X] files with pattern '[regex_pattern]'"
+
+5. COMPLETION EXAMPLES
+
+**ATTEMPT_COMPLETION USAGE**
+
+Example 1: Comprehensive import analysis with packages
+attempt_completion(result="Import analysis complete. Found imports in 15 files: axios (3 files), express (8 files), socket.io (4 files). Created 5 implementation tasks (3 individual database tasks for axios files, 1 combined search_keyword task for express files, 1 combined search_keyword task for socket.io files) and 3 built-in pattern tasks for subsequent implementation analysis.")
+
+Example 2: Built-in patterns focus
+attempt_completion(result="Import analysis complete. No advanced packages found. Created 4 built-in pattern tasks for subsequent analysis: JavaScript fetch patterns, Python urllib patterns, Java HttpURLConnection patterns, Go net/http patterns."))
+
+6. CRITICAL GUIDELINES
+
+- Execute ALL pending tasks from previous analysis
+- Use appropriate search patterns with proper regex escaping as specified in previous analysis tasks
+- CRITICAL: After seeing tool results when marking a task as completed, if you found meaningful import information, create new implementation tasks for the next phase
+- Create implementation analysis tasks based on number of files found with imports
+- ALWAYS create built-in pattern tasks for subsequent analysis regardless of whether packages were found
+- Include specific file paths and usage patterns in implementation task descriptions
+
+"""

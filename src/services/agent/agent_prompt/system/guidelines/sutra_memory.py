@@ -128,7 +128,7 @@ Example 4: File tracking with multiple operations
 Example 5: Task completion scenario (CORRECT way)
 <sutra_memory>
 <task>
-<add id="1" to="completed">Respond to user greeting and determine how to assist</add>
+<move from="current" to="completed">1</move>
 </task>
 <add_history>Used attempt_completion - provided greeting response and assistance options, task completed successfully</add_history>
 </sutra_memory>

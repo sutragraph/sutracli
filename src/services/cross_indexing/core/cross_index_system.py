@@ -12,7 +12,7 @@ from services.project_manager import ProjectManager
 from services.agent.xml_service.xml_parser import XMLParser
 
 from ...agent.memory_management.sutra_memory_manager import SutraMemoryManager
-from ..prompts.cross_index_prompt_manager import CrossIndexPromptManager
+from ..prompts.cross_index_prompt_manager_5phase import CrossIndex5PhasePromptManager
 from .cross_index_service import CrossIndexService
 from ..utils import infer_technology_type
 
@@ -76,7 +76,7 @@ class CrossIndexSystem:
         self.cross_index_service = CrossIndexService(
             db_connection, project_manager, self.memory_manager, self.session_manager, llm_client
         )
-        self.prompt_manager = CrossIndexPromptManager()
+        self.prompt_manager = CrossIndex5PhasePromptManager(db_connection)
         self.xml_parser = XMLParser()
 
     def _perform_initialization_incremental_indexing(self):
@@ -126,15 +126,18 @@ class CrossIndexSystem:
     def _update_session_memory(self):
         """Update session memory with current memory state (like agent service)."""
         try:
-            # Get the rich formatted memory from memory manager (includes code snippets)
-            memory_summary = self.memory_manager.get_memory_for_llm()
+            # Get the rich formatted memory from task manager (includes code snippets)
+            # Task manager is the authoritative source for cross-indexing memory
+            memory_summary = self.prompt_manager.task_manager.get_memory_for_llm()
+            code_snippets_count = len(self.prompt_manager.task_manager.get_all_code_snippets())
+
             # Update session manager with the rich memory content
             self.session_manager.update_sutra_memory(memory_summary)
             logger.debug(
                 f"Updated Cross-Index Sutra Memory in session: {len(memory_summary)} characters"
             )
             logger.debug(
-                f"Memory includes {len(self.memory_manager.get_all_code_snippets())} code snippets"
+                f"Memory includes {code_snippets_count} code snippets"
             )
         except Exception as e:
             logger.error(f"Error updating cross-index session memory: {e}")

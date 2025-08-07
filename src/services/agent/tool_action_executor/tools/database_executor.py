@@ -226,19 +226,40 @@ def execute_structured_database_query(
                 current_dir = Path.cwd()
                 file_path_obj = Path(file_path)
 
-                # Check if file path starts with current directory
-                try:
-                    # If file_path is relative to current dir, this will work
-                    file_path_obj.relative_to(current_dir)
-                    # Path is already relative to current dir, use as is
+                # If it's already an absolute path, use as is
+                if file_path_obj.is_absolute():
                     final_params[param] = str(file_path_obj)
-                except ValueError:
-                    # Path is not relative to current dir, concatenate with current dir
-                    fixed_path = current_dir / file_path
-                    final_params[param] = str(fixed_path)
-                    logger.debug(
-                        f"🔧 Fixed file path: {query_params[param]} -> {fixed_path}"
-                    )
+                else:
+                    # Check if file path starts with current directory
+                    try:
+                        # If file_path is relative to current dir, this will work
+                        file_path_obj.relative_to(current_dir)
+                        # Path is already relative to current dir, use as is
+                        final_params[param] = str(file_path_obj)
+                    except ValueError:
+                        # Path is not relative to current dir, need to fix it
+
+                        # Check if the file path starts with the last component of current_dir
+                        # to avoid duplication like server/server/src/index.js
+                        current_dir_name = current_dir.name
+                        file_path_parts = Path(file_path).parts
+
+                        if file_path_parts and file_path_parts[0] == current_dir_name:
+                            # The file path already starts with the current directory name
+                            # Try to construct path by going up one level and then adding the file path
+                            parent_dir = current_dir.parent
+                            fixed_path = parent_dir / file_path
+                            final_params[param] = str(fixed_path)
+                            logger.debug(
+                                f"🔧 Fixed file path (avoiding duplication): {query_params[param]} -> {fixed_path}"
+                            )
+                        else:
+                            # Normal case: concatenate with current dir
+                            fixed_path = current_dir / file_path
+                            final_params[param] = str(fixed_path)
+                            logger.debug(
+                                f"🔧 Fixed file path: {query_params[param]} -> {fixed_path}"
+                            )
             else:
                 final_params[param] = query_params[param]
 

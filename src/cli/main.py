@@ -47,9 +47,13 @@ def main():
         setup_logging(args.log_level)
         # Set debug mode flag if DEBUG level is specified
         if args.log_level == "DEBUG":
-            from utils.debug_utils import set_debug_mode
+            from utils.debug_utils import set_debug_mode, set_auto_mode
 
             set_debug_mode(True)
+
+            # Set auto mode flag if --auto is specified with DEBUG level
+            if hasattr(args, "auto") and args.auto:
+                set_auto_mode(True)
 
     try:
         if args.command == "single":

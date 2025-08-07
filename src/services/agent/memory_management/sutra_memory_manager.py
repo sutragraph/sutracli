@@ -32,13 +32,17 @@ class SutraMemoryManager:
     def __init__(self, db_connection: Optional[Any] = None):
         # Initialize core components
         self.memory_ops = MemoryOperations(db_connection)
-        self.xml_processor = XMLProcessor(self.memory_ops)
-        self.state_persistence = StatePersistence(self.memory_ops)
-        self.memory_formatter = MemoryFormatter(self.memory_ops)
-        self.memory_updater = MemoryUpdater(self.memory_ops, db_connection)
+        self._init_components(db_connection)
 
         # Initialize reasoning context
         self.reasoning_context = None
+
+    def _init_components(self, db_connection: Optional[Any] = None):
+        """Initialize components - can be overridden by subclasses"""
+        self.xml_processor = XMLProcessor(self.memory_ops, self)
+        self.state_persistence = StatePersistence(self.memory_ops)
+        self.memory_formatter = MemoryFormatter(self.memory_ops)
+        self.memory_updater = MemoryUpdater(self.memory_ops, db_connection)
 
     # ID Generation Methods
     def get_next_task_id(self) -> str:

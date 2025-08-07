@@ -945,8 +945,11 @@ def handle_cross_indexing_command(args) -> None:
                 # Display results
                 incoming_count = len(analysis_result.get("incoming_connections", []))
                 outgoing_count = len(analysis_result.get("outgoing_connections", []))
-                # Get matches count from matching_result instead of analysis_result
-                matches_count = matching_result.get("matches_found", 0)
+
+                # Get matches count from current session results
+                matches_count = matching_result.get("statistics", {}).get(
+                    "total_matches", 0
+                )
 
                 print(f"📊 Analysis Results:")
                 print(f"   ⬇️  Incoming connections: {incoming_count}")

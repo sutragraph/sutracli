@@ -66,6 +66,10 @@ class XMLService:
         """Repair a single malformed XML block."""
         return self.repair_service.repair_xml(malformed_xml)
 
+    def repair_malformed_xml_in_text(self, text: str) -> str:
+        """Detect and repair all malformed XML in text."""
+        return self.repair_service.repair_malformed_xml_in_text(text)
+
     def clean_xml_spacing(self, text: str) -> str:
         """Clean and fix common XML spacing issues."""
         return self.cleaner.clean_xml_spacing(text)

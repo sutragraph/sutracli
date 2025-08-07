@@ -6,8 +6,11 @@ Processes attempt_completion JSON output and stores connections in database.
 
 import json
 import re
+import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionProcessor:

@@ -1,0 +1,23 @@
+"""
+Implementation Discovery
+
+Implementation discovery analysis for cross-indexing.
+"""
+
+from .phase3_prompt_manager import Phase3PromptManager
+from .objective import IMPLEMENTATION_DISCOVERY_OBJECTIVE
+from .capabilities import IMPLEMENTATION_DISCOVERY_CAPABILITIES
+from .rules import IMPLEMENTATION_DISCOVERY_RULES
+from .tool_usage_examples import IMPLEMENTATION_DISCOVERY_TOOL_USAGE_EXAMPLES
+from .tool_guidelines import IMPLEMENTATION_DISCOVERY_TOOL_GUIDELINES
+from .sutra_memory import IMPLEMENTATION_DISCOVERY_SUTRA_MEMORY
+
+__all__ = [
+    "Phase3PromptManager",
+    "IMPLEMENTATION_DISCOVERY_OBJECTIVE",
+    "IMPLEMENTATION_DISCOVERY_CAPABILITIES",
+    "IMPLEMENTATION_DISCOVERY_RULES",
+    "IMPLEMENTATION_DISCOVERY_TOOL_USAGE_EXAMPLES",
+    "IMPLEMENTATION_DISCOVERY_TOOL_GUIDELINES",
+    "IMPLEMENTATION_DISCOVERY_SUTRA_MEMORY"
+]
