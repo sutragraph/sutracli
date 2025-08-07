@@ -290,8 +290,6 @@ class IncrementalIndexing:
                 if edge.from_id in node_ids_from_changed_files
             ]
 
-            # --- START OF CORRECTED LOGIC ---
-
             # Gather all the target node IDs from these relationships to ensure they exist.
             target_node_ids = {edge.to_id for edge in relevant_edges}
 
@@ -303,8 +301,6 @@ class IncrementalIndexing:
             final_nodes_to_process = [
                 n for n in parsed_data.nodes if n.id in all_relevant_node_ids
             ]
-
-            # --- END OF CORRECTED LOGIC ---
 
             # Create a filtered ParsedCodebase object with the complete set of required nodes and edges
             filtered_data = ParsedCodebase(

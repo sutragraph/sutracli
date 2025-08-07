@@ -463,7 +463,7 @@ class ConnectionRetriever:
                 if has_mappings:
                     break
 
-            note = f"🔗 CONNECTIONS FOUND: This code has {connection_summary}."
+            note = f"CONNECTIONS FOUND: This code has {connection_summary}."
 
             if has_mappings:
                 note += " Some connections have mapped relationships."
