@@ -5,6 +5,11 @@ Utility functions for delivery management shared between executors.
 from typing import Dict, Any, List, Optional
 from loguru import logger
 from services.agent.delivery_management import delivery_manager
+from services.agent.agent_prompt.guidance_builder import (
+    determine_semantic_batch_scenario,
+    build_guidance_message,
+    SearchType,
+)
 
 
 def handle_fetch_next_request(
@@ -153,12 +158,6 @@ def register_and_deliver_first_batch(
     # Add semantic search guidance
     guidance_message = ""
     if action_type == "semantic_search":
-        from services.agent.agent_prompt.guidance_builder import (
-            determine_semantic_batch_scenario,
-            build_guidance_message,
-            SearchType,
-        )
-
         scenario = determine_semantic_batch_scenario()
 
         guidance_message = build_guidance_message(

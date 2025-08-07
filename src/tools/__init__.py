@@ -64,7 +64,6 @@ TOOL_NAME_MAPPING = {
 
 AVAILABLE_TOOLS = list(ToolName)
 
-# Import ActionExecutor after all functions are defined to avoid circular imports
 from .executor import ActionExecutor
 
 __all__ = ["ToolName", "get_tool_action", "get_tool_prompt", "AVAILABLE_TOOLS", "TOOL_NAME_MAPPING", "ActionExecutor"]
