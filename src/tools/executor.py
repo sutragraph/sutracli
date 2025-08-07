@@ -26,7 +26,6 @@ class ActionExecutor:
     def __init__(
         self,
         sutra_memory_manager: Optional[SutraMemoryManager] = None,
-        project_indexer: Optional[ProjectIndexer] = None,
         context: str = "agent",
     ):
         self.db_connection = SQLiteConnection()
@@ -36,9 +35,7 @@ class ActionExecutor:
         self.context = context  # Store context for database operations
 
         # Use shared project indexer if provided, otherwise create new one
-        self.project_indexer = project_indexer or ProjectIndexer(
-            self.sutra_memory_manager
-        )
+        self.project_indexer = ProjectIndexer(self.sutra_memory_manager)
 
     def process_xml_response(
         self, xml_response: List[Dict[str, Any]], user_query: str

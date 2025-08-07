@@ -14,6 +14,7 @@ This is the main interface that combines all the modular components:
 
 from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
+
 from .models import Task, TaskStatus, CodeSnippet, HistoryEntry, ReasoningContext
 from .memory_operations import MemoryOperations
 from .xml_processor import XMLProcessor
@@ -32,18 +33,19 @@ class SutraMemoryManager:
 
     def __init__(self):
         # Initialize core components
-        self.memory_ops = MemoryOperations(db_connection)
-        self._init_components(db_connection)
+
+        self.memory_ops = MemoryOperations()
+        self._init_components()
 
         # Initialize reasoning context
         self.reasoning_context = None
 
-    def _init_components(self, db_connection: Optional[Any] = None):
+    def _init_components(self):
         """Initialize components - can be overridden by subclasses"""
         self.xml_processor = XMLProcessor(self.memory_ops, self)
         self.state_persistence = StatePersistence(self.memory_ops)
         self.memory_formatter = MemoryFormatter(self.memory_ops)
-        self.memory_updater = MemoryUpdater(self.memory_ops, db_connection)
+        self.memory_updater = MemoryUpdater(self.memory_ops)
 
     # ID Generation Methods
     def get_next_task_id(self) -> str:

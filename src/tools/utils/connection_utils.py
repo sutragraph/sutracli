@@ -10,10 +10,11 @@ from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 from graph.sqlite_client import SQLiteConnection
 
+
 class ConnectionRetriever:
     """
     Service to retrieve and match connections for database query results.
-    
+
     This service:
     1. Takes database query results with file_hash_id and line information
     2. Finds matching incoming/outgoing connections based on file_hash_id and line overlap
@@ -25,17 +26,15 @@ class ConnectionRetriever:
         self.db_connection = SQLiteConnection()
 
     def get_connections_for_query_results(
-        self, 
-        query_results: List[Dict[str, Any]], 
-        project_id: Optional[int] = None
+        self, query_results: List[Dict[str, Any]], project_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get connection information for database query results.
-        
+
         Args:
             query_results: List of database query results
             project_id: Optional project ID filter
-            
+
         Returns:
             Dictionary with connection information for each result
         """
@@ -69,9 +68,13 @@ class ConnectionRetriever:
                         connection_info[result_key] = {
                             "file_hash_id": file_hash_id,
                             "file_path": file_path,
-                            "line_range": [start_line, end_line] if start_line and end_line else None,
+                            "line_range": (
+                                [start_line, end_line]
+                                if start_line and end_line
+                                else None
+                            ),
                             "connections": connections,
-                            "note": self._generate_connection_note(connections)
+                            "note": self._generate_connection_note(connections),
                         }
 
             return connection_info
@@ -98,7 +101,7 @@ class ConnectionRetriever:
 
             # Try with absolute path first
             result = self.db_connection.execute_query(
-                "SELECT id FROM file_hashes WHERE file_path = ?",
+                "SELECT id FROM files WHERE file_path = ?",
                 (absolute_file_path,),
             )
 
@@ -111,7 +114,7 @@ class ConnectionRetriever:
 
             if absolute_file_path != file_path:
                 result = self.db_connection.execute_query(
-                    "SELECT id FROM file_hashes WHERE file_path = ?",
+                    "SELECT id FROM files WHERE file_path = ?",
                     (file_path,),
                 )
 
@@ -125,7 +128,7 @@ class ConnectionRetriever:
             filename = os.path.basename(file_path)
             if filename:
                 result = self.db_connection.execute_query(
-                    "SELECT id, file_path FROM file_hashes WHERE file_path LIKE ?",
+                    "SELECT id, file_path FROM files WHERE file_path LIKE ?",
                     (f"%{filename}",),
                 )
 
@@ -178,13 +181,13 @@ class ConnectionRetriever:
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Get incoming and outgoing connections for a specific file and line range.
-        
+
         Args:
             file_hash_id: File hash ID to search for
             start_line: Start line of the fetched code
             end_line: End line of the fetched code
             project_id: Optional project ID filter
-            
+
         Returns:
             Dictionary with 'incoming' and 'outgoing' connection lists
         """
@@ -225,7 +228,9 @@ class ConnectionRetriever:
             return connections
 
         except Exception as e:
-            logger.error(f"Error getting connections for file_hash_id {file_hash_id}: {e}")
+            logger.error(
+                f"Error getting connections for file_hash_id {file_hash_id}: {e}"
+            )
             return {"incoming": [], "outgoing": []}
 
     def _get_connections_by_type(
@@ -240,11 +245,11 @@ class ConnectionRetriever:
             base_query = f"""
                 SELECT c.id, c.description, c.snippet_lines, c.technology_name, 
                        c.code_snippet, c.created_at,
-                       fh.file_path, fh.language, p.name as project_name
+                       files.file_path, files.language, p.name as project_name
                 FROM {table_name} c
-                JOIN file_hashes fh ON c.file_hash_id = fh.id
+                JOIN files ON c.file_id = files.id
                 JOIN projects p ON c.project_id = p.id
-                WHERE c.file_hash_id = ?
+                WHERE c.file_id = ?
             """
 
             params = [file_hash_id]
@@ -257,7 +262,9 @@ class ConnectionRetriever:
             for result in results:
                 if result.get("snippet_lines"):
                     try:
-                        result["snippet_lines_parsed"] = json.loads(result["snippet_lines"])
+                        result["snippet_lines_parsed"] = json.loads(
+                            result["snippet_lines"]
+                        )
                     except:
                         result["snippet_lines_parsed"] = []
                 else:
@@ -270,19 +277,16 @@ class ConnectionRetriever:
             return []
 
     def _filter_connections_by_lines(
-        self, 
-        connections: List[Dict[str, Any]], 
-        start_line: int, 
-        end_line: int
+        self, connections: List[Dict[str, Any]], start_line: int, end_line: int
     ) -> List[Dict[str, Any]]:
         """
         Filter connections based on line overlap with fetched code.
-        
+
         Args:
             connections: List of connections
             start_line: Start line of fetched code
             end_line: End line of fetched code
-            
+
         Returns:
             Filtered list of connections that overlap with the line range
         """
@@ -308,19 +312,16 @@ class ConnectionRetriever:
             return connections
 
     def _lines_overlap(
-        self, 
-        snippet_lines: List[int], 
-        start_line: int, 
-        end_line: int
+        self, snippet_lines: List[int], start_line: int, end_line: int
     ) -> bool:
         """
         Check if snippet lines overlap with the given line range.
-        
+
         Args:
             snippet_lines: List of line numbers from connection
             start_line: Start line of fetched code
             end_line: End line of fetched code
-            
+
         Returns:
             True if there's overlap, False otherwise
         """
@@ -339,9 +340,7 @@ class ConnectionRetriever:
             return False
 
     def _add_mapped_connections(
-        self,
-        connections: List[Dict[str, Any]],
-        connection_type: str
+        self, connections: List[Dict[str, Any]], connection_type: str
     ) -> List[Dict[str, Any]]:
         """
         Add mapped connections (incoming->outgoing or outgoing->incoming) for each connection.
@@ -357,7 +356,9 @@ class ConnectionRetriever:
         try:
             for conn in connections:
                 conn_id = conn["id"]
-                mapped_connections = self._get_mapped_connections(conn_id, connection_type)
+                mapped_connections = self._get_mapped_connections(
+                    conn_id, connection_type
+                )
                 conn["mapped_connections"] = mapped_connections
 
                 if mapped_connections:
@@ -374,17 +375,15 @@ class ConnectionRetriever:
             return connections
 
     def _get_mapped_connections(
-        self, 
-        connection_id: int, 
-        connection_type: str
+        self, connection_id: int, connection_type: str
     ) -> List[Dict[str, Any]]:
         """
         Get mapped connections for a specific connection ID.
-        
+
         Args:
             connection_id: ID of the connection
             connection_type: "incoming" or "outgoing"
-            
+
         Returns:
             List of mapped connections
         """
@@ -396,10 +395,10 @@ class ConnectionRetriever:
                            cm.match_confidence, cm.created_at as mapping_created_at,
                            oc.id as outgoing_id, oc.description as outgoing_description,
                            oc.code_snippet as outgoing_code_snippet, oc.technology_name as outgoing_technology,
-                           fh.file_path as outgoing_file_path, fh.language as outgoing_language
+                           files.file_path as outgoing_file_path, files.language as outgoing_language
                     FROM connection_mappings cm
                     JOIN outgoing_connections oc ON cm.sender_id = oc.id
-                    LEFT JOIN file_hashes fh ON oc.file_hash_id = fh.id
+                    LEFT JOIN files ON oc.file_id = files.id
                     WHERE cm.receiver_id = ?
                     ORDER BY cm.match_confidence DESC, cm.created_at DESC
                 """
@@ -411,10 +410,10 @@ class ConnectionRetriever:
                            cm.match_confidence, cm.created_at as mapping_created_at,
                            ic.id as incoming_id, ic.description as incoming_description,
                            ic.code_snippet as incoming_code_snippet, ic.technology_name as incoming_technology,
-                           fh.file_path as incoming_file_path, fh.language as incoming_language
+                           files.file_path as incoming_file_path, files.language as incoming_language
                     FROM connection_mappings cm
                     JOIN incoming_connections ic ON cm.receiver_id = ic.id
-                    LEFT JOIN file_hashes fh ON ic.file_hash_id = fh.id
+                    LEFT JOIN files ON ic.file_id = files.id
                     WHERE cm.sender_id = ?
                     ORDER BY cm.match_confidence DESC, cm.created_at DESC
                 """
@@ -427,13 +426,15 @@ class ConnectionRetriever:
             logger.error(f"Error getting mapped connections for {connection_id}: {e}")
             return []
 
-    def _generate_connection_note(self, connections: Dict[str, List[Dict[str, Any]]]) -> str:
+    def _generate_connection_note(
+        self, connections: Dict[str, List[Dict[str, Any]]]
+    ) -> str:
         """
         Generate a note about connections and their implications for code changes.
-        
+
         Args:
             connections: Dictionary with incoming and outgoing connections
-            
+
         Returns:
             Note string for the user
         """
@@ -477,16 +478,13 @@ class ConnectionRetriever:
             logger.error(f"Error generating connection note: {e}")
             return "🔗 Connection information available but could not generate note."
 
-    def format_connections_for_display(
-        self, 
-        connection_info: Dict[str, Any]
-    ) -> str:
+    def format_connections_for_display(self, connection_info: Dict[str, Any]) -> str:
         """
         Format connection information for display in database results.
-        
+
         Args:
             connection_info: Connection information dictionary
-            
+
         Returns:
             Formatted string for display
         """
@@ -508,8 +506,12 @@ class ConnectionRetriever:
                 if incoming:
                     output_parts.append(f"\n📥 INCOMING CONNECTIONS ({len(incoming)}):")
                     for i, conn in enumerate(incoming, 1):
-                        output_parts.append(f"  {i}. {conn.get('description', 'No description')}")
-                        output_parts.append(f"     Technology: {conn.get('technology_name', 'Unknown')}")
+                        output_parts.append(
+                            f"  {i}. {conn.get('description', 'No description')}"
+                        )
+                        output_parts.append(
+                            f"     Technology: {conn.get('technology_name', 'Unknown')}"
+                        )
                         if conn.get("code_snippet"):
                             snippet_preview = conn["code_snippet"]
                             output_parts.append(f"     Code: {snippet_preview}")
@@ -517,15 +519,21 @@ class ConnectionRetriever:
                         # Show mapped connections
                         mapped = conn.get("mapped_connections", [])
                         if mapped:
-                            output_parts.append(f"     ↔️ Mapped to {len(mapped)} outgoing connection(s)")
+                            output_parts.append(
+                                f"     ↔️ Mapped to {len(mapped)} outgoing connection(s)"
+                            )
 
                 # Format outgoing connections
                 outgoing = info.get("connections", {}).get("outgoing", [])
                 if outgoing:
                     output_parts.append(f"\n📤 OUTGOING CONNECTIONS ({len(outgoing)}):")
                     for i, conn in enumerate(outgoing, 1):
-                        output_parts.append(f"  {i}. {conn.get('description', 'No description')}")
-                        output_parts.append(f"     Technology: {conn.get('technology_name', 'Unknown')}")
+                        output_parts.append(
+                            f"  {i}. {conn.get('description', 'No description')}"
+                        )
+                        output_parts.append(
+                            f"     Technology: {conn.get('technology_name', 'Unknown')}"
+                        )
                         if conn.get("code_snippet"):
                             snippet_preview = conn["code_snippet"]
                             output_parts.append(f"     Code: {snippet_preview}")
@@ -533,7 +541,9 @@ class ConnectionRetriever:
                         # Show mapped connections
                         mapped = conn.get("mapped_connections", [])
                         if mapped:
-                            output_parts.append(f"     ↔️ Mapped to {len(mapped)} incoming connection(s)")
+                            output_parts.append(
+                                f"     ↔️ Mapped to {len(mapped)} incoming connection(s)"
+                            )
 
             return "\n".join(output_parts)
 

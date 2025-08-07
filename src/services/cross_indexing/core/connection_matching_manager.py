@@ -45,9 +45,9 @@ class ConnectionMatchingManager:
             if project_id:
                 query = """
                 SELECT ic.id, ic.description, ic.technology_name as technology,
-                       ic.code_snippet, ic.snippet_lines, fh.file_path, fh.language
+                       ic.code_snippet, ic.snippet_lines, files.file_path, files.language
                 FROM incoming_connections ic
-                LEFT JOIN file_hashes fh ON ic.file_hash_id = fh.id
+                LEFT JOIN files ON ic.file_id = files.id
                 WHERE ic.project_id = ?
                 ORDER BY ic.id
                 """
@@ -55,9 +55,9 @@ class ConnectionMatchingManager:
             else:
                 query = """
                 SELECT ic.id, ic.description, ic.technology_name as technology,
-                       ic.code_snippet, ic.snippet_lines, fh.file_path, fh.language
+                       ic.code_snippet, ic.snippet_lines, files.file_path, files.language
                 FROM incoming_connections ic
-                LEFT JOIN file_hashes fh ON ic.file_hash_id = fh.id
+                LEFT JOIN files ON ic.file_id = files.id
                 ORDER BY ic.id
                 """
                 results = self.db_client.execute_query(query)
@@ -82,25 +82,14 @@ class ConnectionMatchingManager:
             return []
 
         try:
-            if project_id:
-                query = """
-                SELECT oc.id, oc.description, oc.technology_name as technology,
-                       oc.code_snippet, oc.snippet_lines, fh.file_path, fh.language
-                FROM outgoing_connections oc
-                LEFT JOIN file_hashes fh ON oc.file_hash_id = fh.id
-                WHERE oc.project_id = ?
-                ORDER BY oc.id
-                """
-                results = self.db_client.execute_query(query, (project_id,))
-            else:
-                query = """
-                SELECT oc.id, oc.description, oc.technology_name as technology,
-                       oc.code_snippet, oc.snippet_lines, fh.file_path, fh.language
-                FROM outgoing_connections oc
-                LEFT JOIN file_hashes fh ON oc.file_hash_id = fh.id
-                ORDER BY oc.id
-                """
-                results = self.db_client.execute_query(query)
+            query = """
+            SELECT oc.id, oc.description, oc.technology_name as technology,
+                    oc.code_snippet, oc.snippet_lines, files.file_path, files.language
+            FROM outgoing_connections oc
+            LEFT JOIN files ON oc.file_hash_id = files.id
+            ORDER BY oc.id
+            """
+            results = self.db_client.execute_query(query)
 
             return results or []
         except Exception as e:

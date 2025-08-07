@@ -123,18 +123,24 @@ class EmbeddingModel:
             all_inputs = []
             for text in texts:
                 if not text or not text.strip():
-                    all_inputs.append({
-                        "input_ids": np.zeros((1, 256), dtype=np.int64),
-                        "attention_mask": np.zeros((1, 256), dtype=np.int64),
-                        "token_type_ids": np.zeros((1, 256), dtype=np.int64),
-                    })
+                    all_inputs.append(
+                        {
+                            "input_ids": np.zeros((1, 256), dtype=np.int64),
+                            "attention_mask": np.zeros((1, 256), dtype=np.int64),
+                            "token_type_ids": np.zeros((1, 256), dtype=np.int64),
+                        }
+                    )
                 else:
                     all_inputs.append(self._tokenize(text))
 
             # Batch all inputs
             batch_input_ids = np.vstack([inp["input_ids"] for inp in all_inputs])
-            batch_attention_mask = np.vstack([inp["attention_mask"] for inp in all_inputs])
-            batch_token_type_ids = np.vstack([inp["token_type_ids"] for inp in all_inputs])
+            batch_attention_mask = np.vstack(
+                [inp["attention_mask"] for inp in all_inputs]
+            )
+            batch_token_type_ids = np.vstack(
+                [inp["token_type_ids"] for inp in all_inputs]
+            )
 
             batch_inputs = {
                 "input_ids": batch_input_ids,
@@ -258,8 +264,11 @@ class TextChunker:
             return embeddings_with_metadata
 
         except Exception as e:
-            logger.error(f"Failed to generate batch embeddings, falling back to individual: {e}")
+            logger.error(
+                f"Failed to generate batch embeddings, falling back to individual: {e}"
+            )
             import traceback
+
             logger.error(f"Batch embedding error details: {traceback.format_exc()}")
             # Fallback to individual processing
             embeddings_with_metadata = []
@@ -418,7 +427,7 @@ class VectorStore:
 
             for data in embedding_data_list:
                 # Validate and convert embedding
-                embedding = data['embedding']
+                embedding = data["embedding"]
                 if isinstance(embedding, np.ndarray):
                     embedding_array = embedding.astype(np.float32)
                 else:
@@ -433,11 +442,11 @@ class VectorStore:
                     """INSERT INTO embeddings (node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
                        VALUES (?, ?, ?, ?, ?, ?)""",
                     (
-                        data['node_id'],
-                        data['project_id'],
-                        data['chunk_index'],
-                        data['chunk_start_line'],
-                        data['chunk_end_line'],
+                        data["node_id"],
+                        data["project_id"],
+                        data["chunk_index"],
+                        data["chunk_start_line"],
+                        data["chunk_end_line"],
                         embedding_array,
                     ),
                 )
@@ -445,7 +454,9 @@ class VectorStore:
 
             # Commit all inserts at once - this is the key performance improvement!
             cursor.execute("COMMIT")
-            logger.debug(f"Batch stored {len(embedding_ids)} embeddings in single transaction")
+            logger.debug(
+                f"Batch stored {len(embedding_ids)} embeddings in single transaction"
+            )
 
         except Exception as e:
             cursor.execute("ROLLBACK")

@@ -481,9 +481,7 @@ class ProjectIndexer:
         for file_path in files_to_delete:
             # Convert Path to string for database operations
             file_path_str = str(file_path)
-            deleted = self._delete_file_nodes_and_relationships(
-                file_path_str, project_id
-            )
+            deleted = self._delete_files_and_embeddings(file_path_str, project_id)
             nodes_deleted += deleted["nodes"]
             relationships_deleted += deleted["relationships"]
 
@@ -538,105 +536,89 @@ class ProjectIndexer:
             "relationships_added": relationships_added,
         }
 
-    def _delete_file_nodes_and_relationships(
+    def _delete_files_and_embeddings(
         self, file_path: str, project_id: int
     ) -> Dict[str, int]:
         """Delete all nodes and relationships for a specific file."""
         try:
-            # Get file hash ID for the file path
-            file_hash_result = self.connection.execute_query(
-                "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
+            # First get the file ID
+            file_result = self.connection.execute_query(
+                "SELECT id FROM files WHERE project_id = ? AND file_path = ?",
                 (project_id, file_path),
             )
 
-            if not file_hash_result:
-                logger.warning(f"File hash not found for {file_path}")
+            if not file_result:
+                logger.warning(f"File not found in database: {file_path}")
                 return {"nodes": 0, "relationships": 0}
 
-            file_hash_id = file_hash_result[0]["id"]
+            # Get the raw integer ID for database operations
+            raw_file_id = file_result[0]["id"]
 
-            # Get all node IDs for this file hash
-            node_id_result = self.connection.execute_query(
-                "SELECT node_id FROM nodes WHERE project_id = ? AND file_hash_id = ?",
-                (project_id, file_hash_id),
+            # Format ID with prefix for embeddings
+            prefixed_file_id = f"file_{raw_file_id}"
+
+            # Get all code block IDs for this file
+            block_results = self.connection.execute_query(
+                "SELECT id FROM code_blocks WHERE file_id = ?",
+                (raw_file_id,),
             )
+            # Format block IDs with prefix for embeddings
+            prefixed_block_ids = [f"block_{row['id']}" for row in block_results]
 
-            if not node_id_result:
-                logger.warning(f"No nodes found for file {file_path}")
-                return {"nodes": 0, "relationships": 0}
+            # Combine prefixed IDs for embedding deletion
+            prefixed_node_ids = [prefixed_file_id] + prefixed_block_ids
 
-            node_ids = [row["node_id"] for row in node_id_result]
+            # Delete embeddings first (if they exist)
+            if prefixed_node_ids:
+                self._delete_embeddings(prefixed_node_ids, project_id)
 
-            # Delete relationships involving these nodes
-            # First, count them
-            rel_count_result = self.connection.execute_query(
-                """SELECT COUNT(*) as count FROM relationships
-                   WHERE project_id = ? AND (from_node_id IN ({}) OR to_node_id IN ({}))""".format(
-                    ",".join(["?" for _ in node_ids]), ",".join(["?" for _ in node_ids])
-                ),
-                (project_id, *node_ids, *node_ids),
+            # Count relationships before deletion
+            rel_count = self.connection.execute_query(
+                """SELECT COUNT(*) as count FROM relationships 
+                   WHERE source_id = ? OR target_id = ?""",
+                (raw_file_id, raw_file_id),
             )
+            relationships_count = rel_count[0]["count"] if rel_count else 0
 
-            rel_count = rel_count_result[0]["count"] if rel_count_result else 0
-
-            # Then delete them
+            # Delete the file (will cascade delete code blocks and relationships)
             self.connection.execute_query(
-                """DELETE FROM relationships
-                   WHERE project_id = ? AND (from_node_id IN ({}) OR to_node_id IN ({}))""".format(
-                    ",".join(["?" for _ in node_ids]), ",".join(["?" for _ in node_ids])
-                ),
-                (project_id, *node_ids, *node_ids),
+                "DELETE FROM files WHERE id = ?",
+                (raw_file_id,),
             )
 
-            # Delete nodes
-            self.connection.execute_query(
-                "DELETE FROM nodes WHERE project_id = ? AND file_hash_id = ?",
-                (project_id, file_hash_id),
-            )
-
-            # Delete file hash
-            self.connection.execute_query(
-                "DELETE FROM file_hashes WHERE id = ?", (file_hash_id,)
-            )
-
-            # Delete embeddings for these nodes
-            self._delete_node_embeddings(node_ids, project_id)
-
-            logger.debug(
-                f"🗑️ Deleted {len(node_ids)} nodes and {rel_count} relationships for file {file_path}"
-            )
-            return {"nodes": len(node_ids), "relationships": rel_count}
+            # Return deletion counts
+            return {
+                "nodes": len(prefixed_node_ids),  # File + code blocks
+                "relationships": relationships_count,
+            }
 
         except Exception as e:
             logger.error(f"Error deleting nodes for file {file_path}: {e}")
             return {"nodes": 0, "relationships": 0}
 
-    def _delete_node_embeddings(self, node_ids: List[int], project_id: int) -> None:
-        """Delete embeddings for specified nodes."""
+    def _delete_embeddings(self, node_ids: List[str], project_id: int) -> None:
+        """Delete embeddings for specified nodes. Node IDs should already include prefixes (file_ or block_)."""
         try:
-            # Check if vector_embeddings table exists
-            table_check = self.connection.execute_query(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='vector_embeddings'"
-            )
-
-            if not table_check:
-                logger.debug(
-                    "vector_embeddings table does not exist, skipping embedding deletion"
-                )
-                return
-
             # Delete embeddings for these nodes
             placeholders = ",".join(["?" for _ in node_ids])
+            params = tuple(
+                node_ids + [str(project_id)]
+            )  # Convert to tuple for type safety
+
             self.connection.execute_query(
-                f"""DELETE FROM vector_embeddings
-                   WHERE node_id IN ({placeholders}) AND project_id = ?""",
-                (*node_ids, project_id),
+                f"""DELETE FROM embeddings
+                   WHERE node_id IN ({placeholders}) 
+                   AND project_id = ?""",
+                params,
             )
 
-            logger.debug(f"Deleted embeddings for {len(node_ids)} nodes")
+            logger.debug(
+                f"Deleted {len(node_ids)} embeddings from database (file: 1, blocks: {len(node_ids)-1})"
+            )
 
         except Exception as e:
             logger.error(f"Error deleting node embeddings: {e}")
+            logger.error(f"Node IDs: {node_ids}, Project ID: {project_id}")
 
     def _update_sutra_memory_for_changes(
         self, changes: Dict[str, Set[Path]], project_id: int

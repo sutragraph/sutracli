@@ -52,14 +52,12 @@ class CrossIndexService:
         self.xml_parser = XMLParser()
         self.xml_repair = XMLRepair(llm_client)
         self.xml_service = XMLService(llm_client)
-        self.prompt_manager = CrossIndex5PhasePromptManager(db_connection)
+        self.prompt_manager = CrossIndex5PhasePromptManager(self.db_connection)
         self.code_manager_prompt_manager = CodeManagerPromptManager()
         self.code_fetcher = CodeFetcher()
         self.action_executor = ActionExecutor(
-            db_connection,
-            self.project_manager.vector_db,
             self.prompt_manager.task_manager,  # Use task manager instead of memory manager
-            "cross_index",
+            context="cross_index",
         )
         self._memory_needs_update = False
 
@@ -1730,11 +1728,11 @@ Content:
             # Get incoming connections with file info
             incoming_query = """
                 SELECT ic.id, ic.description, ic.project_id, 
-                       fh.id as file_hash_id, fh.file_path, fh.language,
+                       files.id as file_id, files.file_path, files.language,
                        p.name as project_name
                 FROM incoming_connections ic
                 JOIN projects p ON ic.project_id = p.id
-                LEFT JOIN file_hashes fh ON ic.file_hash_id = fh.id
+                LEFT JOIN files files ON ic.file_id = files.id
                 ORDER BY ic.created_at DESC
             """
             incoming_results = self.db_connection.execute_query(incoming_query)
@@ -1742,11 +1740,11 @@ Content:
             # Get outgoing connections with file info
             outgoing_query = """
                 SELECT oc.id, oc.description, oc.project_id,
-                       fh.id as file_hash_id, fh.file_path, fh.language,
+                       files.id as file_id, files.file_path, files.language,
                        p.name as project_name
                 FROM outgoing_connections oc
                 JOIN projects p ON oc.project_id = p.id
-                LEFT JOIN file_hashes fh ON oc.file_hash_id = fh.id
+                LEFT JOIN files ON oc.file_id = files.id
                 ORDER BY oc.created_at DESC
             """
             outgoing_results = self.db_connection.execute_query(outgoing_query)
@@ -1779,9 +1777,7 @@ Content:
             if "incoming_connections" in connections_data:
                 for conn in connections_data["incoming_connections"]:
                     # Get file_hash_id from file path - always retrieve from database
-                    file_hash_id = self._get_file_hash_id(
-                        project_id, conn.get("file_path")
-                    )
+                    file_hash_id = self._get_file_id(project_id, conn.get("file_path"))
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -1812,9 +1808,7 @@ Content:
             if "outgoing_connections" in connections_data:
                 for conn in connections_data["outgoing_connections"]:
                     # Get file_hash_id from file path - always retrieve from database
-                    file_hash_id = self._get_file_hash_id(
-                        project_id, conn.get("file_path")
-                    )
+                    file_hash_id = self._get_file_id(project_id, conn.get("file_path"))
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -1912,11 +1906,11 @@ Content:
                 "message": "Failed to create connection mappings",
             }
 
-    def _get_file_hash_id(self, project_id: int, file_path: str) -> Optional[int]:
+    def _get_file_id(self, project_id: int, file_path: str) -> Optional[int]:
         """Get file_hash_id for a given project and file path."""
         try:
             if not file_path:
-                logger.warning("Empty file_path provided to _get_file_hash_id")
+                logger.warning("Empty file_path provided to _get_file_id")
                 return None
 
             # Resolve relative paths to absolute paths
@@ -1934,21 +1928,21 @@ Content:
 
             # Try with absolute path first
             result = self.db_connection.execute_query(
-                "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
+                "SELECT id FROM files WHERE project_id = ? AND file_path = ?",
                 (project_id, absolute_file_path),
             )
 
             if result:
-                file_hash_id = result[0]["id"]
+                file_id = result[0]["id"]
                 logger.debug(
-                    f"Found file_hash_id {file_hash_id} for {absolute_file_path} in project {project_id}"
+                    f"Found file_id {file_id} for {absolute_file_path} in project {project_id}"
                 )
-                return file_hash_id
+                return file_id
 
             # If not found with absolute path, try with original path (in case it was stored as relative)
             if absolute_file_path != file_path:
                 result = self.db_connection.execute_query(
-                    "SELECT id FROM file_hashes WHERE project_id = ? AND file_path = ?",
+                    "SELECT id FROM files WHERE project_id = ? AND file_path = ?",
                     (project_id, file_path),
                 )
 
@@ -1963,7 +1957,7 @@ Content:
             filename = os.path.basename(file_path)
             if filename:
                 result = self.db_connection.execute_query(
-                    "SELECT id, file_path FROM file_hashes WHERE project_id = ? AND file_path LIKE ?",
+                    "SELECT id, file_path FROM files WHERE project_id = ? AND file_path LIKE ?",
                     (project_id, f"%{filename}"),
                 )
 
@@ -2220,14 +2214,14 @@ Content:
 
             query = f"""
                 SELECT c.id, c.description, c.technology_name, c.code_snippet,
-                       fh.file_path, fh.language, p.name as project_name
+                       files.file_path, files.language, p.name as project_name
                 FROM {table_name} c
                 JOIN projects p ON c.project_id = p.id
-                LEFT JOIN file_hashes fh ON c.file_hash_id = fh.id
+                LEFT JOIN files ON c.file_id = files.id
                 WHERE c.id IN ({placeholders})
             """
 
-            results = self.db_connection.execute_query(query, connection_ids)
+            results = self.db_connection.execute_query(query, (connection_ids,))
 
             # Format results for matching prompt
             formatted_results = []

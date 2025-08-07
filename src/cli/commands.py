@@ -375,6 +375,7 @@ def handle_index_command(args) -> None:
     from pathlib import Path
     from services.project_manager import ProjectManager
     from graph.sqlite_client import SQLiteConnection
+
     try:
         # Validate project path
         project_path = Path(args.project_path).absolute()
@@ -842,8 +843,7 @@ def handle_cross_indexing_command(args) -> None:
         print(f"📁 Analyzing project at: {project_path}")
 
         # Initialize required components
-        db_connection = SQLiteConnection()
-        project_manager = ProjectManager(db_connection)
+        project_manager = ProjectManager()
 
         # Get or create project first to determine project name
         project_name = (
@@ -857,7 +857,7 @@ def handle_cross_indexing_command(args) -> None:
             f"🔄 Initializing cross-indexing system with incremental indexing for project: {project_name}"
         )
         cross_index_system = CrossIndexSystem(
-            db_connection, project_manager, project_name=project_name
+            project_manager, project_name=project_name
         )
         print(f"✅ Cross-indexing system initialized with up-to-date database")
         project_id = project_manager.get_or_create_project_id(
