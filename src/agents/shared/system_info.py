@@ -15,7 +15,6 @@ Operating System: {platform.system()}
 Default Shell: {os.environ.get('SHELL', 'unknown')}
 Home Directory: {os.path.expanduser('~')}
 Current Directory: {os.getcwd()}
-
-===="""
+"""
 
 SYSTEM_INFO = get_system_info()

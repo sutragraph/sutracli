@@ -100,9 +100,11 @@ def get_agent_system_prompt(agent_name: AgentName) -> str:
 
 {SUTRA_MEMORY}
 
+{SYSTEM_INFO}
+
 {WORKSPACE_STRUCTURE}
 
-{SYSTEM_INFO}
+
 
 ===="""
 

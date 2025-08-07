@@ -20,21 +20,25 @@ from queries.creation_queries import CREATE_TABLES, CREATE_INDEXES
 
 class SQLiteConnection:
     """Manages SQLite database connections and operations."""
-    
-    _instance = None
+
+    _instance: Optional["SQLiteConnection"] = None
     _lock = threading.Lock()
+
+    def __init__(self):
+        """Initialize the connection - only called once due to singleton pattern."""
+        if not hasattr(self, "initialized"):
+            self.database_path = config.sqlite.knowledge_graph_db
+            self.connection = self._connect()
+            self._create_tables()
+            self.initialized = True
+            logger.debug("✅ SQLiteConnection initialized")
 
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     logger.debug("🔧 Creating new SQLiteConnection singleton instance")
-                    instance = super(SQLiteConnection, cls).__new__(cls)
-                    instance.database_path = config.sqlite.knowledge_graph_db
-                    instance.connection = instance._connect()
-                    instance._create_tables()
-                    logger.debug("✅ SQLiteConnection singleton initialization complete")
-                    cls._instance = instance
+                    cls._instance = super(SQLiteConnection, cls).__new__(cls)
         else:
             logger.debug("♻️ Reusing existing SQLiteConnection singleton instance")
         return cls._instance
@@ -125,7 +129,7 @@ class SQLiteConnection:
             logger.error(f"Failed to check project existence: {e}")
             return False
 
-    def get_project(self, project_name: str) -> Union[Project | None]:
+    def get_project(self, project_name: str) -> Union[Project, None]:
         """Get project details by name."""
         try:
             result = self.execute_query(
@@ -175,6 +179,11 @@ class SQLiteConnection:
 
             self.connection.commit()
             logger.debug(f"Inserted project '{project.name}' with ID: {project_id}")
+
+            if not project_id:
+                logger.error(f"Failed to retrieve project ID for '{project.name}'")
+                raise ValueError("Failed to retrieve project ID after insertion")
+
             return project_id
 
         except Exception as e:
@@ -226,7 +235,9 @@ class SQLiteConnection:
                 ),
             )
             self.connection.commit()
-            logger.debug(f"Inserted code block '{block.name}' with ID: {block.id}, file_id: {block.file_id}, parent_id: {block.parent_block_id}")
+            logger.debug(
+                f"Inserted code block '{block.name}' with ID: {block.id}, file_id: {block.file_id}, parent_id: {block.parent_block_id}"
+            )
             return block.id
 
         except Exception as e:
@@ -254,6 +265,11 @@ class SQLiteConnection:
             self.connection.commit()
             relationship_id = cursor.lastrowid
             logger.debug(f"Inserted relationship with ID: {relationship_id}")
+
+            if not relationship_id:
+                logger.error("Failed to retrieve relationship ID after insertion")
+                raise ValueError("Failed to retrieve relationship ID after insertion")
+
             return relationship_id
 
         except Exception as e:
@@ -369,8 +385,6 @@ class SQLiteConnection:
             logger.error(f"Failed to clear database: {e}")
             raise
 
-    # Duplicate method removed - already defined above
-
     def execute_batch_insert(self, query: str, parameters_list: List[tuple]) -> None:
         """Execute a query with multiple parameter sets in batches."""
         total_batches = len(list(chunk_list(parameters_list, config.sqlite.batch_size)))
@@ -454,6 +468,7 @@ class SQLiteConnection:
         except Exception as e:
             logger.debug(f"Failed to get project ID for '{project_name}': {e}")
             return None
+
 
 class GraphOperations:
     """High-level operations for inserting code extraction data."""
