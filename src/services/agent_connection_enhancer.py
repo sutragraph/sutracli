@@ -6,9 +6,8 @@ without affecting cross-indexing service operations.
 
 from typing import Dict, List, Any, Optional
 from loguru import logger
-from .connection_utils import get_connection_retriever
+from graph import GraphOperations
 from graph.sqlite_client import SQLiteConnection
-
 
 class AgentConnectionEnhancer:
     """
@@ -23,7 +22,7 @@ class AgentConnectionEnhancer:
 
     def __init__(self):
         self.db_connection = SQLiteConnection()
-        self.connection_retriever = get_connection_retriever()
+        self.graph_operations = GraphOperations()
 
     def enhance_database_results(
         self, 
@@ -51,14 +50,13 @@ class AgentConnectionEnhancer:
                 return ""
 
             # Get connection information for all results
-            connection_info = self.connection_retriever.get_connections_for_query_results(
+            connection_info = self.graph_operations.get_connections_for_query_results(
                 results, project_id
             )
 
             if not connection_info:
                 return ""
 
-            # Format connection information for agent service (no emojis)
             formatted_connections = self._format_connections_for_agent(connection_info)
 
             return formatted_connections

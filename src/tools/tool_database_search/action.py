@@ -19,7 +19,7 @@ from tools.utils.chunk_processing_utils import (
 from tools.utils.search_utils import (
     build_batch_guidance_message,
 )
-from tools.utils.agent_connection_enhancer import (
+from services.agent_connection_enhancer import (
     get_agent_connection_enhancer,
 )
 from queries.agent_queries import (
@@ -120,7 +120,7 @@ def _add_connection_information(
             return ""
 
         # Get agent connection enhancer
-        connection_enhancer = get_agent_connection_enhancer(db_connection)
+        connection_enhancer = get_agent_connection_enhancer()
 
         # Enhance results with connection information
         formatted_connections = connection_enhancer.enhance_database_results(
