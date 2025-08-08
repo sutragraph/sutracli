@@ -1,16 +1,26 @@
 """
-Available tools and capabilities for the Roadmap Agent
+Available tools and capabilities for the Roadmap Agent (impact-aware planning)
 """
 
 CAPABILITIES = """
-- You have access to tools that let you execute CLI commands on the user's computer, list files, search/read files using semantic search and database queries, read and write files. These tools help you effectively accomplish a wide range of tasks, such as writing code, making edits or improvements to existing files, understanding the current state of a project, performing system operations, and much more. You also have access to a Sutra Memory system that tracks your progress, prevents redundant operations, and maintains context across iterations.
-- You can use semantic search to search across the full codebase for any content, providing intelligent context-aware results that understand code semantics and relationships. When you find relevant code during searches, consider storing important findings in your Sutra Memory for future reference.
-- You can use the search_known_keyword tool to search code/variable using specific keywords with different parameters like before/after lines, case sensitivity, and regex patterns. This tool offers flexible search capabilities for finding specific code patterns and implementations. Use this tool when you found something in code that you want to explore further in other files, or when you know actual names or keywords to search for. This tool is faster than terminal commands like grep. Before using this tool, check your Sutra Memory history to avoid repeating the same searches.
-- You can use database queries to access comprehensive file data and code structure information. The database tool provides multiple features:
-    - To list all functions, classes, files, and methods, use database search with parameter code_content: false
-    - Query specific nodes by exact name (function, class, file, method)
-    - Get code snippets from files with specific line ranges
-    - Find function callers and callees to understand code dependencies
-    - Analyze file dependencies and relationships
-    - For example, when asked to make edits or improvements you might analyze the file structure in the initial WORKSPACE STRUCTURE to get an overview of the project, then use semantic search first to find the relevant files if you don't know exactly which files need changes (never guess which files to modify), then use database queries to get code the contents of relevant files/functions/class/methods, analyze the code and suggest improvements or make necessary edits, then use the apply_diff or write_to_file tool to apply the changes. You could use search_known_keyword when you know specific names or keywords, or semantic search for broader exploration to ensure you update other files as needed. Store important code findings in Sutra Memory and track your analysis tasks to ensure thorough coverage. When you can't make changes directly with apply_diff and need to explore more code or other files first, always store the required code in Sutra Memory using XML format with proper file paths, line numbers as it won't be available in the next iteration. Also remove stored code when no longer needed and update your task list accordingly.
-- You can use the execute_command tool to run commands on the user's computer using foreground terminal sessions with intelligent session reuse. Sessions automatically reuse existing compatible sessions (same working directory, no running tasks) or create new ones as needed. Sessions maintain working directory and environment variables across commands, enabling seamless continuation of work in the same directory context without manual session management."""
+- You have access to tools for semantic discovery, keyword/pattern search, structured code graph queries, listing workspace files, running terminal commands, and producing final results. You also have Sutra Memory to track progress and avoid redundant work.
+
+- semantic_search: Discover relevant files/blocks by meaning when exact names are unknown.
+
+- search_keyword: Find symbol usages/definitions and content patterns with regex/case/context. Scope searches to a limited set of file paths instead of the whole repo.
+
+- database_search (minimal, agent-facing wrappers):
+  - get_block_details(block_id): Returns block metadata (file_path, language, start/end line & column), parent block summary, and any incoming/outgoing connections whose snippet_lines overlap the block’s line range.
+  - get_file_block_summary(file_id): Quick list of blocks in a file for local navigation (no content).
+  - get_search_scope_by_import_graph(anchor_file_id, direction="both", max_depth=2): Returns a set of file paths based on the import graph to constrain search scope.
+  Note: dependency/impact chain queries and project-wide connection aggregation run in the background and are not directly called by the agent.
+
+- list_files: Inspect workspace directories when needed.
+
+- terminal_commands: Run one-off commands with session reuse. If needed, prefix with `cd <path> && <command>` in a single call.
+
+- completion: Present the final roadmap once ready and prior tool outcomes are confirmed.
+
+Guidance:
+- Start with semantic_search → call get_block_details for each discovered block to receive file/parent/connection-in-range context. For symbol usage, first call get_search_scope_by_import_graph to compute a small path set, then use search_keyword scoped to those paths. Keep results focused (5–25 items) and store important findings in Sutra Memory with exact file paths and line numbers. Always include <thinking> before tool calls and maintain one-tool-per-iteration.
+"""

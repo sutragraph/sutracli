@@ -64,6 +64,16 @@ def get_agent_rules(agent_name: AgentName) -> str:
     return module.RULES
 
 
+def get_agent_guidelines(agent_name: AgentName) -> str:
+    """Get agent guidelines prompt (required)."""
+    module = _import_agent_module(agent_name, "guidelines")
+    if not hasattr(module, "GUIDELINES"):
+        raise AttributeError(
+            f"Agent '{agent_name.value}' missing 'GUIDELINES' in guidelines.py"
+        )
+    return module.GUIDELINES
+
+
 def get_agent_tools(agent_name: AgentName) -> List[str]:
     """Get agent tool list."""
     try:
@@ -90,6 +100,7 @@ def get_agent_system_prompt(agent_name: AgentName) -> str:
     objective = get_agent_objective(agent_name)
     capabilities = get_agent_capabilities(agent_name)
     rules = get_agent_rules(agent_name)
+    guidelines = get_agent_guidelines(agent_name)
     tool_names = get_agent_tools(agent_name)
 
     # Get actual tool prompts using the existing get_tool_prompt function
@@ -110,6 +121,8 @@ def get_agent_system_prompt(agent_name: AgentName) -> str:
 
 {tools_section}
 
+{guidelines}
+
 {rules}
 
 {SUTRA_MEMORY}
@@ -117,8 +130,6 @@ def get_agent_system_prompt(agent_name: AgentName) -> str:
 {SYSTEM_INFO}
 
 {WORKSPACE_STRUCTURE}
-
-
 
 ===="""
 
