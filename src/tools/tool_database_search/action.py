@@ -37,7 +37,12 @@ from queries.agent_queries import (
 from services.agent.agent_prompt.guidance_builder import (
     GuidanceScenario,
 )
+from pathlib import Path
 import os
+from services.agent.agent_prompt.guidance_builder import (
+    SequentialNodeScenario,
+)
+import json
 from models.agent import AgentAction
 from services.agent.agent_prompt.guidance_builder import (
     SearchType,
@@ -228,9 +233,6 @@ def execute_structured_database_query(
 
             # Fix file path parameter - prepend current directory if path doesn't start with current dir
             if param == "file_path":
-                from pathlib import Path
-                import os
-
                 file_path = query_params[param]
                 current_dir = Path.cwd()
                 file_path_obj = Path(file_path)
@@ -715,8 +717,6 @@ def execute_structured_database_query(
                 start_line = None
                 if lines:
                     if isinstance(lines, str):
-                        import json
-
                         try:
                             lines_parsed = json.loads(lines)
                             if (
@@ -1040,8 +1040,6 @@ def execute_structured_database_query(
                     start_line = None
                     if lines:
                         if isinstance(lines, str):
-                            import json
-
                             try:
                                 lines_parsed = json.loads(lines)
                                 if (
@@ -1191,10 +1189,6 @@ def execute_structured_database_query(
                         )
                 else:
                     # No code content available - use proper enum scenario
-                    from services.agent.agent_prompt.guidance_builder import (
-                        SequentialNodeScenario,
-                    )
-
                     sequential_scenario = SequentialNodeScenario.NODE_NO_CODE_CONTENT
 
                     node_guidance = build_sequential_node_message(
