@@ -2,6 +2,7 @@
 SQLite database connection and operations for code extraction data.
 Stores files, code blocks, and relationships from code parsing.
 """
+
 import re
 import json
 import os
@@ -15,6 +16,8 @@ from models import File, Project, CodeBlock, Relationship, ExtractionData
 from queries.creation_queries import (
     CREATE_TABLES,
     CREATE_INDEXES,
+)
+from queries.agent_queries import (
     GET_CODE_BLOCK_BY_ID,
     GET_FILE_BY_ID,
 )

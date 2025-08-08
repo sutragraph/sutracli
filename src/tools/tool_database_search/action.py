@@ -3,7 +3,6 @@ from typing import Iterator, Dict, Any, List, Optional
 from graph.sqlite_client import SQLiteConnection
 from services.agent.delivery_management import delivery_manager
 from services.agent.agent_prompt.guidance_builder import (
-    determine_semantic_batch_scenario,
     build_guidance_message,
     SearchType,
 )
@@ -11,9 +10,6 @@ from tools.utils import (
     beautify_node_result,
     process_code_with_line_filtering,
     chunk_large_code_clean,
-)
-from tools.utils.search_utils import (
-    build_batch_guidance_message,
 )
 from services.agent_connection_enhancer import (
     get_agent_connection_enhancer,
@@ -30,6 +26,7 @@ from queries.agent_queries import (
 )
 from services.agent.agent_prompt.guidance_builder import (
     GuidanceScenario,
+    build_batch_guidance_message,
 )
 from tools.utils.formatting_utils import beautify_node_result_metadata_only
 from pathlib import Path
@@ -1405,94 +1402,6 @@ def register_and_deliver_first_item(
         action_type, action_parameters, delivery_items
     )
     return delivery_manager.get_next_item(action_type, action_parameters)
-
-
-def register_and_deliver_first_batch(
-    action_type: str,
-    action_parameters: Dict[str, Any],
-    delivery_items: List[Dict[str, Any]],
-) -> Optional[Dict[str, Any]]:
-    """
-    Register delivery queue and get first batch of items for semantic search.
-
-    Args:
-        action_type: Type of action (should be "semantic_search")
-        action_parameters: Action parameters
-        delivery_items: List of items to register for delivery
-
-    Returns:
-        First batch of items from delivery queue or None if no items
-    """
-    if not delivery_items:
-        return None
-
-    # Register all items with delivery manager
-    delivery_manager.register_delivery_queue(
-        action_type, action_parameters, delivery_items
-    )
-
-    # Get batch size for semantic search
-    batch_size = DELIVERY_QUEUE_CONFIG.get("semantic_search", 10)
-
-    # Collect first batch of items
-    batch_items = []
-    for _ in range(batch_size):
-        next_item = delivery_manager.get_next_item(action_type, action_parameters)
-        if next_item:
-            batch_items.append(next_item)
-        else:
-            break  # No more items available
-
-    if not batch_items:
-        return None
-
-    # Combine batch items into a single response
-    total_nodes = delivery_items[0].get("total_nodes", len(delivery_items))
-    query = action_parameters.get("query", "")
-
-    # Calculate delivery info
-    delivered_count = len(batch_items)
-    remaining_count = len(delivery_items) - delivered_count
-
-    # Add semantic search guidance
-    guidance_message = ""
-    if action_type == "semantic_search":
-        scenario = determine_semantic_batch_scenario()
-
-        guidance_message = build_guidance_message(
-            search_type=SearchType.SEMANTIC,
-            scenario=scenario,
-            total_nodes=total_nodes,
-            delivered_count=delivered_count,
-            remaining_count=remaining_count,
-            batch_number=1,  # This is always the first batch
-        )
-
-        if guidance_message:
-            guidance_message += "\n\n"
-
-    # Combine all data from batch items
-    combined_data = []
-    for item in batch_items:
-        combined_data.append(item.get("data", ""))
-
-    # Combine guidance with data
-    final_data = guidance_message + "\n\n".join(combined_data)
-
-    return {
-        "type": "tool_use",
-        "tool_name": "semantic_search",
-        "query": query,
-        "result": f"result found: {total_nodes}",
-        "data": final_data,
-        "code_snippet": True,
-        "total_nodes": total_nodes,
-        "batch_info": {
-            "delivered_count": delivered_count,
-            "remaining_count": remaining_count,
-            "batch_size": batch_size,
-        },
-    }
 
 
 def check_pending_delivery(
