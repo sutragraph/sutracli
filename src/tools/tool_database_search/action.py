@@ -11,10 +11,6 @@ from tools.utils import (
     beautify_node_result,
     process_code_with_line_filtering,
     chunk_large_code_clean,
-    handle_fetch_next_request,
-    register_and_deliver_first_item,
-    check_pending_delivery,
-    create_no_items_response,
 )
 from tools.utils.search_utils import (
     build_batch_guidance_message,
