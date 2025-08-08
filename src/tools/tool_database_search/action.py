@@ -34,6 +34,10 @@ from queries.agent_queries import (
     GET_FUNCTION_CALLEES,
     GET_FILE_DEPENDENCIES,
 )
+from services.agent.agent_prompt.guidance_builder import (
+    GuidanceScenario,
+)
+import os
 from models.agent import AgentAction
 from services.agent.agent_prompt.guidance_builder import (
     SearchType,
@@ -101,7 +105,6 @@ def _generate_error_guidance(query_name: str, params: dict) -> str:
 
 def _add_connection_information(
     results: List[Dict[str, Any]],
-    db_connection,
     project_id: Optional[int] = None,
     context: str = "agent",
 ) -> str:
@@ -373,8 +376,6 @@ def execute_structured_database_query(
                 in ["GET_CODE_FROM_FILE", "GET_CODE_FROM_FILE_LINES"]
                 and "file_path" in final_params
             ):
-                import os
-
                 original_path = final_params["file_path"]
                 # Extract filename from path (last element after splitting by '/')
                 filename = os.path.basename(original_path)
@@ -476,8 +477,6 @@ def execute_structured_database_query(
 
             # Try fallback with system directory for file path queries
             if not results and "file_path" in final_params:
-                import os
-
                 original_path = final_params["file_path"]
                 system_dir = os.getcwd()
 
@@ -514,11 +513,6 @@ def execute_structured_database_query(
                     logger.debug("❌ System directory fallback also returned 0 results")
 
             if not results:
-                # Use proper guidance scenario for no results
-                from services.agent.agent_prompt.guidance_builder import (
-                    GuidanceScenario,
-                )
-
                 no_results_guidance = build_guidance_message(
                     search_type=SearchType.DATABASE,
                     scenario=GuidanceScenario.NO_RESULTS_FOUND,
@@ -849,7 +843,7 @@ def execute_structured_database_query(
                     # Add connection information to the last chunk if available
                     if all_delivery_items:
                         connection_info = _add_connection_information(
-                            [result_dict], db_connection, current_project_id, context
+                            [result_dict], current_project_id, context
                         )
                         if connection_info:
                             last_item = all_delivery_items[-1]
@@ -959,7 +953,7 @@ def execute_structured_database_query(
 
                     # Add connection information for single result
                     connection_info = _add_connection_information(
-                        [result_dict], db_connection, current_project_id, context
+                        [result_dict], current_project_id, context
                     )
 
                     # Send single batch result for small files
@@ -1002,7 +996,7 @@ def execute_structured_database_query(
 
                 # Add connection information for single result without code
                 connection_info = _add_connection_information(
-                    [result_dict], db_connection, current_project_id, context
+                    [result_dict], current_project_id, context
                 )
 
                 # Send single batch result for missing code
@@ -1235,7 +1229,7 @@ def execute_structured_database_query(
             if all_delivery_items:
                 # Get connection information for all results
                 connection_info = _add_connection_information(
-                    results, db_connection, current_project_id, context
+                    results, current_project_id, context
                 )
 
                 # Add connection information to the last delivery item if available
