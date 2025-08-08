@@ -6,11 +6,9 @@ Enhanced version that integrates with Sutra memory and uses the new folder struc
 
 from typing import Dict, Any, Optional
 from loguru import logger
-
-from graph.sqlite_client import SQLiteConnection
 from services.project_manager import ProjectManager
 from services.agent.xml_service.xml_parser import XMLParser
-
+from ...agent.session_management import SessionManager
 from ...agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from ..prompts.cross_index_prompt_manager_5phase import CrossIndex5PhasePromptManager
 from .cross_index_service import CrossIndexService
@@ -29,14 +27,10 @@ class CrossIndexSystem:
         session_id: Optional[str] = None,
         project_name: Optional[str] = None,
     ):
-        self.db_connection = SQLiteConnection()
         self.project_manager = project_manager
 
         # Store project name for incremental indexing
         self.project_name = project_name
-
-        # Initialize session manager for cross-indexing (like agent service)
-        from ...agent.session_management import SessionManager
 
         self.session_manager = SessionManager.get_or_create_session(session_id)
 
@@ -67,15 +61,10 @@ class CrossIndexSystem:
                 "No project name provided, skipping incremental indexing during initialization"
             )
 
-        # Initialize LLM client
-        from ...llm_clients.llm_factory import llm_client_factory
-        llm_client = llm_client_factory()
-
-        # Initialize components with shared cross-index memory and session manager
         self.cross_index_service = CrossIndexService(
-            db_connection, project_manager, self.memory_manager, self.session_manager, llm_client
+            project_manager, self.memory_manager, self.session_manager
         )
-        self.prompt_manager = CrossIndex5PhasePromptManager(db_connection)
+        self.prompt_manager = CrossIndex5PhasePromptManager()
         self.xml_parser = XMLParser()
 
     def _perform_initialization_incremental_indexing(self):

@@ -5,7 +5,6 @@ Main orchestrator for all 5-phase cross-indexing prompts and workflow.
 """
 from loguru import logger
 from services.agent.xml_service.xml_service import XMLService
-from services.llm_clients.llm_factory import llm_client_factory
 from ..task_manager.cross_indexing_task_manager import CrossIndexingTaskManager
 from .phase1_package_discovery.phase1_prompt_manager import Phase1PromptManager
 from .phase2_import_discovery.phase2_prompt_manager import Phase2PromptManager
@@ -25,13 +24,13 @@ class CrossIndex5PhasePromptManager:
     - Phase 5: Connection Matching
     """
 
-    def __init__(self, db_connection=None):
+    def __init__(self):
         self.phase1_manager = Phase1PromptManager()
         self.phase2_manager = Phase2PromptManager()
         self.phase3_manager = Phase3PromptManager()
         self.phase4_manager = Phase4PromptManager()
         self.phase5_manager = Phase5PromptManager()
-        self.task_manager = CrossIndexingTaskManager(db_connection)
+        self.task_manager = CrossIndexingTaskManager()
         self.current_phase = 1
         self.phase_names = {
             1: "Package Discovery",
@@ -167,7 +166,7 @@ class CrossIndex5PhasePromptManager:
         if phase in [1, 2, 3]:
             # Phases 1-3 use attempt_completion tool - validate XML structure
             try:
-                xml_service = XMLService(llm_client_factory())
+                xml_service = XMLService()
                 xml_blocks = xml_service.parse_xml_response(response)
 
                 # Check if any XML block contains attempt_completion with result

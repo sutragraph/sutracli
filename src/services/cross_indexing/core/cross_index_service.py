@@ -5,11 +5,9 @@ Cross-Index Service for analyzing and managing inter-service connections
 import json
 from typing import Dict, List, Any, Optional, Iterator
 from loguru import logger
-
-from graph.sqlite_client import SQLiteConnection
 from services.agent.session_management import SessionManager
 from services.project_manager import ProjectManager
-from services.llm_clients.llm_client_base import LLMClientBase
+from services.llm_clients.llm_factory import llm_client_factory
 from services.agent.xml_service.xml_parser import XMLParser
 from services.agent.xml_service.xml_repair import XMLRepair
 from services.agent.xml_service import XMLService
@@ -42,17 +40,15 @@ class CrossIndexService:
         project_manager: ProjectManager,
         memory_manager: SutraMemoryManager,
         session_manager: SessionManager,
-        llm_client: LLMClientBase,
     ):
-        self.db_connection = SQLiteConnection()
         self.project_manager = project_manager
         self.memory_manager = memory_manager
         self.session_manager = session_manager
-        self.llm_client = llm_client
+        self.llm_client = llm_client_factory()
         self.xml_parser = XMLParser()
-        self.xml_repair = XMLRepair(llm_client)
-        self.xml_service = XMLService(llm_client)
-        self.prompt_manager = CrossIndex5PhasePromptManager(self.db_connection)
+        self.xml_repair = XMLRepair()
+        self.xml_service = XMLService()
+        self.prompt_manager = CrossIndex5PhasePromptManager()
         self.code_manager_prompt_manager = CodeManagerPromptManager()
         self.code_fetcher = CodeFetcher()
         self.action_executor = ActionExecutor(

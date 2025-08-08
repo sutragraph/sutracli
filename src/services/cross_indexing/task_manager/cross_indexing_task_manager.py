@@ -23,7 +23,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
     - Provides phase-specific task filtering
     """
 
-    def __init__(self, db_connection: Optional[Any] = None):
+    def __init__(self):
         # Initialize phase-specific attributes before calling parent
         self.current_phase = 1
         self.phase_names = {
@@ -37,13 +37,13 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         self._task_phase_metadata: Dict[str, Dict[str, Any]] = {}
 
         # Initialize task filter manager
-        self.task_filter_manager = TaskFilterManager(db_connection)
+        self.task_filter_manager = TaskFilterManager()
 
         # Store filtered tasks for each phase
         self._filtered_tasks_cache: Dict[int, Dict[str, List[Task]]] = {}
 
         # Call parent constructor (which will call our _init_components override)
-        super().__init__(db_connection)
+        super().__init__()
 
         # Add default task for Phase 1
         self._add_default_phase1_task()

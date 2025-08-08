@@ -23,7 +23,6 @@ from .xml_validator import XMLValidator
 from .xml_repair import XMLRepair
 from .xml_issue import XMLIssue
 
-
 class XMLService:
     """Comprehensive service for all XML processing operations."""
 
@@ -31,7 +30,7 @@ class XMLService:
         self.llm_client = llm_client
         self.cleaner = XMLCleaner()
         self.validator = XMLValidator()
-        self.repair_service = XMLRepair(llm_client)
+        self.repair_service = XMLRepair(self.llm_client)
         self.parser = XMLParser()
         self.block_finder = XMLBlockFinder()
 

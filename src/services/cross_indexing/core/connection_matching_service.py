@@ -33,7 +33,7 @@ class ConnectionMatchingService:
 
     def __init__(self):
         self.db_client = SQLiteConnection()
-        self.matching_manager = Phase5PromptManager(self.db_client)
+        self.matching_manager = Phase5PromptManager()
 
     def match_connections(
         self,

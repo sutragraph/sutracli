@@ -31,11 +31,7 @@ class ProjectManager:
         self.memory_manager = memory_manager
 
         # Initialize project indexer with memory manager if provided
-        self.project_indexer = (
-            ProjectIndexer(self.memory_manager)
-            if memory_manager
-            else ProjectIndexer(self.db_connection)
-        )
+        self.project_indexer = ProjectIndexer(self.memory_manager)
 
         # Use the converter from project indexer to avoid duplication
         self.converter = self.project_indexer.converter

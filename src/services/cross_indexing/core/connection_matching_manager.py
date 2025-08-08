@@ -293,7 +293,6 @@ def run_connection_matching(
     outgoing_connections=None,
     llm_client=None,
     project_id=None,
-    db_client=None,
 ):
     """
     Main function to run connection matching analysis.
@@ -309,7 +308,7 @@ def run_connection_matching(
     Returns:
         dict: Matching results ready for database storage
     """
-    manager = ConnectionMatchingManager(db_client)
+    manager = ConnectionMatchingManager()
 
     # Build prompt - will fetch from database if connections not provided
     prompt = manager.build_matching_prompt(

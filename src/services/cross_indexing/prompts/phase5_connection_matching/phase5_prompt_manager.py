@@ -15,8 +15,8 @@ class Phase5PromptManager(ConnectionMatchingManager):
     including database operations, prompt building, and result validation.
     """
 
-    def __init__(self, db_client=None):
-        super().__init__(db_client)
+    def __init__(self):
+        super().__init__()
 
     def get_system_prompt(self) -> str:
         """
@@ -26,6 +26,3 @@ class Phase5PromptManager(ConnectionMatchingManager):
             Complete system prompt string
         """
         return CONNECTION_MATCHING_PROMPT
-
-    # Inherit all other methods from ConnectionMatchingManager
-    # including build_matching_prompt, validate_and_process_matching_results, etc.

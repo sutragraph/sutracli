@@ -21,7 +21,7 @@ class TaskFilterManager:
     duplicate and redundant tasks while preserving all necessary functionality.
     """
 
-    def __init__(self, db_connection: Optional[Any] = None):
+    def __init__(self):
         """
         Initialize the task filter manager.
 
@@ -29,7 +29,7 @@ class TaskFilterManager:
             db_connection: Optional database connection for memory operations
         """
         self.prompt_manager = TaskFilterPromptManager()
-        self.memory_manager = SutraMemoryManager(db_connection)
+        self.memory_manager = SutraMemoryManager()
         self.llm_client = llm_client_factory()
         self.xml_service = XMLService(self.llm_client)
 

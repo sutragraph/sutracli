@@ -1,6 +1,6 @@
 from loguru import logger
 import re
-from typing import List, Any, Optional, Tuple
+from typing import List, Optional, Any
 from .xml_validator import XMLValidator
 
 
