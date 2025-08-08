@@ -15,10 +15,6 @@ from .delivery_utils import (
     create_no_items_response,
     register_and_deliver_first_batch,
 )
-from .chunk_processing_utils import (
-    create_chunk_info,
-    should_chunk_content,
-)
 from .result_processing_utils import (
     clean_result_dict,
     process_metadata_only_results,
@@ -39,9 +35,6 @@ __all__ = [
     "register_and_deliver_first_batch",
     "check_pending_delivery",
     "create_no_items_response",
-    # Chunk processing utilities
-    "create_chunk_info",
-    "should_chunk_content",
     # Result processing utilities
     "clean_result_dict",
     "process_metadata_only_results",
