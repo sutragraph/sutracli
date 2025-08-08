@@ -2,10 +2,8 @@ import json
 from loguru import logger
 from typing import Iterator, Dict, Any, List
 from embeddings import get_vector_store
-from tools.utils import (
-    get_node_details,
-    beautify_node_result,
-)
+from tools.utils import beautify_node_result
+from graph.sqlite_client import GraphOperations
 from models.agent import AgentAction
 from services.agent.agent_prompt.guidance_builder import (
     SearchType,
@@ -16,6 +14,12 @@ from tools.utils.constants import (
     DELIVERY_QUEUE_CONFIG,
 )
 from services.agent.delivery_management import delivery_manager
+from tools.utils import register_and_deliver_first_batch
+from services.agent.agent_prompt.guidance_builder import GuidanceScenario
+from services.agent.agent_prompt.guidance_builder import (
+    determine_semantic_batch_scenario,
+)
+from tools.utils.code_processing_utils import add_line_numbers_to_code
 
 
 def _extract_search_parameters(action: AgentAction) -> str:
@@ -53,45 +57,33 @@ def _process_sequential_chunk_results(
     query: str,
     action_parameters: Dict[str, Any],
 ) -> Iterator[Dict[str, Any]]:
-    """Process chunk-specific results for sequential sending via delivery queue."""
+    graph_operations = GraphOperations()
     total_nodes = len(vector_results)
 
-    # Check if we have a pending delivery for this query
     next_item = delivery_manager.get_next_item("semantic_search", action_parameters)
 
     if next_item is not None:
-        # We have a pending item from a previous call - deliver it
         yield next_item
         return
 
-    # No pending delivery - collect all chunk items and register them
     all_delivery_items = []
 
     for i, result in enumerate(vector_results, 1):
-        # DELETED
-        node_details = get_node_details(
-            result["node_id"], result.get("project_id", None)
-        )
+        node_details = graph_operations.get_node_details(result["node_id"])
         if node_details:
-            # Extract chunk-specific code using the same logic as search_chunks_with_code
             chunk_code = _extract_chunk_specific_code(node_details, result)
 
             if chunk_code:
-                # Create a modified node_details with only the chunk-specific code
                 chunk_node_details = node_details.copy()
                 chunk_node_details["code_snippet"] = chunk_code
 
-                # Update lines information to reflect chunk boundaries
                 chunk_start_line = result.get("chunk_start_line")
                 chunk_end_line = result.get("chunk_end_line")
                 if chunk_start_line and chunk_end_line:
-                    import json
-
                     chunk_node_details["lines"] = json.dumps(
                         [chunk_start_line, chunk_end_line]
                     )
 
-                # Format the result using existing beautify function
                 beautified_result = beautify_node_result(
                     chunk_node_details,
                     i,
@@ -99,7 +91,6 @@ def _process_sequential_chunk_results(
                     total_nodes=total_nodes,
                 )
 
-                # Collect item for delivery manager
                 all_delivery_items.append(
                     {
                         "type": "tool_use",
@@ -109,11 +100,10 @@ def _process_sequential_chunk_results(
                         "node_index": i,
                         "total_nodes": total_nodes,
                         "data": beautified_result,
-                        "code_snippet": True,  # Always true for semantic search
+                        "code_snippet": True,
                     }
                 )
             else:
-                # No code content available
                 beautified_result = beautify_node_result(
                     node_details, i, include_code=True, total_nodes=total_nodes
                 )
@@ -130,7 +120,6 @@ def _process_sequential_chunk_results(
                     }
                 )
         else:
-            # Handle missing node details
             all_delivery_items.append(
                 {
                     "type": "tool_use",
@@ -143,17 +132,13 @@ def _process_sequential_chunk_results(
                 }
             )
 
-    # Register all items with delivery manager and send first batch
     if all_delivery_items:
-        from tools.utils import register_and_deliver_first_batch
-
         first_batch = register_and_deliver_first_batch(
             "semantic_search", action_parameters, all_delivery_items
         )
         if first_batch:
             yield first_batch
     else:
-        # No items to deliver - send completion signal
         yield {
             "tool_name": "semantic_search",
             "type": "tool_use",
@@ -201,11 +186,6 @@ def _extract_chunk_specific_code(
                 ):
                     # Extract only the lines that belong to this chunk
                     chunk_lines = code_lines[relative_start:relative_end]
-
-                    # Add line numbers to the chunk code
-                    from tools.utils.code_processing_utils import (
-                        add_line_numbers_to_code,
-                    )
 
                     return add_line_numbers_to_code(
                         "\n".join(chunk_lines), chunk_start_line
@@ -275,9 +255,6 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
 
                 # Add guidance for fetch_next_code batch
                 guidance_message = ""
-                from services.agent.agent_prompt.guidance_builder import (
-                    determine_semantic_batch_scenario,
-                )
 
                 # Calculate batch number based on current position
                 current_position = (
@@ -357,9 +334,6 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
 
         # Handle empty results case
         if total_nodes == 0:
-            from services.agent.agent_prompt.guidance_builder import (
-                GuidanceScenario,
-            )
 
             guidance_message = build_guidance_message(
                 search_type=SearchType.SEMANTIC,
