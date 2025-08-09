@@ -9,6 +9,7 @@ from loguru import logger
 @dataclass
 class DeliveryItem:
     """Represents a single item to be delivered sequentially."""
+
     item_id: str
     item_type: str  # "database_node", "semantic_node", "chunk"
     data: Dict[str, Any]
@@ -18,7 +19,7 @@ class DeliveryItem:
     total_items: Optional[int] = None
 
 
-class SequentialDeliveryManager:
+class DeliveryManager:
     """Manages sequential delivery of chunks and nodes for repeated queries."""
 
     def __init__(self):
@@ -31,7 +32,9 @@ class SequentialDeliveryManager:
         # Track the last query signature to detect query changes
         self._last_query_signature: Optional[str] = None
 
-    def _generate_query_signature(self, action_type: str, parameters: Dict[str, Any]) -> str:
+    def _generate_query_signature(
+        self, action_type: str, parameters: Dict[str, Any]
+    ) -> str:
         """Generate a unique signature for a query to identify repeated calls."""
         # Create a consistent signature based on action type and key parameters
         key_params = {}
@@ -53,21 +56,22 @@ class SequentialDeliveryManager:
 
         # Remove None values and create sorted string
         filtered_params = {k: v for k, v in key_params.items() if v is not None}
-        signature_parts = [action_type] + [f"{k}:{v}" for k, v in sorted(filtered_params.items())]
+        signature_parts = [action_type] + [
+            f"{k}:{v}" for k, v in sorted(filtered_params.items())
+        ]
         return "|".join(signature_parts)
 
     def register_delivery_queue(
-        self,
-        action_type: str,
-        parameters: Dict[str, Any],
-        items: List[Dict[str, Any]]
+        self, action_type: str, parameters: Dict[str, Any], items: List[Dict[str, Any]]
     ) -> str:
         """Register a new delivery queue for sequential processing."""
         query_signature = self._generate_query_signature(action_type, parameters)
 
         # Check if this is a different query from the last one - if so, clear old data
         if self._last_query_signature and self._last_query_signature != query_signature:
-            logger.debug(f"📦 Query changed from {self._last_query_signature} to {query_signature} - clearing old data")
+            logger.debug(
+                f"📦 Query changed from {self._last_query_signature} to {query_signature} - clearing old data"
+            )
             self.clear_all_queues()
 
         # Update last query signature
@@ -83,7 +87,7 @@ class SequentialDeliveryManager:
                 query_signature=query_signature,
                 node_index=item.get("node_index"),
                 chunk_index=item.get("chunk_index"),
-                total_items=len(items)
+                total_items=len(items),
             )
             delivery_items.append(delivery_item)
 
@@ -92,7 +96,9 @@ class SequentialDeliveryManager:
         self._queue_positions[query_signature] = 0
         self._completed_deliveries[query_signature] = False
 
-        logger.debug(f"📦 Registered delivery queue for {query_signature} with {len(items)} items")
+        logger.debug(
+            f"📦 Registered delivery queue for {query_signature} with {len(items)} items"
+        )
         return query_signature
 
     def get_next_item_from_existing_queue(self) -> Optional[Dict[str, Any]]:
@@ -147,13 +153,17 @@ class SequentialDeliveryManager:
         )
         return delivery_data
 
-    def get_next_item(self, action_type: str, parameters: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def get_next_item(
+        self, action_type: str, parameters: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Get the next item for a given query, or None if queue is complete."""
         query_signature = self._generate_query_signature(action_type, parameters)
 
         # Check if this is a different query from the last one - if so, clear old data
         if self._last_query_signature and self._last_query_signature != query_signature:
-            logger.debug(f"📦 Query changed from {self._last_query_signature} to {query_signature} - clearing old data")
+            logger.debug(
+                f"📦 Query changed from {self._last_query_signature} to {query_signature} - clearing old data"
+            )
             self.clear_all_queues()
 
         # Update last query signature
@@ -187,16 +197,20 @@ class SequentialDeliveryManager:
 
         # Add delivery metadata
         delivery_data = next_item.data.copy()
-        delivery_data.update({
-            "delivery_info": {
-                "item_index": current_pos + 1,
-                "total_items": len(queue),
-                "query_signature": query_signature,
-                "is_last_item": (current_pos + 1) >= len(queue)
+        delivery_data.update(
+            {
+                "delivery_info": {
+                    "item_index": current_pos + 1,
+                    "total_items": len(queue),
+                    "query_signature": query_signature,
+                    "is_last_item": (current_pos + 1) >= len(queue),
+                }
             }
-        })
+        )
 
-        logger.debug(f"📦 Delivering item {current_pos + 1}/{len(queue)} for {query_signature}")
+        logger.debug(
+            f"📦 Delivering item {current_pos + 1}/{len(queue)} for {query_signature}"
+        )
         return delivery_data
 
     def has_pending_items(self, action_type: str, parameters: Dict[str, Any]) -> bool:
@@ -214,7 +228,9 @@ class SequentialDeliveryManager:
 
         return current_pos < queue_length
 
-    def get_queue_status(self, action_type: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def get_queue_status(
+        self, action_type: str, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Get status information about a delivery queue."""
         query_signature = self._generate_query_signature(action_type, parameters)
 
@@ -232,7 +248,9 @@ class SequentialDeliveryManager:
             "total_items": total_items,
             "remaining_items": max(0, total_items - current_pos),
             "is_complete": is_complete,
-            "progress_percentage": (current_pos / total_items * 100) if total_items > 0 else 0
+            "progress_percentage": (
+                (current_pos / total_items * 100) if total_items > 0 else 0
+            ),
         }
 
     def clear_queue(self, action_type: str, parameters: Dict[str, Any]) -> bool:
@@ -257,7 +275,9 @@ class SequentialDeliveryManager:
         logger.debug(f"📦 Cleared all {count} delivery queues")
         return count
 
-    def get_next_item_info(self, action_type: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def get_next_item_info(
+        self, action_type: str, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Get information about the next item without consuming it."""
         query_signature = self._generate_query_signature(action_type, parameters)
 
@@ -266,7 +286,7 @@ class SequentialDeliveryManager:
                 "has_next": False,
                 "total_items": 0,
                 "current_position": 0,
-                "remaining_items": 0
+                "remaining_items": 0,
             }
 
         current_pos = self._queue_positions[query_signature]
@@ -278,9 +298,9 @@ class SequentialDeliveryManager:
             "total_items": total_items,
             "current_position": current_pos,
             "remaining_items": remaining_items,
-            "is_complete": self._completed_deliveries.get(query_signature, False)
+            "is_complete": self._completed_deliveries.get(query_signature, False),
         }
 
 
 # Global instance for the application
-delivery_manager = SequentialDeliveryManager()
+delivery_manager = DeliveryManager()
