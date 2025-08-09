@@ -26,12 +26,12 @@ class CrossIndexIntegration:
     4. Store matched connections in database
     5. Return comprehensive results
     """
-    
+
     def __init__(self):
         self.cross_index_service = CrossIndexService()
         self.connection_matching_service = ConnectionMatchingService()
         self.db_client = SQLiteConnection()
-    
+
     def run_complete_analysis(self, project_path: str, project_id: str = None) -> Dict[str, Any]:
         """
         Run complete cross-indexing analysis and connection matching workflow.
@@ -45,18 +45,18 @@ class CrossIndexIntegration:
         """
         try:
             logger.info(f"Starting complete cross-indexing analysis for project: {project_path}")
-            
+
             # Step 1: Run cross-indexing analysis
             logger.info("Step 1: Running cross-indexing analysis...")
             analysis_results = self.cross_index_service.analyze_project(project_path)
-            
+
             if not analysis_results.get("success", False):
                 return {
                     "success": False,
                     "error": "Cross-indexing analysis failed",
                     "analysis_results": analysis_results
                 }
-            
+
             # Step 2: Extract connections with IDs
             logger.info("Step 2: Extracting connections...")
             incoming_connections = self._extract_connections(
@@ -65,9 +65,9 @@ class CrossIndexIntegration:
             outgoing_connections = self._extract_connections(
                 analysis_results.get("outgoing_connections", []), "outgoing"
             )
-            
+
             logger.info(f"Extracted {len(incoming_connections)} incoming and {len(outgoing_connections)} outgoing connections")
-            
+
             # Step 3: Run connection matching if we have connections
             matching_results = None
             if incoming_connections or outgoing_connections:
@@ -82,7 +82,7 @@ class CrossIndexIntegration:
                     "matching_results": {"matches": [], "total_matches": 0},
                     "statistics": {"total_incoming": 0, "total_outgoing": 0, "total_matches": 0}
                 }
-            
+
             # Step 4: Compile comprehensive results
             complete_results = {
                 "success": True,
@@ -100,11 +100,11 @@ class CrossIndexIntegration:
                     "matching_success": matching_results.get("success", False)
                 }
             }
-            
+
             logger.info(f"Complete analysis finished successfully. Found {len(incoming_connections)} incoming, {len(outgoing_connections)} outgoing, {matching_results.get('statistics', {}).get('total_matches', 0)} matches")
-            
+
             return complete_results
-            
+
         except Exception as e:
             logger.error(f"Error in complete analysis workflow: {str(e)}")
             return {
@@ -113,7 +113,7 @@ class CrossIndexIntegration:
                 "project_path": project_path,
                 "project_id": project_id
             }
-    
+
     def _extract_connections(self, connections_data: List[Dict], connection_type: str) -> List[Dict]:
         """
         Simple extraction of connections with IDs for matching analysis.
@@ -126,7 +126,7 @@ class CrossIndexIntegration:
             List of formatted connection objects with IDs
         """
         formatted_connections = []
-        
+
         for conn in connections_data:
             # Just use the connection data as-is with the database ID
             formatted_conn = {
@@ -139,25 +139,14 @@ class CrossIndexIntegration:
                 "description": conn.get("description", ""),
                 "technology": conn.get("technology", conn.get("framework", "")),
             }
-            
+
             formatted_connections.append(formatted_conn)
-        
+
         return formatted_connections
-    
-    def get_project_analysis_history(self, project_id: str = None, limit: int = 10) -> List[Dict]:
-        """
-        Get analysis history for a project.
-        
-        Args:
-            project_id: Optional project filter
-            limit: Maximum number of records
-            
-        Returns:
-            List of analysis history records
-        """
-        return self.connection_matching_service.get_matching_history(project_id, limit)
-    
-    def get_project_connection_matches(self, project_id: str = None, confidence_filter: str = None) -> List[Dict]:
+
+    def get_project_connection_matches(
+        self, confidence_filter: str = None
+    ) -> List[Dict]:
         """
         Get connection matches for a project.
         
@@ -168,8 +157,10 @@ class CrossIndexIntegration:
         Returns:
             List of connection matches
         """
-        return self.connection_matching_service.get_connection_matches(project_id, confidence_filter)
-    
+        return self.connection_matching_service.get_connection_matches(
+            confidence_filter
+        )
+
     def get_connection_statistics(self, project_id: str = None) -> Dict[str, Any]:
         """
         Get connection matching statistics.
@@ -187,9 +178,9 @@ class CrossIndexIntegration:
             else:
                 sql = "SELECT * FROM connection_matching_stats"
                 values = ()
-            
+
             results = self.db_client.fetch_all(sql, values)
-            
+
             if results:
                 return results[0]  # Return first result
             else:
@@ -204,7 +195,7 @@ class CrossIndexIntegration:
                     "message_queue_matches": 0,
                     "file_based_matches": 0
                 }
-                
+
         except Exception as e:
             logger.error(f"Error fetching connection statistics: {str(e)}")
             return {"error": str(e)}

@@ -839,7 +839,7 @@ class GraphOperations:
                       files.file_path, files.language, p.name as project_name
                 FROM {table_name} c
                 JOIN files ON c.file_id = files.id
-                JOIN projects p ON c.project_id = p.id
+                JOIN projects p ON files.project_id = p.id
                 WHERE c.file_id = ?
             """
 

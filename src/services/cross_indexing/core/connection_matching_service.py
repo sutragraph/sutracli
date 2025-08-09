@@ -416,42 +416,7 @@ class ConnectionMatchingService:
             logger.error(f"Error logging matching summary: {str(e)}")
             return None
 
-    def get_matching_history(
-        self, project_id: str = None, limit: int = 10
-    ) -> List[Dict]:
-        """
-        Get connection matching history from existing connection_mappings table.
-
-        Args:
-            project_id: Optional project filter
-            limit: Maximum number of records to return
-
-        Returns:
-            List of matching history records
-        """
-        try:
-            sql = """
-            SELECT cm.*,
-                   oc.description as outgoing_description,
-                   ic.description as incoming_description
-            FROM connection_mappings cm
-            LEFT JOIN outgoing_connections oc ON cm.sender_id = oc.id
-            LEFT JOIN incoming_connections ic ON cm.receiver_id = ic.id
-            ORDER BY cm.created_at DESC
-            LIMIT ?
-            """
-            values = (limit,)
-
-            results = self.db_client.execute_query(sql, values)
-            return results or []
-
-        except Exception as e:
-            logger.error(f"Error fetching matching history: {str(e)}")
-            return []
-
-    def get_connection_matches(
-        self, project_id: str = None, confidence_filter: float = None
-    ) -> List[Dict]:
+    def get_connection_matches(self, confidence_filter: float = None) -> List[Dict]:
         """
         Get stored connection matches from existing connection_mappings table.
 
@@ -475,11 +440,6 @@ class ConnectionMatchingService:
             """
             conditions = []
             values = []
-
-            if project_id:
-                conditions.append("(oc.project_id = ? OR ic.project_id = ?)")
-                values.extend([project_id, project_id])
-
             if confidence_filter is not None:
                 conditions.append("cm.match_confidence >= ?")
                 values.append(confidence_filter)

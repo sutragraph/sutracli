@@ -174,17 +174,17 @@ class CrossIndexSystem:
 
     def store_connections(self, project_id: int, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Store connections using the enhanced service with file_hash_id support.
-        
+        Store connections using the enhanced service with file_id support.
+
         Args:
             project_id: Project ID
             analysis_result: Parsed analysis result
-            
+
         Returns:
             Storage result
         """
         try:
-            # Store connections with file_hash_id references
+            # Store connections with file_id references
             result = self.cross_index_service.store_connections_with_file_hash_id(
                 project_id, analysis_result
             )

@@ -86,7 +86,7 @@ class ConnectionMatchingManager:
             SELECT oc.id, oc.description, oc.technology_name as technology,
                     oc.code_snippet, oc.snippet_lines, files.file_path, files.language
             FROM outgoing_connections oc
-            LEFT JOIN files ON oc.file_hash_id = files.id
+            LEFT JOIN files ON oc.file_id = files.id
             ORDER BY oc.id
             """
             results = self.db_client.execute_query(query)

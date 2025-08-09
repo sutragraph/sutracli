@@ -7,11 +7,11 @@ incoming and outgoing connections with detailed JSON format for database storage
 
 CONNECTION_SPLITTING_PROMPT = """CONNECTION SPLITTING ANALYSIS
 
-You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format.
+You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format. Additionally, include a concise top-level "summary" describing what the project does based on the collected connections.
 
 ## OBJECTIVE
 
-Process the collected connection data and categorize each connection as either incoming or outgoing, then return structured JSON with complete connection details.
+Process the collected connection data and categorize each connection as either incoming or outgoing, then return structured JSON with complete connection details. Also include a brief, evidence-based "summary" of the project's purpose and data flows.
 
 ## CONNECTION CLASSIFICATION
 
@@ -112,12 +112,15 @@ Return ONLY a valid JSON response with this exact structure:
         }
       ]
     }
-  }
+  },
+  "summary": "Brief 1-3 sentence summary of the project's purpose and main data flows based on observed connections"
 }
 ```
 
 Structure Requirements:
 - Group connections by direction: "incoming_connections" and "outgoing_connections"
+- Include a top-level string field "summary" (10-15 sentences) explaining what the project does and how components interact, derived strictly from the collected connections; neutral tone; no speculation beyond evidence
+- Place "summary" after both "incoming_connections" and "outgoing_connections" in the JSON object
 - Within each direction, group by technology name (flask, express, springboot, etc.)
 - Within each technology, group by file path
 - Each file path contains an array of connection snippets
@@ -126,6 +129,13 @@ Structure Requirements:
 - Provide relative file paths from project root
 - Use line ranges for cleaner database storage
 - Include concise descriptions focusing on purpose and environment variables when relevant (e.g., "HTTP GET call for user data using environment variable API_BASE_URL")
+
+## PROJECT SUMMARY GENERATION RULES
+
+1. Write 10-15 sentences summarizing the project's purpose and architecture inferred from the connections.
+2. Base the summary solely on evidence from incoming and outgoing connections (endpoints, clients, message queues, protocols, env vars).
+3. Write about the project's purpose and architecture, and how the connections are used to achieve the purpose.
+4. Keep it concise and strictly based on observed connections.
 
 ## CRITICAL LINE SELECTION RULES - STORE ACTUAL CALLS NOT WRAPPER DEFINITIONS:
 - For API endpoints: Store ONLY the route decorator lines (@app.route, @api.route, etc.), NOT the function implementation
@@ -195,7 +205,8 @@ Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
         }
       ]
     }
-  }
+  },
+  "summary": "Express-based user service exposing CRUD endpoints; Axios client integrates with external services; env-based configuration for base URLs."
 }
 ```
 
@@ -305,7 +316,8 @@ If no connections are discovered during analysis, you MUST still return JSON wit
 ```json
 {
   "incoming_connections": {},
-  "outgoing_connections": {}
+  "outgoing_connections": {},
+  "summary": "No connections discovered in code; insufficient data to infer project purpose."
 }
 ```
 
@@ -326,6 +338,7 @@ If no connections are discovered during analysis, you MUST still return JSON wit
 
 - Return ONLY valid JSON with no additional text
 - Process every single connection from sutra memory data
+- Include a concise top-level "summary" as described above
 - Group by technology and file path as shown in format
 - Use line ranges for snippet_lines (e.g., "15-20" or "23-23")
 - Include environment variable information in descriptions

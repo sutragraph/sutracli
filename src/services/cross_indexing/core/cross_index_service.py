@@ -28,7 +28,7 @@ class CrossIndexService:
     Enhanced service for managing cross-project connection analysis and storage.
 
     Key improvements:
-    - Uses file_hash_id as foreign key instead of file paths
+    - Uses file_id as foreign key instead of file paths
     - Stores only technology field, not library field
     - Returns only IDs in match responses
     - Integrates with Sutra memory for context
@@ -537,8 +537,8 @@ class CrossIndexService:
                                                 }
 
                                                 # Run Phase 5 - Connection Matching
-                                                matching_result = self._run_phase5_connection_matching(
-                                                    project_id
+                                                matching_result = (
+                                                    self._run_phase5_connection_matching()
                                                 )
 
                                                 if matching_result.get("success"):
@@ -1397,7 +1397,7 @@ Content:
                 },
             }
 
-    def _run_phase5_connection_matching(self, project_id: int) -> Dict[str, Any]:
+    def _run_phase5_connection_matching(self) -> Dict[str, Any]:
         """
         Run Phase 5 - Connection Matching using the new 5-phase system.
         Fetches all incoming and outgoing connections from database and performs matching.
@@ -1412,8 +1412,8 @@ Content:
             logger.info("Starting Phase 5 - Connection Matching")
 
             # Fetch all incoming connections from database
-            incoming_connections = self._get_all_incoming_connections(project_id)
-            outgoing_connections = self._get_all_outgoing_connections(project_id)
+            incoming_connections = self._get_all_incoming_connections()
+            outgoing_connections = self._get_all_outgoing_connections()
 
             if not incoming_connections and not outgoing_connections:
                 return {
@@ -1581,12 +1581,11 @@ Content:
         """
         try:
             query = """
-            SELECT id, technology_name, code_snippet, description, file_hash_id, snippet_lines
+            SELECT id, technology_name, code_snippet, description, file_id, snippet_lines
             FROM incoming_connections
-            WHERE project_id = ?
             ORDER BY id
             """
-            results = self.db_connection.execute_query(query, (project_id,))
+            results = self.db_connection.execute_query(query)
 
             connections = []
             for row in results:
@@ -1596,7 +1595,7 @@ Content:
                         "technology": row["technology_name"],
                         "code_snippet": row["code_snippet"],
                         "description": row["description"],
-                        "file_hash_id": row["file_hash_id"],
+                        "file_id": row["file_id"],
                         "snippet_lines": row["snippet_lines"],
                     }
                 )
@@ -1622,12 +1621,11 @@ Content:
         """
         try:
             query = """
-            SELECT id, technology_name, code_snippet, description, file_hash_id, snippet_lines
+            SELECT id, technology_name, code_snippet, description, file_id, snippet_lines
             FROM outgoing_connections
-            WHERE project_id = ?
             ORDER BY id
             """
-            results = self.db_connection.execute_query(query, (project_id,))
+            results = self.db_connection.execute_query(query)
 
             connections = []
             for row in results:
@@ -1639,7 +1637,7 @@ Content:
                         ],  # technology_name from DB mapped to technology
                         "code_snippet": row["code_snippet"],
                         "description": row["description"],
-                        "file_hash_id": row["file_hash_id"],
+                        "file_id": row["file_id"],
                         "snippet_lines": row["snippet_lines"],
                     }
                 )
@@ -1715,32 +1713,40 @@ Content:
 
     def get_existing_connections_with_ids(self) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Retrieve existing connections with IDs and file_hash_id references.
+        Retrieve existing connections with IDs and file references.
 
         Returns:
             Dictionary with 'incoming' and 'outgoing' connection lists including IDs
         """
         try:
-            # Get incoming connections with file info
+            # Get incoming connections with file and project info (via files.project_id)
             incoming_query = """
-                SELECT ic.id, ic.description, ic.project_id, 
-                       files.id as file_id, files.file_path, files.language,
-                       p.name as project_name
+                SELECT ic.id,
+                       ic.description,
+                       files.id AS file_id,
+                       files.file_path,
+                       files.language,
+                       p.name AS project_name,
+                       p.id AS project_id
                 FROM incoming_connections ic
-                JOIN projects p ON ic.project_id = p.id
-                LEFT JOIN files files ON ic.file_id = files.id
+                LEFT JOIN files ON ic.file_id = files.id
+                LEFT JOIN projects p ON files.project_id = p.id
                 ORDER BY ic.created_at DESC
             """
             incoming_results = self.db_connection.execute_query(incoming_query)
 
             # Get outgoing connections with file info
             outgoing_query = """
-                SELECT oc.id, oc.description, oc.project_id,
-                       files.id as file_id, files.file_path, files.language,
-                       p.name as project_name
+                SELECT oc.id,
+                       oc.description,
+                       files.id AS file_id,
+                       files.file_path,
+                       files.language,
+                       p.name AS project_name,
+                       p.id AS project_id
                 FROM outgoing_connections oc
-                JOIN projects p ON oc.project_id = p.id
                 LEFT JOIN files ON oc.file_id = files.id
+                LEFT JOIN projects p ON files.project_id = p.id
                 ORDER BY oc.created_at DESC
             """
             outgoing_results = self.db_connection.execute_query(outgoing_query)
@@ -1755,11 +1761,11 @@ Content:
         self, project_id: int, connections_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Store discovered connections using file_hash_id as foreign key.
+        Store discovered connections using file_id as foreign key.
 
         Args:
             project_id: ID of the project being analyzed
-            connections_data: Dictionary containing connection data with file_hash_ids
+            connections_data: Dictionary containing connection data with file_ids resolved from file paths
 
         Returns:
             Result dictionary with success status and stored connection IDs
@@ -1772,8 +1778,8 @@ Content:
             # Store incoming connections
             if "incoming_connections" in connections_data:
                 for conn in connections_data["incoming_connections"]:
-                    # Get file_hash_id from file path - always retrieve from database
-                    file_hash_id = self._get_file_id(project_id, conn.get("file_path"))
+                    # Get file_id from file path - always retrieve from database
+                    file_id = self._get_file_id(project_id, conn.get("file_path"))
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -1786,13 +1792,12 @@ Content:
                     cursor = self.db_connection.connection.execute(
                         """
                         INSERT INTO incoming_connections
-                        (project_id, description, file_hash_id, snippet_lines, technology_name, code_snippet)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        (description, file_id, snippet_lines, technology_name, code_snippet)
+                        VALUES (?, ?, ?, ?, ?)
                         """,
                         (
-                            project_id,
                             conn["description"],
-                            file_hash_id,
+                            file_id,
                             json.dumps(snippet_lines),
                             conn.get("technology", {}).get("name", "unknown"),
                             code_snippet,
@@ -1803,8 +1808,8 @@ Content:
             # Store outgoing connections
             if "outgoing_connections" in connections_data:
                 for conn in connections_data["outgoing_connections"]:
-                    # Get file_hash_id from file path - always retrieve from database
-                    file_hash_id = self._get_file_id(project_id, conn.get("file_path"))
+                    # Get file_id from file path - always retrieve from database
+                    file_id = self._get_file_id(project_id, conn.get("file_path"))
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -1817,13 +1822,12 @@ Content:
                     cursor = self.db_connection.connection.execute(
                         """
                         INSERT INTO outgoing_connections
-                        (project_id, description, file_hash_id, snippet_lines, technology_name, code_snippet)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        (description, file_id, snippet_lines, technology_name, code_snippet)
+                        VALUES (?, ?, ?, ?, ?)
                         """,
                         (
-                            project_id,
                             conn["description"],
-                            file_hash_id,
+                            file_id,
                             json.dumps(snippet_lines),
                             conn.get("technology", {}).get("name", "unknown"),
                             code_snippet,
@@ -1903,7 +1907,7 @@ Content:
             }
 
     def _get_file_id(self, project_id: int, file_path: str) -> Optional[int]:
-        """Get file_hash_id for a given project and file path."""
+        """Get file_id for a given project and file path."""
         try:
             if not file_path:
                 logger.warning("Empty file_path provided to _get_file_id")
@@ -1943,11 +1947,11 @@ Content:
                 )
 
                 if result:
-                    file_hash_id = result[0]["id"]
+                    file_id = result[0]["id"]
                     logger.debug(
-                        f"Found file_hash_id {file_hash_id} for {file_path} (original path) in project {project_id}"
+                        f"Found file_id {file_id} for {file_path} (original path) in project {project_id}"
                     )
-                    return file_hash_id
+                    return file_id
 
             # If still not found, try to find by filename match (fallback)
             filename = os.path.basename(file_path)
@@ -1961,19 +1965,19 @@ Content:
                     # If multiple matches, prefer exact filename match
                     for row in result:
                         if os.path.basename(row["file_path"]) == filename:
-                            file_hash_id = row["id"]
+                            file_id = row["id"]
                             logger.debug(
-                                f"Found file_hash_id {file_hash_id} by filename match for {filename} -> {row['file_path']} in project {project_id}"
+                                f"Found file_id {file_id} by filename match for {filename} -> {row['file_path']} in project {project_id}"
                             )
-                            return file_hash_id
+                            return file_id
 
             logger.warning(
-                f"No file_hash_id found for {file_path} (absolute: {absolute_file_path}) in project {project_id}"
+                f"No file_id found for {file_path} (absolute: {absolute_file_path}) in project {project_id}"
             )
             return None
 
         except Exception as e:
-            logger.error(f"Error getting file_hash_id for {file_path}: {e}")
+            logger.error(f"Error getting file_id for {file_path}: {e}")
             return None
 
     def _fetch_code_snippet_from_lines(
