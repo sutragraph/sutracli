@@ -464,137 +464,13 @@ class CrossIndexService:
                             }
                             return
                         else:
-                            # Phase 3 completed but no analysis_result yet - need to proceed to Phase 4
-                            current_phase = self.prompt_manager.current_phase
-                            if current_phase == 3:
-                                # Phase 3 complete - start Phase 4 (Data Splitting)
-                                print(
-                                    "🎯 Phase 3 complete - starting Phase 4 (Data Splitting)..."
-                                )
-                                yield {
-                                    "type": "implementation_complete",
-                                    "iteration": current_iteration,
-                                    "message": "Implementation discovery completed, starting data splitting",
-                                }
-
-                                # Run Phase 4 - Data Splitting
-                                splitting_result = self._run_phase4_data_splitting()
-
-                                if splitting_result.get("success"):
-                                    analysis_result = splitting_result.get(
-                                        "analysis_result"
-                                    )
-                                    yield {
-                                        "type": "data_splitting_complete",
-                                        "iteration": current_iteration,
-                                        "message": "Data splitting completed successfully",
-                                    }
-
-                                    # Now process the analysis_result for connection storage
-                                    if (
-                                        analysis_result
-                                        and isinstance(analysis_result, dict)
-                                        and "error" not in analysis_result
-                                    ):
-                                        # Check if both incoming and outgoing connections exist before proceeding
-                                        incoming_count = len(
-                                            analysis_result.get(
-                                                "incoming_connections", []
-                                            )
-                                        )
-                                        outgoing_count = len(
-                                            analysis_result.get(
-                                                "outgoing_connections", []
-                                            )
-                                        )
-
-                                        if incoming_count > 0 or outgoing_count > 0:
-                                            # Store connections in database with actual code snippets
-                                            storage_result = self.store_connections_with_file_hash_id(
-                                                project_id, analysis_result
-                                            )
-
-                                            if storage_result.get("success"):
-                                                logger.debug(
-                                                    f"Successfully stored connections: {storage_result.get('message')}"
-                                                )
-                                                yield {
-                                                    "type": "connections_stored",
-                                                    "iteration": current_iteration,
-                                                    "analysis_result": analysis_result,
-                                                    "storage_result": storage_result,
-                                                    "message": f"Connections stored successfully with {incoming_count} incoming and {outgoing_count} outgoing connections",
-                                                }
-
-                                                # Start Phase 5 - Connection Matching
-                                                print(
-                                                    "🎯 Phase 4 complete - starting Phase 5 (Connection Matching)..."
-                                                )
-                                                yield {
-                                                    "type": "connection_matching_start",
-                                                    "iteration": current_iteration,
-                                                    "message": "Starting Phase 5 connection matching analysis",
-                                                }
-
-                                                # Run Phase 5 - Connection Matching
-                                                matching_result = (
-                                                    self._run_phase5_connection_matching()
-                                                )
-
-                                                if matching_result.get("success"):
-                                                    yield {
-                                                        "type": "cross_index_success",
-                                                        "iteration": current_iteration,
-                                                        "analysis_result": analysis_result,
-                                                        "storage_result": storage_result,
-                                                        "matching_result": matching_result,
-                                                        "message": f"Cross-indexing completed successfully with connection matching: {matching_result.get('message')}",
-                                                    }
-                                                else:
-                                                    yield {
-                                                        "type": "cross_index_partial_success",
-                                                        "iteration": current_iteration,
-                                                        "analysis_result": analysis_result,
-                                                        "storage_result": storage_result,
-                                                        "matching_error": matching_result.get(
-                                                            "error"
-                                                        ),
-                                                        "message": f"Analysis and storage completed successfully, but connection matching failed: {matching_result.get('error')}",
-                                                    }
-                                            else:
-                                                yield {
-                                                    "type": "cross_index_storage_error",
-                                                    "iteration": current_iteration,
-                                                    "analysis_result": analysis_result,
-                                                    "storage_error": storage_result.get(
-                                                        "error"
-                                                    ),
-                                                    "message": f"Analysis completed but storage failed: {storage_result.get('error')}",
-                                                }
-                                        else:
-                                            yield {
-                                                "type": "cross_index_no_connections",
-                                                "iteration": current_iteration,
-                                                "message": "No connections found in analysis.",
-                                                "analysis_result": analysis_result,
-                                            }
-                                else:
-                                    yield {
-                                        "type": "splitting_error",
-                                        "iteration": current_iteration,
-                                        "error": splitting_result.get("error"),
-                                        "message": "Data splitting failed",
-                                    }
-                                return
-                            else:
-                                # Task completed in other phases without analysis_result
-                                yield {
-                                    "type": "phase_complete",
-                                    "iteration": current_iteration,
-                                    "current_phase": current_phase,
-                                    "message": f"Phase {current_phase} completed",
-                                }
-                                return
+                            # No analysis_result - this shouldn't happen if phases completed properly
+                            yield {
+                                "type": "cross_index_incomplete",
+                                "iteration": current_iteration,
+                                "message": "Task completed but no analysis result available",
+                            }
+                            return
 
                 except Exception as iteration_error:
                     logger.error(
@@ -1456,7 +1332,7 @@ Content:
             # Get system and user prompts for Phase 5
             system_prompt = phase5_manager.get_system_prompt()
             user_prompt = phase5_manager.build_matching_prompt(
-                incoming_connections, outgoing_connections, project_id
+                incoming_connections, outgoing_connections
             )
 
             # Retry logic for Phase 5 connection matching
@@ -1774,6 +1650,20 @@ Content:
 
             stored_incoming = []
             stored_outgoing = []
+
+            # Update project description (summary) if present in connections_data
+            try:
+                if isinstance(connections_data, dict):
+                    project_summary = connections_data.get("summary", "").strip()
+                    if project_summary:
+                        self.db_connection.connection.execute(
+                            "UPDATE projects SET description = ? WHERE id = ?",
+                            (project_summary, project_id),
+                        )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to update project description for {project_id}: {e}"
+                )
 
             # Store incoming connections
             if "incoming_connections" in connections_data:
