@@ -2,13 +2,12 @@
 Main converter class that orchestrates the code extraction to SQLite conversion process.
 """
 
-from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 
 from loguru import logger
 
-from graph.sqlite_client import SQLiteConnection, GraphOperations
+from graph import SQLiteConnection, GraphOperations
 from models.schema import Project, ExtractionData
 from utils import load_json_file
 

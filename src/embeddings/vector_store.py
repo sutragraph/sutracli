@@ -4,7 +4,7 @@ Merges the functionality of simple_processor.py and vector_db.py into a clean in
 """
 
 import json
-import sqlite3
+import sqlite3, threading
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 
@@ -22,11 +22,12 @@ class EmbeddingModel:
 
     def __init__(self, model_path: str = "models/all-MiniLM-L12-v2"):
         self.model_path = Path(model_path)
-        self.session = None
-        self.tokenizer = None
+        self.session: Optional[ort.InferenceSession] = None
+        self.tokenizer: Optional[Tokenizer] = None
+        self.input_names: List[str] = []
         self._load_model()
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """Load the ONNX model and tokenizer."""
         try:
             model_file = self.model_path / "model.onnx"
@@ -35,7 +36,7 @@ class EmbeddingModel:
 
             providers = ["CPUExecutionProvider"]
             self.session = ort.InferenceSession(str(model_file), providers=providers)
-            self.input_names = [input.name for input in self.session.get_inputs()]
+            self.input_names = [inp.name for inp in self.session.get_inputs()]
 
             tokenizer_file = self.model_path / "tokenizer.json"
             if tokenizer_file.exists():
@@ -96,7 +97,10 @@ class EmbeddingModel:
 
         try:
             inputs = self._tokenize(text)
-            outputs = self.session.run(None, inputs)
+            session = self.session
+            if session is None:
+                raise RuntimeError("Embedding model session is not initialized")
+            outputs = session.run(None, inputs)
             embeddings = np.array(outputs[0], dtype=np.float32)
 
             # Mean pooling
@@ -149,7 +153,10 @@ class EmbeddingModel:
             }
 
             # Run inference on entire batch
-            outputs = self.session.run(None, batch_inputs)
+            session = self.session
+            if session is None:
+                raise RuntimeError("Embedding model session is not initialized")
+            outputs = session.run(None, batch_inputs)
             embeddings = np.array(outputs[0], dtype=np.float32)
 
             # Mean pooling for each item in batch
@@ -285,13 +292,38 @@ class TextChunker:
 class VectorStore:
     """Unified vector store with embedding generation and similarity search."""
 
-    def __init__(self, db_path: str = None, model_path: str = None):
+    # Attributes for type checkers
+    embedding_model: EmbeddingModel
+    text_chunker: TextChunker
+    db_path: Path
+    connection: Optional[sqlite3.Connection]
+
+    _instance: Optional["VectorStore"] = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> "VectorStore":
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    logger.debug("🔧 Creating new VectorStore singleton instance")
+                    cls._instance = super(VectorStore, cls).__new__(cls)
+        else:
+            logger.debug("♻️ Reusing existing VectorStore singleton instance")
+        return cls._instance  # type: ignore[return-value]
+
+    def __init__(self, db_path: Optional[str] = None, model_path: Optional[str] = None):
+        # Initialize only once due to singleton pattern
+        if getattr(self, "initialized", False):
+            return
+
         # Initialize database
         if db_path is None:
-            db_path = config.sqlite.embeddings_db
-        self.db_path = Path(db_path)
+            resolved_db_path: str = str(config.sqlite.embeddings_db)
+        else:
+            resolved_db_path = db_path
+        self.db_path = Path(resolved_db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.connection = None
+        self.connection: Optional[sqlite3.Connection] = None
 
         # Initialize embedding components
         if model_path is None:
@@ -308,8 +340,10 @@ class VectorStore:
         self.text_chunker = TextChunker(self.embedding_model)
 
         self._connect()
+        self.initialized = True
+        logger.debug("✅ VectorStore initialized")
 
-    def _connect(self):
+    def _connect(self) -> None:
         """Connect to vector database and setup tables."""
         try:
             self.connection = sqlite3.connect(str(self.db_path))
@@ -322,9 +356,10 @@ class VectorStore:
             logger.error(f"Failed to connect to vector store: {e}")
             raise
 
-    def _setup_vector_tables(self):
+    def _setup_vector_tables(self) -> None:
         """Setup vector tables using sqlite-vec."""
         try:
+            assert self.connection is not None
             self.connection.execute(
                 """
                 CREATE VIRTUAL TABLE IF NOT EXISTS embeddings USING vec0(
@@ -374,16 +409,18 @@ class VectorStore:
     ) -> int:
         """Store embedding in vector database."""
         try:
-            if isinstance(embedding, np.ndarray):
-                embedding_array = embedding.astype(np.float32)
-            else:
-                embedding_array = np.array(embedding, dtype=np.float32)
+            embedding_array = (
+                embedding.astype(np.float32)
+                if isinstance(embedding, np.ndarray)
+                else np.array(embedding, dtype=np.float32)
+            )
 
             if len(embedding_array.shape) != 1 or embedding_array.shape[0] != 384:
                 raise ValueError(
                     f"Expected 384-dimensional vector, got shape {embedding_array.shape}"
                 )
 
+            assert self.connection is not None
             cursor = self.connection.execute(
                 """INSERT INTO embeddings (node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
                    VALUES (?, ?, ?, ?, ?, ?)""",
@@ -399,13 +436,17 @@ class VectorStore:
 
             embedding_id = cursor.lastrowid
             self.connection.commit()
-            return embedding_id
+            if embedding_id is None:
+                raise RuntimeError("Failed to retrieve lastrowid after insert")
+            return int(embedding_id)
 
         except Exception as e:
             logger.error(f"Failed to store embedding for node {node_id}: {e}")
             raise
 
-    def store_embeddings_batch(self, embedding_data_list: List[Dict]) -> List[int]:
+    def store_embeddings_batch(
+        self, embedding_data_list: List[Dict[str, Any]]
+    ) -> List[int]:
         """
         Store multiple embeddings in a single database transaction for massive performance improvement.
 
@@ -418,20 +459,22 @@ class VectorStore:
         if not embedding_data_list:
             return []
 
-        embedding_ids = []
+        embedding_ids: List[int] = []
 
         try:
             # Begin transaction for batch insert
+            assert self.connection is not None
             cursor = self.connection.cursor()
             cursor.execute("BEGIN TRANSACTION")
 
             for data in embedding_data_list:
                 # Validate and convert embedding
                 embedding = data["embedding"]
-                if isinstance(embedding, np.ndarray):
-                    embedding_array = embedding.astype(np.float32)
-                else:
-                    embedding_array = np.array(embedding, dtype=np.float32)
+                embedding_array = (
+                    embedding.astype(np.float32)
+                    if isinstance(embedding, np.ndarray)
+                    else np.array(embedding, dtype=np.float32)
+                )
 
                 if len(embedding_array.shape) != 1 or embedding_array.shape[0] != 384:
                     raise ValueError(
@@ -450,7 +493,10 @@ class VectorStore:
                         embedding_array,
                     ),
                 )
-                embedding_ids.append(cursor.lastrowid)
+                rowid = cursor.lastrowid
+                if rowid is None:
+                    raise RuntimeError("Failed to retrieve lastrowid for batch insert")
+                embedding_ids.append(int(rowid))
 
             # Commit all inserts at once - this is the key performance improvement!
             cursor.execute("COMMIT")
@@ -459,7 +505,10 @@ class VectorStore:
             )
 
         except Exception as e:
-            cursor.execute("ROLLBACK")
+            try:
+                cursor.execute("ROLLBACK")
+            except Exception:
+                pass
             logger.error(f"Failed to batch store embeddings: {e}")
             raise
 
@@ -474,10 +523,11 @@ class VectorStore:
     ) -> List[Dict[str, Any]]:
         """Search for similar embeddings."""
         try:
-            if isinstance(query_embedding, np.ndarray):
-                query_vector = query_embedding.astype(np.float32)
-            else:
-                query_vector = np.array(query_embedding, dtype=np.float32)
+            query_vector = (
+                query_embedding.astype(np.float32)
+                if isinstance(query_embedding, np.ndarray)
+                else np.array(query_embedding, dtype=np.float32)
+            )
 
             if len(query_vector.shape) != 1 or query_vector.shape[0] != 384:
                 raise ValueError(
@@ -493,7 +543,7 @@ class VectorStore:
                     ORDER BY distance
                     LIMIT ?
                 """
-                query_params = (query_vector, project_id, limit)
+                query_params: Tuple[Any, ...] = (query_vector, project_id, limit)
             else:
                 query_sql = """
                     SELECT rowid, node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
@@ -504,8 +554,9 @@ class VectorStore:
                 """
                 query_params = (query_vector, limit)
 
+            assert self.connection is not None
             cursor = self.connection.execute(query_sql, query_params)
-            results = []
+            results: List[Dict[str, Any]] = []
 
             for row in cursor.fetchall():
                 (
@@ -519,19 +570,19 @@ class VectorStore:
                 ) = row
 
                 # Convert distance to similarity
-                similarity = 1.0 / (1.0 + distance)
+                similarity = 1.0 / (1.0 + float(distance))
 
                 if similarity >= threshold:
                     results.append(
                         {
-                            "embedding_id": embedding_id,
-                            "node_id": node_id,
-                            "project_id": proj_id,
-                            "chunk_index": chunk_index,
-                            "chunk_start_line": chunk_start_line,
-                            "chunk_end_line": chunk_end_line,
-                            "similarity": similarity,
-                            "distance": distance,
+                            "embedding_id": int(embedding_id),
+                            "node_id": str(node_id),
+                            "project_id": int(proj_id),
+                            "chunk_index": int(chunk_index),
+                            "chunk_start_line": int(chunk_start_line),
+                            "chunk_end_line": int(chunk_end_line),
+                            "similarity": float(similarity),
+                            "distance": float(distance),
                         }
                     )
 
@@ -559,17 +610,18 @@ class VectorStore:
     def get_stats(self) -> Dict[str, Any]:
         """Get vector store statistics."""
         try:
-            stats = {}
+            stats: Dict[str, Any] = {}
 
+            assert self.connection is not None
             # Total embeddings
             cursor = self.connection.execute("SELECT COUNT(*) FROM embeddings")
-            stats["total_embeddings"] = cursor.fetchone()[0]
+            stats["total_embeddings"] = int(cursor.fetchone()[0])
 
             # Unique nodes
             cursor = self.connection.execute(
                 "SELECT COUNT(DISTINCT node_id) FROM embeddings"
             )
-            stats["unique_nodes"] = cursor.fetchone()[0]
+            stats["unique_nodes"] = int(cursor.fetchone()[0])
 
             # Average chunks per node
             if stats["unique_nodes"] > 0:
@@ -597,7 +649,7 @@ class VectorStore:
                 "error": str(e),
             }
 
-    def close(self):
+    def close(self) -> None:
         """Close the database connection."""
         if self.connection:
             self.connection.close()
@@ -605,13 +657,6 @@ class VectorStore:
             logger.info("Vector store connection closed")
 
 
-# Global instance
-_vector_store = None
-
-
 def get_vector_store() -> VectorStore:
-    """Get the global vector store instance."""
-    global _vector_store
-    if _vector_store is None:
-        _vector_store = VectorStore()
-    return _vector_store
+    """Get the singleton vector store instance."""
+    return VectorStore()

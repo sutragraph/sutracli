@@ -1,28 +1,21 @@
 """Incremental indexing for efficient database updates when code changes."""
 
-import asyncio
-import hashlib
+
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Any, Union
+from typing import Dict, List, Optional, Set, Any
 from loguru import logger
 
-from graph.sqlite_client import SQLiteConnection, GraphOperations
-from graph.converter import ASTToSqliteConverter
+from graph import SQLiteConnection, GraphOperations, ASTToSqliteConverter
 from embeddings import get_embedding_engine
 
 from utils.helpers import load_json_file
 from config.settings import config
 
-# Import will be done lazily to avoid circular imports
 
 # Import indexer functions for file processing
 from indexer import (
-    compute_file_hash,
-    compute_directory_hashes,
-    load_previous_results,
-    extract_from_directory,
-    export_to_json,
+    compute_directory_hashes
 )
 from indexer.ast_parser import ASTParser
 from utils.file_utils import (
@@ -31,12 +24,7 @@ from utils.file_utils import (
 )
 
 from models.schema import (
-    Project,
-    File,
     FileData,
-    BlockType,
-    CodeBlock,
-    Relationship,
     ExtractionData,
 )
 
@@ -574,7 +562,7 @@ class ProjectIndexer:
 
             # Count relationships before deletion
             rel_count = self.connection.execute_query(
-                """SELECT COUNT(*) as count FROM relationships 
+                """SELECT COUNT(*) as count FROM relationships
                    WHERE source_id = ? OR target_id = ?""",
                 (raw_file_id, raw_file_id),
             )
@@ -607,7 +595,7 @@ class ProjectIndexer:
 
             self.connection.execute_query(
                 f"""DELETE FROM embeddings
-                   WHERE node_id IN ({placeholders}) 
+                   WHERE node_id IN ({placeholders})
                    AND project_id = ?""",
                 params,
             )

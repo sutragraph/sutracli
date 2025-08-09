@@ -137,19 +137,25 @@ class EmbeddingEngine:
             # Track which chunks belong to this block
             for chunk_idx, chunk_metadata in enumerate(text_chunks):
                 all_chunk_texts.append(chunk_metadata["text"])
-                block_chunk_mapping.append({
-                    'block': block,
-                    'chunk_index': chunk_idx,
-                    'embedding_text': block_embedding_text,
-                })
+                block_chunk_mapping.append(
+                    {
+                        "block": block,
+                        "chunk_index": chunk_idx,
+                        "embedding_text": block_embedding_text,
+                    }
+                )
 
         # Generate ALL embeddings in one batch - this is the key performance improvement!
         if not all_chunk_texts:
             logger.debug("No chunk texts to embed")
             return {"total_embeddings": 0, "blocks_processed": 0}
 
-        logger.debug(f"Generating embeddings for {len(all_chunk_texts)} chunks in one batch")
-        all_embeddings = self.vector_store.embedding_model.get_embeddings_batch(all_chunk_texts)
+        logger.debug(
+            f"Generating embeddings for {len(all_chunk_texts)} chunks in one batch"
+        )
+        all_embeddings = self.vector_store.embedding_model.get_embeddings_batch(
+            all_chunk_texts
+        )
 
         if all_embeddings is None:
             logger.error("Embedding generation returned None")
@@ -159,8 +165,8 @@ class EmbeddingEngine:
         batch_embedding_data = []
         for i, embedding in enumerate(all_embeddings):
             mapping = block_chunk_mapping[i]
-            block = mapping['block']
-            chunk_index = mapping['chunk_index']
+            block = mapping["block"]
+            chunk_index = mapping["chunk_index"]
 
             # Use the actual block line numbers from AST parsing
             # For chunks within a block, we use the block's line range
@@ -168,15 +174,17 @@ class EmbeddingEngine:
             chunk_start_line = block.start_line
             chunk_end_line = block.end_line
 
-            batch_embedding_data.append({
-                'node_id': f"block_{block.id}",
-                'project_id': project_id,
-                'embedding': embedding,
-                'chunk_index': chunk_index,
-                'chunk_start_line': chunk_start_line,
-                'chunk_end_line': chunk_end_line,
-                'block_id': block.id,
-            })
+            batch_embedding_data.append(
+                {
+                    "node_id": f"block_{block.id}",
+                    "project_id": project_id,
+                    "embedding": embedding,
+                    "chunk_index": chunk_index,
+                    "chunk_start_line": chunk_start_line,
+                    "chunk_end_line": chunk_end_line,
+                    "block_id": block.id,
+                }
+            )
 
         # Store ALL embeddings in a single database transaction - MASSIVE speedup!
         embedding_ids = self.vector_store.store_embeddings_batch(batch_embedding_data)
@@ -191,14 +199,19 @@ class EmbeddingEngine:
 
         total_embeddings = len(embedding_ids)
 
-        logger.debug(f"Batch processed {len(blocks)} blocks, generated {total_embeddings} embeddings")
+        logger.debug(
+            f"Batch processed {len(blocks)} blocks, generated {total_embeddings} embeddings"
+        )
         return {"total_embeddings": total_embeddings}
 
-    def _get_block_hierarchy_path(self, target_block: CodeBlock, file_data: FileData) -> str:
+    def _get_block_hierarchy_path(
+        self, target_block: CodeBlock, file_data: FileData
+    ) -> str:
         """Get the hierarchical path to a block (e.g., 'ClassName.method_name')."""
-        def find_parent_path(block_id: int, blocks: List[CodeBlock], path: List[str] = None) -> List[str]:
-            if path is None:
-                path = []
+
+        def find_parent_path(
+            block_id: int, blocks: List[CodeBlock], path: List[str] = []
+        ) -> List[str]:
 
             for block in blocks:
                 if block.id == block_id:
@@ -206,7 +219,9 @@ class EmbeddingEngine:
 
                 # Check if target is in children
                 if block.children:
-                    child_path = find_parent_path(block_id, block.children, path + [block.name])
+                    child_path = find_parent_path(
+                        block_id, block.children, path + [block.name]
+                    )
                     if child_path:
                         return child_path
 
@@ -342,7 +357,6 @@ class EmbeddingEngine:
 
         return blocks_to_embed
 
-
     def process_file_data(self, file_data: FileData, project_id: int) -> Dict[str, int]:
         """
         Process a FileData object and generate embeddings for the file and its strategic blocks.
@@ -371,10 +385,14 @@ class EmbeddingEngine:
             if blocks_to_embed:
                 # If we have extracted blocks, embed them with hierarchical context
                 # Skip file-level chunking to avoid redundancy
-                logger.debug(f"Embedding {len(blocks_to_embed)} hierarchical blocks for {file_data.file_path}")
-            elif getattr(file_data, 'unsupported', False):
+                logger.debug(
+                    f"Embedding {len(blocks_to_embed)} hierarchical blocks for {file_data.file_path}"
+                )
+            elif getattr(file_data, "unsupported", False):
                 # Only embed entire file for unsupported file types
-                logger.debug(f"Unsupported file type, embedding entire file: {file_data.file_path}")
+                logger.debug(
+                    f"Unsupported file type, embedding entire file: {file_data.file_path}"
+                )
                 file_embedding_text = self._generate_file_embedding_text(file_data)
                 file_embedding_ids = self._store_embeddings(
                     entity_id=str(file_data.id),
@@ -387,7 +405,9 @@ class EmbeddingEngine:
                 stats["total_chunks"] += len(file_embedding_ids)
             else:
                 # Supported file type but no blocks extracted - skip embedding
-                logger.debug(f"Supported file with no extractable blocks, skipping: {file_data.file_path}")
+                logger.debug(
+                    f"Supported file with no extractable blocks, skipping: {file_data.file_path}"
+                )
 
             # Process all blocks in a single batch for massive performance improvement
             if blocks_to_embed:
