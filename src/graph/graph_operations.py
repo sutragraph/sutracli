@@ -1800,6 +1800,7 @@ class GraphOperations:
             start_line = min(snippet_lines)
             end_line = max(snippet_lines)
 
+            # Import the processing utilities to avoid circular import
             from tools.utils.code_processing_utils import (
                 process_code_with_line_filtering,
             )
