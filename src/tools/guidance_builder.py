@@ -10,8 +10,8 @@ from typing import Optional, Dict, Any, List
 from tools.utils.constants import (
     GUIDANCE_MESSAGES,
     SEARCH_CONFIG,
-    DELIVERY_QUEUE_CONFIG,
 )
+from tools.delivery_actions import DELIVERY_QUEUE_CONFIG
 from tools import ToolName
 
 

@@ -165,17 +165,75 @@ ORDER BY relationship_type, file_path
 LIMIT 25
 """
 
+GET_INCOMING_CONNECTIONS = """
+SELECT
+    ic.id, ic.description, ic.snippet_lines, ic.technology_name,
+    ic.code_snippet, ic.created_at,
+    f.file_path as target_file_path, f.language as target_language,
+    p.name as target_project_name, p.id as target_project_id,
+    cm.connection_type, cm.match_confidence,
+    oc.description as source_description,
+    sf.file_path as source_file_path, sf.language as source_language,
+    sp.name as source_project_name, sp.id as source_project_id,
+    'incoming' as direction
+FROM incoming_connections ic
+JOIN files f ON ic.file_id = f.id
+JOIN projects p ON f.project_id = p.id
+LEFT JOIN connection_mappings cm ON ic.id = cm.receiver_id
+LEFT JOIN outgoing_connections oc ON cm.sender_id = oc.id
+LEFT JOIN files sf ON oc.file_id = sf.id
+LEFT JOIN projects sp ON sf.project_id = sp.id
+WHERE ic.file_id = ?
+ORDER BY ic.created_at DESC, cm.match_confidence DESC
+"""
+
+GET_OUTGOING_CONNECTIONS = """
+SELECT
+    oc.id, oc.description, oc.snippet_lines, oc.technology_name,
+    oc.code_snippet, oc.created_at,
+    f.file_path as source_file_path, f.language as source_language,
+    p.name as source_project_name, p.id as source_project_id,
+    cm.connection_type, cm.match_confidence,
+    ic.description as target_description,
+    tf.file_path as target_file_path, tf.language as target_language,
+    tp.name as target_project_name, tp.id as target_project_id,
+    'outgoing' as direction
+FROM outgoing_connections oc
+JOIN files f ON oc.file_id = f.id
+JOIN projects p ON f.project_id = p.id
+LEFT JOIN connection_mappings cm ON oc.id = cm.sender_id
+LEFT JOIN incoming_connections ic ON cm.receiver_id = ic.id
+LEFT JOIN files tf ON ic.file_id = tf.id
+LEFT JOIN projects tp ON tf.project_id = tp.id
+WHERE oc.file_id = ?
+ORDER BY oc.created_at DESC, cm.match_confidence DESC
+"""
+
 GET_EXTERNAL_CONNECTIONS = """
 SELECT
-    'incoming' as direction, ic.description, ic.technology_name, ic.snippet_lines
+    'incoming' as direction, ic.description, ic.technology_name, ic.snippet_lines,
+    cm.connection_type, cm.match_confidence,
+    sf.file_path as connected_file_path, sp.name as connected_project_name,
+    sp.id as connected_project_id
 FROM incoming_connections ic
+LEFT JOIN connection_mappings cm ON ic.id = cm.receiver_id
+LEFT JOIN outgoing_connections oc ON cm.sender_id = oc.id
+LEFT JOIN files sf ON oc.file_id = sf.id
+LEFT JOIN projects sp ON sf.project_id = sp.id
 WHERE ic.file_id = ?
 UNION ALL
 SELECT
-    'outgoing' as direction, oc.description, oc.technology_name, oc.snippet_lines
+    'outgoing' as direction, oc.description, oc.technology_name, oc.snippet_lines,
+    cm.connection_type, cm.match_confidence,
+    tf.file_path as connected_file_path, tp.name as connected_project_name,
+    tp.id as connected_project_id
 FROM outgoing_connections oc
+LEFT JOIN connection_mappings cm ON oc.id = cm.sender_id
+LEFT JOIN incoming_connections ic ON cm.receiver_id = ic.id
+LEFT JOIN files tf ON ic.file_id = tf.id
+LEFT JOIN projects tp ON tf.project_id = tp.id
 WHERE oc.file_id = ?
-ORDER BY direction, technology_name
+ORDER BY direction, technology_name, match_confidence DESC
 LIMIT 15
 """
 

@@ -1,6 +1,5 @@
 """Incremental indexing for efficient database updates when code changes."""
 
-
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Any
@@ -15,9 +14,7 @@ from config.settings import config
 from graph.graph_operations import GraphOperations
 
 # Import indexer functions for file processing
-from indexer import (
-    compute_directory_hashes
-)
+from indexer import compute_directory_hashes
 from indexer.ast_parser import ASTParser
 from utils.file_utils import (
     get_extraction_file_path,
@@ -583,27 +580,7 @@ class ProjectIndexer:
 
     def _delete_embeddings(self, block_ids: List[str], project_id: int) -> None:
         """Delete embeddings for specified nodes. Node IDs should already include prefixes (file_ or block_)."""
-        try:
-            # Delete embeddings for these nodes
-            placeholders = ",".join(["?" for _ in block_ids])
-            params = tuple(
-                block_ids + [str(project_id)]
-            )  # Convert to tuple for type safety
-
-            self.connection.execute_query(
-                f"""DELETE FROM embeddings
-                   WHERE block_id IN ({placeholders})
-                   AND project_id = ?""",
-                params,
-            )
-
-            logger.debug(
-                f"Deleted {len(block_ids)} embeddings from database (file: 1, blocks: {len(block_ids)-1})"
-            )
-
-        except Exception as e:
-            logger.error(f"Error deleting node embeddings: {e}")
-            logger.error(f"Node IDs: {block_ids}, Project ID: {project_id}")
+        self.embedding_engine.delete_embeddings(block_ids, project_id)
 
     def _update_sutra_memory_for_changes(
         self, changes: Dict[str, Set[Path]], project_id: int

@@ -580,6 +580,47 @@ class EmbeddingEngine:
 
         return total_stats
 
+    def delete_embeddings(self, node_ids: List[str], project_id: int) -> None:
+        """Delete embeddings for specified nodes.
+
+        Args:
+            node_ids: List of node IDs to delete (should include prefixes like 'file_' or 'block_')
+            project_id: Project ID to scope the deletion
+        """
+        try:
+            if not node_ids:
+                logger.debug("No node IDs provided for deletion")
+                return
+
+            # Get vector store to access embeddings database
+            vector_store = get_vector_store()
+
+            if vector_store.connection is None:
+                logger.error("Vector store connection is None, cannot delete embeddings")
+                return
+
+            # Create placeholders for the SQL query
+            placeholders = ",".join(["?" for _ in node_ids])
+            params = tuple(node_ids + [str(project_id)])
+
+            # Execute deletion
+            vector_store.connection.execute(
+                f"""DELETE FROM embeddings
+                   WHERE node_id IN ({placeholders})
+                   AND project_id = ?""",
+                params,
+            )
+            vector_store.connection.commit()
+
+            logger.debug(
+                f"Deleted {len(node_ids)} embeddings from database (file: 1, blocks: {len(node_ids)-1})"
+            )
+
+        except Exception as e:
+            logger.error(f"Error deleting node embeddings: {e}")
+            logger.error(f"Node IDs: {node_ids}, Project ID: {project_id}")
+
+
 
 def parse_entity_id(prefixed_id: str) -> tuple[str, str]:
     """

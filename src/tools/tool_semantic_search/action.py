@@ -1,38 +1,32 @@
-import json
+from embeddings.vector_store import VectorStore
 from loguru import logger
 from typing import Iterator, Dict, Any, List, Optional
 from embeddings import get_vector_store
-from tools.utils import beautify_node_result
-from graph.sqlite_client import GraphOperations
+from graph.graph_operations import GraphOperations
 from models.agent import AgentAction
-from services.agent.agent_prompt.guidance_builder import (
-    SearchType,
-    build_guidance_message,
-)
 from tools.utils.constants import (
     SEMANTIC_SEARCH_CONFIG,
-    DELIVERY_QUEUE_CONFIG,
 )
-from services.agent.delivery_management import delivery_manager
-from services.agent.agent_prompt.guidance_builder import GuidanceScenario
-from services.agent.agent_prompt.guidance_builder import (
-    determine_semantic_batch_scenario,
+from tools.delivery_actions import (
+    handle_fetch_next_request,
+    register_delivery_queue_and_get_first_batch,
+    check_pending_delivery,
 )
-from tools.utils.code_processing_utils import add_line_numbers_to_code
+from tools import ToolName
+from tools.utils.enriched_context_formatter import (
+    beautify_enriched_context_auto,
+    format_chunk_with_enriched_context,
+)
+
 
 def _extract_search_parameters(action: AgentAction) -> str:
     """Extract query parameter from action."""
-    query = action.query or action.parameters.get("query", "")
-    if not query and action.description:
-        query = (
-            action.description.lower().replace("find ", "").replace("search for ", "")
-        )
-
+    query = action.parameters.get("query", "")
     return query
 
 
 def _perform_vector_search(
-    vector_store, query: str, project_id=None
+    vector_store: VectorStore, query: str, project_id: Optional[int] = None
 ) -> List[Dict[str, Any]]:
     """Perform vector database search with chunk-specific results."""
     config = SEMANTIC_SEARCH_CONFIG
@@ -50,74 +44,204 @@ def _perform_vector_search(
     )
 
 
+def _get_enriched_context(
+    graph_ops: GraphOperations, node_id: str
+) -> Optional[Dict[str, Any]]:
+    """Get enriched context for a node using graph operations."""
+    try:
+        if node_id.startswith("block_"):
+            block_id = int(node_id.split("_")[1])
+            return graph_ops.get_enriched_block_context(block_id)
+        elif node_id.startswith("file_"):
+            file_id = int(node_id.split("_")[1])
+            return graph_ops.get_enriched_file_context(file_id)
+        else:
+            logger.warning(f"Unknown node_id format: {node_id}")
+            return None
+    except (ValueError, IndexError) as e:
+        logger.error(f"Error parsing node_id {node_id}: {e}")
+        return None
+
+
+def _extract_chunk_specific_code(
+    enriched_context: Dict[str, Any],
+    chunk_start_line: Optional[int],
+    chunk_end_line: Optional[int],
+) -> str:
+    """Extract chunk-specific code from enriched file context (used only for unsupported files)."""
+    # Get content from file (blocks now use full context display)
+    if "file" not in enriched_context:
+        return ""
+
+    file_data = enriched_context["file"]
+    content = file_data.get("content", "")
+    node_start_line = 1
+
+    if not content:
+        return ""
+
+    if not chunk_start_line or not chunk_end_line:
+        return content  # Return full content if no chunk boundaries
+
+    try:
+        # Calculate relative line positions within the content
+        relative_start = max(0, (chunk_start_line or 1) - (node_start_line or 1))
+        relative_end = (chunk_end_line or 1) - (node_start_line or 1) + 1
+
+        code_lines = content.split("\n")
+
+        if (
+            relative_start < len(code_lines)
+            and relative_start >= 0
+            and relative_end > relative_start
+            and relative_end <= len(code_lines)
+        ):
+            # Extract only the lines that belong to this chunk
+            chunk_lines = code_lines[relative_start:relative_end]
+            return "\n".join(chunk_lines)
+        else:
+            # If chunk boundaries don't align, return full content
+            return content
+
+    except (IndexError, TypeError):
+        return content  # Fallback to full content
+
+
+def _deduplicate_block_results(
+    vector_results: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Deduplicate multiple chunks from the same block, keeping the highest similarity result.
+    Files are not deduplicated since they represent different content chunks.
+    """
+    # Separate blocks and files
+    block_results = {}
+    file_results = []
+    other_results = []
+
+    for result in vector_results:
+        node_id = result.get("node_id", "")
+
+        if node_id.startswith("block_"):
+            # Extract base block_id (could be block_123 or block_123_chunk_0)
+            block_id = node_id.split("_")[1] if "_" in node_id else node_id
+            similarity = result.get("similarity", 0.0)
+
+            # Keep only the best result for each block
+            if block_id not in block_results or similarity > block_results[
+                block_id
+            ].get("similarity", 0.0):
+                block_results[block_id] = result
+        elif node_id.startswith("file_"):
+            # Keep all file results (different chunks are meaningful)
+            file_results.append(result)
+        else:
+            # Keep other types as-is
+            other_results.append(result)
+
+    # Combine deduplicated results
+    deduplicated = list(block_results.values()) + file_results + other_results
+
+    # Sort by similarity to maintain quality order
+    deduplicated.sort(key=lambda x: x.get("similarity", 0.0), reverse=True)
+
+    return deduplicated
+
+
 def _process_sequential_chunk_results(
     vector_results: List[Dict[str, Any]],
     query: str,
     action_parameters: Dict[str, Any],
 ) -> Iterator[Dict[str, Any]]:
-    graph_operations = GraphOperations()
-    total_nodes = len(vector_results)
+    """Process chunk-specific results for sequential sending via delivery queue."""
 
-    next_item = delivery_manager.get_next_item("semantic_search", action_parameters)
+    # Deduplicate block results to avoid showing the same block multiple times
+    # when multiple chunks from the same block match the search
+    deduplicated_results = _deduplicate_block_results(vector_results)
+    total_nodes = len(deduplicated_results)
+
+    # Check if we have a pending delivery for this query
+    next_item = check_pending_delivery(
+        "semantic_search", action_parameters, ToolName.SEMANTIC_SEARCH
+    )
 
     if next_item is not None:
+        # We have a pending item from a previous call - deliver it
         yield next_item
         return
 
+    # No pending delivery - collect all chunk items and register them
     all_delivery_items = []
+    graph_ops = GraphOperations()
 
-    for i, result in enumerate(vector_results, 1):
-        node_details = graph_operations.get_node_details(result["block_id"])
-        if node_details:
-            chunk_code = _extract_chunk_specific_code(node_details, result)
+    for i, result in enumerate(deduplicated_results, 1):
+        # Get enriched context using graph operations
+        enriched_context = _get_enriched_context(graph_ops, result["node_id"])
 
-            if chunk_code:
-                chunk_node_details = node_details.copy()
-                chunk_node_details["code_snippet"] = chunk_code
+        if enriched_context:
+            # Extract chunk information
+            chunk_start_line = result.get("chunk_start_line")
+            chunk_end_line = result.get("chunk_end_line")
 
-                chunk_start_line = result.get("chunk_start_line")
-                chunk_end_line = result.get("chunk_end_line")
-                if chunk_start_line and chunk_end_line:
-                    chunk_node_details["lines"] = json.dumps(
-                        [chunk_start_line, chunk_end_line]
+            # Check if this is a code block vs unsupported file based on node_id
+            if result["node_id"].startswith("block_"):
+                # For code blocks: Always show full block for better context
+                # Even if the block was chunked for embedding efficiency
+                beautified_result = beautify_enriched_context_auto(
+                    enriched_context, i, include_code=True, total_nodes=total_nodes
+                )
+            elif (
+                result["node_id"].startswith("file_")
+                and chunk_start_line
+                and chunk_end_line
+            ):
+                # For unsupported files: Use chunking since we have no logical structure
+                chunk_code = _extract_chunk_specific_code(
+                    enriched_context, chunk_start_line, chunk_end_line
+                )
+
+                if chunk_code:
+                    # Format with chunk-specific context for files
+                    beautified_result = format_chunk_with_enriched_context(
+                        enriched_context,
+                        chunk_start_line,
+                        chunk_end_line,
+                        chunk_code,
+                        i,
+                        total_nodes,
                     )
-
-                beautified_result = beautify_node_result(
-                    chunk_node_details,
-                    i,
-                    include_code=True,
-                    total_nodes=total_nodes,
-                )
-
-                all_delivery_items.append(
-                    {
-                        "type": "tool_use",
-                        "tool_name": "semantic_search",
-                        "query": query,
-                        "result": f"Found {len(vector_results)} nodes",
-                        "node_index": i,
-                        "total_nodes": total_nodes,
-                        "data": beautified_result,
-                        "code_snippet": True,
-                    }
-                )
+                else:
+                    # No chunk code available, use full context
+                    beautified_result = beautify_enriched_context_auto(
+                        enriched_context, i, include_code=True, total_nodes=total_nodes
+                    )
             else:
-                beautified_result = beautify_node_result(
-                    node_details, i, include_code=True, total_nodes=total_nodes
+                # No chunk boundaries or unknown type, use full context
+                beautified_result = beautify_enriched_context_auto(
+                    enriched_context, i, include_code=True, total_nodes=total_nodes
                 )
 
-                all_delivery_items.append(
-                    {
-                        "type": "tool_use",
-                        "tool_name": "semantic_search",
-                        "query": query,
-                        "node_index": i,
-                        "total_nodes": total_nodes,
-                        "data": f"Node {i}: No code content available for this chunk.",
-                        "code_snippet": True,
-                    }
-                )
+            # Collect item for delivery manager
+            all_delivery_items.append(
+                {
+                    "type": "tool_use",
+                    "tool_name": "semantic_search",
+                    "query": query,
+                    "result": f"Found {len(deduplicated_results)} nodes",
+                    "node_index": i,
+                    "total_nodes": total_nodes,
+                    "data": beautified_result,
+                    "code_snippet": True,
+                    "node_id": result["node_id"],
+                    "chunk_info": {
+                        "start_line": chunk_start_line,
+                        "end_line": chunk_end_line,
+                        "similarity": result.get("similarity", 0.0),
+                    },
+                }
+            )
         else:
+            # Handle missing enriched context
             all_delivery_items.append(
                 {
                     "type": "tool_use",
@@ -125,73 +249,35 @@ def _process_sequential_chunk_results(
                     "query": query,
                     "node_index": i,
                     "total_nodes": total_nodes,
-                    "data": f"Node {i}: Node details not found.",
+                    "data": f"❌ Node {i}/{total_nodes}: Could not retrieve enriched context for {result['node_id']}.",
                     "code_snippet": True,
+                    "node_id": result["node_id"],
                 }
             )
 
+    # Register all items with delivery manager and send first batch
     if all_delivery_items:
-        first_batch = register_and_deliver_first_batch(
-            "semantic_search", action_parameters, all_delivery_items
+        # Use centralized delivery actions to register and get first batch
+        first_batch_result = register_delivery_queue_and_get_first_batch(
+            "semantic_search",
+            action_parameters,
+            all_delivery_items,
+            ToolName.SEMANTIC_SEARCH,
         )
-        if first_batch:
-            yield first_batch
+
+        if first_batch_result:
+            yield first_batch_result
     else:
+        # No items to deliver - send completion signal
         yield {
             "tool_name": "semantic_search",
             "type": "tool_use",
             "query": query,
-            "result": f"Found {len(vector_results)} nodes",
-            "data": f"No deliverable items found.",
+            "result": f"Found {len(deduplicated_results)} nodes",
+            "data": "No deliverable items found.",
             "code_snippet": True,
             "total_nodes": total_nodes,
         }
-
-
-def _extract_chunk_specific_code(
-    node_details: Dict[str, Any], result: Dict[str, Any]
-) -> str:
-    """Extract only the chunk-specific lines from the node code, similar to search_chunks_with_code."""
-    code_snippet = node_details.get("code_snippet", "")
-    if not code_snippet:
-        return ""
-
-    chunk_start_line = result.get("chunk_start_line")
-    chunk_end_line = result.get("chunk_end_line")
-
-    if not chunk_start_line or not chunk_end_line:
-        return code_snippet  # Return full code if no chunk boundaries
-
-    # Parse node lines to get the node's starting line
-    node_lines = node_details.get("lines")
-    if node_lines:
-        try:
-            lines_data = json.loads(node_lines)
-            if isinstance(lines_data, list) and len(lines_data) >= 1:
-                node_start_line = lines_data[0]
-
-                # Calculate relative line positions within the code
-                relative_start = max(0, chunk_start_line - node_start_line)
-                relative_end = chunk_end_line - node_start_line + 1
-
-                code_lines = code_snippet.split("\n")
-
-                if (
-                    relative_start < len(code_lines)
-                    and relative_start >= 0
-                    and relative_end > relative_start
-                    and relative_end <= len(code_lines)
-                ):
-                    # Extract only the lines that belong to this chunk
-                    chunk_lines = code_lines[relative_start:relative_end]
-
-                    return add_line_numbers_to_code(
-                        "\n".join(chunk_lines), chunk_start_line
-                    )
-        except (json.JSONDecodeError, IndexError, TypeError):
-            pass
-
-    return code_snippet  # Fallback to full code
 
 
 def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
@@ -201,119 +287,13 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
     project_id = action.parameters.get("project_id")
 
     try:
-        # Check if this is a fetch_next_code request (handles batch delivery)
-        if action.parameters.get("fetch_next_code", False):
-            logger.debug("🔄 Fetch next batch request detected")
+        # Check if this is a fetch_next_code request using centralized delivery actions
+        fetch_response = handle_fetch_next_request(action, ToolName.SEMANTIC_SEARCH)
+        if fetch_response:
+            yield fetch_response
+            return
 
-            batch_size = DELIVERY_QUEUE_CONFIG.get("semantic_search", 7)
-
-            # Only use existing delivery queue if NO query is provided (just fetch_next_code)
-            # If query is provided along with fetch_next_code, treat it as a new query
-            if not action.parameters.get("query"):
-                logger.debug(
-                    "🔄 No query provided - using existing delivery queue for fetch_next_code"
-                )
-                # Get next batch of items
-                batch_items = []
-                for _ in range(batch_size):
-                    next_item = delivery_manager.get_next_item_from_existing_queue()
-                    if next_item:
-                        batch_items.append(next_item)
-                    else:
-                        break
-            else:
-                logger.debug(
-                    "🔄 Query provided with fetch_next_code - treating as new query"
-                )
-                # Get next batch of items
-                batch_items = []
-                for _ in range(batch_size):
-                    next_item = delivery_manager.get_next_item(
-                        "semantic_search", action.parameters
-                    )
-                    if next_item:
-                        batch_items.append(next_item)
-                    else:
-                        break
-
-            if batch_items:
-                # Get total nodes from first item
-                total_nodes = batch_items[0].get("total_nodes", 0)
-                delivered_count = len(batch_items)
-
-                # Get accurate remaining count from delivery manager queue status
-                queue_status = delivery_manager.get_queue_status(
-                    "semantic_search", action.parameters
-                )
-                remaining_count = (
-                    queue_status.get("remaining_items", 0)
-                    if queue_status.get("exists", False)
-                    else 0
-                )
-
-                # Add guidance for fetch_next_code batch
-                guidance_message = ""
-
-                # Calculate batch number based on current position
-                current_position = (
-                    queue_status.get("current_position", 0)
-                    if queue_status.get("exists", False)
-                    else 0
-                )
-                batch_number = max(1, (current_position // batch_size) + 1)
-
-                scenario = determine_semantic_batch_scenario()
-
-                guidance_message = build_guidance_message(
-                    search_type=SearchType.SEMANTIC,
-                    scenario=scenario,
-                    total_nodes=total_nodes,
-                    delivered_count=delivered_count,
-                    remaining_count=remaining_count,
-                    batch_number=batch_number,
-                )
-
-                if guidance_message:
-                    guidance_message += "\n\n"
-
-                # Combine batch items into a single response
-                combined_data = []
-                for item in batch_items:
-                    combined_data.append(item.get("data", ""))
-
-                # Combine guidance with data
-                final_data = guidance_message + "\n\n".join(combined_data)
-
-                yield {
-                    "tool_name": "semantic_search",
-                    "type": "tool_use",
-                    "query": batch_items[0].get("query", "fetch_next_code"),
-                    "result": f"Found {total_nodes} nodes",
-                    "data": final_data,
-                    "code_snippet": True,
-                    "total_nodes": total_nodes,
-                    "batch_info": {
-                        "delivered_count": delivered_count,
-                        "remaining_count": remaining_count,
-                        "batch_size": batch_size,
-                    },
-                }
-                return
-            else:
-                # No more items available
-                yield {
-                    "tool_name": "semantic_search",
-                    "type": "tool_use",
-                    "query": action.parameters.get("query", "fetch_next_code"),
-                    "result": "result found: 0",
-                    "data": "No more code chunks/nodes available. All items from the previous query have been delivered.",
-                    "code_snippet": True,
-                    "total_nodes": 0,
-                }
-                return
-
-        # Extract parameters using helper function
-        query = _extract_search_parameters(action)
+        query = action.parameters.get("query", "")
 
         # Initialize vector store
         vector_store = get_vector_store()
@@ -328,25 +308,12 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
             "type": "tool_use",
             "query": query,
             "result": f"Found {total_nodes} nodes",
+            "code_snippet": True,
+            "total_nodes": total_nodes,
         }
 
-        # Handle empty results case
+        # Handle empty results
         if total_nodes == 0:
-
-            guidance_message = build_guidance_message(
-                search_type=SearchType.SEMANTIC,
-                scenario=GuidanceScenario.NO_RESULTS_FOUND,
-            )
-
-            yield {
-                "tool_name": "semantic_search",
-                "type": "tool_use",
-                "query": query,
-                "result": "result found: 0",
-                "data": guidance_message or "No results found for the query.",
-                "code_snippet": True,  # Always true now
-                "total_nodes": 0,
-            }
             return
 
         # Always use sequential processing with delivery queue for semantic search
@@ -362,91 +329,3 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
             "type": "semantic_search_error",
             "error": str(e),
         }
-
-
-def register_and_deliver_first_batch(
-    action_type: str,
-    action_parameters: Dict[str, Any],
-    delivery_items: List[Dict[str, Any]],
-) -> Optional[Dict[str, Any]]:
-    """
-    Register delivery queue and get first batch of items for semantic search.
-
-    Args:
-        action_type: Type of action (should be "semantic_search")
-        action_parameters: Action parameters
-        delivery_items: List of items to register for delivery
-
-    Returns:
-        First batch of items from delivery queue or None if no items
-    """
-    if not delivery_items:
-        return None
-
-    # Register all items with delivery manager
-    delivery_manager.register_delivery_queue(
-        action_type, action_parameters, delivery_items
-    )
-
-    # Get batch size for semantic search
-    batch_size = DELIVERY_QUEUE_CONFIG.get("semantic_search", 10)
-
-    # Collect first batch of items
-    batch_items = []
-    for _ in range(batch_size):
-        next_item = delivery_manager.get_next_item(action_type, action_parameters)
-        if next_item:
-            batch_items.append(next_item)
-        else:
-            break  # No more items available
-
-    if not batch_items:
-        return None
-
-    # Combine batch items into a single response
-    total_nodes = delivery_items[0].get("total_nodes", len(delivery_items))
-    query = action_parameters.get("query", "")
-
-    # Calculate delivery info
-    delivered_count = len(batch_items)
-    remaining_count = len(delivery_items) - delivered_count
-
-    # Add semantic search guidance
-    guidance_message = ""
-    if action_type == "semantic_search":
-        scenario = determine_semantic_batch_scenario()
-
-        guidance_message = build_guidance_message(
-            search_type=SearchType.SEMANTIC,
-            scenario=scenario,
-            total_nodes=total_nodes,
-            delivered_count=delivered_count,
-            remaining_count=remaining_count,
-            batch_number=1,  # This is always the first batch
-        )
-
-        if guidance_message:
-            guidance_message += "\n\n"
-
-    # Combine all data from batch items
-    combined_data = []
-    for item in batch_items:
-        combined_data.append(item.get("data", ""))
-
-    # Combine guidance with data
-    final_data = guidance_message + "\n\n".join(combined_data)
-
-    return {
-        "type": "tool_use",
-        "tool_name": "semantic_search",
-        "query": query,
-        "result": f"result found: {total_nodes}",
-        "data": final_data,
-        "code_snippet": True,
-        "total_nodes": total_nodes,
-        "batch_info": {
-            "delivered_count": delivered_count,
-            "remaining_count": remaining_count,
-            "batch_size": batch_size,
-        },
-    }

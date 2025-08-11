@@ -6,14 +6,14 @@ from typing import Dict, Any, Optional
 
 @dataclass
 class AgentAction:
-    """Represents an action the agent wants to take."""
+    """Represents an action the agent wants to take.
 
-    tool_type: str  # "terminal", "database", "semantic_search"
+    Tools use parameters dict for accessing tool-specific data.
+    Query data flows through parameters.get("query") from XML-parsed tool calls.
+    """
+
     description: str
-    command: Optional[str]
-    query: Optional[str]  # For database/semantic_search queries
-    parameters: Dict[str, Any] = field(default_factory=dict)
-    priority: int = 1
+    parameters: Dict[str, Any] = field(default_factory=dict)  # Primary source for XML-parsed tool parameters
 
 
 @dataclass

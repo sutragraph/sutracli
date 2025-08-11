@@ -1,10 +1,10 @@
 # TODO: Add directory-scoped semantic search support.
 
 SEMANTIC_SEARCH_TOOL = """## semantic_search
-Description: Find similar implementations and patterns in codebase. Use when you DON'T have specific function/class/file/method names (use database for specific names). Use for discovering existing patterns before creating new code.
+Description: Find similar implementations and patterns in codebase using semantic similarity. Use when you DON'T have specific function/class/file/method names (use database for specific names). Use for discovering existing patterns before creating new code.
 
 Parameters:
-- query: (required) The search terms to find similar implementations
+- query: (required) The search terms to find similar implementations - describe what you're looking for in natural language
 - fetch_next_code: (optional) Set to true to fetch next chunks of results when more are available
 
 Usage:
@@ -13,9 +13,14 @@ Usage:
 <fetch_next_code>true|false</fetch_next_code>
 </semantic_search>
 
+Parameter Details:
+- query: Use descriptive terms that capture the concept you're looking for (e.g., "user authentication", "file upload handler", "database connection setup")
+- fetch_next_code: Only use when the system explicitly tells you there are more results available - do not use preemptively
+
 Notes:
-- When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_code command - if the user does not tell you to use it, do not use it
+- Results are delivered in batches for performance - the system will tell you if more chunks are available
 - IMPORTANT: When using semantic search, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
+- The query parameter is passed through the XML structure and processed as action.parameters.get("query")
 
 Examples:
 
