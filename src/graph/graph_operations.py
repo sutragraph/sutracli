@@ -40,9 +40,6 @@ from queries.agent_queries import (
     GET_OUTGOING_CONNECTIONS,
 )
 from .sqlite_client import SQLiteConnection
-from tools.utils.code_processing_utils import (
-    process_code_with_line_filtering,
-)
 
 class GraphOperations:
     """High-level operations for inserting code extraction data."""
@@ -1802,6 +1799,10 @@ class GraphOperations:
             # Get start and end line from the list
             start_line = min(snippet_lines)
             end_line = max(snippet_lines)
+
+            from tools.utils.code_processing_utils import (
+                process_code_with_line_filtering,
+            )
 
             # Use existing beautify function to process code with line filtering
             result = process_code_with_line_filtering(
