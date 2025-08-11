@@ -11,9 +11,6 @@ from tools.utils import (
     process_code_with_line_filtering,
     chunk_large_code_clean,
 )
-from services.agent_connection_enhancer import (
-    get_agent_connection_enhancer,
-)
 from queries.agent_queries import (
     GET_NODES_BY_EXACT_NAME,
     GET_NODES_BY_NAME_LIKE,
@@ -96,43 +93,6 @@ def _generate_error_guidance(query_name: str, params: dict) -> str:
     )
 
     return " ".join(guidance_parts)
-
-
-def _add_connection_information(
-    results: List[Dict[str, Any]],
-    project_id: Optional[int] = None,
-    context: str = "agent",
-) -> str:
-    """
-    Add connection information to database query results for agent service only.
-
-    Args:
-        results: Database query results
-        db_connection: Database connection
-        project_id: Optional project ID
-        context: Context of the call ("agent" or "cross_index")
-
-    Returns:
-        Formatted connection information string (empty if context is not "agent")
-    """
-    try:
-        if not results or context != "agent":
-            return ""
-
-        # Get agent connection enhancer
-        connection_enhancer = get_agent_connection_enhancer()
-
-        # Enhance results with connection information
-        formatted_connections = connection_enhancer.enhance_database_results(
-            results, project_id, context
-        )
-
-        return formatted_connections
-
-    except Exception as e:
-        logger.error(f"Error adding connection information: {e}")
-        return ""
-
 
 def execute_structured_database_query(
     action: AgentAction, context: str = "agent"
@@ -830,15 +790,6 @@ def execute_structured_database_query(
                             }
                         )
 
-                    # Add connection information to the last chunk if available
-                    if all_delivery_items:
-                        connection_info = _add_connection_information(
-                            [result_dict], current_project_id, context
-                        )
-                        if connection_info:
-                            last_item = all_delivery_items[-1]
-                            last_item["data"] += "\n\n" + connection_info
-
                     # Register and deliver first item
                     first_item = register_and_deliver_first_item(
                         "database", action.parameters, all_delivery_items
@@ -941,21 +892,12 @@ def execute_structured_database_query(
                         total_nodes=1,
                     )
 
-                    # Add connection information for single result
-                    connection_info = _add_connection_information(
-                        [result_dict], current_project_id, context
-                    )
-
                     # Send single batch result for small files
                     result_data = (
                         guidance_message + "\n\n" + beautified_result
                         if guidance_message
                         else beautified_result
                     )
-
-                    # Append connection information if available
-                    if connection_info:
-                        result_data += "\n\n" + connection_info
 
                     yield {
                         "type": "tool_use",
@@ -984,17 +926,8 @@ def execute_structured_database_query(
                     result_dict, 1, include_code=True, total_nodes=1
                 )
 
-                # Add connection information for single result without code
-                connection_info = _add_connection_information(
-                    [result_dict], current_project_id, context
-                )
-
                 # Send single batch result for missing code
                 result_data = guidance_message + beautified_result
-
-                # Append connection information if available
-                if connection_info:
-                    result_data += "\n\n" + connection_info
 
                 yield {
                     "type": "tool_use",
@@ -1208,18 +1141,6 @@ def execute_structured_database_query(
                             "include_code": include_code,
                         }
                     )
-
-            # Add connection information to all delivery items before registering
-            if all_delivery_items:
-                # Get connection information for all results
-                connection_info = _add_connection_information(
-                    results, current_project_id, context
-                )
-
-                # Add connection information to the last delivery item if available
-                if connection_info and all_delivery_items:
-                    last_item = all_delivery_items[-1]
-                    last_item["data"] += "\n\n" + connection_info
 
             # Register and deliver first item using common utility
             first_item = register_and_deliver_first_item(
