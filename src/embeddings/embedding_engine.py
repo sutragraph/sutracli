@@ -308,7 +308,7 @@ class EmbeddingEngine:
 
                     # Store embedding in vector database
                     embedding_id = self.vector_store.store_embedding(
-                        block_id=prefixed_entity_id,
+                        node_id=prefixed_entity_id,
                         project_id=project_id,
                         chunk_index=chunk_index,
                         chunk_start_line=chunk_start_line,
@@ -405,7 +405,7 @@ class EmbeddingEngine:
 
                     # Store embedding with prefixed ID
                     embedding_id = self.vector_store.store_embedding(
-                        block_id=prefixed_entity_id,  # "file_123" or "block_456"
+                        node_id=prefixed_entity_id,  # "file_123" or "block_456"
                         project_id=project_id,
                         chunk_index=chunk_index,
                         embedding=embedding,
@@ -596,7 +596,9 @@ class EmbeddingEngine:
             vector_store = get_vector_store()
 
             if vector_store.connection is None:
-                logger.error("Vector store connection is None, cannot delete embeddings")
+                logger.error(
+                    "Vector store connection is None, cannot delete embeddings"
+                )
                 return
 
             # Create placeholders for the SQL query
@@ -619,7 +621,6 @@ class EmbeddingEngine:
         except Exception as e:
             logger.error(f"Error deleting node embeddings: {e}")
             logger.error(f"Node IDs: {node_ids}, Project ID: {project_id}")
-
 
 
 def parse_entity_id(prefixed_id: str) -> tuple[str, str]:

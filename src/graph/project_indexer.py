@@ -548,11 +548,11 @@ class ProjectIndexer:
             prefixed_block_ids = [f"block_{row['id']}" for row in block_results]
 
             # Combine prefixed IDs for embedding deletion
-            prefixed_block_ids = [prefixed_file_id] + prefixed_block_ids
+            prefixed_node_ids = [prefixed_file_id] + prefixed_block_ids
 
             # Delete embeddings first (if they exist)
-            if prefixed_block_ids:
-                self._delete_embeddings(prefixed_block_ids, project_id)
+            if prefixed_node_ids:
+                self._delete_embeddings(prefixed_node_ids, project_id)
 
             # Count relationships before deletion
             rel_count = self.connection.execute_query(
@@ -570,7 +570,7 @@ class ProjectIndexer:
 
             # Return deletion counts
             return {
-                "nodes": len(prefixed_block_ids),  # File + code blocks
+                "nodes": len(prefixed_node_ids),  # File + code blocks
                 "relationships": relationships_count,
             }
 
@@ -578,9 +578,9 @@ class ProjectIndexer:
             logger.error(f"Error deleting nodes for file {file_path}: {e}")
             return {"nodes": 0, "relationships": 0}
 
-    def _delete_embeddings(self, block_ids: List[str], project_id: int) -> None:
+    def _delete_embeddings(self, node_ids: List[str], project_id: int) -> None:
         """Delete embeddings for specified nodes. Node IDs should already include prefixes (file_ or block_)."""
-        self.embedding_engine.delete_embeddings(block_ids, project_id)
+        self.embedding_engine.delete_embeddings(node_ids, project_id)
 
     def _update_sutra_memory_for_changes(
         self, changes: Dict[str, Set[Path]], project_id: int

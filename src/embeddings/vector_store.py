@@ -430,7 +430,7 @@ class VectorStore:
             self.connection.execute(
                 """
                 CREATE VIRTUAL TABLE IF NOT EXISTS embeddings USING vec0(
-                    block_id TEXT,
+                    node_id TEXT,
                     project_id INTEGER,
                     chunk_index INTEGER,
                     chunk_start_line INTEGER,
@@ -518,7 +518,7 @@ class VectorStore:
     # Vector storage methods
     def store_embedding(
         self,
-        block_id: str,
+        node_id: str,
         project_id: int,
         chunk_index: int,
         embedding: np.ndarray,
@@ -541,10 +541,10 @@ class VectorStore:
             # Store in vector database using sqlite-vec
             assert self.connection is not None
             cursor = self.connection.execute(
-                """INSERT INTO embeddings (block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
+                """INSERT INTO embeddings (node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
                    VALUES (?, ?, ?, ?, ?, ?)""",
                 (
-                    str(block_id),  # Convert to string for sqlite-vec
+                    str(node_id),  # Convert to string for sqlite-vec
                     project_id,
                     chunk_index,
                     chunk_start_line,
@@ -560,7 +560,7 @@ class VectorStore:
             return int(embedding_id)
 
         except Exception as e:
-            logger.error(f"Failed to store embedding for node {block_id}: {e}")
+            logger.error(f"Failed to store embedding for node {node_id}: {e}")
             raise
 
     def store_embeddings_batch(
@@ -603,10 +603,10 @@ class VectorStore:
                     )
 
                 cursor.execute(
-                    """INSERT INTO embeddings (block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
+                    """INSERT INTO embeddings (node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
                        VALUES (?, ?, ?, ?, ?, ?)""",
                     (
-                        str(data["block_id"]),  # Convert to string for sqlite-vec
+                        str(data["node_id"]),  # Convert to string for sqlite-vec
                         data["project_id"],
                         data["chunk_index"],
                         data["chunk_start_line"],
@@ -658,7 +658,7 @@ class VectorStore:
             # Build query with optional project filtering
             if project_id is not None:
                 query_sql = """
-                    SELECT rowid, block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
+                    SELECT rowid, node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
                     FROM embeddings
                     WHERE embedding MATCH ? AND project_id = ?
                     ORDER BY distance
@@ -667,7 +667,7 @@ class VectorStore:
                 query_params: Tuple[Any, ...] = (query_vector, project_id, limit)
             else:
                 query_sql = """
-                    SELECT rowid, block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
+                    SELECT rowid, node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
                     FROM embeddings
                     WHERE embedding MATCH ?
                     ORDER BY distance
@@ -682,7 +682,7 @@ class VectorStore:
             for row in cursor.fetchall():
                 (
                     embedding_id,
-                    block_id,
+                    node_id,
                     proj_id,
                     chunk_index,
                     chunk_start_line,
@@ -697,7 +697,7 @@ class VectorStore:
                     results.append(
                         {
                             "embedding_id": int(embedding_id),
-                            "block_id": str(block_id),
+                            "node_id": str(node_id),
                             "project_id": int(proj_id),
                             "chunk_index": int(chunk_index),
                             "chunk_start_line": int(chunk_start_line),
@@ -740,7 +740,7 @@ class VectorStore:
 
             # Unique nodes
             cursor = self.connection.execute(
-                "SELECT COUNT(DISTINCT block_id) FROM embeddings"
+                "SELECT COUNT(DISTINCT node_id) FROM embeddings"
             )
             stats["unique_nodes"] = int(cursor.fetchone()[0])
 

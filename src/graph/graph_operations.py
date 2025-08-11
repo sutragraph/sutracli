@@ -216,36 +216,36 @@ class GraphOperations:
             }
 
     def get_agent_context_for_semantic_results(
-        self, semantic_block_ids: List[str]
+        self, semantic_node_ids: List[str]
     ) -> Dict[str, Any]:
         """
         Agent-centric context extraction from semantic search results.
 
         Flow:
-        1. Agent does semantic search → gets block_ids (file_28403, block_238408)
+        1. Agent does semantic search → gets node_ids (file_28403, block_238408)
         2. Resolve nodes to get concrete data (file info, block info)
         3. For blocks: add file context and check if file connections overlap with block lines
         4. For files: get all relevant connections
         5. Return intuitive, actionable data for the agent
 
         Args:
-            semantic_block_ids: List of node IDs from semantic search (e.g., ["block_123", "file_456"])
+            semantic_node_ids: List of node IDs from semantic search (e.g., ["block_123", "file_456"])
 
         Returns:
             Dictionary with agent-friendly context for each semantic result
         """
         try:
-            if not semantic_block_ids:
+            if not semantic_node_ids:
                 return {}
 
             context_results = {}
 
-            for i, block_id in enumerate(semantic_block_ids):
+            for i, node_id in enumerate(semantic_node_ids):
                 result_key = f"semantic_result_{i}"
 
-                if block_id.startswith("block_"):
+                if node_id.startswith("block_"):
                     # Handle block context
-                    block_id = int(block_id.split("_")[1])
+                    block_id = int(node_id.split("_")[1])
                     block_data = self.resolve_block(block_id)
 
                     if block_data:
@@ -270,9 +270,9 @@ class GraphOperations:
                             "summary": f"Block '{block_data['name']}' ({block_data['type']}) in {block_data['file_path']} lines {block_data['start_line']}-{block_data['end_line']}",
                         }
 
-                elif block_id.startswith("file_"):
+                elif node_id.startswith("file_"):
                     # Handle file context
-                    file_id = int(block_id.split("_")[1])
+                    file_id = int(node_id.split("_")[1])
                     file_data = self.resolve_file(file_id)
 
                     if file_data:
@@ -284,7 +284,7 @@ class GraphOperations:
 
                         context_results[result_key] = {
                             "node_type": "file",
-                            "block_id": block_id,
+                            "node_id": block_id,
                             "file_info": file_data,
                             "blocks_summary": file_blocks,
                             "all_connections": connections,
@@ -298,24 +298,24 @@ class GraphOperations:
             return {}
 
     def get_agent_context_for_single_node(
-        self, block_id: str
+        self, node_id: str
     ) -> Optional[Dict[str, Any]]:
         """
         Get comprehensive context for a single semantic search node.
 
         Args:
-            block_id: Single node ID from semantic search (e.g., "block_123" or "file_456")
+            node_id: Single node ID from semantic search (e.g., "block_123" or "file_456")
 
         Returns:
             Dictionary with comprehensive context or None if not found
         """
         try:
-            results = self.get_agent_context_for_semantic_results([block_id])
+            results = self.get_agent_context_for_semantic_results([node_id])
             if results:
                 return list(results.values())[0]
             return None
         except Exception as e:
-            logger.error(f"Error getting agent context for node {block_id}: {e}")
+            logger.error(f"Error getting agent context for node {node_id}: {e}")
             return None
 
     def _get_file_id_by_path(self, file_path: str) -> Optional[int]:
@@ -1375,14 +1375,14 @@ class GraphOperations:
         """Convert discovered `block_#` / `file_#` to concrete records."""
         resolved = []
 
-        for block_id in embedding_results:
-            if block_id.startswith("block_"):
-                block_id = int(block_id.split("_")[1])
+        for node_id in embedding_results:
+            if node_id.startswith("block_"):
+                block_id = int(node_id.split("_")[1])
                 block = self.resolve_block(block_id)
                 if block:
                     resolved.append(block)
-            elif block_id.startswith("file_"):
-                file_id = int(block_id.split("_")[1])
+            elif node_id.startswith("file_"):
+                file_id = int(node_id.split("_")[1])
                 file_data = self.resolve_file(file_id)
                 if file_data:
                     resolved.append(file_data)
