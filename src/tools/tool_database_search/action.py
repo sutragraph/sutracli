@@ -3,10 +3,6 @@ from typing import Iterator, Dict, Any, List, Optional
 from graph.graph_operations import GraphOperations
 import subprocess
 from services.agent.delivery_management import delivery_manager
-from services.agent.agent_prompt.guidance_builder import (
-    build_guidance_message,
-    SearchType,
-)
 from tools.utils import (
     beautify_node_result,
     chunk_large_code_clean,
@@ -19,27 +15,12 @@ from queries.agent_queries import (
     GET_FILE_IMPORTS,
     GET_DEPENDENCY_CHAIN,
 )
-from services.agent.agent_prompt.guidance_builder import (
-    GuidanceScenario,
-    build_batch_guidance_message,
-)
 from tools.utils.formatting_utils import beautify_node_result_metadata_only
 from pathlib import Path
 import os
-from services.agent.agent_prompt.guidance_builder import (
-    SequentialNodeScenario,
-)
 import json
 from models.agent import AgentAction
-from services.agent.agent_prompt.guidance_builder import (
-    SearchType,
-    determine_guidance_scenario,
-    determine_sequential_node_scenario,
-    build_guidance_message,
-    build_sequential_node_message,
-    create_delivery_batches,
-    build_delivery_info,
-)
+from tools.guidance_builder import DatabaseSearchGuidance
 from tools.utils.constants import (
     SEARCH_CONFIG,
     DATABASE_QUERY_CONFIG,
@@ -49,6 +30,8 @@ from tools.utils.constants import (
 )
 from services.agent.delivery_management import delivery_manager
 
+# Initialize guidance handler
+guidance_handler = DatabaseSearchGuidance()
 
 def _generate_error_guidance(query_name: str, params: dict) -> str:
     """Generate dynamic error guidance based on query type and parameters."""
@@ -368,9 +351,9 @@ def execute_structured_database_query(
                     logger.debug(f"❌ Ripgrep fallback failed: {e}")
 
             if not results:
-                no_results_guidance = build_guidance_message(
-                    search_type=SearchType.DATABASE,
-                    scenario=GuidanceScenario.NO_RESULTS_FOUND,
+                no_results_guidance = guidance_handler._build_guidance_message(
+                    search_type="database",
+                    scenario="NO_RESULTS_FOUND",
                 )
 
                 # Generate additional dynamic error guidance based on query parameters
@@ -408,10 +391,10 @@ def execute_structured_database_query(
         if not include_code:
             # Use delivery queue for metadata-only results
             batch_size = DELIVERY_QUEUE_CONFIG["database_metadata_only"]
-            batches = create_delivery_batches(results, batch_size=batch_size)
+            batches = guidance_handler._create_delivery_batches(results, batch_size=batch_size)
 
             for batch_num, batch in enumerate(batches, 1):
-                delivery_info = build_delivery_info(
+                delivery_info = guidance_handler._build_delivery_info(
                     current_batch=batch_num,
                     total_batches=len(batches),
                     batch_size=batch_size,
@@ -420,7 +403,7 @@ def execute_structured_database_query(
                 )
 
                 # Build guidance message for this batch
-                guidance_message = f"DATABASE SEARCH RESULTS: Showing {base_query_name} results {delivery_info['current_start']}-{delivery_info['current_end']} of {total_nodes} total results (batch {batch_num}/{len(batches)})"
+                guidance_message = guidance_handler._format_delivery_guidance(delivery_info, "database")
 
                 if delivery_info["has_more"]:
                     guidance_message += GUIDANCE_MESSAGES["FETCH_NEXT_CODE_NOTE"]
@@ -519,15 +502,15 @@ def execute_structured_database_query(
                         chunk_info = create_chunk_info(chunk)
 
                         # Build chunk-specific guidance message
-                        chunk_scenario = determine_guidance_scenario(
+                        chunk_scenario = guidance_handler._determine_guidance_scenario(
                             total_nodes=1,
                             include_code=True,
                             code_lines=len(code_lines),
                             chunk_info=chunk_info,
                         )
 
-                        chunk_guidance = build_guidance_message(
-                            search_type=SearchType.DATABASE,
+                        chunk_guidance = guidance_handler._build_guidance_message(
+                            search_type="database",
                             scenario=chunk_scenario,
                             total_lines=len(code_lines),
                             chunk_start=chunk_info["chunk_start_line"],
@@ -581,8 +564,8 @@ def execute_structured_database_query(
                     # Note: GET_CODE_FROM_FILE_LINES is no longer supported - removed legacy code
 
                     # Use shared guidance function with line-filtering parameters
-                    guidance_message = build_batch_guidance_message(
-                        search_type=SearchType.DATABASE,
+                    guidance_message = guidance_handler._build_batch_guidance_message(
+                        search_type="database",
                         total_nodes=1,
                         include_code=True,
                         has_large_files=False,
@@ -620,9 +603,9 @@ def execute_structured_database_query(
                     return
             else:
                 # No code content available - use proper guidance scenario
-                missing_content_guidance = build_guidance_message(
-                    search_type=SearchType.DATABASE,
-                    scenario=GuidanceScenario.NODE_MISSING_CODE_CONTENT,
+                missing_content_guidance = guidance_handler._build_guidance_message(
+                    search_type="database",
+                    scenario="NODE_MISSING_CODE_CONTENT",
                 )
                 guidance_message = (
                     missing_content_guidance + "\n\n"
@@ -716,11 +699,11 @@ def execute_structured_database_query(
                             chunk_info = create_chunk_info(chunk)
 
                             # Build sequential node guidance message
-                            sequential_scenario = determine_sequential_node_scenario(
+                            sequential_scenario = guidance_handler._determine_sequential_node_scenario(
                                 chunk_info=chunk_info,
                             )
 
-                            chunk_guidance = build_sequential_node_message(
+                            chunk_guidance = guidance_handler._build_sequential_node_message(
                                 scenario=sequential_scenario,
                                 node_index=i,
                                 total_nodes=total_nodes,
@@ -767,9 +750,9 @@ def execute_structured_database_query(
                         # that will be delivered. Since we're collecting all items first,
                         # we know this is the last node if it's the last in the result set.
                         # Build sequential node guidance message
-                        sequential_scenario = determine_sequential_node_scenario()
+                        sequential_scenario = guidance_handler._determine_sequential_node_scenario()
 
-                        node_guidance = build_sequential_node_message(
+                        node_guidance = guidance_handler._build_sequential_node_message(
                             scenario=sequential_scenario,
                             node_index=i,
                             total_nodes=total_nodes,
@@ -800,9 +783,9 @@ def execute_structured_database_query(
                         )
                 else:
                     # No code content available - use proper enum scenario
-                    sequential_scenario = SequentialNodeScenario.NODE_NO_CODE_CONTENT
+                    sequential_scenario = "NODE_NO_CODE_CONTENT"
 
-                    node_guidance = build_sequential_node_message(
+                    node_guidance = guidance_handler._build_sequential_node_message(
                         scenario=sequential_scenario,
                         node_index=i,
                         total_nodes=total_nodes,

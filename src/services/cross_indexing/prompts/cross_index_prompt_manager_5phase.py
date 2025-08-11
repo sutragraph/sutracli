@@ -103,9 +103,21 @@ class CrossIndex5PhasePromptManager:
         """
         Advance to the next phase and update task manager.
 
+        Notes:
+        - Phase 3 → 4 advancement is orchestrated by the cross-index service, since
+          Phase 4 consumes code snippets collected in Phase 3 and must not clear them.
+
         Returns:
-            True if advanced successfully, False if already at final phase
+            True if advanced successfully, False if blocked or already at final phase
         """
+        # Block automatic advancement from Phase 3 to 4 to avoid clearing code snippets
+        # Collected in Phase 3. The service will handle Phase 4 trigger explicitly.
+        if self.current_phase == 3:
+            logger.debug(
+                "advance_phase called at Phase 3 - skipping automatic 3→4 advancement; service handles Phase 4"
+            )
+            return False
+
         if self.current_phase < 5:
             self.current_phase += 1
             self.task_manager.set_current_phase(self.current_phase)

@@ -125,6 +125,105 @@ class DatabaseSearchGuidance(BaseToolGuidance):
             guidance += GUIDANCE_MESSAGES.get("FETCH_NEXT_CODE_NOTE", "")
         return guidance
 
+    def _determine_sequential_node_scenario(self, chunk_info: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Determine the sequential node scenario for guidance.
+
+        Args:
+            chunk_info: Information about chunking
+
+        Returns:
+            Appropriate sequential node scenario string
+        """
+        if not chunk_info:
+            return "NODE_WITH_SMALL_CODE"
+
+        # Handle chunked scenarios
+        chunk_num = chunk_info.get("chunk_num", 1)
+        total_chunks = chunk_info.get("total_chunks", 1)
+
+        if chunk_num == 1:
+            return "NODE_WITH_LARGE_CODE_FIRST_CHUNK"
+        elif chunk_num == total_chunks:
+            return "NODE_WITH_LARGE_CODE_LAST_CHUNK"
+        else:
+            return "NODE_WITH_LARGE_CODE_MIDDLE_CHUNK"
+
+    def _build_sequential_node_message(self, scenario: str, node_index: int, total_nodes: int, **kwargs) -> str:
+        """
+        Build guidance message for sequential node delivery.
+
+        Args:
+            scenario: Sequential node scenario string
+            node_index: Current node index (1-based)
+            total_nodes: Total number of nodes
+            **kwargs: Additional parameters
+
+        Returns:
+            Formatted guidance message
+        """
+        def _get_fetch_next_code_note() -> str:
+            return GUIDANCE_MESSAGES.get("FETCH_NEXT_CODE_NOTE", "")
+
+        if scenario == "NODE_WITH_SMALL_CODE":
+            message = f"Node {node_index}/{total_nodes}: Complete code content"
+            if node_index < total_nodes:
+                message += _get_fetch_next_code_note()
+            return message
+
+        elif scenario == "NODE_WITH_LARGE_CODE_FIRST_CHUNK":
+            chunk_num = kwargs.get("chunk_num", 1)
+            total_chunks = kwargs.get("total_chunks", 1)
+            total_lines = kwargs.get("total_lines", 0)
+            chunk_start = kwargs.get("chunk_start", 1)
+            chunk_end = kwargs.get("chunk_end", total_lines)
+
+            message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (First chunk)"
+            if total_lines > 0:
+                message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
+
+            if chunk_num < total_chunks or node_index < total_nodes:
+                message += _get_fetch_next_code_note()
+            return message
+
+        elif scenario == "NODE_WITH_LARGE_CODE_MIDDLE_CHUNK":
+            chunk_num = kwargs.get("chunk_num", 1)
+            total_chunks = kwargs.get("total_chunks", 1)
+            total_lines = kwargs.get("total_lines", 0)
+            chunk_start = kwargs.get("chunk_start", 1)
+            chunk_end = kwargs.get("chunk_end", total_lines)
+
+            message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (Middle chunk)"
+            if total_lines > 0:
+                message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
+
+            if chunk_num < total_chunks or node_index < total_nodes:
+                message += _get_fetch_next_code_note()
+            return message
+
+        elif scenario == "NODE_WITH_LARGE_CODE_LAST_CHUNK":
+            chunk_num = kwargs.get("chunk_num", 1)
+            total_chunks = kwargs.get("total_chunks", 1)
+            total_lines = kwargs.get("total_lines", 0)
+            chunk_start = kwargs.get("chunk_start", 1)
+            chunk_end = kwargs.get("chunk_end", total_lines)
+
+            message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (Last chunk)"
+            if total_lines > 0:
+                message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
+
+            if node_index < total_nodes:
+                message += _get_fetch_next_code_note()
+            return message
+
+        elif scenario == "NODE_NO_CODE_CONTENT":
+            message = f"Node {node_index}/{total_nodes}: No code content available"
+            if node_index < total_nodes:
+                message += _get_fetch_next_code_note()
+            return message
+
+        return f"Node {node_index}/{total_nodes}"
+
     def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
         if not isinstance(event, dict) or event.get("tool_name") != "database":
             return event

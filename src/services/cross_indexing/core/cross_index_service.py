@@ -21,6 +21,10 @@ from utils.debug_utils import get_user_confirmation_for_llm_call
 from services.cross_indexing.code_manager.prompts.code_manager_prompt_manager import (
     CodeManagerPromptManager,
 )
+from graph.graph_operations import GraphOperations
+from services.cross_indexing.core.connection_matching_manager import (
+    run_connection_matching as manager_run_connection_matching,
+)
 
 
 class CrossIndexService:
@@ -55,6 +59,7 @@ class CrossIndexService:
             self.prompt_manager.task_manager,  # Use task manager instead of memory manager
             context="cross_index",
         )
+        self.graph_ops = GraphOperations()
         self._memory_needs_update = False
 
     def analyze_project_connections(
@@ -318,6 +323,66 @@ class CrossIndexService:
                                 }
                                 # Continue to next iteration in the new phase
                                 continue
+                        elif current_phase == 3:
+                            # Phase 3 complete → run Phase 4 data splitting using collected code snippets
+                            try:
+                                # Advance internal phase state to 4. Do not call task_manager.set_current_phase(4)
+                                # here because that would clear the code snippets we need for Phase 4.
+                                self.prompt_manager.current_phase = 4
+
+                                # Clear last_tool_result when starting new phase
+                                last_tool_result = None
+
+                                print(
+                                    f"🎯 Phase {current_phase} complete - advancing to Phase 4"
+                                )
+                                yield {
+                                    "type": "phase_complete",
+                                    "iteration": current_iteration,
+                                    "current_phase": current_phase,
+                                    "next_phase": 4,
+                                    "message": f"Phase {current_phase} completed, advancing to Phase 4",
+                                }
+
+                                # Execute Phase 4 - Data Splitting
+                                phase4_result = self._run_phase4_data_splitting()
+
+                                # Handle user cancellation in debug mode
+                                if phase4_result.get("user_cancelled"):
+                                    yield {
+                                        "type": "user_cancelled",
+                                        "iteration": current_iteration,
+                                        "message": "User cancelled Phase 4 data splitting",
+                                    }
+                                    return
+
+                                # If successful, capture analysis_result so storage/matching path below can run
+                                if phase4_result.get("success"):
+                                    analysis_result = phase4_result.get(
+                                        "analysis_result", {}
+                                    )
+                                else:
+                                    # Phase 4 failed; surface warning and end
+                                    yield {
+                                        "type": "analysis_warning",
+                                        "iteration": current_iteration,
+                                        "warning": phase4_result.get(
+                                            "error", "Phase 4 failed"
+                                        ),
+                                        "message": "Phase 4 data splitting failed",
+                                    }
+                                    return
+                            except Exception as phase4_error:
+                                logger.error(
+                                    f"Error during Phase 4 data splitting: {phase4_error}"
+                                )
+                                yield {
+                                    "type": "analysis_error",
+                                    "iteration": current_iteration,
+                                    "error": str(phase4_error),
+                                    "message": "Error while running Phase 4 data splitting",
+                                }
+                                return
 
                     # Exit main loop if task completed (regardless of analysis_result success)
                     if task_complete:
@@ -373,15 +438,18 @@ class CrossIndexService:
                                         }
 
                                         try:
-                                            matching_result = (
-                                                self._run_connection_matching(
-                                                    all_incoming_ids,
-                                                    all_outgoing_ids,
+                                            # Delegate to ConnectionMatchingManager to handle prompts and validation
+                                            matching_exec = (
+                                                manager_run_connection_matching(
+                                                    incoming_connections=None,
+                                                    outgoing_connections=None,
+                                                    llm_client=self.llm_client,
+                                                    project_id=project_id,
                                                 )
                                             )
 
                                             # Check if user cancelled connection matching
-                                            if matching_result.get("user_cancelled"):
+                                            if matching_exec.get("user_cancelled"):
                                                 yield {
                                                     "type": "user_cancelled",
                                                     "iteration": current_iteration,
@@ -389,13 +457,57 @@ class CrossIndexService:
                                                 }
                                                 return
 
-                                            if matching_result.get("success"):
+                                            if matching_exec.get("success"):
+                                                results = matching_exec.get(
+                                                    "results", {}
+                                                )
+                                                matches = results.get("matches", [])
+
+                                                # Store mappings in database
+                                                if matches:
+                                                    db_matches = []
+                                                    for match in matches:
+                                                        db_matches.append(
+                                                            {
+                                                                "sender_id": match.get(
+                                                                    "outgoing_id"
+                                                                ),
+                                                                "receiver_id": match.get(
+                                                                    "incoming_id"
+                                                                ),
+                                                                "connection_type": match.get(
+                                                                    "connection_type",
+                                                                    "api_call",
+                                                                ),
+                                                                "description": match.get(
+                                                                    "match_reason",
+                                                                    "Auto-detected connection",
+                                                                ),
+                                                                "match_confidence": self._convert_confidence_to_float(
+                                                                    match.get(
+                                                                        "match_confidence",
+                                                                        "medium",
+                                                                    )
+                                                                ),
+                                                            }
+                                                        )
+
+                                                    mapping_result = self.create_connection_mappings_by_ids(
+                                                        db_matches
+                                                    )
+                                                else:
+                                                    mapping_result = {
+                                                        "success": True,
+                                                        "mapping_ids": [],
+                                                    }
+
                                                 yield {
                                                     "type": "cross_index_success",
                                                     "iteration": current_iteration,
                                                     "analysis_result": analysis_result,
                                                     "storage_result": storage_result,
-                                                    "matching_result": matching_result,
+                                                    "matching_result": results,
+                                                    "mappings_result": mapping_result,
                                                     "message": f"🎉 Cross-indexing analysis completed successfully in {current_iteration} iterations",
                                                 }
                                             else:
@@ -404,10 +516,10 @@ class CrossIndexService:
                                                     "iteration": current_iteration,
                                                     "analysis_result": analysis_result,
                                                     "storage_result": storage_result,
-                                                    "matching_error": matching_result.get(
+                                                    "matching_error": matching_exec.get(
                                                         "error"
                                                     ),
-                                                    "message": f"Analysis and storage completed successfully, but connection matching failed: {matching_result.get('error')}",
+                                                    "message": f"Analysis and storage completed successfully, but connection matching failed: {matching_exec.get('error')}",
                                                 }
                                         except Exception as matching_error:
                                             logger.error(
@@ -1273,320 +1385,6 @@ Content:
                 },
             }
 
-    def _run_phase5_connection_matching(self) -> Dict[str, Any]:
-        """
-        Run Phase 5 - Connection Matching using the new 5-phase system.
-        Fetches all incoming and outgoing connections from database and performs matching.
-
-        Args:
-            project_id: Project ID to fetch connections for
-
-        Returns:
-            Result dictionary with matching status and results
-        """
-        try:
-            logger.info("Starting Phase 5 - Connection Matching")
-
-            # Fetch all incoming connections from database
-            incoming_connections = self._get_all_incoming_connections()
-            outgoing_connections = self._get_all_outgoing_connections()
-
-            if not incoming_connections and not outgoing_connections:
-                return {
-                    "success": False,
-                    "error": "No connections found in database for matching",
-                    "message": "Phase 5 skipped - no connections to match",
-                }
-
-            if not incoming_connections:
-                return {
-                    "success": False,
-                    "error": "No incoming connections found for matching",
-                    "message": "Phase 5 skipped - no incoming connections",
-                }
-
-            if not outgoing_connections:
-                return {
-                    "success": False,
-                    "error": "No outgoing connections found for matching",
-                    "message": "Phase 5 skipped - no outgoing connections",
-                }
-
-            logger.info(
-                f"Phase 5 processing {len(incoming_connections)} incoming and {len(outgoing_connections)} outgoing connections"
-            )
-
-            if not get_user_confirmation_for_llm_call():
-                logger.info(
-                    "User cancelled Phase 5 connection matching LLM call in debug mode"
-                )
-                return {
-                    "success": False,
-                    "user_cancelled": True,
-                    "error": "User cancelled Phase 5 connection matching in debug mode",
-                }
-
-            # Get Phase 5 prompt manager
-            phase5_manager = self.prompt_manager.phase5_manager
-
-            # Get system and user prompts for Phase 5
-            system_prompt = phase5_manager.get_system_prompt()
-            user_prompt = phase5_manager.build_matching_prompt(
-                incoming_connections, outgoing_connections
-            )
-
-            # Retry logic for Phase 5 connection matching
-            max_retries = 3
-            last_error = None
-
-            for attempt in range(max_retries):
-                try:
-                    logger.debug(
-                        f"Phase 5 connection matching attempt {attempt + 1}/{max_retries}"
-                    )
-
-                    # Call LLM for Phase 5 connection matching
-                    response = self.llm_client.call_llm(
-                        system_prompt, user_prompt, return_raw=True
-                    )
-
-                    # Parse and validate the matching response
-                    matching_result = self._parse_connection_matching_json(response)
-
-                    # Check if we got valid results
-                    if matching_result and not matching_result.get("error"):
-                        logger.info(
-                            f"Phase 5 connection matching completed successfully on attempt {attempt + 1}"
-                        )
-
-                        if matching_result.get("matches"):
-                            from services.cross_indexing.core.connection_matching_service import (
-                                ConnectionMatchingService,
-                            )
-
-                            matching_service = ConnectionMatchingService()
-
-                            # Store the matches in database
-                            storage_result = matching_service._store_matching_results(
-                                matching_result, project_id
-                            )
-
-                            if storage_result.get("success"):
-                                logger.info(
-                                    f"Stored {storage_result.get('total_stored', 0)} connection matches for project {project_id}"
-                                )
-                                # Add statistics to matching_result for CLI display
-                                matching_result["statistics"] = {
-                                    "total_matches": len(
-                                        matching_result.get("matches", [])
-                                    ),
-                                    "stored_matches": storage_result.get(
-                                        "total_stored", 0
-                                    ),
-                                }
-                                return {
-                                    "success": True,
-                                    "matching_result": matching_result,
-                                    "storage_result": storage_result,
-                                    "attempts_used": attempt + 1,
-                                    "message": f"Connection matching completed successfully with {len(matching_result['matches'])} matches",
-                                }
-                            else:
-                                logger.error(
-                                    f"Failed to store matches: {storage_result.get('error')}"
-                                )
-                                return {
-                                    "success": False,
-                                    "error": f"Matching completed but storage failed: {storage_result.get('error')}",
-                                    "matching_result": matching_result,
-                                }
-                        else:
-                            return {
-                                "success": True,
-                                "matching_result": matching_result,
-                                "attempts_used": attempt + 1,
-                                "message": "Connection matching completed - no matches found",
-                            }
-                    else:
-                        last_error = matching_result.get(
-                            "error", "Invalid matching result"
-                        )
-                        logger.warning(
-                            f"Phase 5 connection matching attempt {attempt + 1} failed: {last_error}"
-                        )
-
-                except Exception as e:
-                    last_error = str(e)
-                    logger.warning(
-                        f"Phase 5 connection matching attempt {attempt + 1} failed with exception: {e}"
-                    )
-
-                # If not the last attempt, continue to retry
-                if attempt < max_retries - 1:
-                    logger.info(
-                        f"Retrying Phase 5 connection matching (attempt {attempt + 2}/{max_retries})"
-                    )
-
-            # All retries failed
-            logger.error(
-                f"Phase 5 connection matching failed after {max_retries} attempts. Last error: {last_error}"
-            )
-            return {
-                "success": False,
-                "error": f"Phase 5 connection matching failed after {max_retries} attempts. Last error: {last_error}",
-                "attempts_used": max_retries,
-            }
-
-        except Exception as e:
-            logger.error(f"Error during Phase 5 connection matching: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Phase 5 connection matching failed due to unexpected error",
-            }
-
-    def _get_all_incoming_connections(self, project_id: int) -> List[Dict[str, Any]]:
-        """
-        Fetch all incoming connections from database for a project.
-
-        Args:
-            project_id: Project ID
-
-        Returns:
-            List of incoming connection dictionaries
-        """
-        try:
-            query = """
-            SELECT id, technology_name, code_snippet, description, file_id, snippet_lines
-            FROM incoming_connections
-            ORDER BY id
-            """
-            results = self.db_connection.execute_query(query)
-
-            connections = []
-            for row in results:
-                connections.append(
-                    {
-                        "id": row["id"],
-                        "technology": row["technology_name"],
-                        "code_snippet": row["code_snippet"],
-                        "description": row["description"],
-                        "file_id": row["file_id"],
-                        "snippet_lines": row["snippet_lines"],
-                    }
-                )
-
-            logger.debug(
-                f"Fetched {len(connections)} incoming connections for project {project_id}"
-            )
-            return connections
-
-        except Exception as e:
-            logger.error(f"Error fetching incoming connections: {e}")
-            return []
-
-    def _get_all_outgoing_connections(self, project_id: int) -> List[Dict[str, Any]]:
-        """
-        Fetch all outgoing connections from database for a project.
-
-        Args:
-            project_id: Project ID
-
-        Returns:
-            List of outgoing connection dictionaries
-        """
-        try:
-            query = """
-            SELECT id, technology_name, code_snippet, description, file_id, snippet_lines
-            FROM outgoing_connections
-            ORDER BY id
-            """
-            results = self.db_connection.execute_query(query)
-
-            connections = []
-            for row in results:
-                connections.append(
-                    {
-                        "id": row["id"],
-                        "technology": row[
-                            "technology_name"
-                        ],  # technology_name from DB mapped to technology
-                        "code_snippet": row["code_snippet"],
-                        "description": row["description"],
-                        "file_id": row["file_id"],
-                        "snippet_lines": row["snippet_lines"],
-                    }
-                )
-
-            logger.debug(
-                f"Fetched {len(connections)} outgoing connections for project {project_id}"
-            )
-            return connections
-
-        except Exception as e:
-            logger.error(f"Error fetching outgoing connections: {e}")
-            return []
-
-    def _parse_connection_matching_json(self, response: str) -> Dict[str, Any]:
-        """
-        Parse connection matching JSON response from LLM.
-
-        Args:
-            response: Raw LLM response
-
-        Returns:
-            Parsed matching result dictionary
-        """
-        try:
-            import json
-
-            # Clean the response
-            response_content = response.strip()
-
-            # Try to extract JSON from response if it's wrapped in other text
-            if "```json" in response_content:
-                start = response_content.find("```json") + 7
-                end = response_content.find("```", start)
-                if end != -1:
-                    response_content = response_content[start:end].strip()
-            elif "{" in response_content and "}" in response_content:
-                start = response_content.find("{")
-                end = response_content.rfind("}") + 1
-                response_content = response_content[start:end].strip()
-
-            result = json.loads(response_content)
-
-            # Validate structure
-            if not isinstance(result, dict):
-                return {"error": "Response is not a JSON object"}
-
-            if "matches" not in result:
-                return {"error": "Missing 'matches' field in response"}
-
-            if not isinstance(result["matches"], list):
-                return {"error": "'matches' field must be a list"}
-
-            logger.debug(
-                f"Successfully parsed connection matching JSON with {len(result['matches'])} matches"
-            )
-            return result
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parsing connection matching JSON: {e}")
-            logger.error(f"Raw content: {response}")
-            return {
-                "error": str(e),
-                "raw_content": response,
-                "matches": [],
-            }
-        except Exception as e:
-            logger.error(f"Error processing connection matching response: {e}")
-            return {
-                "error": str(e),
-                "raw_content": response,
-                "matches": [],
-            }
-
     def get_existing_connections_with_ids(self) -> Dict[str, List[Dict[str, Any]]]:
         """
         Retrieve existing connections with IDs and file references.
@@ -1669,7 +1467,7 @@ Content:
             if "incoming_connections" in connections_data:
                 for conn in connections_data["incoming_connections"]:
                     # Get file_id from file path - always retrieve from database
-                    file_id = self._get_file_id(project_id, conn.get("file_path"))
+                    file_id = self.graph_ops._get_file_id_by_path(conn.get("file_path"))
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -1699,7 +1497,7 @@ Content:
             if "outgoing_connections" in connections_data:
                 for conn in connections_data["outgoing_connections"]:
                     # Get file_id from file path - always retrieve from database
-                    file_id = self._get_file_id(project_id, conn.get("file_path"))
+                    file_id = self.graph_ops._get_file_id_by_path(conn.get("file_path"))
 
                     # Fetch actual code snippet from line numbers
                     snippet_lines = conn.get("snippet_lines", [])
@@ -1796,80 +1594,6 @@ Content:
                 "message": "Failed to create connection mappings",
             }
 
-    def _get_file_id(self, project_id: int, file_path: str) -> Optional[int]:
-        """Get file_id for a given project and file path."""
-        try:
-            if not file_path:
-                logger.warning("Empty file_path provided to _get_file_id")
-                return None
-
-            # Resolve relative paths to absolute paths
-            import os
-            from pathlib import Path
-
-            # Convert to absolute path if it's relative
-            if not os.path.isabs(file_path):
-                absolute_file_path = str(Path(file_path).resolve())
-                logger.debug(
-                    f"Resolved relative path {file_path} to absolute path {absolute_file_path}"
-                )
-            else:
-                absolute_file_path = file_path
-
-            # Try with absolute path first
-            result = self.db_connection.execute_query(
-                "SELECT id FROM files WHERE project_id = ? AND file_path = ?",
-                (project_id, absolute_file_path),
-            )
-
-            if result:
-                file_id = result[0]["id"]
-                logger.debug(
-                    f"Found file_id {file_id} for {absolute_file_path} in project {project_id}"
-                )
-                return file_id
-
-            # If not found with absolute path, try with original path (in case it was stored as relative)
-            if absolute_file_path != file_path:
-                result = self.db_connection.execute_query(
-                    "SELECT id FROM files WHERE project_id = ? AND file_path = ?",
-                    (project_id, file_path),
-                )
-
-                if result:
-                    file_id = result[0]["id"]
-                    logger.debug(
-                        f"Found file_id {file_id} for {file_path} (original path) in project {project_id}"
-                    )
-                    return file_id
-
-            # If still not found, try to find by filename match (fallback)
-            filename = os.path.basename(file_path)
-            if filename:
-                result = self.db_connection.execute_query(
-                    "SELECT id, file_path FROM files WHERE project_id = ? AND file_path LIKE ?",
-                    (project_id, f"%{filename}"),
-                )
-
-                if result:
-                    # If multiple matches, prefer exact filename match
-                    for row in result:
-                        if os.path.basename(row["file_path"]) == filename:
-                            file_id = row["id"]
-                            logger.debug(
-                                f"Found file_id {file_id} by filename match for {filename} -> {row['file_path']} in project {project_id}"
-                            )
-                            return file_id
-
-            logger.warning(
-                f"No file_id found for {file_path} (absolute: {absolute_file_path}) in project {project_id}"
-            )
-            return None
-
-        except Exception as e:
-            logger.error(f"Error getting file_id for {file_path}: {e}")
-            return None
-
     def _fetch_code_snippet_from_lines(
         self, file_path: str, snippet_lines: List[int]
     ) -> str:
@@ -1911,7 +1635,7 @@ Content:
             logger.error(f"Error fetching code snippet from {file_path}: {e}")
             return ""
 
-    def _run_connection_matching(
+    def run_connection_matching(
         self, incoming_ids: List[int], outgoing_ids: List[int]
     ) -> Dict[str, Any]:
         """
