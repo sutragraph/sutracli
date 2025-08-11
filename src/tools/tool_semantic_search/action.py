@@ -67,7 +67,7 @@ def _process_sequential_chunk_results(
     all_delivery_items = []
 
     for i, result in enumerate(vector_results, 1):
-        node_details = graph_operations.get_node_details(result["node_id"])
+        node_details = graph_operations.get_node_details(result["block_id"])
         if node_details:
             chunk_code = _extract_chunk_specific_code(node_details, result)
 

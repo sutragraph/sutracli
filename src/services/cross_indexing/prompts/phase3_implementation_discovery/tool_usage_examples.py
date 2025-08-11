@@ -15,13 +15,13 @@ This section provides comprehensive examples of how to use different tools effec
 **DATABASE TOOL EXAMPLES (3-5 files)**
 
 Example 1: JavaScript - Axios usage analysis in few files
-- database(query_type="GET_CODE_FROM_FILE", file_path="src/api/client.js")
+- database(query_type="GET_FILE_BY_PATH", file_path="src/api/client.js")
 - Purpose: Read entire file to analyze all axios method calls within that file
 - Look for: axios.get(), axios.post(), axios.put(), axios.delete() with actual parameters
 - Find: Actual API calls with real endpoints and environment variables
 
 Example 2: Python - Requests usage analysis in specific files
-- database(query_type="GET_CODE_FROM_FILE", file_path="src/services/api_client.py")
+- database(query_type="GET_FILE_BY_PATH", file_path="src/services/api_client.py")
 - Purpose: Read entire file to analyze all requests method calls within that file
 - Look for: requests.get(), requests.post() with actual parameters and endpoints
 - Find: Actual API calls with real URLs and configuration data

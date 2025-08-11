@@ -4,7 +4,6 @@ Tool Integration for Cross-Index Analysis
 Integrates existing agent tools with cross-indexing specific usage patterns.
 """
 
-from tools.tool_semantic_search.prompt import SEMANTIC_SEARCH_TOOL
 from tools.tool_search_keyword.prompt import SEARCH_KEYWORD_TOOL
 from tools.tool_database_search.prompt import DATABASE_SEARCH_TOOL
 from tools.tool_list_files.prompt import LIST_FILES_TOOL

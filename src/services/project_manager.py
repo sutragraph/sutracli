@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Iterator, Union
 from loguru import logger
-
+from graph.graph_operations import GraphOperations
 from graph.sqlite_client import SQLiteConnection
 from graph.project_indexer import ProjectIndexer
 from models import Project
@@ -38,6 +38,8 @@ class ProjectManager:
 
         # Cache for project directories to avoid repeated calculations
         self._project_dir_cache: Dict[str, Optional[Path]] = {}
+
+        self.graph_ops = GraphOperations()
 
     def create_project_name(self, project_path: Path) -> str:
         """Create a project name based on the provided path using a custom readable algorithm.
@@ -229,15 +231,8 @@ class ProjectManager:
             return self._project_dir_cache[project_name]
 
         try:
-            # Get all file paths for this project
-            file_paths = self.db_connection.execute_query(
-                """
-                SELECT DISTINCT file_path 
-                FROM files 
-                WHERE project_id = (SELECT id FROM projects WHERE name = ?)
-                """,
-                (project_name,),
-            )
+            file_paths_list = self.graph_ops.get_project_file_paths(project_name)
+            file_paths = [{"file_path": path} for path in file_paths_list]
 
             if not file_paths:
                 self._project_dir_cache[project_name] = None
@@ -454,13 +449,8 @@ class ProjectManager:
             Exception: If project creation fails
         """
         try:
-            # First try to get existing project ID
-            result = self.db_connection.execute_query(
-                "SELECT id FROM projects WHERE name = ?", (project_name,)
-            )
-
-            if result:
-                project_id = result[0]["id"]
+            project_id = self.graph_ops.get_project_id_by_name(project_name)
+            if project_id:
                 logger.debug(
                     f"Found existing project '{project_name}' with ID {project_id}"
                 )

@@ -67,20 +67,31 @@ def beautify_node_result(
 
     # Add basic node information
     result_parts.append(f'file_path: {node.get("file_path", "unknown")}')
-    result_parts.append(f'node_name: {node.get("name", "unknown")}')
 
-    # Format start_line:end_line
+    # Show block_id if available, otherwise show file info
+    block_id = node.get("id", node.get("block_id"))
+    if block_id:
+        result_parts.append(f"block_id: {block_id}")
+    else:
+        result_parts.append(f'file_id: {node.get("file_id", "unknown")}')
+
+    # Format start_line:end_line - for files, show total line count
     if start_line is not None and end_line is not None:
         start_end_str = f"{start_line}:{end_line}"
     else:
-        start_end_str = "unknown"
+        # For file queries, try to get line count from content
+        content = node.get("content", node.get("code_snippet", ""))
+        if content:
+            line_count = len(content.split("\n"))
+            start_end_str = f"1:{line_count}"
+        else:
+            start_end_str = "unknown"
     result_parts.append(f"start_line:end_line: {start_end_str}")
-
-    result_parts.append(f'node_type: {node.get("type", node.get("node_type", "unknown"))}')
 
     # Add code snippet if requested and available
     if include_code:
-        code_snippet = node.get("code_snippet", "")
+        # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'
+        code_snippet = node.get("content", node.get("code_snippet", ""))
         if code_snippet and code_snippet.strip():
             result_parts.append("code_snippet:")
 
@@ -137,16 +148,28 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     else:
         header = "=== NODE (metadata only) ==="
 
-    # Format start_line:end_line
+    # Format start_line:end_line - for files, show total line count
     if start_line is not None and end_line is not None:
         start_end_str = f"{start_line}:{end_line}"
     else:
-        start_end_str = "unknown"
+        # For file queries, try to get line count from content
+        content = node.get("content", node.get("code_snippet", ""))
+        if content:
+            line_count = len(content.split("\n"))
+            start_end_str = f"1:{line_count}"
+        else:
+            start_end_str = "unknown"
+
+    # Show block_id if available, otherwise show file info
+    block_id = node.get("id", node.get("block_id"))
+    if block_id:
+        id_info = f"block_id: {block_id}"
+    else:
+        id_info = f'file_id: {node.get("file_id", "unknown")}'
 
     return (
         f"{header}\n"
         f'file_path: {node.get("file_path", "unknown")}\n'
-        f'node_name: {node.get("name", "unknown")}\n'
-        f"start_line:end_line: {start_end_str}\n"
-        f'node_type: {node.get("type", node.get("node_type", "unknown"))}'
+        f"{id_info}\n"
+        f"start_line:end_line: {start_end_str}"
     )

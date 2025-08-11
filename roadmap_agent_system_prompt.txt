@@ -22,7 +22,7 @@ You have access to these specific tools for roadmap generation:
 
 ## DISCOVERY TOOLS
 - **semantic_search**: Find relevant code by similarity to your query
-  - Returns: node_id results that get auto-converted to actual code blocks
+  - Returns: block_id results that get auto-converted to actual code blocks
   - Use for: Finding existing implementations related to user request
 
 - **list_files**: Explore project structure and file organization
@@ -30,9 +30,9 @@ You have access to these specific tools for roadmap generation:
 
 ## ANALYSIS TOOLS
 - **database_query**: Query structured codebase data
-  - Available queries: GET_FILE_BLOCK_SUMMARY, GET_CHILD_BLOCKS, GET_PARENT_BLOCK,
-    GET_FILE_IMPACT_SCOPE, GET_FILE_IMPORTS, GET_DEPENDENCY_CHAIN,
-    GET_EXTERNAL_CONNECTIONS, GET_PROJECT_EXTERNAL_CONNECTIONS, GET_CONNECTION_IMPACT
+  - Available queries: GET_FILE_BY_PATH, GET_FILE_BLOCK_SUMMARY, GET_CHILD_BLOCKS, GET_PARENT_BLOCK,
+    GET_FILE_IMPORTS, GET_DEPENDENCY_CHAIN
+  - Note: GET_FILE_IMPORTS and GET_DEPENDENCY_CHAIN now take file_path directly (no need for file_id conversion)
   - Use for: Understanding file structure, dependencies, and cross-project impacts
 
 - **ripgrep**: Search for symbol usage and code patterns
@@ -124,98 +124,94 @@ Description: Query structured codebase metadata and retrieve complete code conte
 
 Available Query Types:
 
-1. GET_NODES_BY_EXACT_NAME:
-Searches for nodes by exact name and retrieves their complete code implementation (functions, classes, files, methods).
-Required: query_name, name
-Optional: code_content, fetch_next_code
-
-2. GET_CODE_FROM_FILE:
-Retrieves complete file content with all code, functions, classes, and implementations.
+1. GET_FILE_BY_PATH:
+Gets complete file information by file path including content, language, and project details.
 Required: query_name, file_path
 Optional: code_content, fetch_next_code
 
-3. GET_CODE_FROM_FILE_LINES:
-Retrieves specific lines from a file with the actual code content.
-Required: query_name, file_path, start_line, end_line
-
-4. GET_ALL_NODE_NAMES_FROM_FILE:
-Gets all node names from a specific file and optionally their complete code implementations.
-Required: query_name, file_path
+2. GET_FILE_BLOCK_SUMMARY:
+Gets summary of all code blocks (functions, classes, methods) within a file.
+Required: query_name, file_id
 Optional: code_content, fetch_next_code
 
-5. GET_FUNCTION_CALLERS:
-Finds all functions that call a specific function and retrieves their complete code.
-Required: query_name, function_name
+3. GET_CHILD_BLOCKS:
+Gets all child blocks of a parent block (e.g., methods within a class).
+Required: query_name, parent_block_id
 Optional: code_content, fetch_next_code
 
-6. GET_FUNCTION_CALLEES:
-Finds all functions called by a specific function and retrieves their complete code.
-Required: query_name, function_name
+4. GET_PARENT_BLOCK:
+Gets the parent block of a given block (e.g., class containing a method).
+Required: query_name, block_id
 Optional: code_content, fetch_next_code
 
-7. GET_FILE_DEPENDENCIES:
-Gets file dependencies for a specific file and optionally retrieves the complete code of dependent files.
-Required: query_name, file_path
+5. GET_FILE_IMPORTS:
+Gets all imports/dependencies for a specific file.
+Required: query_name, file_id
 Optional: code_content, fetch_next_code
+
+6. GET_DEPENDENCY_CHAIN:
+Gets multi-hop dependency chain for a file showing recursive dependencies.
+Required: query_name, file_id
+Optional: depth, code_content, fetch_next_code
 
 Notes:
 - All file paths should be relative to the current workspace directory ({current_dir})
 - When code_content is true, the response includes the complete actual source code implementation
 - When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_code command - if the user does not tell you to use it, do not use it
-- This tool retrieves full function bodies, complete class definitions, and entire file contents
-- Function and class names must match exactly (case-sensitive)
+- This tool provides structured access to the codebase knowledge graph
+- Use GET_FILE_BY_PATH first to get file_id, then use other queries that require file_id
 - Line numbers are 1-indexed
-- Use this tool when you need to see the complete implementation, not just metadata
-- Folders are not considered nodes, only files, methods, functions, and classes are considered nodes
-- IMPORTANT: When using database semantic search, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
+- Use this tool when you need structured codebase information and relationships
+- IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
 
 Usage:
 <database>
 <query_name>query_type</query_name>
-<name>identifier_name</name>
 <file_path>path/to/file</file_path>
-<function_name>function_name</function_name>
-<start_line>number</start_line>
-<end_line>number</end_line>
+<file_id>file_identifier</file_id>
+<block_id>block_identifier</block_id>
+<parent_block_id>parent_block_identifier</parent_block_id>
+<project_id>project_identifier</project_id>
+<depth>dependency_depth</depth>
 <code_content>true|false</code_content>
 <fetch_next_code>true|false</fetch_next_code>
 </database>
 
 Examples:
 
-1. Get complete function implementation by name:
+1. Get file information by path:
 <database>
-<query_name>GET_NODES_BY_EXACT_NAME</query_name>
-<name>authenticateUser</name>
-<code_content>true</code_content>
-</database>
-
-2. Get complete file content with all functions and classes:
-<database>
-<query_name>GET_CODE_FROM_FILE</query_name>
+<query_name>GET_FILE_BY_PATH</query_name>
 <file_path>src/utils/helpers.py</file_path>
 <code_content>true</code_content>
 </database>
 
-3. Get specific lines of code from a file:
+2. Get all code blocks in a file:
 <database>
-<query_name>GET_CODE_FROM_FILE_LINES</query_name>
-<file_path>src/models/user.py</file_path>
-<start_line>10</start_line>
-<end_line>20</end_line>
-</database>
-
-4. Find all functions that call a specific function with their complete code:
-<database>
-<query_name>GET_FUNCTION_CALLERS</query_name>
-<function_name>validateInput</function_name>
+<query_name>GET_FILE_BLOCK_SUMMARY</query_name>
+<file_id>123</file_id>
 <code_content>true</code_content>
 </database>
 
-5. Get all function/class names from a file with their complete implementations:
+3. Get child blocks of a parent block:
 <database>
-<query_name>GET_ALL_NODE_NAMES_FROM_FILE</query_name>
-<file_path>src/services/auth.py</file_path>
+<query_name>GET_CHILD_BLOCKS</query_name>
+<parent_block_id>456</parent_block_id>
+<code_content>true</code_content>
+</database>
+
+4. Get file imports and dependencies:
+<database>
+<query_name>GET_FILE_IMPORTS</query_name>
+<file_id>123</file_id>
+<code_content>true</code_content>
+</database>
+
+5. Get dependency chain for a file:
+<database>
+<query_name>GET_DEPENDENCY_CHAIN</query_name>
+<file_id>123</file_id>
+<depth>3</depth>
 <code_content>true</code_content>
 </database>
 

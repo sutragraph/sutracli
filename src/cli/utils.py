@@ -294,7 +294,7 @@ def show_database_stats():
         try:
             cursor = db_connection.connection.execute(
                 """
-                SELECT p.name, p.language, COUNT(n.node_id) as node_count
+                SELECT p.name, p.language, COUNT(n.block_id) as node_count
                 FROM projects p
                 LEFT JOIN nodes n ON p.id = n.project_id
                 GROUP BY p.id, p.name, p.language

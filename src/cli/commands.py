@@ -347,7 +347,7 @@ def handle_parse_command(args) -> str:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        # Create analyzer instance - no need for start_node_id with deterministic IDs
+        # Create analyzer instance - no need for start_block_id with deterministic IDs
         analyzer = Analyzer(repo_id)
 
         # Generate output filename with timestamp

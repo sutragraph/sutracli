@@ -46,23 +46,24 @@ class EmbeddingEngine:
 
     def _generate_file_embedding_text(self, file_data: FileData) -> str:
         """Generate embedding text for the entire file."""
-        text_parts = []
+        # Return only the file content - metadata will be added to first chunk only
+        return file_data.content or ""
+
+    def _generate_file_metadata(self, file_data: FileData) -> str:
+        """Generate metadata text for the file (to be added to first chunk only)."""
+        metadata_parts = []
 
         # Add file metadata
         if file_data.file_path:
             file_path = Path(file_data.file_path)
-            text_parts.append(f"File: {file_path.name}")
-            text_parts.append(f"Directory: {file_path.parent.name}")
-            text_parts.append(f"Path: {file_data.file_path}")
+            metadata_parts.append(f"File: {file_path.name}")
+            metadata_parts.append(f"Directory: {file_path.parent.name}")
+            metadata_parts.append(f"Path: {file_data.file_path}")
 
         if file_data.language:
-            text_parts.append(f"Language: {file_data.language}")
+            metadata_parts.append(f"Language: {file_data.language}")
 
-        # Add file content
-        if file_data.content:
-            text_parts.append(f"Content:\n{file_data.content}")
-
-        return "\n".join(text_parts)
+        return "\n".join(metadata_parts)
 
     def _generate_block_embedding_text(
         self, block: CodeBlock, file_data: FileData
@@ -168,15 +169,12 @@ class EmbeddingEngine:
             block = mapping["block"]
             chunk_index = mapping["chunk_index"]
 
-            # Use the actual block line numbers from AST parsing
-            # For chunks within a block, we use the block's line range
-            # (Individual chunks within a block don't have meaningful separate line ranges)
             chunk_start_line = block.start_line
             chunk_end_line = block.end_line
 
             batch_embedding_data.append(
                 {
-                    "node_id": f"block_{block.id}",
+                    "block_id": f"block_{block.id}",
                     "project_id": project_id,
                     "embedding": embedding,
                     "chunk_index": chunk_index,
@@ -235,6 +233,106 @@ class EmbeddingEngine:
             hierarchy = hierarchy[:-1]
 
         return " > ".join(hierarchy) if hierarchy else ""
+
+    def _store_embeddings_with_metadata(
+        self,
+        entity_id: str,
+        project_id: int,
+        content: str,
+        metadata: str,
+        is_file: bool = False,
+    ) -> List[int]:
+        """
+        Generate and store chunked embeddings with metadata added only to first chunk.
+
+        Args:
+            entity_id: Unique identifier (file ID or block ID)
+            project_id: Project ID
+            content: Raw content to be chunked
+            metadata: Metadata to add to first chunk only
+            is_file: True if this is a file embedding, False if it's a block embedding
+
+        Returns:
+            List of embedding IDs that were stored
+        """
+        if not content.strip():
+            logger.debug(f"No content to embed for entity {entity_id}")
+            return []
+
+        # Add prefix to distinguish file vs block IDs during retrieval
+        prefix = "file" if is_file else "block"
+        prefixed_entity_id = f"{prefix}_{entity_id}"
+
+        try:
+            # Generate embeddings using content with metadata added to first chunk only
+            embeddings_with_metadata = (
+                self.vector_store.get_chunked_embeddings_with_metadata(
+                    content,
+                    metadata=metadata,
+                    max_tokens=self.max_tokens,
+                    overlap_tokens=self.overlap_tokens,
+                )
+            )
+
+            if not embeddings_with_metadata:
+                logger.warning(f"No embeddings generated for entity {entity_id}")
+                return []
+
+            # Also chunk the content directly to get accurate line numbers
+            content_chunks = self.vector_store.chunk_text(
+                content,
+                max_tokens=self.max_tokens,
+                overlap_tokens=self.overlap_tokens,
+            )
+
+            embedding_ids = []
+
+            for chunk_index, (embedding, chunk_metadata) in enumerate(
+                embeddings_with_metadata
+            ):
+                try:
+                    # Calculate line numbers
+                    if chunk_index < len(content_chunks):
+                        content_chunk = content_chunks[chunk_index]
+                        chunk_start_line = content_chunk["start_line"]
+                        chunk_end_line = content_chunk["end_line"]
+                    else:
+                        # Fallback calculation
+                        char_start = chunk_metadata.get("start", 0)
+                        text_up_to_start = content[:char_start]
+                        lines_before_chunk = text_up_to_start.count("\n")
+                        chunk_text = chunk_metadata.get("text", "")
+                        chunk_line_count = len(chunk_text.split("\n"))
+                        chunk_start_line = lines_before_chunk + 1
+                        chunk_end_line = chunk_start_line + chunk_line_count - 1
+
+                    # Store embedding in vector database
+                    embedding_id = self.vector_store.store_embedding(
+                        block_id=prefixed_entity_id,
+                        project_id=project_id,
+                        chunk_index=chunk_index,
+                        chunk_start_line=chunk_start_line,
+                        chunk_end_line=chunk_end_line,
+                        embedding=embedding,
+                    )
+
+                    if embedding_id:
+                        embedding_ids.append(embedding_id)
+                        logger.debug(
+                            f"Stored embedding {embedding_id} for {prefixed_entity_id} chunk {chunk_index} (lines {chunk_start_line}-{chunk_end_line})"
+                        )
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to store embedding for {prefixed_entity_id} chunk {chunk_index}: {e}"
+                    )
+                    continue
+
+            return embedding_ids
+
+        except Exception as e:
+            logger.error(f"Failed to generate embeddings for entity {entity_id}: {e}")
+            return []
 
     def _store_embeddings(
         self,
@@ -307,7 +405,7 @@ class EmbeddingEngine:
 
                     # Store embedding with prefixed ID
                     embedding_id = self.vector_store.store_embedding(
-                        node_id=prefixed_entity_id,  # "file_123" or "block_456"
+                        block_id=prefixed_entity_id,  # "file_123" or "block_456"
                         project_id=project_id,
                         chunk_index=chunk_index,
                         embedding=embedding,
@@ -393,12 +491,13 @@ class EmbeddingEngine:
                 logger.debug(
                     f"Unsupported file type, embedding entire file: {file_data.file_path}"
                 )
-                file_embedding_text = self._generate_file_embedding_text(file_data)
-                file_embedding_ids = self._store_embeddings(
+                file_content = self._generate_file_embedding_text(file_data)
+                file_metadata = self._generate_file_metadata(file_data)
+                file_embedding_ids = self._store_embeddings_with_metadata(
                     entity_id=str(file_data.id),
                     project_id=project_id,
-                    embedding_text=file_embedding_text,
-                    content=file_data.content,
+                    content=file_content,
+                    metadata=file_metadata,
                     is_file=True,
                 )
                 stats["file_embeddings"] = len(file_embedding_ids)
@@ -510,7 +609,7 @@ _embedding_engine = None
 
 
 def get_embedding_engine(
-    max_tokens: int = 150, overlap_tokens: int = 25
+    max_tokens: int = 240, overlap_tokens: int = 25
 ) -> EmbeddingEngine:
     """Return singleton instance of EmbeddingEngine."""
     global _embedding_engine

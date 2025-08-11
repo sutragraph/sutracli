@@ -7,16 +7,15 @@ Handles fetching code content from database and file operations.
 from typing import Optional, Any
 from pathlib import Path
 from loguru import logger
-from queries.agent_queries import GET_CODE_FROM_FILE
 from .query_cache import get_query_cache
-from graph.sqlite_client import SQLiteConnection
+from graph.graph_operations import GraphOperations
 
 
 class CodeFetcher:
     """Handles code fetching operations from database"""
 
     def __init__(self):
-        self.db_connection = SQLiteConnection()
+        self.graph_ops = GraphOperations()
 
     def fetch_code_from_file(
         self, file_path: str, start_line: int, end_line: int
@@ -33,72 +32,22 @@ class CodeFetcher:
             str: Filtered code content
         """
         try:
-            # Check if database connection is available
-            if self.db_connection is None:
-                logger.warning(
-                    "Database connection not available, returning empty code content"
-                )
+            # Use graph_operations for all database operations
+
+            # Get file_id first using graph_operations
+            file_id = self.graph_ops._get_file_id_by_path(file_path)
+            if not file_id:
+                logger.warning(f"File not found in database: {file_path}")
                 return ""
 
-            # Check if required imports are available
-            if GET_CODE_FROM_FILE is None:
-                logger.warning("Required imports not available for code fetching")
+            # Use graph_operations to get file content
+            file_data = self.graph_ops.resolve_file(file_id)
+            if not file_data:
+                logger.warning(f"No file data found for file_id: {file_id}")
                 return ""
 
-            # Fix file path - prepend current directory if path doesn't start with current dir
-            fixed_file_path = self._fix_file_path(file_path)
-
-            # Try to get file content with the fixed path
-            results = self._try_get_file_content(fixed_file_path)
-
-            # If no results found, try fallback paths
-            if not results:
-                fallback_paths = self._get_fallback_paths(file_path, fixed_file_path)
-                for fallback_path in fallback_paths:
-                    logger.debug(f"Trying fallback path: {fallback_path}")
-                    results = self._try_get_file_content(fallback_path)
-                    if results:
-                        fixed_file_path = fallback_path
-                        break
-
-            if not results:
-                logger.warning(f"No code found for file path: {file_path}")
-                return ""
-
-            # Get the first result (should be the File node)
-            # We need to execute a query to get column descriptions
-            cursor = self.db_connection.connection.cursor()
-            params = {"file_path": fixed_file_path, "project_id": None}
-            cursor.execute(GET_CODE_FROM_FILE, params)
-            cursor.fetchall()  # Fetch to get column descriptions
-
-            columns = [description[0] for description in cursor.description]
-            result = dict(zip(columns, results[0]))
-
-            # Extract code snippet and file start line
-            raw_code = result.get("code_snippet", "")
-            lines_data = result.get("lines", "[]")
-
-            # Parse lines data to get file start line
-            try:
-                import json
-
-                lines_list = json.loads(lines_data) if lines_data else [1]
-                file_start_line = lines_list[0] if lines_list else 1
-                
-                # Fix: Ensure file_start_line is never 0 (line numbers should be 1-indexed)
-                if file_start_line <= 0:
-                    logger.warning(f"Database returned invalid file_start_line: {file_start_line}, correcting to 1")
-                    file_start_line = 1
-                
-                logger.debug(f"File: {file_path}, Lines data: {lines_data}")
-                logger.debug(f"Parsed lines_list: {lines_list}")
-                logger.debug(f"Corrected file_start_line: {file_start_line}")
-                logger.debug(f"Requested range: {start_line}-{end_line}")
-                
-            except (json.JSONDecodeError, IndexError):
-                file_start_line = 1
-                logger.debug(f"Failed to parse lines data, using default file_start_line: 1")
+            # Extract code content
+            raw_code = file_data.get("content", "")
 
             from tools.utils.code_processing_utils import (
                 process_code_with_line_filtering,
@@ -106,7 +55,7 @@ class CodeFetcher:
 
             filtered_result = process_code_with_line_filtering(
                 code_snippet=raw_code,
-                file_start_line=file_start_line,
+                file_start_line=1,
                 start_line=start_line,
                 end_line=end_line,
             )
@@ -179,26 +128,28 @@ class CodeFetcher:
             List of results from database query, empty if not found
         """
         try:
-            # Check cache first
-            cache = get_query_cache()
-            cache_key_params = {"file_path": file_path, "project_id": None}
-            cached_results = cache.get(GET_CODE_FROM_FILE, cache_key_params)
+            # Get file_id first using graph_operations
+            file_id = self.graph_ops._get_file_id_by_path(file_path)
+            if not file_id:
+                logger.warning(f"File not found in database: {file_path}")
+                return []
 
-            # Execute database query to get file content
-            cursor = self.db_connection.connection.cursor()
-            params = {"file_path": file_path, "project_id": None}
-            cursor.execute(GET_CODE_FROM_FILE, params)
+            # Use graph_operations to get file content
+            file_data = self.graph_ops.resolve_file(file_id)
+            if not file_data:
+                logger.warning(f"No file data found for file_id: {file_id}")
+                return []
 
-            if cached_results is not None:
-                results = cached_results
-                logger.debug(f"Using cached results for file: {file_path}")
-                # Still need to call fetchall() to get column descriptions
-                cursor.fetchall()
-            else:
-                results = cursor.fetchall()
-                if results:
-                    # Cache the results
-                    cache.set(GET_CODE_FROM_FILE, cache_key_params, results)
+            # Convert to the expected format for backward compatibility
+            results = [
+                {
+                    "content": file_data.get("content", ""),
+                    "file_path": file_data.get("file_path", file_path),
+                    "language": file_data.get("language", ""),
+                    "project_name": file_data.get("project_name", ""),
+                    "file_id": file_id,
+                }
+            ]
 
             return results
 

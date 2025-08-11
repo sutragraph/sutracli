@@ -4,8 +4,6 @@ Exposed queries for agent direct access + Background queries for auto-conversion
 Architecture: Agent gets actionable data, never sees raw IDs or database complexity.
 """
 
-
-
 # ============================================================================
 # BACKGROUND QUERIES - Auto-Conversion (Never Exposed to Agent)
 # ============================================================================
@@ -22,18 +20,6 @@ JOIN projects p ON f.project_id = p.id
 WHERE cb.id = ?
 """
 
-GET_FILE_BY_ID = """
-SELECT
-    f.id, f.file_path, f.language, f.content, f.content_hash,
-    p.name as project_name, p.id as project_id,
-    COUNT(cb.id) as block_count
-FROM files f
-JOIN projects p ON f.project_id = p.id
-LEFT JOIN code_blocks cb ON f.id = cb.file_id
-WHERE f.id = ?
-GROUP BY f.id
-"""
-
 GET_IMPLEMENTATION_CONTEXT = """
 SELECT
     cb.id, cb.type, cb.name, cb.start_line, cb.end_line,
@@ -45,8 +31,6 @@ JOIN files f ON cb.file_id = f.id
 WHERE cb.file_id = ?
 ORDER BY cb.start_line
 """
-
-
 
 GET_EXTERNAL_CONNECTIONS_OVERLAPPING_RANGE = """
 SELECT
@@ -71,8 +55,20 @@ LIMIT 15
 """
 
 # ============================================================================
-# EXPOSED QUERIES - Discovery & Context Expansion
+# EXPOSED QUERIES
 # ============================================================================
+
+GET_FILE_BY_ID = """
+SELECT
+    f.id, f.file_path, f.language, f.content, f.content_hash,
+    p.name as project_name, p.id as project_id,
+    COUNT(cb.id) as block_count
+FROM files f
+JOIN projects p ON f.project_id = p.id
+LEFT JOIN code_blocks cb ON f.id = cb.file_id
+WHERE f.id = ? 
+GROUP BY f.id
+"""
 
 GET_FILE_BLOCK_SUMMARY = """
 SELECT
@@ -99,32 +95,6 @@ SELECT
 FROM code_blocks cb
 JOIN files f ON cb.file_id = f.id
 WHERE cb.id = (SELECT parent_block_id FROM code_blocks WHERE id = ?)
-"""
-
-# ============================================================================
-# EXPOSED QUERIES - Impact Analysis
-# ============================================================================
-
-GET_FILE_IMPACT_SCOPE = """
-SELECT
-    'importer' as relationship_type,
-    f.file_path, f.language, p.name as project_name,
-    r.import_content
-FROM relationships r
-JOIN files f ON r.source_id = f.id
-JOIN projects p ON f.project_id = p.id
-WHERE r.target_id = ?
-UNION ALL
-SELECT
-    'dependency' as relationship_type,
-    f.file_path, f.language, p.name as project_name,
-    r.import_content
-FROM relationships r
-JOIN files f ON r.target_id = f.id
-JOIN projects p ON f.project_id = p.id
-WHERE r.source_id = ?
-ORDER BY relationship_type, file_path
-LIMIT 25
 """
 
 GET_FILE_IMPORTS = """
@@ -170,8 +140,30 @@ LIMIT 25
 """
 
 # ============================================================================
-# EXPOSED QUERIES - Cross-Project Impact Analysis
+# Others
 # ============================================================================
+
+GET_FILE_IMPACT_SCOPE = """
+SELECT
+    'importer' as relationship_type,
+    f.file_path, f.language, p.name as project_name,
+    r.import_content
+FROM relationships r
+JOIN files f ON r.source_id = f.id
+JOIN projects p ON f.project_id = p.id
+WHERE r.target_id = ?
+UNION ALL
+SELECT
+    'dependency' as relationship_type,
+    f.file_path, f.language, p.name as project_name,
+    r.import_content
+FROM relationships r
+JOIN files f ON r.target_id = f.id
+JOIN projects p ON f.project_id = p.id
+WHERE r.source_id = ?
+ORDER BY relationship_type, file_path
+LIMIT 25
+"""
 
 GET_EXTERNAL_CONNECTIONS = """
 SELECT
@@ -221,50 +213,3 @@ WHERE (ic.file_id = ? OR oc.file_id = ?) AND cm.match_confidence > 0.5
 ORDER BY cm.match_confidence DESC
 LIMIT 15
 """
-
-# ============================================================================
-# LEGACY COMPATIBILITY - Map Old Query Names to New Architecture
-# ============================================================================
-
-# Map old query names to new exposed queries
-GET_NODES_BY_EXACT_NAME = """
-SELECT 'REQUIRES_RIPGREP' as tool,
-       'Search for exact symbol names across codebase' as action,
-       'Use: ripgrep with exact pattern matching' as suggestion
-"""
-# Legacy compatibility - use ripgrep: rg "^def uploadAvatar|^class uploadAvatar" --type py
-
-GET_NODES_BY_NAME_LIKE = """
-SELECT 'REQUIRES_RIPGREP' as tool,
-       'Search for nodes with similar names' as action,
-       'Use: ripgrep with fuzzy pattern matching' as suggestion
-"""
-# Legacy compatibility - use ripgrep: rg "upload.*avatar" --type py
-
-GET_NODES_BY_KEYWORD_SEARCH = """
-SELECT 'REQUIRES_RIPGREP' as tool,
-       'Search for keyword patterns in code' as action,
-       'Use: ripgrep for keyword search across files' as suggestion
-"""
-# Legacy compatibility - use ripgrep: rg "keyword1.*keyword2" --type py
-
-GET_CODE_FROM_FILE = GET_FILE_BY_ID
-GET_ALL_NODE_NAMES_FROM_FILE = GET_FILE_BLOCK_SUMMARY
-GET_FILE_DEPENDENCIES = GET_FILE_IMPORTS
-
-# External tool requirements - indicate what tools are needed
-GET_FUNCTION_CALLERS = """
-SELECT 'REQUIRES_RIPGREP' as tool, 'Search for function calls across codebase' as action,
-       'Use: ripgrep pattern search for function invocations' as suggestion
-"""
-# Returns: Ripgrep tool requirement message
-# Use ripgrep instead: rg "uploadAvatar\(" --type py
-# Would find: ["src/controllers/profile.py:23:    user_service.uploadAvatar(user_id, file)"]
-
-GET_FUNCTION_CALLEES = """
-SELECT 'REQUIRES_RIPGREP' as tool, 'Search for function calls within implementation' as action,
-       'Use: ripgrep pattern search within function body' as suggestion
-"""
-# Returns: Ripgrep tool requirement message
-# Use ripgrep instead: rg "\..*\(" src/services/user_service.py -A 20 -B 5
-# Would find function calls within the uploadAvatar implementation

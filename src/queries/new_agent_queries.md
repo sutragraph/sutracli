@@ -17,7 +17,7 @@ Based on our actual database schema and extraction capabilities. These queries p
 ### `GET_NODE_DETAILS_BY_EMBEDDING_ID` ✅ **Database Query**
 **Purpose**: Bridge semantic search results to actual code
 **Returns**: Unified format for both block and file results from embeddings
-**Logic**: Parse node_id ("block_123" or "file_456") → query appropriate table
+**Logic**: Parse block_id ("block_123" or "file_456") → query appropriate table
 
 ## Block Hierarchy Navigation
 

@@ -145,7 +145,7 @@ class DatabaseSearchGuidance(BaseToolGuidance):
                 total_results=event.get("total_nodes", 0),
                 has_code=bool(event.get("include_code", False)),
             )
-            guidance = self._format_delivery_guidance(info, "keyword" if action.parameters.get("query_name") == "GET_NODES_BY_KEYWORD_SEARCH" else "database")
+            guidance = self._format_delivery_guidance(info, "database")
             data = event.get("data", "")
             if guidance and (not data or not data.lstrip().startswith("DATABASE SEARCH RESULTS:") and not data.lstrip().startswith("KEYWORD SEARCH RESULTS:")):
                 event["data"] = guidance + ("\n\n" + data if data else "")
@@ -176,5 +176,3 @@ _REGISTRY = {
 def get_tool_guidance(tool_enum: ToolName) -> Optional[BaseToolGuidance]:
     cls = _REGISTRY.get(tool_enum)
     return cls() if cls else None
-
-

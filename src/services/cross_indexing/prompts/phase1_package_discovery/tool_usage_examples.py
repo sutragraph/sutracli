@@ -29,17 +29,17 @@ Example 2: Focused package file search
 **DATABASE TOOL EXAMPLES**
 
 Example 1: Node.js package analysis
-- database(query_type="GET_CODE_FROM_FILE", file_path="package.json")
+- database(query_type="GET_FILE_BY_PATH", file_path="package.json")
 - Purpose: Read package.json to identify connection-related dependencies
 - Look for communication packages (examples: axios, express)
 
 Example 2: Python package analysis
-- database(query_type="GET_CODE_FROM_FILE", file_path="requirements.txt")
+- database(query_type="GET_FILE_BY_PATH", file_path="requirements.txt")
 - Purpose: Read requirements.txt to identify connection libraries
 - Look for: HTTP client libraries, web frameworks, WebSocket libraries, message queue libraries
 
 Example 3: Java package analysis
-- database(query_type="GET_CODE_FROM_FILE", file_path="pom.xml")
+- database(query_type="GET_FILE_BY_PATH", file_path="pom.xml")
 - Purpose: Read pom.xml to identify connection dependencies
 - Look for: HTTP client libraries, web frameworks, WebSocket libraries, message queue libraries
 

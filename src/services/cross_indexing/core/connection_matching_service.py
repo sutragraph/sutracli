@@ -14,7 +14,7 @@ from ..prompts.phase5_connection_matching.phase5_prompt_manager import (
     Phase5PromptManager,
 )
 from ...llm_clients.llm_factory import llm_client_factory
-from graph.sqlite_client import SQLiteConnection
+from graph.graph_operations import GraphOperations
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class ConnectionMatchingService:
     """
 
     def __init__(self):
-        self.db_client = SQLiteConnection()
+        self.graph_ops = GraphOperations()
         self.matching_manager = Phase5PromptManager()
 
     def match_connections(
@@ -354,38 +354,18 @@ class ConnectionMatchingService:
             Match ID if successful, None otherwise
         """
         try:
-            # Insert only match relationship into connection_mappings table
-            insert_sql = """
-            INSERT INTO connection_mappings (
-                sender_id, receiver_id, connection_type, description,
-                match_confidence, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
-            """
-
-            # Use the connection IDs directly (connections already stored during attempt_completion)
-            outgoing_id = match_data["outgoing_connection_id"]
-            incoming_id = match_data["incoming_connection_id"]
-
+            # Use graph_operations for database operations
             # Convert confidence to numeric value
             confidence_map = {"high": 0.9, "medium": 0.6, "low": 0.3}
             confidence_score = confidence_map.get(match_data["match_confidence"], 0.5)
 
-            values = (
-                outgoing_id,  # sender_id (outgoing connection)
-                incoming_id,  # receiver_id (incoming connection)
+            return self.graph_ops.store_connection_mapping(
+                match_data["outgoing_connection_id"],
+                match_data["incoming_connection_id"],
                 match_data.get("connection_type", "HTTP_API"),
-                match_data["match_reason"],
+                match_data.get("match_reason", "Auto-detected connection"),
                 confidence_score,
-                match_data["created_at"],
             )
-
-            cursor = self.db_client.connection.execute(insert_sql, values)
-            self.db_client.connection.commit()
-
-            logger.debug(
-                f"Inserted match relationship: outgoing_id={outgoing_id} -> incoming_id={incoming_id}"
-            )
-            return cursor.lastrowid if cursor.lastrowid else None
 
         except Exception as e:
             logger.error(f"Error inserting connection match: {str(e)}")
@@ -449,7 +429,7 @@ class ConnectionMatchingService:
             else:
                 sql = f"{base_sql} ORDER BY cm.created_at DESC"
 
-            results = self.db_client.execute_query(sql, values)
+            results = self.graph_ops.connection.execute_query(sql, values)
             return results or []
 
         except Exception as e:

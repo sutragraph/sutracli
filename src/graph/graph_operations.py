@@ -19,8 +19,6 @@ from models import File, CodeBlock, ExtractionData
 from queries.agent_queries import (
     GET_CODE_BLOCK_BY_ID,
     GET_FILE_BY_ID,
-    GET_IMPLEMENTATION_CONTEXT,
-    GET_EXTERNAL_CONNECTIONS_OVERLAPPING_RANGE,
     GET_FILE_BLOCK_SUMMARY,
     GET_CHILD_BLOCKS,
     GET_PARENT_BLOCK,
@@ -30,10 +28,11 @@ from queries.agent_queries import (
     GET_EXTERNAL_CONNECTIONS,
     GET_PROJECT_EXTERNAL_CONNECTIONS,
     GET_CONNECTION_IMPACT,
+    GET_EXTERNAL_CONNECTIONS_OVERLAPPING_RANGE,
+    GET_IMPLEMENTATION_CONTEXT,
 )
 
 from .sqlite_client import SQLiteConnection
-
 
 
 class GraphOperations:
@@ -210,35 +209,37 @@ class GraphOperations:
                 "files_by_project": {},
             }
 
-    def get_agent_context_for_semantic_results(self, semantic_node_ids: List[str]) -> Dict[str, Any]:
+    def get_agent_context_for_semantic_results(
+        self, semantic_block_ids: List[str]
+    ) -> Dict[str, Any]:
         """
         Agent-centric context extraction from semantic search results.
 
         Flow:
-        1. Agent does semantic search → gets node_ids (file_28403, block_238408)
+        1. Agent does semantic search → gets block_ids (file_28403, block_238408)
         2. Resolve nodes to get concrete data (file info, block info)
         3. For blocks: add file context and check if file connections overlap with block lines
         4. For files: get all relevant connections
         5. Return intuitive, actionable data for the agent
 
         Args:
-            semantic_node_ids: List of node IDs from semantic search (e.g., ["block_123", "file_456"])
+            semantic_block_ids: List of node IDs from semantic search (e.g., ["block_123", "file_456"])
 
         Returns:
             Dictionary with agent-friendly context for each semantic result
         """
         try:
-            if not semantic_node_ids:
+            if not semantic_block_ids:
                 return {}
 
             context_results = {}
 
-            for i, node_id in enumerate(semantic_node_ids):
+            for i, block_id in enumerate(semantic_block_ids):
                 result_key = f"semantic_result_{i}"
 
-                if node_id.startswith('block_'):
+                if block_id.startswith("block_"):
                     # Handle block context
-                    block_id = int(node_id.split('_')[1])
+                    block_id = int(block_id.split("_")[1])
                     block_data = self.resolve_block(block_id)
 
                     if block_data:
@@ -250,22 +251,22 @@ class GraphOperations:
                         )
 
                         context_results[result_key] = {
-                            'node_type': 'block',
-                            'node_id': node_id,
-                            'block_info': block_data,
-                            'file_context': {
-                                'file_path': block_data['file_path'],
-                                'file_id': block_data['file_id'],
-                                'language': block_data['language'],
-                                'project_name': block_data['project_name']
+                            "node_type": "block",
+                            "block_id": block_id,
+                            "block_info": block_data,
+                            "file_context": {
+                                "file_path": block_data["file_path"],
+                                "file_id": block_data["file_id"],
+                                "language": block_data["language"],
+                                "project_name": block_data["project_name"],
                             },
-                            'relevant_connections': connections,
-                            'summary': f"Block '{block_data['name']}' ({block_data['type']}) in {block_data['file_path']} lines {block_data['start_line']}-{block_data['end_line']}"
+                            "relevant_connections": connections,
+                            "summary": f"Block '{block_data['name']}' ({block_data['type']}) in {block_data['file_path']} lines {block_data['start_line']}-{block_data['end_line']}",
                         }
 
-                elif node_id.startswith('file_'):
+                elif block_id.startswith("file_"):
                     # Handle file context
-                    file_id = int(node_id.split('_')[1])
+                    file_id = int(block_id.split("_")[1])
                     file_data = self.resolve_file(file_id)
 
                     if file_data:
@@ -274,12 +275,12 @@ class GraphOperations:
                         file_blocks = self.get_file_block_summary(file_id)
 
                         context_results[result_key] = {
-                            'node_type': 'file',
-                            'node_id': node_id,
-                            'file_info': file_data,
-                            'blocks_summary': file_blocks,
-                            'all_connections': connections,
-                            'summary': f"File '{file_data['file_path']}' ({file_data['language']}) with {file_data['block_count']} blocks"
+                            "node_type": "file",
+                            "block_id": block_id,
+                            "file_info": file_data,
+                            "blocks_summary": file_blocks,
+                            "all_connections": connections,
+                            "summary": f"File '{file_data['file_path']}' ({file_data['language']}) with {file_data['block_count']} blocks",
                         }
 
             return context_results
@@ -288,23 +289,25 @@ class GraphOperations:
             logger.error(f"Error getting agent context for semantic results: {e}")
             return {}
 
-    def get_agent_context_for_single_node(self, node_id: str) -> Optional[Dict[str, Any]]:
+    def get_agent_context_for_single_node(
+        self, block_id: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Get comprehensive context for a single semantic search node.
 
         Args:
-            node_id: Single node ID from semantic search (e.g., "block_123" or "file_456")
+            block_id: Single node ID from semantic search (e.g., "block_123" or "file_456")
 
         Returns:
             Dictionary with comprehensive context or None if not found
         """
         try:
-            results = self.get_agent_context_for_semantic_results([node_id])
+            results = self.get_agent_context_for_semantic_results([block_id])
             if results:
                 return list(results.values())[0]
             return None
         except Exception as e:
-            logger.error(f"Error getting agent context for node {node_id}: {e}")
+            logger.error(f"Error getting agent context for node {block_id}: {e}")
             return None
 
     def _get_file_id_by_path(self, file_path: str) -> Optional[int]:
@@ -1264,18 +1267,271 @@ class GraphOperations:
             'suggestion': f'Use search_keyword tool with pattern "{pattern}" to find matching files'
         }
 
+    # ============================================================================
+    # CONNECTION OPERATIONS
+    # ============================================================================
+
+    def store_incoming_connection(
+        self,
+        description: str,
+        file_id: int,
+        snippet_lines: List[int],
+        technology_name: str,
+        code_snippet: str,
+    ) -> int:
+        """Store an incoming connection."""
+        try:
+            import json
+
+            cursor = self.connection.connection.execute(
+                """INSERT INTO incoming_connections
+                   (description, file_id, snippet_lines, technology_name, code_snippet)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    description,
+                    file_id,
+                    json.dumps(snippet_lines),
+                    technology_name,
+                    code_snippet,
+                ),
+            )
+
+            connection_id = cursor.lastrowid
+            self.connection.connection.commit()
+            logger.debug(f"Stored incoming connection for file {file_id}")
+            return connection_id
+
+        except Exception as e:
+            logger.error(f"Error storing incoming connection: {e}")
+            raise
+
+    def store_outgoing_connection(
+        self,
+        description: str,
+        file_id: int,
+        snippet_lines: List[int],
+        technology_name: str,
+        code_snippet: str,
+    ) -> int:
+        """Store an outgoing connection."""
+        try:
+            import json
+
+            cursor = self.connection.connection.execute(
+                """INSERT INTO outgoing_connections
+                   (description, file_id, snippet_lines, technology_name, code_snippet)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    description,
+                    file_id,
+                    json.dumps(snippet_lines),
+                    technology_name,
+                    code_snippet,
+                ),
+            )
+
+            connection_id = cursor.lastrowid
+            self.connection.connection.commit()
+            logger.debug(f"Stored outgoing connection for file {file_id}")
+            return connection_id
+
+        except Exception as e:
+            logger.error(f"Error storing outgoing connection: {e}")
+            raise
+
+    def store_connections_batch(
+        self, connections_data: Dict[str, Any]
+    ) -> Dict[str, List[int]]:
+        """Store multiple connections in a batch operation."""
+        try:
+            import json
+
+            stored_incoming = []
+            stored_outgoing = []
+
+            # Store incoming connections
+            for conn in connections_data.get("incoming_connections", []):
+                file_id = conn["file_id"]
+                snippet_lines = conn.get("snippet_lines", [])
+                code_snippet = conn.get("code_snippet", "")
+
+                cursor = self.connection.connection.execute(
+                    """INSERT INTO incoming_connections
+                       (description, file_id, snippet_lines, technology_name, code_snippet)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        conn["description"],
+                        file_id,
+                        json.dumps(snippet_lines),
+                        conn.get("technology", {}).get("name", "unknown"),
+                        code_snippet,
+                    ),
+                )
+                stored_incoming.append(cursor.lastrowid)
+
+            # Store outgoing connections
+            for conn in connections_data.get("outgoing_connections", []):
+                file_id = conn["file_id"]
+                snippet_lines = conn.get("snippet_lines", [])
+                code_snippet = conn.get("code_snippet", "")
+
+                cursor = self.connection.connection.execute(
+                    """INSERT INTO outgoing_connections
+                       (description, file_id, snippet_lines, technology_name, code_snippet)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        conn["description"],
+                        file_id,
+                        json.dumps(snippet_lines),
+                        conn.get("technology", {}).get("name", "unknown"),
+                        code_snippet,
+                    ),
+                )
+                stored_outgoing.append(cursor.lastrowid)
+
+            self.connection.connection.commit()
+            logger.info(
+                f"Stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
+            )
+
+            return {"incoming_ids": stored_incoming, "outgoing_ids": stored_outgoing}
+
+        except Exception as e:
+            logger.error(f"Error storing connections batch: {e}")
+            raise
+
+    def store_connection_mapping(
+        self,
+        sender_id: int,
+        receiver_id: int,
+        connection_type: str,
+        description: str,
+        match_confidence: float,
+    ) -> int:
+        """Store a connection mapping between sender and receiver."""
+        try:
+            import time
+
+            cursor = self.connection.connection.execute(
+                """INSERT INTO connection_mappings (sender_id, receiver_id, connection_type, description, match_confidence, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    sender_id,
+                    receiver_id,
+                    connection_type,
+                    description,
+                    match_confidence,
+                    time.strftime("%Y-%m-%d %H:%M:%S"),
+                ),
+            )
+
+            mapping_id = cursor.lastrowid
+            self.connection.connection.commit()
+            logger.debug(
+                f"Stored connection mapping between {sender_id} and {receiver_id}"
+            )
+            return mapping_id
+
+        except Exception as e:
+            logger.error(f"Error storing connection mapping: {e}")
+            raise
+
+    def store_connection_mappings_batch(
+        self, matches: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Store multiple connection mappings in a batch operation."""
+        try:
+            created_mappings = []
+
+            for match in matches:
+                cursor = self.connection.connection.execute(
+                    """INSERT INTO connection_mappings (sender_id, receiver_id, connection_type, description, match_confidence)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        match.get("sender_id"),
+                        match.get("receiver_id"),
+                        match.get("connection_type", "unknown"),
+                        match.get("description", "Auto-detected connection"),
+                        match.get("match_confidence", 0.0),
+                    ),
+                )
+                created_mappings.append(cursor.lastrowid)
+
+            self.connection.connection.commit()
+
+            return {
+                "success": True,
+                "mapping_ids": created_mappings,
+                "message": f"Created {len(created_mappings)} connection mappings",
+            }
+
+        except Exception as e:
+            logger.error(f"Error storing connection mappings batch: {e}")
+            raise
+
+    # ============================================================================
+    # PROJECT OPERATIONS
+    # ============================================================================
+
+    def get_project_file_paths(self, project_name: str) -> List[str]:
+        """Get all file paths for a project."""
+        try:
+            results = self.connection.execute_query(
+                """SELECT DISTINCT file_path
+                   FROM files
+                   WHERE project_id = (SELECT id FROM projects WHERE name = ?)""",
+                (project_name,),
+            )
+            return [row["file_path"] for row in results]
+
+        except Exception as e:
+            logger.error(f"Error getting project file paths: {e}")
+            return []
+
+    def get_project_id_by_name(self, project_name: str) -> Optional[int]:
+        """Get project ID by name."""
+        try:
+            result = self.connection.execute_query(
+                "SELECT id FROM projects WHERE name = ?", (project_name,)
+            )
+            return result[0]["id"] if result else None
+
+        except Exception as e:
+            logger.error(f"Error getting project ID: {e}")
+            return None
+
+    def get_db_file_hashes(self, project_id: int) -> Dict[str, str]:
+        """Get all file hashes from the database for a project."""
+        try:
+            results = self.connection.execute_query(
+                """SELECT file_path, content_hash
+                   FROM files
+                   WHERE project_id = ?""",
+                (project_id,),
+            )
+
+            file_hashes = {}
+            for row in results:
+                file_hashes[row["file_path"]] = row["content_hash"]
+
+            return file_hashes
+
+        except Exception as e:
+            logger.error(f"Error getting database file hashes: {e}")
+            return {}
+
     def resolve_embedding_nodes(self, embedding_results: List[str]) -> List[Dict[str, Any]]:
         """Convert discovered `block_#` / `file_#` to concrete records."""
         resolved = []
 
-        for node_id in embedding_results:
-            if node_id.startswith('block_'):
-                block_id = int(node_id.split('_')[1])
+        for block_id in embedding_results:
+            if block_id.startswith("block_"):
+                block_id = int(block_id.split("_")[1])
                 block = self.resolve_block(block_id)
                 if block:
                     resolved.append(block)
-            elif node_id.startswith('file_'):
-                file_id = int(node_id.split('_')[1])
+            elif block_id.startswith("file_"):
+                file_id = int(block_id.split("_")[1])
                 file_data = self.resolve_file(file_id)
                 if file_data:
                     resolved.append(file_data)

@@ -24,49 +24,42 @@ DELIVERY_QUEUE_CONFIG = {
     "semantic_search": 15,  # Nodes per batch for semantic search (always with code)
 }
 
-# Database query configuration mapping
+# Database query configuration mapping - ONLY 6 EXPOSED QUERIES FOR AGENT
 DATABASE_QUERY_CONFIG = {
-    "GET_NODES_BY_EXACT_NAME": {
-        "required_params": ["name"],
-        "optional_params": [],
-    },
-    "GET_NODES_BY_KEYWORD_SEARCH": {
-        "required_params": ["keyword"],
-        "optional_params": [],
-    },
-    "GET_CODE_FROM_FILE": {
+    "GET_FILE_BY_PATH": {
         "required_params": ["file_path"],
         "optional_params": [],
     },
-    "GET_CODE_FROM_FILE_LINES": {
-        "required_params": ["file_path"],
-        "optional_params": ["start_line", "end_line"],
-    },
-    "GET_ALL_NODE_NAMES_FROM_FILE": {
-        "required_params": ["file_path"],
+    "GET_FILE_BLOCK_SUMMARY": {
+        "required_params": ["file_id"],
         "optional_params": [],
     },
-    "GET_FUNCTION_CALLERS": {
-        "required_params": ["function_name"],
+    "GET_CHILD_BLOCKS": {
+        "required_params": ["parent_block_id"],
         "optional_params": [],
     },
-    "GET_FUNCTION_CALLEES": {
-        "required_params": ["function_name"],
+    "GET_PARENT_BLOCK": {
+        "required_params": ["block_id"],
         "optional_params": [],
     },
-    "GET_FILE_DEPENDENCIES": {
+    "GET_FILE_IMPORTS": {
         "required_params": ["file_path"],
         "optional_params": [],
+    },
+    "GET_DEPENDENCY_CHAIN": {
+        "required_params": ["file_path"],
+        "optional_params": ["depth"],
     },
 }
 
-# Error guidance messages for database queries
+# Error guidance messages for database queries - ONLY 6 EXPOSED QUERIES FOR AGENT
 DATABASE_ERROR_GUIDANCE = {
-    "GET_CODE_FROM_FILE": "Try using semantic_search to find the path/to/file first.",
-    "GET_NODES_BY_EXACT_NAME": "Try using semantic_search for partial or fuzzy matching.",
-    "GET_NODES_BY_KEYWORD_SEARCH": "Try different keywords, broader search terms, or use semantic_search for conceptual matching.",
-    "GET_FUNCTION_CALLERS": "Ensure the function exists and has callers in the codebase. Use different search terms if no callers found.",
-    "GET_FUNCTION_CALLEES": "Ensure the function exists and calls other functions. Use different search terms if no callees found.",
+    "GET_FILE_BY_PATH": "Try using semantic_search to find the correct file path first.",
+    "GET_FILE_BLOCK_SUMMARY": "Ensure the file_id exists. Use GET_FILE_BY_PATH to get file_id from file_path first.",
+    "GET_CHILD_BLOCKS": "Ensure the parent_block_id exists. Use GET_FILE_BLOCK_SUMMARY to find block IDs first.",
+    "GET_PARENT_BLOCK": "Ensure the block_id exists. Use GET_FILE_BLOCK_SUMMARY to find block IDs first.",
+    "GET_FILE_IMPORTS": "Ensure the file_path exists. Use semantic_search to find the correct file path first.",
+    "GET_DEPENDENCY_CHAIN": "Ensure the file_path exists. Use semantic_search to find the correct file path first.",
 }
 
 # Guidance message templates

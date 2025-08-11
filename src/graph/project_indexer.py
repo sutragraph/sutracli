@@ -12,6 +12,7 @@ from embeddings import get_embedding_engine
 from utils.helpers import load_json_file
 from config.settings import config
 
+from graph.graph_operations import GraphOperations
 
 # Import indexer functions for file processing
 from indexer import (
@@ -43,6 +44,7 @@ class ProjectIndexer:
         self.connection = SQLiteConnection()
         self.converter = ASTToSqliteConverter()
         self.graphOperations = GraphOperations()
+        self.graph_ops = GraphOperations()
         self.embedding_engine = get_embedding_engine(
             max_tokens=config.embedding.max_tokens,
             overlap_tokens=config.embedding.overlap_tokens,
@@ -430,19 +432,14 @@ class ProjectIndexer:
 
     def _get_db_file_hashes(self, project_id: int) -> Dict[Path, str]:
         """Get all file hashes from the database for a project."""
-        file_hashes = {}
         try:
-            results = self.connection.execute_query(
-                """SELECT file_path, content_hash
-                   FROM files
-                   WHERE project_id = ?""",
-                (project_id,),
-            )
+            file_hashes_dict = self.graph_ops.get_db_file_hashes(project_id)
 
-            for row in results:
-                # Convert string path from database to Path object
-                file_path = Path(row["file_path"])
-                file_hashes[file_path] = row["content_hash"]
+            # Convert string paths to Path objects
+            file_hashes = {}
+            for file_path_str, content_hash in file_hashes_dict.items():
+                file_path = Path(file_path_str)
+                file_hashes[file_path] = content_hash
 
             logger.debug(f"📊 Retrieved {len(file_hashes)} file hashes from database")
             return file_hashes
@@ -554,11 +551,11 @@ class ProjectIndexer:
             prefixed_block_ids = [f"block_{row['id']}" for row in block_results]
 
             # Combine prefixed IDs for embedding deletion
-            prefixed_node_ids = [prefixed_file_id] + prefixed_block_ids
+            prefixed_block_ids = [prefixed_file_id] + prefixed_block_ids
 
             # Delete embeddings first (if they exist)
-            if prefixed_node_ids:
-                self._delete_embeddings(prefixed_node_ids, project_id)
+            if prefixed_block_ids:
+                self._delete_embeddings(prefixed_block_ids, project_id)
 
             # Count relationships before deletion
             rel_count = self.connection.execute_query(
@@ -576,7 +573,7 @@ class ProjectIndexer:
 
             # Return deletion counts
             return {
-                "nodes": len(prefixed_node_ids),  # File + code blocks
+                "nodes": len(prefixed_block_ids),  # File + code blocks
                 "relationships": relationships_count,
             }
 
@@ -584,29 +581,29 @@ class ProjectIndexer:
             logger.error(f"Error deleting nodes for file {file_path}: {e}")
             return {"nodes": 0, "relationships": 0}
 
-    def _delete_embeddings(self, node_ids: List[str], project_id: int) -> None:
+    def _delete_embeddings(self, block_ids: List[str], project_id: int) -> None:
         """Delete embeddings for specified nodes. Node IDs should already include prefixes (file_ or block_)."""
         try:
             # Delete embeddings for these nodes
-            placeholders = ",".join(["?" for _ in node_ids])
+            placeholders = ",".join(["?" for _ in block_ids])
             params = tuple(
-                node_ids + [str(project_id)]
+                block_ids + [str(project_id)]
             )  # Convert to tuple for type safety
 
             self.connection.execute_query(
                 f"""DELETE FROM embeddings
-                   WHERE node_id IN ({placeholders})
+                   WHERE block_id IN ({placeholders})
                    AND project_id = ?""",
                 params,
             )
 
             logger.debug(
-                f"Deleted {len(node_ids)} embeddings from database (file: 1, blocks: {len(node_ids)-1})"
+                f"Deleted {len(block_ids)} embeddings from database (file: 1, blocks: {len(block_ids)-1})"
             )
 
         except Exception as e:
             logger.error(f"Error deleting node embeddings: {e}")
-            logger.error(f"Node IDs: {node_ids}, Project ID: {project_id}")
+            logger.error(f"Node IDs: {block_ids}, Project ID: {project_id}")
 
     def _update_sutra_memory_for_changes(
         self, changes: Dict[str, Set[Path]], project_id: int

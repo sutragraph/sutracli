@@ -319,22 +319,30 @@ usage1 = graph_ops.get_files_using_symbol("pattern1", scope_paths)
 usage2 = graph_ops.get_files_using_symbol("pattern2", scope_paths)
 ```
 
-## Legacy Method Mapping
+## Agent Query Mapping
 
-If you're migrating from old query names:
+The agent only has access to these 6 queries:
 
 ```python
-# Old way
-results = connection.execute_query(GET_NODES_BY_EXACT_NAME, {"name": "function_name"})
+# Agent queries (exposed to AI agent)
+GET_FILE_BY_PATH -> graph_ops._get_file_id_by_path() + graph_ops.resolve_file()
+GET_FILE_BLOCK_SUMMARY -> graph_ops.get_file_block_summary()
+GET_CHILD_BLOCKS -> graph_ops.get_child_blocks()
+GET_PARENT_BLOCK -> graph_ops.get_parent_block()
+GET_FILE_IMPORTS -> graph_ops.get_imports()
+GET_DEPENDENCY_CHAIN -> graph_ops.get_dependency_chain()
+```
 
-# New way
-results = graph_ops.find_files_with_pattern(f"^{re.escape('function_name')}")
+For other functionality, use graph_operations methods directly:
+```python
+# Find files with patterns
+results = graph_ops.find_files_with_pattern("function_name")
 
-# Old way
-file_content = connection.execute_query(GET_CODE_FROM_FILE, {"file_id": file_id})
-
-# New way
+# Get file content
 file_content = graph_ops.resolve_file(file_id)
+
+# Search for symbols
+symbol_usage = graph_ops.get_files_using_symbol("symbol_name")
 ```
 
 ## Common Gotchas

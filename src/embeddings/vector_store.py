@@ -3,17 +3,15 @@ Unified vector store that combines embedding generation and vector storage.
 Merges the functionality of simple_processor.py and vector_db.py into a clean interface.
 """
 
-import json
 import sqlite3, threading
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
-
 import numpy as np
 import onnxruntime as ort
 import sqlite_vec
 from loguru import logger
 from tokenizers import Tokenizer
-
+from graph.graph_operations import GraphOperations
 from config import config
 
 
@@ -41,6 +39,19 @@ class EmbeddingModel:
             tokenizer_file = self.model_path / "tokenizer.json"
             if tokenizer_file.exists():
                 self.tokenizer = Tokenizer.from_file(str(tokenizer_file))
+                # Ensure accurate counting: disable built-in truncation/padding
+                try:
+                    # Ensure the tokenizer does not cap at 128 by setting a very high truncation length.
+                    # We'll still truncate to 256 in _tokenize for the model input, but counting can see >128.
+                    self.tokenizer.enable_truncation(max_length=100000)
+                    self.tokenizer.disable_padding()
+                    logger.debug(
+                        "Tokenizer truncation set to 100000 and padding disabled"
+                    )
+                except Exception as tweak_err:
+                    logger.warning(
+                        f"Could not adjust tokenizer settings (non-fatal): {tweak_err}"
+                    )
             else:
                 logger.warning("Tokenizer file not found, using basic tokenization")
 
@@ -89,6 +100,32 @@ class EmbeddingModel:
             "attention_mask": np.array([attention_mask], dtype=np.int64),
             "token_type_ids": np.array([token_type_ids], dtype=np.int64),
         }
+
+    def count_tokens(self, text: str) -> int:
+        """Count the number of tokens using the actual tokenizer with detailed logging."""
+        if not self.tokenizer:
+            raise RuntimeError(
+                "Tokenizer not available - cannot count tokens accurately"
+            )
+
+        logger.info(f"🔍 TOKENIZING: {len(text)} characters")
+        try:
+            # Align counting with the embedding model's tokenization and max length
+            inputs = self._tokenize(text, max_length=256)
+            attention_mask = inputs["attention_mask"]
+            if isinstance(attention_mask, np.ndarray):
+                # attention_mask shape is (1, seq_len)
+                token_count = int(attention_mask[0].sum().item())
+            else:
+                token_count = int(sum(attention_mask))
+
+            logger.info(f"🎯 FINAL RESULT: {len(text)} chars → {token_count} tokens")
+            return token_count
+        except Exception as e:
+            logger.error(f"❌ TOKENIZER FAILED: {e}")
+            logger.error(f"❌ Text length: {len(text)}")
+            logger.error(f"❌ Text preview: '{text[:200]}...'")
+            raise RuntimeError(f"Tokenizer failed: {e}")
 
     def get_embedding(self, text: str) -> np.ndarray:
         """Generate embedding for text."""
@@ -180,11 +217,21 @@ class TextChunker:
 
     def __init__(self, embedding_model: EmbeddingModel):
         self.embedding_model = embedding_model
+        self._fallback_logged = False  # Track if we've logged the fallback warning
+
+    def _count_tokens(self, text: str) -> int:
+        """Accurately count tokens using the embedding model's tokenizer."""
+        # Use the embedding model's tokenizer for accurate token counting
+        return self.embedding_model.count_tokens(text)
 
     def chunk_text(
-        self, text: str, max_tokens: int = 240, overlap_tokens: int = 30
+        self,
+        text: str,
+        max_tokens: int = 240,
+        overlap_tokens: int = 30,
+        metadata: str = "",
     ) -> List[Dict[str, Any]]:
-        """Split text into overlapping chunks with line tracking."""
+        """Split text into fixed 20-line chunks. First chunk includes metadata prefix once."""
         if not text or not text.strip():
             return []
 
@@ -192,58 +239,77 @@ class TextChunker:
         if not lines:
             return []
 
-        chunks = []
-        current_chunk_lines = []
-        current_tokens = 0
-        start_line = 1
+        chunks: List[Dict[str, Any]] = []
+        metadata_prefix = (metadata + "\n\n") if metadata else ""
 
-        for line_num, line in enumerate(lines, 1):
-            # Estimate tokens for this line (rough approximation)
-            line_tokens = len(line.split()) + 1
+        line_index = 0
+        while line_index < len(lines):
+            start_line = line_index + 1
+            end_index = min(line_index + 20, len(lines))
 
-            if current_tokens + line_tokens > max_tokens and current_chunk_lines:
-                # Create chunk from current lines
-                chunk_text = "".join(current_chunk_lines)
-                chunks.append(
-                    {
-                        "text": chunk_text,
-                        "start": len("".join(lines[: start_line - 1])),
-                        "end": len("".join(lines[: line_num - 1])),
-                        "start_line": start_line,
-                        "end_line": line_num - 1,
-                    }
-                )
+            chunk_lines = lines[line_index:end_index]
+            chunk_text = "".join(chunk_lines)
 
-                # Start new chunk with overlap
-                overlap_lines = max(1, overlap_tokens // 10)  # Rough estimate
-                if len(current_chunk_lines) > overlap_lines:
-                    current_chunk_lines = current_chunk_lines[-overlap_lines:]
-                    start_line = line_num - overlap_lines
-                    current_tokens = sum(
-                        len(l.split()) + 1 for l in current_chunk_lines
-                    )
-                else:
-                    current_chunk_lines = []
-                    current_tokens = 0
-                    start_line = line_num
+            if len(chunks) == 0 and metadata_prefix:
+                chunk_text = metadata_prefix + chunk_text
 
-            current_chunk_lines.append(line)
-            current_tokens += line_tokens
+            # Compute character offsets
+            char_start = len("".join(lines[:line_index]))
+            char_end = len("".join(lines[:end_index]))
 
-        # Add final chunk
-        if current_chunk_lines:
-            chunk_text = "".join(current_chunk_lines)
             chunks.append(
                 {
                     "text": chunk_text,
-                    "start": len("".join(lines[: start_line - 1])),
-                    "end": len(text),
+                    "start": char_start,
+                    "end": char_end,
                     "start_line": start_line,
-                    "end_line": len(lines),
+                    "end_line": end_index,
+                    "token_count": 0,
                 }
             )
 
+            line_index = end_index
+
         return chunks
+
+    def _trim_to_max_tokens(self, text: str, max_tokens: int) -> str:
+        """Trim text to fit within max_tokens."""
+        if self._count_tokens(text) <= max_tokens:
+            return text
+
+        # Binary search to find the right length
+        left, right = 0, len(text)
+        best_text = ""
+
+        while left <= right:
+            mid = (left + right) // 2
+            candidate = text[:mid]
+
+            if self._count_tokens(candidate) <= max_tokens:
+                best_text = candidate
+                left = mid + 1
+            else:
+                right = mid - 1
+
+        return best_text
+
+    def _get_overlap_text(self, text: str, overlap_tokens: int) -> str:
+        """Get the last overlap_tokens worth of text for overlap."""
+        if overlap_tokens <= 0:
+            return ""
+
+        # Start from the end and work backwards
+        words = text.split()
+        if not words:
+            return ""
+
+        # Try different word counts to get close to overlap_tokens
+        for word_count in range(min(len(words), overlap_tokens * 2), 0, -1):
+            candidate = " ".join(words[-word_count:])
+            if self._count_tokens(candidate) <= overlap_tokens:
+                return candidate
+
+        return ""
 
     def get_chunked_embeddings(
         self, text: str, max_tokens: int = 240, overlap_tokens: int = 30
@@ -324,6 +390,7 @@ class VectorStore:
         self.db_path = Path(resolved_db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.connection: Optional[sqlite3.Connection] = None
+        self.graph_ops = GraphOperations()
 
         # Initialize embedding components
         if model_path is None:
@@ -363,7 +430,7 @@ class VectorStore:
             self.connection.execute(
                 """
                 CREATE VIRTUAL TABLE IF NOT EXISTS embeddings USING vec0(
-                    node_id TEXT,
+                    block_id TEXT,
                     project_id INTEGER,
                     chunk_index INTEGER,
                     chunk_start_line INTEGER,
@@ -384,10 +451,14 @@ class VectorStore:
         return self.embedding_model.get_embedding(text)
 
     def chunk_text(
-        self, text: str, max_tokens: int = 240, overlap_tokens: int = 30
+        self,
+        text: str,
+        max_tokens: int = 240,
+        overlap_tokens: int = 30,
+        metadata: str = "",
     ) -> List[Dict[str, Any]]:
         """Split text into chunks with line tracking."""
-        return self.text_chunker.chunk_text(text, max_tokens, overlap_tokens)
+        return self.text_chunker.chunk_text(text, max_tokens, overlap_tokens, metadata)
 
     def get_chunked_embeddings(
         self, text: str, max_tokens: int = 240, overlap_tokens: int = 30
@@ -397,10 +468,57 @@ class VectorStore:
             text, max_tokens, overlap_tokens
         )
 
+    def get_chunked_embeddings_with_metadata(
+        self,
+        text: str,
+        metadata: str = "",
+        max_tokens: int = 240,
+        overlap_tokens: int = 30,
+    ) -> List[Tuple[np.ndarray, Dict[str, Any]]]:
+        """Get embeddings for text chunks with metadata added to first chunk only."""
+        chunks = self.chunk_text(text, max_tokens, overlap_tokens, metadata)
+
+        if not chunks:
+            return []
+
+        # Extract all chunk texts for batch processing
+        chunk_texts = [chunk["text"] for chunk in chunks]
+
+        try:
+            # Generate embeddings in batch for much better performance
+            logger.debug(f"Generating batch embeddings for {len(chunk_texts)} chunks")
+            embeddings = self.embedding_model.get_embeddings_batch(chunk_texts)
+            logger.debug(f"Successfully generated {len(embeddings)} batch embeddings")
+
+            # Combine embeddings with metadata
+            embeddings_with_metadata = []
+            for embedding, chunk in zip(embeddings, chunks):
+                embeddings_with_metadata.append((embedding, chunk))
+
+            return embeddings_with_metadata
+
+        except Exception as e:
+            logger.error(
+                f"Failed to generate batch embeddings, falling back to individual: {e}"
+            )
+            import traceback
+
+            logger.error(f"Batch embedding error details: {traceback.format_exc()}")
+            # Fallback to individual processing
+            embeddings_with_metadata = []
+            for chunk in chunks:
+                try:
+                    embedding = self.embedding_model.get_embedding(chunk["text"])
+                    embeddings_with_metadata.append((embedding, chunk))
+                except Exception as e:
+                    logger.error(f"Failed to generate embedding for chunk: {e}")
+                    continue
+            return embeddings_with_metadata
+
     # Vector storage methods
     def store_embedding(
         self,
-        node_id: str,
+        block_id: str,
         project_id: int,
         chunk_index: int,
         embedding: np.ndarray,
@@ -420,12 +538,13 @@ class VectorStore:
                     f"Expected 384-dimensional vector, got shape {embedding_array.shape}"
                 )
 
+            # Store in vector database using sqlite-vec
             assert self.connection is not None
             cursor = self.connection.execute(
-                """INSERT INTO embeddings (node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
+                """INSERT INTO embeddings (block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
                    VALUES (?, ?, ?, ?, ?, ?)""",
                 (
-                    node_id,
+                    str(block_id),  # Convert to string for sqlite-vec
                     project_id,
                     chunk_index,
                     chunk_start_line,
@@ -441,7 +560,7 @@ class VectorStore:
             return int(embedding_id)
 
         except Exception as e:
-            logger.error(f"Failed to store embedding for node {node_id}: {e}")
+            logger.error(f"Failed to store embedding for node {block_id}: {e}")
             raise
 
     def store_embeddings_batch(
@@ -462,9 +581,11 @@ class VectorStore:
         embedding_ids: List[int] = []
 
         try:
-            # Begin transaction for batch insert
+            # Store embeddings in vector database using sqlite-vec
             assert self.connection is not None
             cursor = self.connection.cursor()
+
+            # Begin transaction for batch insert
             cursor.execute("BEGIN TRANSACTION")
 
             for data in embedding_data_list:
@@ -482,10 +603,10 @@ class VectorStore:
                     )
 
                 cursor.execute(
-                    """INSERT INTO embeddings (node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
+                    """INSERT INTO embeddings (block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, embedding)
                        VALUES (?, ?, ?, ?, ?, ?)""",
                     (
-                        data["node_id"],
+                        str(data["block_id"]),  # Convert to string for sqlite-vec
                         data["project_id"],
                         data["chunk_index"],
                         data["chunk_start_line"],
@@ -498,11 +619,13 @@ class VectorStore:
                     raise RuntimeError("Failed to retrieve lastrowid for batch insert")
                 embedding_ids.append(int(rowid))
 
-            # Commit all inserts at once - this is the key performance improvement!
+            # Commit all inserts at once
             cursor.execute("COMMIT")
             logger.debug(
                 f"Batch stored {len(embedding_ids)} embeddings in single transaction"
             )
+
+            return embedding_ids
 
         except Exception as e:
             try:
@@ -511,8 +634,6 @@ class VectorStore:
                 pass
             logger.error(f"Failed to batch store embeddings: {e}")
             raise
-
-        return embedding_ids
 
     def search_similar(
         self,
@@ -537,7 +658,7 @@ class VectorStore:
             # Build query with optional project filtering
             if project_id is not None:
                 query_sql = """
-                    SELECT rowid, node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
+                    SELECT rowid, block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
                     FROM embeddings
                     WHERE embedding MATCH ? AND project_id = ?
                     ORDER BY distance
@@ -546,7 +667,7 @@ class VectorStore:
                 query_params: Tuple[Any, ...] = (query_vector, project_id, limit)
             else:
                 query_sql = """
-                    SELECT rowid, node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
+                    SELECT rowid, block_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
                     FROM embeddings
                     WHERE embedding MATCH ?
                     ORDER BY distance
@@ -561,7 +682,7 @@ class VectorStore:
             for row in cursor.fetchall():
                 (
                     embedding_id,
-                    node_id,
+                    block_id,
                     proj_id,
                     chunk_index,
                     chunk_start_line,
@@ -576,7 +697,7 @@ class VectorStore:
                     results.append(
                         {
                             "embedding_id": int(embedding_id),
-                            "node_id": str(node_id),
+                            "block_id": str(block_id),
                             "project_id": int(proj_id),
                             "chunk_index": int(chunk_index),
                             "chunk_start_line": int(chunk_start_line),
@@ -619,7 +740,7 @@ class VectorStore:
 
             # Unique nodes
             cursor = self.connection.execute(
-                "SELECT COUNT(DISTINCT node_id) FROM embeddings"
+                "SELECT COUNT(DISTINCT block_id) FROM embeddings"
             )
             stats["unique_nodes"] = int(cursor.fetchone()[0])
 
