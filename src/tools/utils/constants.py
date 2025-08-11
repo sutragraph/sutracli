@@ -18,8 +18,6 @@ SEMANTIC_SEARCH_CONFIG = {
 
 # Delivery queue configuration for different query types
 DELIVERY_QUEUE_CONFIG = {
-    "keyword_search_with_code": 10,  # Nodes per batch for keyword search with code
-    "keyword_search_metadata": 30,  # Nodes per batch for keyword search metadata only
     "database_metadata_only": 30,  # Nodes per batch for all other database queries without code
     "semantic_search": 15,  # Nodes per batch for semantic search (always with code)
 }
