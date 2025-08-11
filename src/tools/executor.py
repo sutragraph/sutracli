@@ -223,16 +223,8 @@ class ActionExecutor:
             parameters = clean_data
 
         return AgentAction(
-            tool_type=tool_name,
-            command=clean_data.get("command", ""),
             description=f"Execute {tool_name}",
-            query=(
-                clean_data.get("query", user_query)
-                if isinstance(clean_data, dict)
-                else user_query
-            ),
             parameters=parameters if isinstance(parameters, dict) else {},
-            priority=1,
         )
 
     def _extract_thinking(self, xml_response: List[Dict[str, Any]]) -> Optional[str]:
