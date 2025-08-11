@@ -48,7 +48,7 @@ class ConnectionMatchingManager:
                        ic.code_snippet, ic.snippet_lines, files.file_path, files.language
                 FROM incoming_connections ic
                 LEFT JOIN files ON ic.file_id = files.id
-                WHERE ic.project_id = ?
+                WHERE files.project_id = ?
                 ORDER BY ic.id
                 """
                 results = self.db_client.execute_query(query, (project_id,))
@@ -82,14 +82,25 @@ class ConnectionMatchingManager:
             return []
 
         try:
-            query = """
-            SELECT oc.id, oc.description, oc.technology_name as technology,
-                    oc.code_snippet, oc.snippet_lines, files.file_path, files.language
-            FROM outgoing_connections oc
-            LEFT JOIN files ON oc.file_id = files.id
-            ORDER BY oc.id
-            """
-            results = self.db_client.execute_query(query)
+            if project_id:
+                query = """
+                SELECT oc.id, oc.description, oc.technology_name as technology,
+                        oc.code_snippet, oc.snippet_lines, files.file_path, files.language
+                FROM outgoing_connections oc
+                LEFT JOIN files ON oc.file_id = files.id
+                WHERE files.project_id = ?
+                ORDER BY oc.id
+                """
+                results = self.db_client.execute_query(query, (project_id,))
+            else:
+                query = """
+                SELECT oc.id, oc.description, oc.technology_name as technology,
+                        oc.code_snippet, oc.snippet_lines, files.file_path, files.language
+                FROM outgoing_connections oc
+                LEFT JOIN files ON oc.file_id = files.id
+                ORDER BY oc.id
+                """
+                results = self.db_client.execute_query(query)
 
             return results or []
         except Exception as e:
@@ -233,19 +244,39 @@ code_snippet:
 
         # Validate and enrich matches
         validated_matches = []
-        for match in response_json["matches"]:
-            outgoing_id = match["outgoing_id"]
-            incoming_id = match["incoming_id"]
+        for i, match in enumerate(response_json["matches"]):
+            outgoing_id_raw = match["outgoing_id"]
+            incoming_id_raw = match["incoming_id"]
 
-            # Check if IDs exist
+            # Convert string IDs to integers for lookup
+            try:
+                outgoing_id = int(outgoing_id_raw)
+                incoming_id = int(incoming_id_raw)
+            except (ValueError, TypeError):
+                print(
+                    f"⚠️  Match {i+1}: Invalid ID format - outgoing: {outgoing_id_raw}, incoming: {incoming_id_raw}"
+                )
+                continue
+
+            # Check if IDs exist in our connection maps
             if outgoing_id not in outgoing_map:
-                continue  # Skip invalid matches
+                print(
+                    f"⚠️  Match {i+1}: Outgoing ID {outgoing_id} not found in outgoing connections"
+                )
+                print(f"   Available outgoing IDs: {list(outgoing_map.keys())}")
+                continue
             if incoming_id not in incoming_map:
-                continue  # Skip invalid matches
+                print(
+                    f"⚠️  Match {i+1}: Incoming ID {incoming_id} not found in incoming connections"
+                )
+                print(f"   Available incoming IDs: {list(incoming_map.keys())}")
+                continue
 
             # Enrich match with connection details
             enriched_match = {
                 **match,
+                "outgoing_id": outgoing_id,  # Use the converted integer ID
+                "incoming_id": incoming_id,  # Use the converted integer ID
                 "outgoing_connection": outgoing_map[outgoing_id],
                 "incoming_connection": incoming_map[incoming_id],
             }
@@ -321,10 +352,16 @@ def run_connection_matching(
     if outgoing_connections is None:
         outgoing_connections = manager.fetch_outgoing_connections_from_db(project_id)
 
+    # Add logging to show what connections we're trying to match
+    print(
+        f"🔗 Phase 5: Attempting to match {len(incoming_connections)} incoming with {len(outgoing_connections)} outgoing connections"
+    )
     if llm_client:
         try:
             # Call LLM service for connection matching - no system prompt needed, return raw response
+            print("🤖 Calling LLM for Phase 5 connection matching...")
             response = llm_client.call_llm("", prompt, return_raw=True)
+            print(f"📋 LLM Response length: {len(str(response))} characters")
 
             # Parse JSON response from raw text
             import json
@@ -353,6 +390,9 @@ def run_connection_matching(
                     response_text = response_text[start:end].strip()
 
             response_json = json.loads(response_text)
+            print(
+                f"🔍 Parsed JSON response: {len(response_json.get('matches', []))} matches found"
+            )
 
             # Validate and process results
             is_valid, processed_results = manager.validate_and_process_matching_results(
@@ -360,12 +400,17 @@ def run_connection_matching(
             )
 
             if is_valid:
+                matches_count = len(processed_results.get("matches", []))
+                print(
+                    f"✅ Phase 5 validation successful: {matches_count} matches found"
+                )
                 return {
                     "success": True,
                     "results": processed_results,
-                    "message": f"Successfully matched {len(processed_results.get('matches', []))} connections",
+                    "message": f"Successfully matched {matches_count} connections",
                 }
             else:
+                print(f"❌ Phase 5 validation failed: {processed_results}")
                 return {
                     "success": False,
                     "error": processed_results,
@@ -373,12 +418,15 @@ def run_connection_matching(
                 }
 
         except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing failed: {e}")
+            print(f"📄 Raw response: {response}")
             return {
                 "success": False,
                 "error": f"Invalid JSON response from LLM: {str(e)}",
                 "message": "Connection matching failed due to invalid response format",
             }
         except Exception as e:
+            print(f"❌ Phase 5 connection matching error: {e}")
             return {
                 "success": False,
                 "error": str(e),

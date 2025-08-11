@@ -403,7 +403,7 @@ class CrossIndexService:
                             if incoming_count > 0 or outgoing_count > 0:
                                 # Store connections in database with actual code snippets
                                 storage_result = (
-                                    self.store_connections_with_file_hash_id(
+                                    self.graph_ops.store_connections_with_commit(
                                         project_id, analysis_result
                                     )
                                 )
@@ -426,15 +426,35 @@ class CrossIndexService:
                                         conn["id"] for conn in all_outgoing
                                     ]
 
+                                    logger.info(
+                                        f"Connection counts for Phase 5 check: {len(all_incoming_ids)} incoming, {len(all_outgoing_ids)} outgoing"
+                                    )
+
                                     # Run connection matching if we have both types
                                     if (
                                         len(all_incoming_ids) > 0
                                         and len(all_outgoing_ids) > 0
                                     ):
+                                        # Advance to Phase 5 - Connection Matching
+                                        self.prompt_manager.current_phase = 5
+                                        print(
+                                            f"🎯 Phase 4 complete - advancing to Phase 5"
+                                        )
+                                        yield {
+                                            "type": "phase_complete",
+                                            "iteration": current_iteration,
+                                            "current_phase": 4,
+                                            "next_phase": 5,
+                                            "message": f"Phase 4 completed, advancing to Phase 5",
+                                        }
+
+                                        logger.info(
+                                            "Starting Phase 5 - Connection Matching"
+                                        )
                                         yield {
                                             "type": "connection_matching_start",
                                             "iteration": current_iteration,
-                                            "message": f"🔗 Starting connection matching analysis...",
+                                            "message": f"🔗 Starting Phase 5 connection matching analysis...",
                                         }
 
                                         try:
@@ -492,7 +512,7 @@ class CrossIndexService:
                                                             }
                                                         )
 
-                                                    mapping_result = self.create_connection_mappings_by_ids(
+                                                    mapping_result = self.graph_ops.create_connection_mappings(
                                                         db_matches
                                                     )
                                                 else:
@@ -535,6 +555,9 @@ class CrossIndexService:
                                             }
                                     else:
                                         # Show results even with only one type of connection
+                                        logger.info(
+                                            f"Skipping Phase 5 - only {len(all_incoming_ids)} incoming and {len(all_outgoing_ids)} outgoing connections available"
+                                        )
                                         yield {
                                             "type": "cross_index_partial_success",
                                             "iteration": current_iteration,
@@ -1149,6 +1172,14 @@ Tool Results:
                 "potential_matches": [],
             }
 
+            # Extract project summary if present
+            project_summary = json_data.get("summary", "").strip()
+            if project_summary:
+                result["summary"] = project_summary
+                logger.info(
+                    f"Extracted project summary from Phase 4: {len(project_summary)} characters"
+                )
+
             # Process incoming connections from JSON format
             incoming_data = json_data.get("incoming_connections", {})
             if isinstance(incoming_data, dict):
@@ -1393,247 +1424,13 @@ Content:
             Dictionary with 'incoming' and 'outgoing' connection lists including IDs
         """
         try:
-            # Get incoming connections with file and project info (via files.project_id)
-            incoming_query = """
-                SELECT ic.id,
-                       ic.description,
-                       files.id AS file_id,
-                       files.file_path,
-                       files.language,
-                       p.name AS project_name,
-                       p.id AS project_id
-                FROM incoming_connections ic
-                LEFT JOIN files ON ic.file_id = files.id
-                LEFT JOIN projects p ON files.project_id = p.id
-                ORDER BY ic.created_at DESC
-            """
-            incoming_results = self.db_connection.execute_query(incoming_query)
-
-            # Get outgoing connections with file info
-            outgoing_query = """
-                SELECT oc.id,
-                       oc.description,
-                       files.id AS file_id,
-                       files.file_path,
-                       files.language,
-                       p.name AS project_name,
-                       p.id AS project_id
-                FROM outgoing_connections oc
-                LEFT JOIN files ON oc.file_id = files.id
-                LEFT JOIN projects p ON files.project_id = p.id
-                ORDER BY oc.created_at DESC
-            """
-            outgoing_results = self.db_connection.execute_query(outgoing_query)
-
-            return {"incoming": incoming_results, "outgoing": outgoing_results}
+            # Get incoming and outgoing connections using wrapper function
+            connections = self.graph_ops.get_existing_connections()
+            return connections
 
         except Exception as e:
             logger.error(f"Error retrieving existing connections: {e}")
             return {"incoming": [], "outgoing": []}
-
-    def store_connections_with_file_hash_id(
-        self, project_id: int, connections_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Store discovered connections using file_id as foreign key.
-
-        Args:
-            project_id: ID of the project being analyzed
-            connections_data: Dictionary containing connection data with file_ids resolved from file paths
-
-        Returns:
-            Result dictionary with success status and stored connection IDs
-        """
-        try:
-
-            stored_incoming = []
-            stored_outgoing = []
-
-            # Update project description (summary) if present in connections_data
-            try:
-                if isinstance(connections_data, dict):
-                    project_summary = connections_data.get("summary", "").strip()
-                    if project_summary:
-                        self.db_connection.connection.execute(
-                            "UPDATE projects SET description = ? WHERE id = ?",
-                            (project_summary, project_id),
-                        )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to update project description for {project_id}: {e}"
-                )
-
-            # Store incoming connections
-            if "incoming_connections" in connections_data:
-                for conn in connections_data["incoming_connections"]:
-                    # Get file_id from file path - always retrieve from database
-                    file_id = self.graph_ops._get_file_id_by_path(conn.get("file_path"))
-
-                    # Fetch actual code snippet from line numbers
-                    snippet_lines = conn.get("snippet_lines", [])
-                    code_snippet = ""
-                    if snippet_lines and conn.get("file_path"):
-                        code_snippet = self._fetch_code_snippet_from_lines(
-                            conn["file_path"], snippet_lines
-                        )
-
-                    cursor = self.db_connection.connection.execute(
-                        """
-                        INSERT INTO incoming_connections
-                        (description, file_id, snippet_lines, technology_name, code_snippet)
-                        VALUES (?, ?, ?, ?, ?)
-                        """,
-                        (
-                            conn["description"],
-                            file_id,
-                            json.dumps(snippet_lines),
-                            conn.get("technology", {}).get("name", "unknown"),
-                            code_snippet,
-                        ),
-                    )
-                    stored_incoming.append(cursor.lastrowid)
-
-            # Store outgoing connections
-            if "outgoing_connections" in connections_data:
-                for conn in connections_data["outgoing_connections"]:
-                    # Get file_id from file path - always retrieve from database
-                    file_id = self.graph_ops._get_file_id_by_path(conn.get("file_path"))
-
-                    # Fetch actual code snippet from line numbers
-                    snippet_lines = conn.get("snippet_lines", [])
-                    code_snippet = ""
-                    if snippet_lines and conn.get("file_path"):
-                        code_snippet = self._fetch_code_snippet_from_lines(
-                            conn["file_path"], snippet_lines
-                        )
-
-                    cursor = self.db_connection.connection.execute(
-                        """
-                        INSERT INTO outgoing_connections
-                        (description, file_id, snippet_lines, technology_name, code_snippet)
-                        VALUES (?, ?, ?, ?, ?)
-                        """,
-                        (
-                            conn["description"],
-                            file_id,
-                            json.dumps(snippet_lines),
-                            conn.get("technology", {}).get("name", "unknown"),
-                            code_snippet,
-                        ),
-                    )
-                    stored_outgoing.append(cursor.lastrowid)
-
-            self.db_connection.connection.commit()
-
-            logger.info(
-                f"Stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
-            )
-            print(
-                f"✅ Successfully stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
-            )
-
-            return {
-                "success": True,
-                "incoming_ids": stored_incoming,
-                "outgoing_ids": stored_outgoing,
-                "message": f"Successfully stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections",
-            }
-
-        except Exception as e:
-            logger.error(f"Error storing connections: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to store connections",
-            }
-
-    def create_connection_mappings_by_ids(
-        self, matches: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """
-        Create connection mappings using only IDs (no snippets or technology info).
-
-        Args:
-            matches: List of matches with sender_id and receiver_id
-
-        Returns:
-            Result dictionary with mapping creation status
-        """
-        try:
-            created_mappings = []
-
-            for match in matches:
-                cursor = self.db_connection.connection.execute(
-                    """
-                    INSERT INTO connection_mappings (sender_id, receiver_id, connection_type, description, match_confidence)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (
-                        match.get("sender_id"),
-                        match.get("receiver_id"),
-                        match.get("connection_type", "unknown"),
-                        match.get("description", "Auto-detected connection"),
-                        match.get("match_confidence", 0.0),
-                    ),
-                )
-                created_mappings.append(cursor.lastrowid)
-
-            self.db_connection.connection.commit()
-
-            return {
-                "success": True,
-                "mapping_ids": created_mappings,
-                "message": f"Created {len(created_mappings)} connection mappings",
-            }
-
-        except Exception as e:
-            logger.error(f"Error creating connection mappings: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to create connection mappings",
-            }
-
-    def _fetch_code_snippet_from_lines(
-        self, file_path: str, snippet_lines: List[int]
-    ) -> str:
-        """
-        Fetch actual code snippet from file using line numbers.
-
-        Args:
-            file_path: Path to the file
-            snippet_lines: List of line numbers to fetch
-
-        Returns:
-            str: Actual code snippet from the specified lines
-        """
-        try:
-            if not snippet_lines:
-                return ""
-
-            # Get start and end line from the list
-            start_line = min(snippet_lines)
-            end_line = max(snippet_lines)
-
-            # Use code fetcher to get actual code content
-            code_snippet = self.code_fetcher.fetch_code_from_file(
-                file_path, start_line, end_line
-            )
-
-            if code_snippet:
-                logger.debug(
-                    f"Fetched code snippet from {file_path} lines {start_line}-{end_line}: {len(code_snippet)} characters"
-                )
-                return code_snippet
-            else:
-                logger.warning(
-                    f"No code content found for {file_path} lines {start_line}-{end_line}"
-                )
-                return ""
-
-        except Exception as e:
-            logger.error(f"Error fetching code snippet from {file_path}: {e}")
-            return ""
 
     def run_connection_matching(
         self, incoming_ids: List[int], outgoing_ids: List[int]
@@ -1766,7 +1563,7 @@ Content:
                     )
 
                 # Store mappings in database
-                mapping_result = self.create_connection_mappings_by_ids(db_matches)
+                mapping_result = self.graph_ops.create_connection_mappings(db_matches)
 
                 if mapping_result.get("success"):
                     print(f"🎯 Found {len(matches)} connection matches:")
@@ -1820,39 +1617,10 @@ Content:
             List of connection dictionaries with details
         """
         try:
-            if not connection_ids:
-                return []
-
-            table_name = f"{connection_type}_connections"
-            placeholders = ",".join(["?" for _ in connection_ids])
-
-            query = f"""
-                SELECT c.id, c.description, c.technology_name, c.code_snippet,
-                       files.file_path, files.language, p.name as project_name
-                FROM {table_name} c
-                JOIN projects p ON c.project_id = p.id
-                LEFT JOIN files ON c.file_id = files.id
-                WHERE c.id IN ({placeholders})
-            """
-
-            results = self.db_connection.execute_query(query, (connection_ids,))
-
-            # Format results for matching prompt
-            formatted_results = []
-            for result in results:
-                formatted_results.append(
-                    {
-                        "id": str(result["id"]),
-                        "type": connection_type,
-                        "file_path": result["file_path"],
-                        "line_number": "N/A",
-                        "technology": result["technology_name"],
-                        "description": result["description"],
-                        "code_snippet": result["code_snippet"],
-                    }
-                )
-
-            return formatted_results
+            # Use wrapper function from GraphOperations
+            return self.graph_ops.get_connections_by_ids(
+                connection_ids, connection_type
+            )
 
         except Exception as e:
             logger.error(f"Error getting connections by IDs: {e}")

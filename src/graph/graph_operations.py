@@ -7,14 +7,20 @@ It handles insertion of extraction data from JSON exports and provides various
 query methods for retrieving code structure, relationships, and connections.
 """
 
-import re
 import json
 import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from loguru import logger
-
-
+from queries.graph_queries import (
+    GET_EXISTING_INCOMING_CONNECTIONS,
+    GET_EXISTING_OUTGOING_CONNECTIONS,
+    GET_CONNECTIONS_BY_IDS,
+    INSERT_INCOMING_CONNECTION,
+    INSERT_OUTGOING_CONNECTION,
+    INSERT_CONNECTION_MAPPING,
+    UPDATE_PROJECT_DESCRIPTION,
+)
 from models import File, CodeBlock, ExtractionData
 from queries.agent_queries import (
     GET_CODE_BLOCK_BY_ID,
@@ -33,9 +39,10 @@ from queries.agent_queries import (
     GET_INCOMING_CONNECTIONS,
     GET_OUTGOING_CONNECTIONS,
 )
-
 from .sqlite_client import SQLiteConnection
-
+from tools.utils.code_processing_utils import (
+    process_code_with_line_filtering,
+)
 
 class GraphOperations:
     """High-level operations for inserting code extraction data."""
@@ -1315,208 +1322,6 @@ class GraphOperations:
         }
 
     # ============================================================================
-    # CONNECTION OPERATIONS
-    # ============================================================================
-
-    def store_incoming_connection(
-        self,
-        description: str,
-        file_id: int,
-        snippet_lines: List[int],
-        technology_name: str,
-        code_snippet: str,
-    ) -> int:
-        """Store an incoming connection."""
-        try:
-            import json
-
-            cursor = self.connection.connection.execute(
-                """INSERT INTO incoming_connections
-                   (description, file_id, snippet_lines, technology_name, code_snippet)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (
-                    description,
-                    file_id,
-                    json.dumps(snippet_lines),
-                    technology_name,
-                    code_snippet,
-                ),
-            )
-
-            connection_id = cursor.lastrowid
-            self.connection.connection.commit()
-            logger.debug(f"Stored incoming connection for file {file_id}")
-            return connection_id
-
-        except Exception as e:
-            logger.error(f"Error storing incoming connection: {e}")
-            raise
-
-    def store_outgoing_connection(
-        self,
-        description: str,
-        file_id: int,
-        snippet_lines: List[int],
-        technology_name: str,
-        code_snippet: str,
-    ) -> int:
-        """Store an outgoing connection."""
-        try:
-            import json
-
-            cursor = self.connection.connection.execute(
-                """INSERT INTO outgoing_connections
-                   (description, file_id, snippet_lines, technology_name, code_snippet)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (
-                    description,
-                    file_id,
-                    json.dumps(snippet_lines),
-                    technology_name,
-                    code_snippet,
-                ),
-            )
-
-            connection_id = cursor.lastrowid
-            self.connection.connection.commit()
-            logger.debug(f"Stored outgoing connection for file {file_id}")
-            return connection_id
-
-        except Exception as e:
-            logger.error(f"Error storing outgoing connection: {e}")
-            raise
-
-    def store_connections_batch(
-        self, connections_data: Dict[str, Any]
-    ) -> Dict[str, List[int]]:
-        """Store multiple connections in a batch operation."""
-        try:
-            import json
-
-            stored_incoming = []
-            stored_outgoing = []
-
-            # Store incoming connections
-            for conn in connections_data.get("incoming_connections", []):
-                file_id = conn["file_id"]
-                snippet_lines = conn.get("snippet_lines", [])
-                code_snippet = conn.get("code_snippet", "")
-
-                cursor = self.connection.connection.execute(
-                    """INSERT INTO incoming_connections
-                       (description, file_id, snippet_lines, technology_name, code_snippet)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (
-                        conn["description"],
-                        file_id,
-                        json.dumps(snippet_lines),
-                        conn.get("technology", {}).get("name", "unknown"),
-                        code_snippet,
-                    ),
-                )
-                stored_incoming.append(cursor.lastrowid)
-
-            # Store outgoing connections
-            for conn in connections_data.get("outgoing_connections", []):
-                file_id = conn["file_id"]
-                snippet_lines = conn.get("snippet_lines", [])
-                code_snippet = conn.get("code_snippet", "")
-
-                cursor = self.connection.connection.execute(
-                    """INSERT INTO outgoing_connections
-                       (description, file_id, snippet_lines, technology_name, code_snippet)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (
-                        conn["description"],
-                        file_id,
-                        json.dumps(snippet_lines),
-                        conn.get("technology", {}).get("name", "unknown"),
-                        code_snippet,
-                    ),
-                )
-                stored_outgoing.append(cursor.lastrowid)
-
-            self.connection.connection.commit()
-            logger.info(
-                f"Stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
-            )
-
-            return {"incoming_ids": stored_incoming, "outgoing_ids": stored_outgoing}
-
-        except Exception as e:
-            logger.error(f"Error storing connections batch: {e}")
-            raise
-
-    def store_connection_mapping(
-        self,
-        sender_id: int,
-        receiver_id: int,
-        connection_type: str,
-        description: str,
-        match_confidence: float,
-    ) -> int:
-        """Store a connection mapping between sender and receiver."""
-        try:
-            import time
-
-            cursor = self.connection.connection.execute(
-                """INSERT INTO connection_mappings (sender_id, receiver_id, connection_type, description, match_confidence, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (
-                    sender_id,
-                    receiver_id,
-                    connection_type,
-                    description,
-                    match_confidence,
-                    time.strftime("%Y-%m-%d %H:%M:%S"),
-                ),
-            )
-
-            mapping_id = cursor.lastrowid
-            self.connection.connection.commit()
-            logger.debug(
-                f"Stored connection mapping between {sender_id} and {receiver_id}"
-            )
-            return mapping_id
-
-        except Exception as e:
-            logger.error(f"Error storing connection mapping: {e}")
-            raise
-
-    def store_connection_mappings_batch(
-        self, matches: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Store multiple connection mappings in a batch operation."""
-        try:
-            created_mappings = []
-
-            for match in matches:
-                cursor = self.connection.connection.execute(
-                    """INSERT INTO connection_mappings (sender_id, receiver_id, connection_type, description, match_confidence)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (
-                        match.get("sender_id"),
-                        match.get("receiver_id"),
-                        match.get("connection_type", "unknown"),
-                        match.get("description", "Auto-detected connection"),
-                        match.get("match_confidence", 0.0),
-                    ),
-                )
-                created_mappings.append(cursor.lastrowid)
-
-            self.connection.connection.commit()
-
-            return {
-                "success": True,
-                "mapping_ids": created_mappings,
-                "message": f"Created {len(created_mappings)} connection mappings",
-            }
-
-        except Exception as e:
-            logger.error(f"Error storing connection mappings batch: {e}")
-            raise
-
-    # ============================================================================
     # PROJECT OPERATIONS
     # ============================================================================
 
@@ -1586,3 +1391,439 @@ class GraphOperations:
                     resolved.append(file_data)
 
         return resolved
+
+    # ============================================================================
+    # CROSS-INDEX CONNECTION WRAPPER FUNCTIONS
+    # ============================================================================
+
+    def get_existing_connections(self) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Retrieve existing connections with IDs and file references.
+
+        Returns:
+            Dictionary with 'incoming' and 'outgoing' connection lists including IDs
+        """
+        try:
+
+            incoming_results = self.connection.execute_query(
+                GET_EXISTING_INCOMING_CONNECTIONS
+            )
+            outgoing_results = self.connection.execute_query(
+                GET_EXISTING_OUTGOING_CONNECTIONS
+            )
+
+            return {"incoming": incoming_results, "outgoing": outgoing_results}
+
+        except Exception as e:
+            logger.error(f"Error retrieving existing connections: {e}")
+            return {"incoming": [], "outgoing": []}
+
+    def get_connections_by_ids(
+        self, connection_ids: List[int], connection_type: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get connection details by IDs from database.
+
+        Args:
+            connection_ids: List of connection IDs
+            connection_type: "incoming" or "outgoing"
+
+        Returns:
+            List of connection dictionaries with details
+        """
+        try:
+            if not connection_ids:
+                return []
+
+            table_name = f"{connection_type}_connections"
+            placeholders = ",".join(["?" for _ in connection_ids])
+
+            query = GET_CONNECTIONS_BY_IDS.format(
+                table_name=table_name, placeholders=placeholders
+            )
+
+            results = self.connection.execute_query(query, (connection_ids,))
+
+            # Format results for matching prompt
+            formatted_results = []
+            for result in results:
+                formatted_results.append(
+                    {
+                        "id": str(result["id"]),
+                        "type": connection_type,
+                        "file_path": result["file_path"],
+                        "line_number": "N/A",
+                        "technology": result["technology_name"],
+                        "description": result["description"],
+                        "code_snippet": result["code_snippet"],
+                    }
+                )
+
+            return formatted_results
+
+        except Exception as e:
+            logger.error(f"Error getting connections by IDs: {e}")
+            return []
+
+    def update_project_description(self, project_id: int, description: str) -> None:
+        """
+        Update project description.
+
+        Args:
+            project_id: ID of the project to update
+            description: New description for the project
+        """
+        try:
+            logger.info(
+                f"Updating project {project_id} description: {description[:100]}..."
+            )
+
+            self.connection.connection.execute(
+                UPDATE_PROJECT_DESCRIPTION,
+                (description, project_id),
+            )
+            logger.info(
+                f"Project description updated successfully for project {project_id}"
+            )
+
+        except Exception as e:
+            logger.error(f"Error updating project description: {e}")
+            raise
+
+    def insert_incoming_connection(
+        self,
+        description: str,
+        file_id: int,
+        snippet_lines: List[int],
+        technology_name: str,
+        code_snippet: str,
+    ) -> int:
+        """
+        Insert an incoming connection.
+
+        Args:
+            description: Description of the connection
+            file_id: ID of the file
+            snippet_lines: List of line numbers
+            technology_name: Name of the technology
+            code_snippet: Code snippet
+
+        Returns:
+            ID of the inserted connection
+        """
+        try:
+
+            cursor = self.connection.connection.execute(
+                INSERT_INCOMING_CONNECTION,
+                (
+                    description,
+                    file_id,
+                    json.dumps(snippet_lines),
+                    technology_name,
+                    code_snippet,
+                ),
+            )
+
+            connection_id = cursor.lastrowid
+            logger.debug(
+                f"Inserted incoming connection {connection_id} for file {file_id}"
+            )
+            return connection_id
+
+        except Exception as e:
+            logger.error(f"Error inserting incoming connection: {e}")
+            raise
+
+    def insert_outgoing_connection(
+        self,
+        description: str,
+        file_id: int,
+        snippet_lines: List[int],
+        technology_name: str,
+        code_snippet: str,
+    ) -> int:
+        """
+        Insert an outgoing connection.
+
+        Args:
+            description: Description of the connection
+            file_id: ID of the file
+            snippet_lines: List of line numbers
+            technology_name: Name of the technology
+            code_snippet: Code snippet
+
+        Returns:
+            ID of the inserted connection
+        """
+        try:
+
+            cursor = self.connection.connection.execute(
+                INSERT_OUTGOING_CONNECTION,
+                (
+                    description,
+                    file_id,
+                    json.dumps(snippet_lines),
+                    technology_name,
+                    code_snippet,
+                ),
+            )
+
+            connection_id = cursor.lastrowid
+            logger.debug(
+                f"Inserted outgoing connection {connection_id} for file {file_id}"
+            )
+            return connection_id
+
+        except Exception as e:
+            logger.error(f"Error inserting outgoing connection: {e}")
+            raise
+
+    def insert_connection_mapping(
+        self,
+        sender_id: int,
+        receiver_id: int,
+        connection_type: str,
+        description: str,
+        match_confidence: float,
+    ) -> int:
+        """
+        Insert a connection mapping.
+
+        Args:
+            sender_id: ID of the sender connection
+            receiver_id: ID of the receiver connection
+            connection_type: Type of connection
+            description: Description of the mapping
+            match_confidence: Confidence level of the match
+
+        Returns:
+            ID of the inserted mapping
+        """
+        try:
+
+            cursor = self.connection.connection.execute(
+                INSERT_CONNECTION_MAPPING,
+                (
+                    sender_id,
+                    receiver_id,
+                    connection_type,
+                    description,
+                    match_confidence,
+                ),
+            )
+
+            mapping_id = cursor.lastrowid
+            logger.debug(f"Inserted connection mapping {mapping_id}")
+            return mapping_id
+
+        except Exception as e:
+            logger.error(f"Error inserting connection mapping: {e}")
+            raise
+
+    def store_connections_with_commit(
+        self, project_id: int, connections_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Store connections data and commit the transaction.
+
+        Args:
+            project_id: ID of the project
+            connections_data: Dictionary containing connection data
+
+        Returns:
+            Result dictionary with success status and stored connection IDs
+        """
+        try:
+            stored_incoming = []
+            stored_outgoing = []
+
+            # Update project description if present
+            if isinstance(connections_data, dict):
+                project_summary = connections_data.get("summary", "").strip()
+                if project_summary:
+                    logger.info(
+                        f"Found project summary to store: {len(project_summary)} characters"
+                    )
+                    self.update_project_description(project_id, project_summary)
+                else:
+                    logger.debug("No project summary found in connections_data")
+            else:
+                logger.warning(
+                    f"connections_data is not a dict: {type(connections_data)}"
+                )
+
+            # Store incoming connections
+            if "incoming_connections" in connections_data:
+                for conn in connections_data["incoming_connections"]:
+                    file_id = self._get_file_id_by_path(conn.get("file_path"))
+                    snippet_lines = conn.get("snippet_lines", [])
+                    code_snippet = (
+                        self._fetch_code_snippet_from_lines(
+                            conn["file_path"], snippet_lines
+                        )
+                        if snippet_lines and conn.get("file_path")
+                        else ""
+                    )
+
+                    connection_id = self.insert_incoming_connection(
+                        conn["description"],
+                        file_id,
+                        snippet_lines,
+                        conn.get("technology", {}).get("name", "unknown"),
+                        code_snippet,
+                    )
+                    stored_incoming.append(connection_id)
+
+            # Store outgoing connections
+            if "outgoing_connections" in connections_data:
+                for conn in connections_data["outgoing_connections"]:
+                    file_id = self._get_file_id_by_path(conn.get("file_path"))
+                    snippet_lines = conn.get("snippet_lines", [])
+                    code_snippet = (
+                        self._fetch_code_snippet_from_lines(
+                            conn["file_path"], snippet_lines
+                        )
+                        if snippet_lines and conn.get("file_path")
+                        else ""
+                    )
+
+                    connection_id = self.insert_outgoing_connection(
+                        conn["description"],
+                        file_id,
+                        snippet_lines,
+                        conn.get("technology", {}).get("name", "unknown"),
+                        code_snippet,
+                    )
+                    stored_outgoing.append(connection_id)
+
+            # Commit all changes
+            self.connection.connection.commit()
+
+            logger.info(
+                f"Stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
+            )
+
+            return {
+                "success": True,
+                "incoming_ids": stored_incoming,
+                "outgoing_ids": stored_outgoing,
+                "message": f"Successfully stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections",
+            }
+
+        except Exception as e:
+            logger.error(f"Error storing connections: {e}")
+            # Rollback on error
+            try:
+                self.connection.connection.rollback()
+            except:
+                pass
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to store connections",
+            }
+
+    def create_connection_mappings(
+        self, matches: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Create connection mappings using only IDs.
+
+        Args:
+            matches: List of matches with sender_id and receiver_id
+
+        Returns:
+            Result dictionary with mapping creation status
+        """
+        try:
+            created_mappings = []
+
+            for match in matches:
+                mapping_id = self.insert_connection_mapping(
+                    match.get("sender_id"),
+                    match.get("receiver_id"),
+                    match.get("connection_type", "unknown"),
+                    match.get("description", "Auto-detected connection"),
+                    match.get("match_confidence", 0.0),
+                )
+                created_mappings.append(mapping_id)
+
+            # Commit all mappings
+            self.connection.connection.commit()
+
+            return {
+                "success": True,
+                "mapping_ids": created_mappings,
+                "message": f"Created {len(created_mappings)} connection mappings",
+            }
+
+        except Exception as e:
+            logger.error(f"Error creating connection mappings: {e}")
+            # Rollback on error
+            try:
+                self.connection.connection.rollback()
+            except:
+                pass
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to create connection mappings",
+            }
+
+    def _fetch_code_snippet_from_lines(
+        self, file_path: str, snippet_lines: List[int]
+    ) -> str:
+        """
+        Fetch actual code snippet from database using line numbers and beautify with line numbers.
+
+        Args:
+            file_path: Path to the file
+            snippet_lines: List of line numbers to fetch
+
+        Returns:
+            str: Beautified code snippet from the specified lines with line numbers
+        """
+        try:
+            if not snippet_lines:
+                return ""
+
+            # Get file_id from database using file path
+            file_id = self._get_file_id_by_path(file_path)
+            if not file_id:
+                logger.warning(f"File not found in database: {file_path}")
+                return ""
+
+            # Get file content from database
+            file_data = self.resolve_file(file_id)
+            if not file_data or not file_data.get("content"):
+                logger.warning(f"No content found for file: {file_path}")
+                return ""
+
+            # Get start and end line from the list
+            start_line = min(snippet_lines)
+            end_line = max(snippet_lines)
+
+            # Use existing beautify function to process code with line filtering
+            result = process_code_with_line_filtering(
+                code_snippet=file_data["content"],
+                file_start_line=1,  # File content starts at line 1
+                start_line=start_line,
+                end_line=end_line,
+            )
+
+            if result and result.get("code"):
+                logger.debug(
+                    f"Fetched and beautified code snippet from {file_path} lines {start_line}-{end_line}: {result['total_lines']} lines"
+                )
+                return result["code"]
+            else:
+                logger.warning(
+                    f"No code returned for {file_path} lines {start_line}-{end_line}"
+                )
+                return ""
+
+        except Exception as e:
+            logger.error(
+                f"Error fetching code snippet from database for {file_path}: {e}"
+            )
+            return ""

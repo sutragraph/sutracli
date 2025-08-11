@@ -31,16 +31,16 @@ Connections where THIS service connects TO other services:
 
 ## PROCESSING RULES
 
-1. **Analyze each connection individually** - never group multiple connections
-2. **Extract complete parameter details** including:
+1. Analyze each connection individually - never group multiple connections
+2. Extract complete parameter details including:
    - Exact endpoints, queue names, event names
    - HTTP methods, protocols, ports
    - Environment variables and their resolved values
    - File paths and line numbers
-3. **Classify direction correctly** based on data flow
-4. **Include comprehensive descriptions** with variable context
-5. **Maintain original code snippets** exactly as stored
-
+3. Classify direction correctly based on data flow
+4. Include comprehensive descriptions with variable context
+5. Maintain original code snippets exactly as stored
+6. Do not repeat/add-same connections - each connection must be unique
 ## OUTPUT FORMAT
 
 Return ONLY a valid JSON response with this exact structure:
@@ -144,8 +144,8 @@ Structure Requirements:
 - For database connections: Store ONLY the connection establishment lines, NOT query execution code
 - For external API calls: Store ACTUAL fetch/axios calls with real URLs, NOT generic wrapper implementations
 - For cache connections: Store ONLY the cache client creation lines, NOT cache usage code
-- **PRIORITY**: Focus on where connections are USED with real values, not where they are defined generically
-- **ENVIRONMENT VARIABLES**: Include resolved environment variable values in descriptions
+- PRIORITY: Focus on where connections are USED with real values, not where they are defined generically
+- ENVIRONMENT VARIABLES: Include resolved environment variable values in descriptions
 
 Examples of what TO store (ACTUAL CALLS WITH REAL VALUES):
 - @app.route('/login', methods=['POST'])  # Store this line
@@ -162,14 +162,14 @@ Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
 - cache.set('key', value)                 # Don't store cache usage code
 
 ## CRITICAL SNIPPET RULES - ONE ENDPOINT PER SNIPPET:
-- **MANDATORY**: Each snippet must represent EXACTLY ONE connection - NEVER group multiple connections
-- **ONE ENDPOINT RULE**: Each API endpoint must be stored as a separate snippet with its own specific line numbers
-- **SEPARATE ENTRIES**: If you find 10 API endpoints, create 10 separate snippet entries - NOT 1 grouped entry
-- **INDIVIDUAL DESCRIPTIONS**: Each snippet must describe ONE specific endpoint, method, and purpose
-- **NO GROUPING**: Never use descriptions like "Multiple endpoints" or "API endpoints including X, Y, Z"
-- **STORE CALL SITES**: Store where wrapper functions are called with actual values, not where they are defined
-- **INCLUDE ENVIRONMENT VALUES**: Add resolved environment variable values to descriptions
-- **ACTUAL ENDPOINTS**: Focus on real endpoints, methods, and data being sent/received
+- MANDATORY: Each snippet must represent EXACTLY ONE connection - NEVER group multiple connections
+- ONE ENDPOINT RULE: Each API endpoint must be stored as a separate snippet with its own specific line numbers
+- SEPARATE ENTRIES: If you find 10 API endpoints, create 10 separate snippet entries - NOT 1 grouped entry
+- INDIVIDUAL DESCRIPTIONS: Each snippet must describe ONE specific endpoint, method, and purpose
+- NO GROUPING: Never use descriptions like "Multiple endpoints" or "API endpoints including X, Y, Z"
+- STORE CALL SITES: Store where wrapper functions are called with actual values, not where they are defined
+- INCLUDE ENVIRONMENT VALUES: Add resolved environment variable values to descriptions
+- ACTUAL ENDPOINTS: Focus on real endpoints, methods, and data being sent/received
 
 ## GOOD EXAMPLE - Each snippet is ONE connection with environment variable values:
 ```json
@@ -270,14 +270,14 @@ Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
 
 REMEMBER: If you find 26 API endpoints, create 26 separate snippet entries, each with specific line numbers and descriptions for that ONE endpoint.
 
-**CRITICAL ENDPOINT SEPARATION RULE**:
+CRITICAL ENDPOINT SEPARATION RULE:
 - NEVER group multiple endpoints in one snippet description
 - NEVER use phrases like "including X, Y, Z endpoints" or "Multiple endpoints for..."
 - ALWAYS create separate snippet entries for each individual endpoint
 - Each endpoint gets its own snippet_lines and description
 - Example: If you find 5 endpoints on lines 10, 15, 20, 25, 30 - create 5 separate snippets, NOT 1 snippet with "10-30" lines
 
-**CORRECT APPROACH FOR MULTIPLE ENDPOINTS**:
+CORRECT APPROACH FOR MULTIPLE ENDPOINTS:
 Instead of:
 ```json
 {
@@ -323,13 +323,13 @@ If no connections are discovered during analysis, you MUST still return JSON wit
 
 ## CRITICAL REQUIREMENTS
 
-1. **Process ALL connections** - never skip or sample connections
-2. **Maintain exact code snippets** as stored in sutra memory
-3. **Use the exact format** shown in examples above
-4. **Include complete variable context** in descriptions
-5. **Classify direction accurately** based on data flow
-6. **Return valid JSON only** - no additional text or explanations
-7. **DEDUPLICATION RULE** - Avoid overlapping code snippets in the same file:
+1. Process ALL connections - never skip or sample connections
+2. Maintain exact code snippets as stored in sutra memory
+3. Use the exact format shown in examples above
+4. Include complete variable context in descriptions
+5. Classify direction accurately based on data flow
+6. Return valid JSON only - no additional text or explanations
+7. DEDUPLICATION RULE - Avoid overlapping code snippets in the same file:
    - If you have snippets with lines "13-19" and "12-20" in the same file, they overlap significantly
    - Choose the snippet with the most complete context
    - Exception: Non-overlapping snippets in the same file should all be included
@@ -342,11 +342,10 @@ If no connections are discovered during analysis, you MUST still return JSON wit
 - Group by technology and file path as shown in format
 - Use line ranges for snippet_lines (e.g., "15-20" or "23-23")
 - Include environment variable information in descriptions
-- **AVOID OVERLAPPING SNIPPETS**: If multiple code snippets overlap in the same file, include only the most comprehensive one
 
 ## DEDUPLICATION EXAMPLES
 
-**GOOD - No overlapping snippets:**
+GOOD - No overlapping snippets:
 ```json
 {
   "outgoing_connections": {
@@ -366,7 +365,7 @@ If no connections are discovered during analysis, you MUST still return JSON wit
 }
 ```
 
-**BAD - Overlapping snippets (lines 13-19 overlap with 12-20):**
+BAD - Overlapping snippets (lines 13-19 overlap with 12-20):
 ```json
 {
   "outgoing_connections": {
@@ -386,7 +385,7 @@ If no connections are discovered during analysis, you MUST still return JSON wit
 }
 ```
 
-**CORRECTED - Keep only the more comprehensive snippet:**
+CORRECTED - Keep only the more comprehensive snippet:
 ```json
 {
   "outgoing_connections": {
