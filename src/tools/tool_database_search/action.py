@@ -2,7 +2,6 @@ from loguru import logger
 from typing import Iterator, Dict, Any, List, Optional
 from graph.graph_operations import GraphOperations
 import subprocess
-from services.agent.delivery_management import delivery_manager
 from tools.utils import (
     beautify_node_result,
     chunk_large_code_clean,
@@ -20,58 +19,16 @@ from pathlib import Path
 import os
 import json
 from models.agent import AgentAction
-from tools.guidance_builder import DatabaseSearchGuidance
+
 from tools.utils.constants import (
-    SEARCH_CONFIG,
     DATABASE_QUERY_CONFIG,
-    DATABASE_ERROR_GUIDANCE,
-    DELIVERY_QUEUE_CONFIG,
-    GUIDANCE_MESSAGES,
+    SEARCH_CONFIG,
 )
-from services.agent.delivery_management import delivery_manager
 
-# Initialize guidance handler
-guidance_handler = DatabaseSearchGuidance()
 
-def _generate_error_guidance(query_name: str, params: dict) -> str:
-    """Generate dynamic error guidance based on query type and parameters."""
-    guidance_parts = []
 
-    # Check for file_path parameter
-    if "file_path" in params:
-        file_path = params["file_path"]
-        guidance_parts.append(
-            f"Ensure file_path '{file_path}' is case-sensitive and the complete correct path (format: /path/to/file). "
-            "If the path is correct, try using different search methods like semantic_search."
-        )
 
-    # Check for function_name parameter
-    if "function_name" in params:
-        function_name = params["function_name"]
-        guidance_parts.append(
-            f"Ensure function_name '{function_name}' is spelled correctly and exists in the codebase. "
-            "Try using semantic_search to find similar function names."
-        )
 
-    # Check for name parameter (for exact name searches)
-    if "name" in params:
-        name = params["name"]
-        guidance_parts.append(
-            f"Ensure name '{name}' is spelled correctly and exists. "
-            "Try using semantic_search for partial matches or similar names."
-        )
-
-    # Query-specific guidance using constants
-    if query_name in DATABASE_ERROR_GUIDANCE:
-        guidance_parts.append(DATABASE_ERROR_GUIDANCE[query_name])
-
-    # General guidance
-    guidance_parts.append(
-        "Do not use these same parameters again as no data found in database. "
-        "Try different methods or different parameters."
-    )
-
-    return " ".join(guidance_parts)
 
 def execute_structured_database_query(
     action: AgentAction, context: str = "agent"
@@ -84,13 +41,7 @@ def execute_structured_database_query(
         # Get graph operations instance
         graph_ops = GraphOperations()
 
-        # Check if this is a fetch_next_code request (unified for chunks and nodes)
-        fetch_response = handle_fetch_next_request(
-            "database", action.parameters, "query_complete"
-        )
-        if fetch_response:
-            yield fetch_response
-            return
+
         query_params = {
             k: v
             for k, v in action.parameters.items()
@@ -320,7 +271,7 @@ def execute_structured_database_query(
             if base_query_name == "GET_FILE_BY_PATH" and "file_path" in final_params:
                 file_path = final_params["file_path"]
                 filename = os.path.basename(file_path)
-                logger.debug(f"🔄 Trying ripgrep fallback for file: {filename}")
+                logger.debug("Trying ripgrep fallback for file: %s", filename)
 
                 # Use ripgrep to search for the filename
                 try:
@@ -330,9 +281,7 @@ def execute_structured_database_query(
                     )
                     if result.returncode == 0 and result.stdout.strip():
                         found_files = result.stdout.strip().split("\n")
-                        logger.debug(
-                            f"✅ Ripgrep found {len(found_files)} files with similar names"
-                        )
+                        logger.debug(f"Ripgrep found {len(found_files)} files with similar names")
                         # Try to get file_id for the first found file
                         for found_file in found_files[:3]:  # Try first 3 matches
                             file_id = graph_ops._get_file_id_by_path(found_file)
@@ -341,72 +290,43 @@ def execute_structured_database_query(
                                     sql_query, (file_id,)
                                 )
                                 if results:
-                                    logger.debug(
-                                        f"✅ Found file data using ripgrep match: {found_file}"
-                                    )
+                                    logger.debug(f"Found file data using ripgrep match: {found_file}")
                                     break
                     else:
-                        logger.debug("❌ Ripgrep fallback found no matching files")
+                        logger.debug("Ripgrep fallback found no matching files")
                 except Exception as e:
-                    logger.debug(f"❌ Ripgrep fallback failed: {e}")
+                    logger.debug(f"Ripgrep fallback failed: {e}")
 
             if not results:
-                no_results_guidance = guidance_handler._build_guidance_message(
-                    search_type="database",
-                    scenario="NO_RESULTS_FOUND",
-                )
-
-                # Generate additional dynamic error guidance based on query parameters
-                error_guidance = _generate_error_guidance(query_name, final_params)
-
-                # Combine both guidance messages
-                combined_guidance = (
-                    f"{no_results_guidance}\n\n{error_guidance}"
-                    if no_results_guidance
-                    else error_guidance
-                )
-
                 yield {
                     "type": "tool_use",
                     "tool_name": "database",
                     "query_name": query_name,
                     "query": final_params,
                     "result": "result found: 0",
-                    "data": combined_guidance,
+                    "data": "",
                     "include_code": include_code,
                     "total_nodes": 0,
                 }
                 return
-        # Get delivery status for guidance
-        delivery_info = delivery_manager.get_next_item_info(
-            "database", action.parameters
-        )
 
-        # Initialize guidance message - will be built after processing
-        guidance_message = ""
+
+
 
         total_nodes = len(results)
 
         # Handle different scenarios based on include_code and number of results
         if not include_code:
-            # Use delivery queue for metadata-only results
-            batch_size = DELIVERY_QUEUE_CONFIG["database_metadata_only"]
-            batches = guidance_handler._create_delivery_batches(results, batch_size=batch_size)
+            # Process metadata-only results in batches
+            batch_size = 30  # Default batch size for metadata
+            batches = [results[i : i + batch_size] for i in range(0, len(results), batch_size)]
 
             for batch_num, batch in enumerate(batches, 1):
-                delivery_info = guidance_handler._build_delivery_info(
-                    current_batch=batch_num,
-                    total_batches=len(batches),
-                    batch_size=batch_size,
-                    total_results=total_nodes,
-                    has_code=False,
-                )
+                current_start = (batch_num - 1) * batch_size + 1
+                current_end = min(batch_num * batch_size, total_nodes)
+                has_more = batch_num < len(batches)
 
-                # Build guidance message for this batch
-                guidance_message = guidance_handler._format_delivery_guidance(delivery_info, "database")
 
-                if delivery_info["has_more"]:
-                    guidance_message += GUIDANCE_MESSAGES["FETCH_NEXT_CODE_NOTE"]
 
                 # Process metadata-only results for this batch
                 processed_batch = process_metadata_only_results(batch, len(batch))
@@ -422,7 +342,7 @@ def execute_structured_database_query(
                     "tool_name": "database",
                     "query_name": base_query_name,
                     "query": final_params,
-                    "data": guidance_message + "\n\n" + processed_batch,
+                    "data": processed_batch,
                     "include_code": include_code,
                     "result": f"Found {total_nodes} nodes",
                     "current_batch": batch_num,
@@ -479,15 +399,8 @@ def execute_structured_database_query(
                     )
                     and not line_filtered
                 ):
-                    # Single result with chunking needed - use delivery manager
-                    # Check if we have a pending delivery for this query
-                    next_item = check_pending_delivery("database", action.parameters)
-                    if next_item is not None:
-                        yield next_item
-                        return
-
-                    # Process chunks directly
-                    all_delivery_items = []
+                    # Single result with chunking needed - process chunks directly
+                    all_results = []
                     chunks = chunk_large_code_clean(
                         code_content,
                         file_start_line=start_line or 1,
@@ -501,27 +414,6 @@ def execute_structured_database_query(
 
                         chunk_info = create_chunk_info(chunk)
 
-                        # Build chunk-specific guidance message
-                        chunk_scenario = guidance_handler._determine_guidance_scenario(
-                            total_nodes=1,
-                            include_code=True,
-                            code_lines=len(code_lines),
-                            chunk_info=chunk_info,
-                        )
-
-                        chunk_guidance = guidance_handler._build_guidance_message(
-                            search_type="database",
-                            scenario=chunk_scenario,
-                            total_lines=len(code_lines),
-                            chunk_start=chunk_info["chunk_start_line"],
-                            chunk_end=chunk_info["chunk_end_line"],
-                            chunk_num=chunk_info["chunk_num"],
-                            total_chunks=chunk_info["total_chunks"],
-                        )
-
-                        if chunk_guidance:
-                            chunk_guidance += "\n\n"
-
                         beautified_result = beautify_node_result(
                             chunked_result,
                             1,
@@ -530,10 +422,10 @@ def execute_structured_database_query(
                             chunk_info=chunk_info,
                         )
 
-                        result_data = chunk_guidance + beautified_result
+                        result_data = beautified_result
 
-                        # Create delivery item
-                        all_delivery_items.append(
+                        # Create result item
+                        all_results.append(
                             {
                                 "type": "tool_use",
                                 "tool_name": "database",
@@ -547,35 +439,12 @@ def execute_structured_database_query(
                             }
                         )
 
-                    # Register and deliver first item
-                    first_item = register_and_deliver_first_item(
-                        "database", action.parameters, all_delivery_items
-                    )
-                    if first_item:
-                        yield first_item
+                    # Yield all results directly
+                    for item in all_results:
+                        yield item
                     return
                 else:
                     # Single result with small code - no chunking needed
-                    # Prepare guidance parameters for line-filtered queries
-                    guidance_params = {
-                        "total_lines": len(code_lines),
-                    }
-
-                    # Note: GET_CODE_FROM_FILE_LINES is no longer supported - removed legacy code
-
-                    # Use shared guidance function with line-filtering parameters
-                    guidance_message = guidance_handler._build_batch_guidance_message(
-                        search_type="database",
-                        total_nodes=1,
-                        include_code=True,
-                        has_large_files=False,
-                        current_node=1,
-                        has_more_nodes=False,
-                        is_line_filtered=line_filtered,
-                        code_lines=len(code_lines),
-                        **guidance_params,
-                    )
-
                     beautified_result = beautify_node_result(
                         result_dict,
                         1,
@@ -584,11 +453,7 @@ def execute_structured_database_query(
                     )
 
                     # Send single batch result for small files
-                    result_data = (
-                        guidance_message + "\n\n" + beautified_result
-                        if guidance_message
-                        else beautified_result
-                    )
+                    result_data = beautified_result
 
                     yield {
                         "type": "tool_use",
@@ -602,23 +467,13 @@ def execute_structured_database_query(
                     }
                     return
             else:
-                # No code content available - use proper guidance scenario
-                missing_content_guidance = guidance_handler._build_guidance_message(
-                    search_type="database",
-                    scenario="NODE_MISSING_CODE_CONTENT",
-                )
-                guidance_message = (
-                    missing_content_guidance + "\n\n"
-                    if missing_content_guidance
-                    else ""
-                )
-
+                # No code content available
                 beautified_result = beautify_node_result(
                     result_dict, 1, include_code=True, total_nodes=1
                 )
 
                 # Send single batch result for missing code
-                result_data = guidance_message + beautified_result
+                result_data = beautified_result
 
                 yield {
                     "type": "tool_use",
@@ -633,15 +488,8 @@ def execute_structured_database_query(
                 return
 
         else:
-            # Multiple results with code - use delivery manager for sequential delivery
-            # Check if we have a pending delivery for this query
-            next_item = check_pending_delivery("database", action.parameters)
-            if next_item is not None:
-                yield next_item
-                return
-
-            # No pending delivery - collect all items and register them
-            all_delivery_items = []
+            # Multiple results with code - collect all items and yield them
+            all_results = []
 
             for i, row in enumerate(results, 1):
                 result_dict = dict(row) if hasattr(row, "keys") else row
@@ -696,29 +544,10 @@ def execute_structured_database_query(
                         )
 
                         for chunk in chunks:
-                            chunk_info = create_chunk_info(chunk)
-
-                            # Build sequential node guidance message
-                            sequential_scenario = guidance_handler._determine_sequential_node_scenario(
-                                chunk_info=chunk_info,
-                            )
-
-                            chunk_guidance = guidance_handler._build_sequential_node_message(
-                                scenario=sequential_scenario,
-                                node_index=i,
-                                total_nodes=total_nodes,
-                                total_lines=len(code_lines),
-                                chunk_num=chunk_info["chunk_num"],
-                                total_chunks=chunk_info["total_chunks"],
-                                chunk_start=chunk_info["chunk_start_line"],
-                                chunk_end=chunk_info["chunk_end_line"],
-                            )
-
-                            if chunk_guidance:
-                                chunk_guidance += "\n\n"
-
                             chunked_result = result_dict.copy()
                             chunked_result["code_snippet"] = chunk["content"]
+
+                            chunk_info = create_chunk_info(chunk)
 
                             beautified_result = beautify_node_result(
                                 chunked_result,
@@ -728,10 +557,10 @@ def execute_structured_database_query(
                                 chunk_info=chunk_info,
                             )
 
-                            result_data = chunk_guidance + beautified_result
+                            result_data = beautified_result
 
-                            # Collect item for delivery manager
-                            all_delivery_items.append(
+                            # Collect processed result
+                            all_results.append(
                                 {
                                     "type": "tool_use",
                                     "tool_name": "database",
@@ -746,30 +575,14 @@ def execute_structured_database_query(
                             )
                     else:
                         # No chunking needed for this node - process directly
-                        # For sequential processing, we need to check if this is truly the last node
-                        # that will be delivered. Since we're collecting all items first,
-                        # we know this is the last node if it's the last in the result set.
-                        # Build sequential node guidance message
-                        sequential_scenario = guidance_handler._determine_sequential_node_scenario()
-
-                        node_guidance = guidance_handler._build_sequential_node_message(
-                            scenario=sequential_scenario,
-                            node_index=i,
-                            total_nodes=total_nodes,
-                            total_lines=len(code_lines),
-                        )
-
-                        if node_guidance:
-                            node_guidance += "\n\n"
-
                         beautified_result = beautify_node_result(
                             result_dict, i, include_code=True, total_nodes=total_nodes
                         )
 
-                        result_data = node_guidance + beautified_result
+                        result_data = beautified_result
 
-                        # Collect item for delivery manager
-                        all_delivery_items.append(
+                        # Collect processed result
+                        all_results.append(
                             {
                                 "type": "tool_use",
                                 "tool_name": "database",
@@ -783,24 +596,16 @@ def execute_structured_database_query(
                         )
                 else:
                     # No code content available - use proper enum scenario
-                    sequential_scenario = "NODE_NO_CODE_CONTENT"
-
-                    node_guidance = guidance_handler._build_sequential_node_message(
-                        scenario=sequential_scenario,
-                        node_index=i,
-                        total_nodes=total_nodes,
-                    )
-
-                    if node_guidance:
-                        node_guidance += "\n\n"
+                    # No code content available for this node
 
                     beautified_result = beautify_node_result(
                         result_dict, i, include_code=True, total_nodes=total_nodes
                     )
-                    result_data = node_guidance + beautified_result
 
-                    # Collect item for delivery manager
-                    all_delivery_items.append(
+                    result_data = beautified_result
+
+                    # Collect processed result
+                    all_results.append(
                         {
                             "type": "tool_use",
                             "tool_name": "database",
@@ -813,18 +618,9 @@ def execute_structured_database_query(
                         }
                     )
 
-            # Register and deliver first item using common utility
-            first_item = register_and_deliver_first_item(
-                "database", action.parameters, all_delivery_items
-            )
-            if first_item:
-                yield first_item
-            else:
-                # No items to deliver - use common utility
-                response = create_no_items_response(
-                    "database", final_params, len(results), include_code
-                )
-                yield response
+            # Yield all results directly
+            for item in all_results:
+                yield item
     except Exception as e:
         error_msg = f"Database query execution failed: {str(e)}"
         logger.error(f"❌ {error_msg}")
@@ -894,186 +690,7 @@ def should_chunk_content(code_content: str, chunking_threshold: int) -> bool:
     return len(code_lines) > chunking_threshold
 
 
-def handle_fetch_next_request(
-    action_type: str,
-    action_parameters: Dict[str, Any],
-    response_type: str = "query_complete",
-) -> Optional[Dict[str, Any]]:
-    """
-    Handle fetch_next_code requests (unified for both chunks and nodes).
 
-    Args:
-        action_type: Type of action ("database" or "semantic_search")
-        action_parameters: Action parameters
-        response_type: Response type for completion message
-
-    Returns:
-        Dict with next item or completion message, None if not a fetch request
-    """
-    if not action_parameters.get("fetch_next_code", False):
-        return None
-
-    logger.debug(f"🔄 fetch_next_code request detected")
-
-    # Use existing delivery queue if:
-    # 1. No query is provided (just fetch_next_code), OR
-    # 2. Same query is provided (query matches existing queue)
-    query_provided = action_parameters.get("query")
-
-    if not query_provided:
-        logger.debug(
-            "🔄 No query provided - using existing delivery queue for fetch_next_code"
-        )
-        next_item = delivery_manager.get_next_item_from_existing_queue()
-    else:
-        # Check if this query matches the existing queue
-        current_signature = delivery_manager._generate_query_signature(
-            action_type, action_parameters
-        )
-        if delivery_manager._last_query_signature == current_signature:
-            logger.debug(
-                "🔄 Same query provided - using existing delivery queue for fetch_next_code"
-            )
-            next_item = delivery_manager.get_next_item_from_existing_queue()
-        else:
-            logger.debug(
-                "🔄 Different query provided with fetch_next_code - treating as new query"
-            )
-            next_item = delivery_manager.get_next_item(action_type, action_parameters)
-
-    if next_item:
-        return next_item
-    else:
-        # No more items available
-        base_response = {
-            "result": "result found: 0",
-            "include_code": True,
-            "total_nodes": 0,
-        }
-
-        if action_type == "database":
-            return {
-                "type": f"tool_use",
-                "tool_name": "database",
-                "query_name": "fetch_next_code",
-                "query": action_parameters,
-                "data": f"No more code chunks available. All items from the previous query have been delivered.",
-                **base_response,
-            }
-        else:  # semantic_search
-            return {
-                "type": f"tool_use",
-                "tool_name": "semantic_search",
-                "query": "fetch_next_code",
-                "data": f"No more code chunks/nodes available. All items from the previous query have been delivered.",
-                "code_snippet": True,
-                **base_response,
-            }
-
-
-def register_and_deliver_first_item(
-    action_type: str,
-    action_parameters: Dict[str, Any],
-    delivery_items: List[Dict[str, Any]],
-) -> Optional[Dict[str, Any]]:
-    """
-    Register delivery queue and get first item.
-
-    Args:
-        action_type: Type of action ("database" or "semantic_search")
-        action_parameters: Action parameters
-        delivery_items: List of items to register for delivery
-
-    Returns:
-        First item from delivery queue or None if no items
-    """
-    if not delivery_items:
-        return None
-
-    delivery_manager.register_delivery_queue(
-        action_type, action_parameters, delivery_items
-    )
-    return delivery_manager.get_next_item(action_type, action_parameters)
-
-
-def check_pending_delivery(
-    action_type: str, action_parameters: Dict[str, Any]
-) -> Optional[Dict[str, Any]]:
-    """
-    Check if there's a pending delivery for this query.
-
-    Args:
-        action_type: Type of action ("database" or "semantic_search")
-        action_parameters: Action parameters
-
-    Returns:
-        Next pending item or None if no pending delivery
-    """
-    return delivery_manager.get_next_item(action_type, action_parameters)
-
-
-def create_no_items_response(
-    action_type: str,
-    action_parameters: Dict[str, Any],
-    total_results: int,
-    include_code: bool = True,
-) -> Dict[str, Any]:
-    """
-    Create response when no deliverable items are found.
-
-    Args:
-        action_type: Type of action ("database" or "semantic_search")
-        action_parameters: Action parameters
-        total_results: Total number of results found
-        include_code: Whether code was requested
-
-    Returns:
-        Response dictionary for no items scenario
-    """
-    base_response = {
-        "result": f"result found: {total_results}",
-        "data": "No deliverable items found.",
-        "total_nodes": total_results,
-    }
-
-    if action_type == "database":
-        query_name = action_parameters.get("query_name", "unknown")
-        return {
-            "type": "tool_use",
-            "tool_name": "database",
-            "query_name": query_name,
-            "query": action_parameters,
-            "include_code": include_code,
-            **base_response,
-        }
-    else:  # semantic_search
-        query = action_parameters.get("query", "")
-        return {
-            "type": "tool_use",
-            "tool_name": "semantic_search",
-            "query": query,
-            "code_snippet": include_code,
-            **base_response,
-        }
-
-
-def clean_result_dict(result_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Remove unnecessary fields from result dictionary.
-
-    Args:
-        result_dict: Raw result dictionary
-
-    Returns:
-        Cleaned result dictionary
-    """
-    cleaned = result_dict.copy()
-
-    # Remove unnecessary fields
-    for field in ["project_id", "project_name", "language", "file_size"]:
-        cleaned.pop(field, None)
-
-    return cleaned
 
 
 def process_metadata_only_results(results: List[Any], total_nodes: int) -> List[str]:
@@ -1099,3 +716,22 @@ def process_metadata_only_results(results: List[Any], total_nodes: int) -> List[
         processed_results.append(beautified_result)
 
     return processed_results
+
+
+def clean_result_dict(result_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Remove unnecessary fields from result dictionary.
+
+    Args:
+        result_dict: Raw result dictionary
+
+    Returns:
+        Cleaned result dictionary
+    """
+    cleaned = result_dict.copy()
+
+    # Remove unnecessary fields
+    for field in ["project_id", "project_name", "language", "file_size"]:
+        cleaned.pop(field, None)
+
+    return cleaned

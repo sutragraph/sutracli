@@ -6,14 +6,12 @@ from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection
 
-from .agent.agent_prompt.system import get_base_system_prompt
 from .llm_clients.llm_factory import llm_client_factory
 from tools import ActionExecutor
 from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from .agent.error_handler import ErrorHandler, ResultVerifier
 from .project_manager import ProjectManager
-from config import config
 from utils.xml_parsing_exceptions import XMLParsingFailedException
 from utils.performance_monitor import get_performance_monitor, performance_timer
 from utils.debug_utils import get_user_confirmation_for_llm_call
@@ -46,9 +44,8 @@ class AgentService:
         self.project_manager = ProjectManager(self.memory_manager)
 
         # XML-based action executor with shared sutra memory manager and shared project indexer
-        self.xml_action_executor = ActionExecutor(
+        self.action_executor = ActionExecutor(
             self.memory_manager,
-            self.project_manager.project_indexer,
         )
 
         # Track last tool result for context -
@@ -95,7 +92,7 @@ class AgentService:
         try:
             # Get the rich formatted memory from memory manager (includes code snippets)
             memory_summary = (
-                self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
+                self.action_executor.sutra_memory_manager.get_memory_for_llm()
             )
             # Update session manager with the rich memory content
             self.session_manager.update_sutra_memory(memory_summary)
@@ -103,7 +100,7 @@ class AgentService:
                 f"Updated Sutra Memory in session: {len(memory_summary)} characters"
             )
             logger.debug(
-                f"Memory includes {len(self.xml_action_executor.sutra_memory_manager.get_all_code_snippets())} code snippets"
+                f"Memory includes {len(self.action_executor.sutra_memory_manager.get_all_code_snippets())} code snippets"
             )
         except Exception as e:
             logger.error(f"Error updating session memory: {e}")
@@ -284,7 +281,7 @@ class AgentService:
                 # Process XML response using XML action executor
                 task_complete = False
                 tool_failed = False
-                for event in self.xml_action_executor.process_xml_response(
+                for event in self.action_executor.process_xml_response(
                     xml_response, user_query
                 ):
                     yield event
@@ -494,7 +491,7 @@ class AgentService:
                 # Build user message with context
                 # Get rich sutra memory from memory manager (includes code snippets and file modifications)
                 sutra_memory_rich = (
-                    self.xml_action_executor.sutra_memory_manager.get_memory_for_llm()
+                    self.action_executor.sutra_memory_manager.get_memory_for_llm()
                 )
                 task_progress = self.session_manager.get_task_progress_history()
 

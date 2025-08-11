@@ -1,277 +1,253 @@
 """
-Tool Guidance Factory
+Tool Guidance System
 
-- Pattern: per-tool subclasses implement optional guidance hooks
-- Usage: ActionExecutor asks factory for a guidance handler by tool name
-- If no handler exists, skip (no-op)
+Provides guidance and formatting for tool results. Each tool can have optional
+guidance hooks that are called by the ActionExecutor during tool execution.
+
+Architecture:
+- BaseToolGuidance: Abstract base with hooks for tool lifecycle
+- Tool-specific classes: Handle guidance for semantic search, database, and keyword search
+- GuidanceRegistry: Factory for retrieving guidance handlers by tool type
 """
 
 from typing import Optional, Dict, Any, List
+from abc import ABC
+
 from tools.utils.constants import (
     GUIDANCE_MESSAGES,
-    SEARCH_CONFIG,
+    DATABASE_ERROR_GUIDANCE,
 )
-from tools.delivery_actions import DELIVERY_QUEUE_CONFIG
 from tools import ToolName
 
 
-class BaseToolGuidance:
-    def on_start(self, action) -> Optional[Dict[str, Any]]:  # pre-yield hook
+class BaseToolGuidance(ABC):
+    """
+    Base class for tool guidance handlers.
+
+    Provides hooks for tool lifecycle events:
+    - on_start: Called before tool execution
+    - on_event: Called for each event yielded by the tool
+    """
+
+    def on_start(self, action) -> Optional[Dict[str, Any]]:
+        """
+        Pre-execution hook called before tool starts.
+
+        Args:
+            action: The AgentAction being executed
+
+        Returns:
+            Optional event to yield before tool execution
+        """
         return None
 
     def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+        """
+        Post-execution hook called for each tool event.
+
+        Args:
+            event: Event yielded by the tool
+            action: The AgentAction being executed
+
+        Returns:
+            Modified event or None to filter out the event
+        """
         return event
+
+
+class GuidanceFormatter:
+    """
+    Utility class for common guidance formatting operations.
+    """
+
+    @staticmethod
+    def add_prefix_to_data(event: Dict[str, Any], prefix: str) -> Dict[str, Any]:
+        """Add a prefix to the event data."""
+        data = event.get("data", "")
+        event["data"] = f"{prefix}\n\n{data}".strip() if data else prefix
+        return event
+
+    @staticmethod
+    def has_prefix(data: str, prefixes: List[str]) -> bool:
+        """Check if data already has one of the given prefixes."""
+        if not data:
+            return False
+        data_start = data.lstrip()
+        return any(data_start.startswith(prefix) for prefix in prefixes)
+
+    @staticmethod
+    def format_no_results_message(search_type: str) -> str:
+        """Format a no results message for the given search type."""
+        template = GUIDANCE_MESSAGES.get(
+            "NO_RESULTS_FOUND", "No results found for {search_type} search."
+        )
+        return template.format(search_type=search_type)
 
 
 class SemanticSearchGuidance(BaseToolGuidance):
-    def on_start(self, action):
-        return None
+    """
+    Guidance handler for semantic search tool.
 
-    def on_event(self, event: Dict[str, Any], action):
-        if not isinstance(event, dict) or event.get("tool_name") != "semantic_search":
+    Responsibilities:
+    - Add helpful messages when no results are found
+    """
+
+    def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+        # Only process semantic search events
+        if not self._is_semantic_search_event(event):
             return event
 
-        # Add a simple no-results guidance if missing
-        if event.get("total_nodes") == 0:
-            note = GUIDANCE_MESSAGES.get("NO_RESULTS_FOUND", "No results found for {search_type}.")
-            prefix = note.format(search_type="semantic") + "\n\n"
-            data = event.get("data", "")
-            event["data"] = prefix + data if data else prefix.strip()
+        # Handle no results case
+        if self._has_no_results(event):
+            message = GuidanceFormatter.format_no_results_message("semantic")
+            return GuidanceFormatter.add_prefix_to_data(event, message)
+
         return event
+
+    def _is_semantic_search_event(self, event: Dict[str, Any]) -> bool:
+        """Check if this is a semantic search event."""
+        return isinstance(event, dict) and event.get("tool_name") == "semantic_search"
+
+    def _has_no_results(self, event: Dict[str, Any]) -> bool:
+        """Check if the semantic search returned no results."""
+        return event.get("total_nodes") == 0
 
 
 class DatabaseSearchGuidance(BaseToolGuidance):
-    def on_start(self, action):
-        return None
+    """
+    Guidance handler for database search tool.
 
-    # --- Guidance helpers (ported, simplified) ---
-    def _determine_guidance_scenario(
-        self, total_nodes: int, include_code: bool, code_lines: Optional[int] = None, chunk_info: Optional[Dict[str, Any]] = None
-    ) -> str:
-        if total_nodes == 0:
-            return "NO_RESULTS_FOUND"
-        if total_nodes == 1:
-            if not include_code or not code_lines:
-                return "NODE_MISSING_CODE_CONTENT"
-            if code_lines and code_lines > SEARCH_CONFIG.get("chunking_threshold", 300):
-                return "SINGLE_RESULT_LARGE"
-            return "SINGLE_RESULT_SMALL"
-        return "MULTIPLE_RESULTS"
-
-    def _build_guidance_message(self, search_type: str, scenario: str, **kwargs) -> str:
-        if scenario == "NO_RESULTS_FOUND":
-            return GUIDANCE_MESSAGES.get("NO_RESULTS_FOUND", "No results found for {search_type}.").format(search_type=search_type)
-        if scenario == "SINGLE_RESULT_SMALL":
-            return f"Found 1 result from {search_type} search."
-        if scenario == "SINGLE_RESULT_LARGE":
-            total_lines = kwargs.get("total_lines", 0)
-            chunk_start = kwargs.get("chunk_start", 1)
-            chunk_end = kwargs.get("chunk_end", total_lines)
-            message = f"Found 1 result from {search_type} search."
-            if total_lines:
-                message += f" Total {total_lines} lines, sending lines {chunk_start}-{chunk_end}."
-            message += f" For more use fetch_next (start:end: {chunk_start}:{chunk_end})"
-            message += GUIDANCE_MESSAGES.get("FETCH_NEXT_CODE_NOTE", "")
-            return message
-        if scenario == "MULTIPLE_RESULTS":
-            total_nodes = kwargs.get("total_nodes", 0)
-            message = f"Found {total_nodes} results from {search_type} search"
-            message += GUIDANCE_MESSAGES.get("FETCH_NEXT_CODE_NOTE", "")
-            return message
-        if scenario == "NODE_MISSING_CODE_CONTENT":
-            return GUIDANCE_MESSAGES.get("NODE_MISSING_CODE", "Code not available for this node.")
-        if scenario == "BATCH_DELIVERY":
-            remaining_count = kwargs.get("remaining_count", 0)
-            return GUIDANCE_MESSAGES.get("FETCH_NEXT_CODE_NOTE", "") if remaining_count > 0 else ""
-        return f"Results from {search_type} search."
-
-    def _build_batch_guidance_message(
-        self,
-        search_type: str,
-        total_nodes: int,
-        include_code: bool,
-        **kwargs,
-    ) -> str:
-        scenario = self._determine_guidance_scenario(total_nodes, include_code, kwargs.get("code_lines"), kwargs.get("chunk_info"))
-        return self._build_guidance_message(search_type, scenario, **kwargs)
-
-    def _create_delivery_batches(self, results: List[Dict[str, Any]], batch_size: int) -> List[List[Dict[str, Any]]]:
-        return [results[i : i + batch_size] for i in range(0, len(results), batch_size)]
-
-    def _build_delivery_info(self, current_batch: int, total_batches: int, batch_size: int, total_results: int, has_code: bool) -> Dict[str, Any]:
-        current_start = (current_batch - 1) * batch_size + 1
-        current_end = min(current_batch * batch_size, total_results)
-        has_more = current_batch < total_batches
-        return {
-            "current_batch": current_batch,
-            "total_batches": total_batches,
-            "current_start": current_start,
-            "current_end": current_end,
-            "total_results": total_results,
-            "batch_size": batch_size,
-            "has_more": has_more,
-            "has_code": has_code,
-        }
-
-    def _format_delivery_guidance(self, delivery_info: Dict[str, Any], search_type: str) -> str:
-        start = delivery_info["current_start"]
-        end = delivery_info["current_end"]
-        total = delivery_info["total_results"]
-        cur = delivery_info["current_batch"]
-        tot = delivery_info["total_batches"]
-        prefix = "KEYWORD SEARCH RESULTS:" if search_type == "keyword" else "DATABASE SEARCH RESULTS:"
-        guidance = f"{prefix} Showing {search_type} search results {start}-{end} of {total} total results (batch {cur}/{tot})"
-        if delivery_info.get("has_more"):
-            guidance += GUIDANCE_MESSAGES.get("FETCH_NEXT_CODE_NOTE", "")
-        return guidance
-
-    def _determine_sequential_node_scenario(self, chunk_info: Optional[Dict[str, Any]] = None) -> str:
-        """
-        Determine the sequential node scenario for guidance.
-
-        Args:
-            chunk_info: Information about chunking
-
-        Returns:
-            Appropriate sequential node scenario string
-        """
-        if not chunk_info:
-            return "NODE_WITH_SMALL_CODE"
-
-        # Handle chunked scenarios
-        chunk_num = chunk_info.get("chunk_num", 1)
-        total_chunks = chunk_info.get("total_chunks", 1)
-
-        if chunk_num == 1:
-            return "NODE_WITH_LARGE_CODE_FIRST_CHUNK"
-        elif chunk_num == total_chunks:
-            return "NODE_WITH_LARGE_CODE_LAST_CHUNK"
-        else:
-            return "NODE_WITH_LARGE_CODE_MIDDLE_CHUNK"
-
-    def _build_sequential_node_message(self, scenario: str, node_index: int, total_nodes: int, **kwargs) -> str:
-        """
-        Build guidance message for sequential node delivery.
-
-        Args:
-            scenario: Sequential node scenario string
-            node_index: Current node index (1-based)
-            total_nodes: Total number of nodes
-            **kwargs: Additional parameters
-
-        Returns:
-            Formatted guidance message
-        """
-        def _get_fetch_next_code_note() -> str:
-            return GUIDANCE_MESSAGES.get("FETCH_NEXT_CODE_NOTE", "")
-
-        if scenario == "NODE_WITH_SMALL_CODE":
-            message = f"Node {node_index}/{total_nodes}: Complete code content"
-            if node_index < total_nodes:
-                message += _get_fetch_next_code_note()
-            return message
-
-        elif scenario == "NODE_WITH_LARGE_CODE_FIRST_CHUNK":
-            chunk_num = kwargs.get("chunk_num", 1)
-            total_chunks = kwargs.get("total_chunks", 1)
-            total_lines = kwargs.get("total_lines", 0)
-            chunk_start = kwargs.get("chunk_start", 1)
-            chunk_end = kwargs.get("chunk_end", total_lines)
-
-            message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (First chunk)"
-            if total_lines > 0:
-                message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
-
-            if chunk_num < total_chunks or node_index < total_nodes:
-                message += _get_fetch_next_code_note()
-            return message
-
-        elif scenario == "NODE_WITH_LARGE_CODE_MIDDLE_CHUNK":
-            chunk_num = kwargs.get("chunk_num", 1)
-            total_chunks = kwargs.get("total_chunks", 1)
-            total_lines = kwargs.get("total_lines", 0)
-            chunk_start = kwargs.get("chunk_start", 1)
-            chunk_end = kwargs.get("chunk_end", total_lines)
-
-            message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (Middle chunk)"
-            if total_lines > 0:
-                message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
-
-            if chunk_num < total_chunks or node_index < total_nodes:
-                message += _get_fetch_next_code_note()
-            return message
-
-        elif scenario == "NODE_WITH_LARGE_CODE_LAST_CHUNK":
-            chunk_num = kwargs.get("chunk_num", 1)
-            total_chunks = kwargs.get("total_chunks", 1)
-            total_lines = kwargs.get("total_lines", 0)
-            chunk_start = kwargs.get("chunk_start", 1)
-            chunk_end = kwargs.get("chunk_end", total_lines)
-
-            message = f"Node {node_index}/{total_nodes}: Large file - Chunk {chunk_num}/{total_chunks} (Last chunk)"
-            if total_lines > 0:
-                message += f" - Total {total_lines} lines, showing {chunk_start}-{chunk_end}"
-
-            if node_index < total_nodes:
-                message += _get_fetch_next_code_note()
-            return message
-
-        elif scenario == "NODE_NO_CODE_CONTENT":
-            message = f"Node {node_index}/{total_nodes}: No code content available"
-            if node_index < total_nodes:
-                message += _get_fetch_next_code_note()
-            return message
-
-        return f"Node {node_index}/{total_nodes}"
+    Responsibilities:
+    - Generate error guidance for failed queries
+    - Handle no results scenarios
+    """
 
     def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
-        if not isinstance(event, dict) or event.get("tool_name") != "database":
+        # Only process database events
+        if not self._is_database_event(event):
             return event
 
-        # Add generic no-results guidance if missing
-        if event.get("result", "").endswith(": 0"):
-            msg = self._build_guidance_message("database", "NO_RESULTS_FOUND")
-            data = event.get("data", "")
-            event["data"] = (msg + "\n\n" + data).strip() if data else msg
-            return event
+        # Handle no results case with enhanced error guidance
+        if self._has_no_results(event):
+            return self._handle_no_results(event, action)
 
-        # If batch metadata present, ensure guidance prefix exists
-        if any(k in event for k in ("current_batch", "total_batches")):
-            info = self._build_delivery_info(
-                current_batch=event.get("current_batch", 1),
-                total_batches=event.get("total_batches", 1),
-                batch_size=DELIVERY_QUEUE_CONFIG.get("database_metadata_only", 10),
-                total_results=event.get("total_nodes", 0),
-                has_code=bool(event.get("include_code", False)),
+        return event
+
+    def _is_database_event(self, event: Dict[str, Any]) -> bool:
+        """Check if this is a database event."""
+        return isinstance(event, dict) and event.get("tool_name") == "database"
+
+    def _has_no_results(self, event: Dict[str, Any]) -> bool:
+        """Check if the database query returned no results."""
+        result = event.get("result", "")
+        return isinstance(result, str) and result.endswith(": 0")
+
+    def _handle_no_results(self, event: Dict[str, Any], action) -> Dict[str, Any]:
+        """Handle no results case with comprehensive error guidance."""
+        # Build error guidance
+        query_name = action.parameters.get("query_name", "unknown")
+        query_params = self._extract_query_params(action.parameters)
+
+        no_results_msg = GuidanceFormatter.format_no_results_message("database")
+        error_guidance = self._generate_error_guidance(query_name, query_params)
+
+        # Combine messages
+        combined_guidance = f"{no_results_msg}\n\n{error_guidance}"
+        return GuidanceFormatter.add_prefix_to_data(event, combined_guidance)
+
+    def _extract_query_params(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract relevant query parameters excluding internal ones."""
+        excluded_keys = {"query_name", "code_snippet", "fetch_next_code"}
+        return {k: v for k, v in parameters.items() if k not in excluded_keys}
+
+    def _generate_error_guidance(self, query_name: str, params: Dict[str, Any]) -> str:
+        """Build comprehensive error guidance for failed queries."""
+        guidance_parts = []
+
+        # Parameter-specific guidance
+        if "file_path" in params:
+            guidance_parts.append(
+                f"Ensure file_path '{params['file_path']}' is case-sensitive and complete. "
+                "If unsure, use semantic_search to find the correct path."
             )
-            guidance = self._format_delivery_guidance(info, "database")
-            data = event.get("data", "")
-            if guidance and (not data or not data.lstrip().startswith("DATABASE SEARCH RESULTS:") and not data.lstrip().startswith("KEYWORD SEARCH RESULTS:")):
-                event["data"] = guidance + ("\n\n" + data if data else "")
-        return event
+
+        if "function_name" in params:
+            guidance_parts.append(
+                f"Ensure function_name '{params['function_name']}' is spelled correctly. "
+                "Try semantic_search for similar function names."
+            )
+
+        if "name" in params:
+            guidance_parts.append(
+                f"Ensure name '{params['name']}' exists in the codebase. "
+                "Try semantic_search for partial matches."
+            )
+
+        # Query-specific guidance from constants
+        if query_name in DATABASE_ERROR_GUIDANCE:
+            guidance_parts.append(DATABASE_ERROR_GUIDANCE[query_name])
+
+        # General guidance
+        guidance_parts.append(
+            "Do not reuse these exact parameters. Try different search methods or terms."
+        )
+
+        return " ".join(guidance_parts)
 
 
-class KeywordSearchGuidance(BaseToolGuidance):
-    def on_start(self, action):
-        return None
+class GuidanceRegistry:
+    """
+    Registry for tool guidance handlers.
 
-    def on_event(self, event: Dict[str, Any], action):
-        if not isinstance(event, dict) or event.get("tool_name") != "search_keyword":
-            return event
-        # Optionally prepend a small header for search results
-        if event.get("matches_found") and event.get("data"):
-            header = f"KEYWORD: '{event.get('keyword','')}' in {event.get('file_path','selected paths')}\n"
-            event["data"] = header + event["data"]
-        return event
+    Maps tool types to their guidance classes and provides
+    a factory method for creating guidance instances.
+    """
+
+    _HANDLERS = {
+        ToolName.SEMANTIC_SEARCH: SemanticSearchGuidance,
+        ToolName.DATABASE_SEARCH: DatabaseSearchGuidance,
+    }
+
+    @classmethod
+    def get_guidance(cls, tool_enum: ToolName) -> Optional[BaseToolGuidance]:
+        """
+        Get guidance handler for the specified tool.
+
+        Args:
+            tool_enum: The tool type to get guidance for
+
+        Returns:
+            Guidance handler instance or None if no guidance exists
+        """
+        guidance_class = cls._HANDLERS.get(tool_enum)
+        return guidance_class() if guidance_class else None
+
+    @classmethod
+    def register_guidance(cls, tool_enum: ToolName, guidance_class: type):
+        """
+        Register a new guidance handler.
+
+        Args:
+            tool_enum: The tool type
+            guidance_class: The guidance class to register
+        """
+        cls._HANDLERS[tool_enum] = guidance_class
+
+    @classmethod
+    def get_supported_tools(cls) -> List[ToolName]:
+        """Get list of tools that have guidance support."""
+        return list(cls._HANDLERS.keys())
 
 
-_REGISTRY = {
-    ToolName.SEMANTIC_SEARCH: SemanticSearchGuidance,
-    ToolName.DATABASE_SEARCH: DatabaseSearchGuidance,
-    ToolName.SEARCH_KEYWORD: KeywordSearchGuidance,
-}
-
-
+# Public factory function for backward compatibility
 def get_tool_guidance(tool_enum: ToolName) -> Optional[BaseToolGuidance]:
-    cls = _REGISTRY.get(tool_enum)
-    return cls() if cls else None
+    """
+    Factory function to get guidance handler for a tool.
+
+    Args:
+        tool_enum: The tool type to get guidance for
+
+    Returns:
+        Guidance handler instance or None if no guidance exists
+    """
+    return GuidanceRegistry.get_guidance(tool_enum)

@@ -8,13 +8,17 @@ from typing import Iterator, Dict, Any, List, Optional
 from loguru import logger
 from pathlib import Path
 
-from config import config
-from embeddings import get_vector_store
+
 from graph.sqlite_client import SQLiteConnection
 from models.agent import AgentAction
 from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from graph.project_indexer import ProjectIndexer
 from tools import get_tool_action, ToolName, TOOL_NAME_MAPPING
+from tools.guidance_builder import get_tool_guidance
+from tools.delivery_actions import (
+    handle_fetch_next_request,
+    register_delivery_queue_and_get_first_batch,
+)
 
 
 class ActionExecutor:
@@ -99,11 +103,11 @@ class ActionExecutor:
                     "timestamp": time.time(),
                 }
                 # Execute the completion tool
-                yield from self._execute_completion(
-                    self._create_agent_action(
-                        "attempt_completion", tool_data, user_query
-                    )
+                action = self._create_agent_action(
+                    "attempt_completion", tool_data, user_query
                 )
+                tool_action = get_tool_action(ToolName.COMPLETION)
+                yield from tool_action(action)
                 # Then mark as task complete
                 yield {
                     "type": "task_complete",
@@ -123,7 +127,7 @@ class ActionExecutor:
 
             # Execute other tools if present
             elif tool_data:
-                tool_name = self._get_tool_name_from_xml(tool_data)
+                tool_name = tool_data.get("_tool_name", "unknown")
                 yield from self._execute_tool(tool_name, tool_data, user_query)
             else:
                 # If no tool is present but we have thinking or sutra_memory,
@@ -161,34 +165,48 @@ class ActionExecutor:
         try:
             # Create AgentAction from tool data
             action = self._create_agent_action(tool_name, tool_data, user_query)
+            action.parameters["project_id"] = self.project_id
 
             # Use tool name mapping from tools module
             if tool_name in TOOL_NAME_MAPPING:
                 tool_enum = TOOL_NAME_MAPPING[tool_name]
 
-                # Handle special cases that need additional parameters
-                if tool_name == "semantic_search":
-                    # Add project_id for semantic search
-                    action.parameters["project_id"] = self.project_id
-                elif tool_name == "database":
-                    # Database search context is handled internally now
-                    pass
+                if action.parameters.get("fetch_next_code", False):
+                    fetch_response = handle_fetch_next_request(action, tool_enum)
+                    if fetch_response:
+                        yield fetch_response
+                        return
 
-                # Get and execute the tool action
+                guidance = get_tool_guidance(tool_enum)
+
+                if guidance:
+                    start_result = guidance.on_start(action)
+                    if start_result:
+                        yield start_result
+
                 tool_action = get_tool_action(tool_enum)
-                yield from tool_action(action)
 
-                # Handle post-execution tasks for file modification tools
-                if tool_name in ["apply_diff", "write_to_file"]:
-                    try:
-                        self.project_indexer.incremental_index_project(Path.cwd().name)
-                        logger.debug(
-                            f"Incremental indexing completed after {tool_name}"
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Incremental indexing failed after {tool_name}: {e}"
-                        )
+                events = []
+                delivery_items = []
+
+                for event in tool_action(action):
+                    if guidance:
+                        event = guidance.on_event(event, action)
+                    if event:  # Only yield if guidance didn't filter it out
+                        events.append(event)
+                        # Always collect potential delivery items - let delivery system decide
+                        delivery_items.append(event)
+                        yield event
+
+                # Always try to register delivery queue - let delivery system decide if it should handle it
+
+                register_delivery_queue_and_get_first_batch(
+                    tool_name, action.parameters, delivery_items, tool_enum
+                )
+                logger.debug(
+                    f"📦 Attempted to register delivery queue for {tool_name} with {len(delivery_items)} items"
+                )
+
             else:
                 yield {
                     "type": "tool_error",
@@ -257,21 +275,7 @@ class ActionExecutor:
         """Extract tool data from XML response."""
         for xml_block in xml_response:
             if isinstance(xml_block, dict):
-                # Check for various tool tags
-                tool_tags = [
-                    "semantic_search",
-                    "database",
-                    "execute_command",
-                    "apply_diff",
-                    "write_to_file",
-                    "list_files",
-                    "search_keyword",
-                    "attempt_completion",
-                    "web_search",
-                    "web_scrap",
-                ]
-
-                for tool_tag in tool_tags:
+                for tool_tag in TOOL_NAME_MAPPING.keys():
                     if tool_tag in xml_block:
                         tool_data = xml_block[tool_tag]
                         if isinstance(tool_data, dict):
@@ -291,12 +295,3 @@ class ActionExecutor:
                 if "sutra_memory" in xml_block:
                     return xml_block["sutra_memory"]
         return None
-
-    def _get_tool_name_from_xml(self, tool_data: Dict[str, Any]) -> str:
-        """Get tool name from tool data."""
-        return tool_data.get("_tool_name", "unknown")
-
-    def _execute_completion(self, action: AgentAction) -> Iterator[Dict[str, Any]]:
-        """Execute completion tool."""
-        tool_action = get_tool_action(ToolName.COMPLETION)
-        yield from tool_action(action)

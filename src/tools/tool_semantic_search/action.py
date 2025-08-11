@@ -7,12 +7,8 @@ from models.agent import AgentAction
 from tools.utils.constants import (
     SEMANTIC_SEARCH_CONFIG,
 )
-from tools.delivery_actions import (
-    handle_fetch_next_request,
-    register_delivery_queue_and_get_first_batch,
-    check_pending_delivery,
-)
-from tools import ToolName
+
+
 from tools.utils.enriched_context_formatter import (
     beautify_enriched_context_auto,
     format_chunk_with_enriched_context,
@@ -153,25 +149,15 @@ def _process_sequential_chunk_results(
     query: str,
     action_parameters: Dict[str, Any],
 ) -> Iterator[Dict[str, Any]]:
-    """Process chunk-specific results for sequential sending via delivery queue."""
+    """Process chunk-specific results for sequential sending."""
 
     # Deduplicate block results to avoid showing the same block multiple times
     # when multiple chunks from the same block match the search
     deduplicated_results = _deduplicate_block_results(vector_results)
     total_nodes = len(deduplicated_results)
 
-    # Check if we have a pending delivery for this query
-    next_item = check_pending_delivery(
-        "semantic_search", action_parameters, ToolName.SEMANTIC_SEARCH
-    )
-
-    if next_item is not None:
-        # We have a pending item from a previous call - deliver it
-        yield next_item
-        return
-
-    # No pending delivery - collect all chunk items and register them
-    all_delivery_items = []
+    # Collect all chunk items for processing
+    all_results = []
     graph_ops = GraphOperations()
 
     for i, result in enumerate(deduplicated_results, 1):
@@ -221,8 +207,8 @@ def _process_sequential_chunk_results(
                     enriched_context, i, include_code=True, total_nodes=total_nodes
                 )
 
-            # Collect item for delivery manager
-            all_delivery_items.append(
+            # Collect processed result
+            all_results.append(
                 {
                     "type": "tool_use",
                     "tool_name": "semantic_search",
@@ -242,7 +228,7 @@ def _process_sequential_chunk_results(
             )
         else:
             # Handle missing enriched context
-            all_delivery_items.append(
+            all_results.append(
                 {
                     "type": "tool_use",
                     "tool_name": "semantic_search",
@@ -255,20 +241,11 @@ def _process_sequential_chunk_results(
                 }
             )
 
-    # Register all items with delivery manager and send first batch
-    if all_delivery_items:
-        # Use centralized delivery actions to register and get first batch
-        first_batch_result = register_delivery_queue_and_get_first_batch(
-            "semantic_search",
-            action_parameters,
-            all_delivery_items,
-            ToolName.SEMANTIC_SEARCH,
-        )
-
-        if first_batch_result:
-            yield first_batch_result
+    # Yield all results directly
+    for item in all_results:
+        yield item
     else:
-        # No items to deliver - send completion signal
+        # No results to return - send completion signal
         yield {
             "tool_name": "semantic_search",
             "type": "tool_use",
@@ -287,12 +264,6 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
     project_id = action.parameters.get("project_id")
 
     try:
-        # Check if this is a fetch_next_code request using centralized delivery actions
-        fetch_response = handle_fetch_next_request(action, ToolName.SEMANTIC_SEARCH)
-        if fetch_response:
-            yield fetch_response
-            return
-
         query = action.parameters.get("query", "")
 
         # Initialize vector store
@@ -316,7 +287,7 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
         if total_nodes == 0:
             return
 
-        # Always use sequential processing with delivery queue for semantic search
+        # Always use sequential processing for semantic search
         yield from _process_sequential_chunk_results(
             vector_results,
             query,

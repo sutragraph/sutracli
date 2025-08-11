@@ -34,15 +34,6 @@ class BaseDeliveryAction:
         """Register delivery queue and return first batch."""
         return None
 
-    def register_and_deliver_first_item(
-        self,
-        action_type: str,
-        action_parameters: Dict[str, Any],
-        delivery_items: List[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
-        """Register delivery queue and return first item."""
-        return None
-
     def check_pending_delivery(
         self, action_type: str, action_parameters: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
@@ -52,6 +43,15 @@ class BaseDeliveryAction:
     def get_batch_size(self) -> int:
         """Get the batch size for this tool."""
         return 15  # Default batch size
+
+    def create_no_items_response(
+        self,
+        action_parameters: Dict[str, Any],
+        total_results: int,
+        include_code: bool = True,
+    ) -> Optional[Dict[str, Any]]:
+        """Create response when no deliverable items are found."""
+        return None
 
 
 class SemanticSearchDeliveryAction(BaseDeliveryAction):
@@ -192,6 +192,24 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
             },
         }
 
+    def create_no_items_response(
+        self,
+        action_parameters: Dict[str, Any],
+        total_results: int,
+        include_code: bool = True,
+    ) -> Dict[str, Any]:
+        """Create response when no deliverable items are found for semantic search."""
+        query = action_parameters.get("query", "")
+        return {
+            "type": "tool_use",
+            "tool_name": "semantic_search",
+            "query": query,
+            "code_snippet": include_code,
+            "result": f"result found: {total_results}",
+            "data": "No deliverable items found.",
+            "total_nodes": total_results,
+        }
+
 
 class DatabaseSearchDeliveryAction(BaseDeliveryAction):
     """Delivery actions for database search tool."""
@@ -265,21 +283,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 **base_response,
             }
 
-    def register_and_deliver_first_item(
-        self,
-        action_type: str,
-        action_parameters: Dict[str, Any],
-        delivery_items: List[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
-        """Register delivery queue and return first item for database search."""
-        if not delivery_items:
-            return None
-
-        delivery_manager.register_delivery_queue(
-            action_type, action_parameters, delivery_items
-        )
-        return delivery_manager.get_next_item(action_type, action_parameters)
-
     def register_and_deliver_first_batch(
         self,
         action_type: str,
@@ -317,6 +320,25 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
     ) -> Optional[Dict[str, Any]]:
         """Check if there's a pending delivery for this query."""
         return delivery_manager.get_next_item(action_type, action_parameters)
+
+    def create_no_items_response(
+        self,
+        action_parameters: Dict[str, Any],
+        total_results: int,
+        include_code: bool = True,
+    ) -> Dict[str, Any]:
+        """Create response when no deliverable items are found for database search."""
+        query_name = action_parameters.get("query_name", "unknown")
+        return {
+            "type": "tool_use",
+            "tool_name": "database",
+            "query_name": query_name,
+            "query": action_parameters,
+            "include_code": include_code,
+            "result": f"result found: {total_results}",
+            "data": "No deliverable items found.",
+            "total_nodes": total_results,
+        }
 
 
 class DefaultDeliveryAction(BaseDeliveryAction):
@@ -402,33 +424,6 @@ def register_delivery_queue_and_get_first_batch(
     )
 
 
-def register_delivery_queue_and_get_first_item(
-    action_type: str,
-    action_parameters: Dict[str, Any],
-    delivery_items: List[Dict[str, Any]],
-    tool_enum: ToolName,
-) -> Optional[Dict[str, Any]]:
-    """
-    Centralized delivery queue registration and first item delivery.
-
-    Args:
-        action_type: String identifier for the action type
-        action_parameters: Parameters for the action
-        delivery_items: List of items to deliver
-        tool_enum: Tool enum to get appropriate delivery handler
-
-    Returns:
-        First item response or None if no items
-    """
-    if not delivery_items:
-        return None
-
-    delivery_action = get_delivery_action(tool_enum)
-    return delivery_action.register_and_deliver_first_item(
-        action_type, action_parameters, delivery_items
-    )
-
-
 def check_pending_delivery(
     action_type: str, action_parameters: Dict[str, Any], tool_enum: ToolName
 ) -> Optional[Dict[str, Any]]:
@@ -447,107 +442,14 @@ def check_pending_delivery(
     return delivery_action.check_pending_delivery(action_type, action_parameters)
 
 
-def get_delivery_status(
-    action_type: str, action_parameters: Dict[str, Any], tool_enum: ToolName
-) -> Dict[str, Any]:
-    """
-    Get delivery status information for a query.
-
-    Args:
-        action_type: String identifier for the action type
-        action_parameters: Parameters for the action
-        tool_enum: Tool enum to get appropriate delivery handler
-
-    Returns:
-        Status information dict
-    """
-    return delivery_manager.get_queue_status(action_type, action_parameters)
-
-
-def clear_delivery_queue(action_type: str, action_parameters: Dict[str, Any]) -> bool:
-    """
-    Clear a specific delivery queue.
-
-    Args:
-        action_type: String identifier for the action type
-        action_parameters: Parameters for the action
-
-    Returns:
-        True if queue was cleared, False if queue didn't exist
-    """
-    return delivery_manager.clear_queue(action_type, action_parameters)
-
-
-def clear_all_delivery_queues() -> int:
-    """
-    Clear all delivery queues.
-
-    Returns:
-        Number of queues that were cleared
-    """
-    return delivery_manager.clear_all_queues()
-
-
-def create_no_items_response(
-    action_type: str,
-    action_parameters: Dict[str, Any],
-    total_results: int,
-    include_code: bool = True,
-) -> Dict[str, Any]:
-    """
-    Create response when no deliverable items are found.
-
-    Args:
-        action_type: Type of action ("database" or "semantic_search")
-        action_parameters: Action parameters
-        total_results: Total number of results found
-        include_code: Whether code was requested
-
-    Returns:
-        Response dictionary for no items scenario
-    """
-    base_response = {
-        "result": f"result found: {total_results}",
-        "data": "No deliverable items found.",
-        "total_nodes": total_results,
-    }
-
-    if action_type == "database":
-        query_name = action_parameters.get("query_name", "unknown")
-        return {
-            "type": "tool_use",
-            "tool_name": "database",
-            "query_name": query_name,
-            "query": action_parameters,
-            "include_code": include_code,
-            **base_response,
-        }
-    else:  # semantic_search
-        query = action_parameters.get("query", "")
-        return {
-            "type": "tool_use",
-            "tool_name": "semantic_search",
-            "query": query,
-            "code_snippet": include_code,
-            **base_response,
-        }
-
-
-# Export configuration for external use
 __all__ = [
     "DELIVERY_QUEUE_CONFIG",
     "BaseDeliveryAction",
     "SemanticSearchDeliveryAction",
     "DatabaseSearchDeliveryAction",
-    "KeywordSearchDeliveryAction",
     "DefaultDeliveryAction",
     "get_delivery_action",
     "handle_fetch_next_request",
     "register_delivery_queue_and_get_first_batch",
-    "register_delivery_queue_and_get_first_item",
     "check_pending_delivery",
-    "get_delivery_status",
-    "clear_delivery_queue",
-    "clear_all_delivery_queues",
-    "create_no_items_response",
 ]
