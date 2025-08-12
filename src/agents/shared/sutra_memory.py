@@ -4,265 +4,227 @@ Dynamic memory tracking for implementation state across iterations
 """
 
 SUTRA_MEMORY = """====
+SUTRA MEMORY AGENT GUIDE
 
-SUTRA MEMORY
+Sutra Memory is your persistent working memory across conversation iterations. Its primary purpose is to store necessary and useful information that will help you in future calls. Think of it as your engineering notebook that survives between iterations.
 
-Sutra Memory is a dynamic memory system that tracks implementation state across iterations. It is fully managed by the Sutra agent and invisible to the user. This system ensures continuity, prevents redundant operations, and maintains context for complex multi-step tasks. The system tracks iteration history (last 20 entries), manages tasks (current, pending, completed), and stores important code snippets for future reference.
+CORE PURPOSE
 
-Required Components:
-add_history: Comprehensive summary of current iteration actions, tool usage, key findings, and information storage for future iterations (MANDATORY in every response). You MUST store any important information related to the user query that will be needed in future iterations, otherwise it won't be available in the next iteration.
+Store information you'll need later: task progress, code locations, file changes, and important findings. This prevents redundant operations and maintains context across multiple iterations of complex problem-solving.
 
-Optional Components:
-task: Manage tasks by adding new ones or moving between pending/current/completed status with unique IDs (only ONE current task allowed at a time)
-code: Store important code snippets with file paths, line ranges, and descriptions for future reference (in description never add line ranges or file paths, just one line of context about why this code is important)
-files: Track file changes (modified, deleted, added) with file paths to maintain change history
+MANDATORY XML FORMAT
 
-CRITICAL CODE STORAGE RULE:
-Any required code that you identify must be added to sutra memory if you are NOT using it in the current iteration but will need it for future iterations, as it won't be available in next iterations. This includes:
-- Function definitions and implementations
-- Class structures and methods
-- Configuration patterns
-- Database schemas or queries
-- Import statements and dependencies
-- File paths and directory structures
-- Method signatures and parameters
-- Variable/constant declarations
-
-IMPORTANT: Only store code in sutra memory if you have SEEN the exact code content with specific line numbers. If you don't know the exact code content or line ranges, DO NOT add it to code storage. Instead, add a task to investigate/check the file first, then after examining the code, store it if needed.
-
-EXPLORATION RULE:
-If you want to explore any files or functions, list them into the pending or current tasks and then explore them one by one. Do not explore multiple files/functions simultaneously - work systematically through your task list.
-
-Key Notes:
-Task IDs must be unique and sequential
-History prevents redundant tool calls by tracking previous operations
-Code storage prevents loss of critical context between iterations
-Always review existing sutra_memory before tool selection to avoid repetition
-You MUST include sutra_memory updates in EVERY agent response alongside your tool call
-Only ONE task can be current at any time - complete current task before moving another to current
-CRITICAL: Every response must contain both a tool call AND sutra_memory update - never one without the other
-TASK COMPLETION RULE: When using attempt_completion tool, if you need to add the completed task to memory, add it directly to "completed" status, NOT "current" status - the task is already done
-
-FILE OPERATION COMPLETION RULE:
-DO NOT mark tasks as completed in sutra_memory if you have used file operation tools (write_to_file, apply_diff) in the current iteration. You must WAIT for user confirmation that the file operations were applied successfully before moving tasks to "completed" status. Only mark tasks as completed AFTER the user confirms the file changes were successful.
-
-Examples of when to WAIT for confirmation:
-- After using write_to_file: Wait for user to confirm file was written successfully
-- After using apply_diff: Wait for user to confirm diff was applied successfully
-- If file operations fail: Do NOT complete the task, keep it current for retry
-
-Usage:
+Every response must include Sutra Memory updates using XML:
 <sutra_memory>
+<add_history>Summary of current iteration actions and key findings</add_history>
+</sutra_memory>
+
+The <add_history> tag is required in every response - no exceptions.
+
+SYSTEM CONSTRAINTS
+
+1. SINGLE CURRENT TASK RULE
+   Only one task can have "current" status at any time
+   Complete or move existing current task before setting a new one
+
+2. MANDATORY HISTORY RULE
+   Every response must include <add_history> with iteration summary
+
+CRITICAL: Single Current Task Examples
+
+❌ INCORRECT - This will fail:
 <task>
-<add id="unique_id" to="pending">specific task description</add>
-<add id="unique_id" to="current">specific task description</add>
-<move from="pending" to="current">task_id</move>
-<move from="current" to="completed">task_id</move>
-<remove>task_id</remove>
+<add id="2" to="current">New urgent task</add>
 </task>
+<!-- If task "1" is already current, this violates the constraint -->
+
+✅ CORRECT - Move existing current task first:
+<task>
+<move from="current" to="completed">1</move>
+<add id="2" to="current">New urgent task</add>
+</task>
+
+Alternative - Move current to pending:
+<task>
+<move from="current" to="pending">1</move>
+<add id="2" to="current">New urgent task</add>
+</task>
+
+TASK MANAGEMENT
+
+Organize your work using three task states:
+
+pending → current → completed
+
+Add Tasks:
+<task>
+<add id="1" to="pending">Analyze authentication system architecture</add>
+<add id="2" to="current">Review user model structure</add>
+<add id="3" to="completed">Initial project exploration finished</add>
+</task>
+
+Move Tasks:
+<task>
+<move from="current" to="completed">1</move>
+<move from="pending" to="current">2</move>
+</task>
+
+Remove Tasks:
+<task>
+<remove>3</remove>
+</task>
+
+CODE STORAGE
+
+Store code snippets you'll reference in future iterations:
 <code>
-<add id="unique_id">
-<file>relative/path/to/file</file>
-<start_line>number</start_line>
-<end_line>number</end_line>
-<description>context about why this code is important (1 line only)</description>
+<add id="1">
+<file>src/auth/validator.py</file>
+<start_line>15</start_line>
+<end_line>28</end_line>
+<description>validateUser function signature - needs role parameter</description>
 </add>
-<remove>code_id</remove>
 </code>
+
+Remove when no longer needed:
+<code>
+<remove>1</remove>
+</code>
+
+FILE CHANGE TRACKING
+
+Track modifications that affect your stored code or future work:
 <files>
-<modified>relative/path/to/modified/file</modified>
-<deleted>relative/path/to/deleted/file</deleted>
-<added>relative/path/to/new/file</added>
+<modified>src/models/user.py</modified>
+<added>src/auth/roles.py</added>
+<deleted>migrations/old_schema.sql</deleted>
 </files>
 
-<add_history>Brief summary of current iteration actions and findings any important information that will be needed in future iterations</add_history>
-</sutra_memory>
+WHAT TO STORE
 
-Examples:
+Store information that will be useful in future iterations:
+- Code function signatures and locations you'll modify
+- File paths and line numbers for precise references
+- Architectural patterns and important relationships
+- Task dependencies discovered during analysis
+- Error patterns and successful approaches
+- Configuration details and environment information
 
-Example 1: Basic history update with detailed information storage
-<sutra_memory>
-<add_history>Used semantic_search query "user authentication" - found validateUser, authenticateToken, hashPassword functions in src/auth/validator.py lines 15-45, identified parameter compatibility issue. Functions found: validateUser() expects (username, password), authenticateToken() takes (token, expiry), hashPassword() uses bcrypt. Located in /src/auth/validator.py, /src/utils/auth.js, /src/middleware/auth.py. Need to verify parameter compatibility across all 3 files for upcoming user role implementation.</add_history>
-</sutra_memory>
+WHAT NOT TO STORE
 
-Example 2: Task management with history
+Avoid cluttering memory with temporary data:
+- Short-term variables only needed in current iteration
+- Generic boilerplate code unless specifically relevant
+- Debugging output that won't inform future decisions
+- Every code snippet encountered during exploration
+
+COMPLETE WORKFLOW EXAMPLES
+
+Multi-Step Implementation:
 <sutra_memory>
 <task>
-<add id="1" to="pending">Check function validateUser in file src/auth.py for compatibility with new parameters - function found at src/auth/validator.py line 15</add>
-<add id="2" to="pending">Update database schema to support new user roles - schema files: src/models/user.py, migrations/add_roles.sql</add>
-<move from="pending" to="current">1</move>
+<add id="1" to="current">Understand current authentication system</add>
+<add id="2" to="pending">Design role-based access control integration</add>
+<add id="3" to="pending">Implement role checking in validateUser</add>
+<add id="4" to="pending">Update all authentication callers</add>
 </task>
-<add_history>Used database query GET_FUNCTION_CALLERS for validateUser - found called in 3 files: src/controllers/auth.js line 23, src/middleware/verify.py line 45, src/routes/login.php line 12. All callers pass (username, password) parameters. Stored auth functions in code memory. Current validateUser signature: validateUser(username, password, options={}). Added validation tasks for parameter compatibility with new role system.</add_history>
+<add_history>User requested role-based authentication. Created implementation pipeline: analysis → design → core implementation → caller updates. Starting with understanding current system.</add_history>
 </sutra_memory>
 
-Example 3: Complete workflow with code storage and removal
+Discovering and Storing Key Code:
 <sutra_memory>
 <task>
 <move from="current" to="completed">1</move>
 <move from="pending" to="current">2</move>
-<remove>5</remove>
 </task>
 <code>
 <add id="1">
+<file>src/auth/validator.py</file>
+<start_line>15</start_line>
+<end_line>28</end_line>
+<description>validateUser function - current signature validateUser(username, password)</description>
+</add>
+<add id="2">
 <file>src/models/user.py</file>
 <start_line>23</start_line>
-<end_line>45</end_line>
-<description>User class constructor with role parameter - needed for implementing new user role system</description>
+<end_line>35</end_line>
+<description>User class constructor - needs role field integration</description>
 </add>
-<remove>3</remove>
 </code>
+<add_history>Completed authentication system analysis. Found validateUser in validator.py and User constructor in models/user.py. Both need role integration. Discovered 3 caller locations: login.py line 45, middleware.py line 23, api.py line 67. Stored key functions for modification. Now designing role integration approach.</add_history>
+</sutra_memory>
+
+Implementing Changes:
+<sutra_memory>
+<task>
+<move from="current" to="completed">2</move>
+<move from="pending" to="current">3</move>
+</task>
 <files>
 <modified>src/models/user.py</modified>
-<modified>src/auth/validator.py</modified>
 <added>src/models/user_role.py</added>
 </files>
-<add_history>Applied diff to src/models/user.py lines 23-45 - added role parameter to User constructor: User(name, email, role='user'). Found 3 dependent functions need updates: createUser() in controllers/user.py line 15, registerUser() in services/auth.py line 67, and updateUserProfile() in api/users.js line 134. All currently call User(name, email) without role parameter. Stored constructor pattern for role implementation - will need to update all callers to handle new role parameter with backward compatibility.</add_history>
+<code>
+<remove>2</remove>
+</code>
+<add_history>Completed role integration design. Modified User model to include role field with default 'user' value. Created UserRole model with permissions mapping. Removed stored User constructor code as modification is complete. Now implementing role checking in validateUser function using stored code reference.</add_history>
 </sutra_memory>
 
-Example 4: File tracking with multiple operations
-<sutra_memory>
-<files>
-<modified>src/config/database.py</modified>
-<modified>src/models/base.py</modified>
-<deleted>old_scripts/legacy_migration.py</deleted>
-<added>migrations/001_add_user_roles.sql</added>
-<added>src/models/permissions.py</added>
-</files>
-<add_history>Used write_to_file - created Permission class in src/models/permissions.py (45 lines) with checkAccess(user_id, resource, action) method, hasRole(user_id, role_name) method, and getRolePermissions(role) method. Updated database config in src/config/database.py to include permissions table schema: id, user_id, role, resource, action, created_at. Removed legacy migration script old_scripts/legacy_migration.py (was 120 lines). New permissions system ready for integration with existing auth functions.</add_history>
-</sutra_memory>
-
-Example 5: Task completion scenario (CORRECT way)
+Memory Cleanup:
 <sutra_memory>
 <task>
-<move from="current" to "completed">1</move>
+<move from="current" to="completed">3</move>
+<remove>1</remove>
+<remove>2</remove>
 </task>
-<add_history>Used attempt_completion - provided greeting response and assistance options, task completed successfully</add_history>
+<code>
+<remove>1</remove>
+</code>
+<add_history>Completed validateUser role integration. All authentication functions now support role checking. Cleaned up completed tasks and code references. Role-based authentication system implementation finished.</add_history>
 </sutra_memory>
 
-Example 6: Task completion scenario (WRONG - do NOT do this)
-<sutra_memory>
-<task>
-<add id="1" to="current">Respond to user greeting and determine how to assist</add>
-</task>
-<add_history>Responded to user greeting with attempt_completion</add_history>
-</sutra_memory>
+PRACTICAL GUIDELINES
 
-Example 7: File operation scenario (CORRECT - wait for confirmation)
-<sutra_memory>
-<task>
-<add id="1" to="current">Update user authentication system</add>
-</task>
-<files>
-<modified>src/auth/validator.py</modified>
-</files>
-<add_history>Used apply_diff to update validateUser function in src/auth/validator.py lines 15-28 - added role validation parameter: validateUser(username, password, required_role=None). Added role checking logic: if required_role and not user.hasRole(required_role): return False. Function now returns user object with role information. Dependencies: uses hasRole() from permissions.py, connects to user_roles table. Waiting for user confirmation that diff was applied successfully before completing task.</add_history>
-</sutra_memory>
+Task Management:
+- Break complex work into specific, actionable tasks
+- Keep one current task for focused execution
+- Add new tasks as you discover dependencies
+- Remove completed tasks when no longer referenced
 
-Example 8: File operation scenario (WRONG - do NOT complete immediately)
-<sutra_memory>
-<task>
-<move from="current" to="completed">1</move>
-</task>
-<files>
-<modified>src/auth/validator.py</modified>
-</files>
-<add_history>Used apply_diff to update validateUser function - completed task</add_history>
-</sutra_memory>
+Code Storage Strategy:
+- Store functions/classes you'll modify in multiple steps
+- Include exact file paths and line ranges
+- Remove code after modifications are complete
+- Focus on architectural and integration code
 
-# Sutra Memory Guidelines:
+Memory Maintenance:
+- Update history with specific findings and actions taken
+- Track file changes that affect stored references
+- Clean up obsolete tasks and code regularly
+- Use memory to inform tool selection and avoid redundancy
 
-1. In <thinking> tags, assess what information you already have and what information you need to proceed with the task. Also review your current sutra_memory state including tasks, stored code, and determine what updates are needed based on iteration progress and findings. Think about pending tasks and current task requirements - identify any information that will be needed in future iterations but not used in the current iteration, and store it directly in Sutra Memory using appropriate tags (<code> for code snippets, <history> for other important data like terminal outputs, file listings, search results) to prevent redundant tool calls and maintain context across iterations. Data of current iteration won't be available in the next iterations - only stored data in sutra memory is persistent across iterations.
+DO'S AND DON'TS
 
-2. When to Add Tasks:
-   - Function/Class Dependencies when making changes that might affect existing functions
-   - Cross-file Impacts when modifications in one file require updates in related files
-   - Validation Requirements when existing code needs compatibility verification
-   - Implementation Steps when breaking down complex features into manageable tasks
-   - IMPORTANT: Always include specific file paths and function names in task descriptions when known (e.g., "Check validateUser function in src/auth/validator.py line 15" instead of "Check user validation"). This reduces tool calls by providing direct file locations, eliminating the need for semantic search or list_files operations.
+✅ DO:
+- Include <add_history> in every response with specific findings
+- Complete or move current task before setting new current task
+- Store code snippets for functions you'll modify across iterations
+- Use specific, actionable task descriptions
+- Track file changes that affect your stored code or future work
+- Remove completed tasks and obsolete code to keep memory clean
+- Break complex work into manageable pending tasks
+- Record exact file paths and line numbers for precision
 
-3. When to Store Code:
-   - Future Reference for code that will be needed in upcoming iterations
-   - Dependency Analysis for functions/classes that current changes depend on
-   - Template Code for existing patterns to follow for new implementations
-   - Critical Context for code that provides essential context for decision-making
-   - ONLY when you have examined the exact code content and know the specific line numbers - never store code you haven't seen
+❌ DON'T:
+- Try to add new current task while another task is already current
+- Skip mandatory history updates - they're required every time
+- Store every code snippet you encounter during exploration
+- Use vague task descriptions like "fix the system" or "analyze code"
+- Leave obsolete tasks and code cluttering memory indefinitely
+- Create pending tasks for work that's already finished
+- Store temporary debugging information that won't help future iterations
+- Forget to track file modifications that affect stored references
 
-4. When to Track Files:
-   - File Modifications when editing existing files to track what has been changed
-   - File Creation when adding new files to the project structure
-   - File Deletion when removing files to maintain accurate project state
-   - Change Documentation for maintaining a clear record of all file operations
+The Sutra Memory system enables you to work on complex, multi-iteration tasks by preserving essential context, tracking progress, and maintaining references to important code locations across conversation turns.
 
-5. When to Remove Code:
-   - Outdated Information when stored code is no longer relevant to current tasks
-   - Completed Analysis when code analysis is finished and no longer needed
-   - Memory Optimization when code storage becomes cluttered with unused snippets
-   - Context Change when project direction changes making stored code irrelevant
-
-6. History Best Practices:
-   - Be specific about tool names and parameters used with exact queries/commands
-   - Mention key findings, results, and outputs in detail
-   - Note any failures or null results to avoid repetition
-   - Include complete file names, function names, and paths when relevant
-   - Store comprehensive information that will be needed for upcoming iterations
-   - ALWAYS REVIEW YOUR HISTORY before starting new iterations to understand previous context
-   - CRITICAL: Store ALL important information related to the user query in your history, as this information will NOT be available in the next iteration unless explicitly stored
-   - Store important information like function names, file paths, directory structures, and discoveries
-   - Include relevant terminal outputs, search results, and tool responses that may be needed later
-   - Record file paths from list_files operations if those paths will be referenced in future iterations
-   - Store configuration details, environment information, and system responses
-   - Add findings that can be used for future searches or implementations to pending tasks
-   - Record any important patterns, configurations, or code structures discovered during analysis
-   - Include error messages, warnings, and diagnostic information that might be relevant later
-   - Store API responses, database query results, terminal outputs, and other data outputs when they provide context for future operations
-   - Document command outputs, installation results, and system information that affects subsequent iterations
-   - Record terminal session creation, reuse, and cleanup activities in history for context
-   - MANDATORY: Any information discovered that relates to the user's query must be stored in sutra memory, otherwise it will be lost in the next iteration
-
-7. Task Management Rules:
-   - Only ONE task can be in "current" status at any time
-   - Complete or move current task before assigning new current task
-   - Tasks flow through pipeline: pending → current → completed
-   - Remove completed tasks when no longer needed for reference
-   - Add tasks as you discover dependencies or requirements during analysis
-   - If a task is finished in the current iteration, it should be added as "completed", not "current" and if there is any pending task that needs to be moved to the current task.
-   - CRITICAL: Do NOT move tasks to "completed" status if you used file operation tools (write_to_file, apply_diff) in the current iteration - wait for user confirmation first, Only mark tasks as completed AFTER user confirms file operations were successful
-   - If file operations fail, keep task in "current" status for retry or correction
-
-8. Integration Workflow:
-   - Start of Iteration by reviewing current task and pending tasks from previous sutra_memory
-   - Tool Selection by checking history to avoid redundant operations
-   - Result Analysis to determine if current task is complete or needs more work
-   - Task Updates by adding new tasks discovered during analysis
-   - Code Storage by saving important code for future reference
-   - File Tracking by recording all file modifications, additions, and deletions
-   - Code Cleanup by removing outdated or completed code snippets
-   - History Update by recording current iteration's actions and findings (MANDATORY)
-
-9. Critical Rules:
-   - Sutra Memory MUST be updated in every agent response alongside exactly one tool call
-   - At minimum, add_history must be included in each iteration
-   - Task IDs must be unique and sequential across all iterations
-   - Code storage should include descriptive context explaining importance
-   - Always check existing history before making similar tool calls
-   - Tasks should be specific and actionable
-   - Only one current task allowed at a time
-   - Remove tasks and code when no longer needed to maintain clean memory
-   - This is NOT a tool but a memory management system that works alongside tool usage
-   - NEVER respond with only sutra_memory without a tool call - this violates system architecture
-   - COMPLETION RULE: When using attempt_completion, add completed tasks to "completed" status, NEVER to "current" status
-   - If you just finished a task in the current iteration, it belongs in "completed", not "current"
-   - FILE OPERATION RULE: NEVER mark tasks as completed if you used file operation tools (write_to_file, apply_diff) in the same iteration - always wait for user confirmation that file operations succeeded before completing tasks
-
-10. Anti-Hallucination Rules:
-    - NEVER store code without exact file paths and line numbers
-    - NEVER assume file contents, function signatures, or implementation details
-    - NEVER store method calls or import statements you haven't seen in actual code
-    - ALWAYS verify exact function names, parameter lists, and method signatures through tools
-    - NEVER create tasks for files or functions you haven't confirmed exist
-    - ALWAYS use specific search patterns and verified results
-    - NEVER assume existing implementations - always examine code through available tools
-    - ALWAYS store exact discovery results rather than interpreted or assumed information
-
-This comprehensive system ensures accurate, verifiable memory management across all agent types without hallucination.
 """
