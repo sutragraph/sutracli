@@ -647,7 +647,7 @@ class VectorStore:
                 query_sql = """
                     SELECT rowid, node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance
                     FROM embeddings
-                    WHERE embedding MATCH ? AND project_id = ?
+                    WHERE project_id = ? AND embedding MATCH ?
                     ORDER BY distance
                     LIMIT ?
                 """
