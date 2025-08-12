@@ -293,10 +293,13 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         if not delivery_items:
             return None
 
+
         # Register all items with delivery manager
         delivery_manager.register_delivery_queue(
             action_type, action_parameters, delivery_items
         )
+
+        logger.debug(f"📦 Database delivery registered {len(delivery_items)} items for {action_type}")
 
         batch_size = self.get_batch_size()
         batch_items = []
@@ -309,11 +312,28 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 break
 
         if not batch_items:
+            logger.debug("📦 Database delivery: No batch items available")
             return None
 
-        # Format batch items into a single response (database search typically returns single items)
-        # For now, return the first item since database search handles batching differently
-        return batch_items[0]
+        logger.debug(f"📦 Database delivery processing {len(batch_items)} batch items:")
+        for i, item in enumerate(batch_items):
+            data_length = len(str(item.get("data", "")))
+            logger.debug(f"   Item {i+1}: type={item.get('type')}, data_length={data_length}, result={item.get('result', 'N/A')}")
+
+        # For database search, find the item with actual content (not just status)
+        content_item = None
+        for i, item in enumerate(batch_items):
+            # Look for the item that has substantial data content
+            if item.get("data") and len(str(item.get("data", ""))) > 50:
+                content_item = item
+                logger.debug(f"📦 Database delivery: Selected item {i+1} as content item (data_length={len(str(item.get('data', '')))})")
+                break
+
+        if not content_item:
+            logger.debug("📦 Database delivery: No content item found, using first item")
+
+        # If we found a content item, return it; otherwise return the first item
+        return content_item if content_item else batch_items[0]
 
     def check_pending_delivery(
         self, action_type: str, action_parameters: Dict[str, Any]
