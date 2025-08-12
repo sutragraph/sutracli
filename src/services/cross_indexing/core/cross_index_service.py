@@ -702,15 +702,6 @@ class CrossIndexService:
             try:
                 memory_context = self.prompt_manager.task_manager.get_memory_for_llm()
 
-                # Add tool status and reasoning checkpoint to task manager memory
-                memory_context += f"\n\nTOOL STATUS:\n{tool_status}"
-
-                reasoning_prompt = self.memory_manager.generate_reasoning_prompt(
-                    analysis_query
-                )
-                if reasoning_prompt != "No previous tool executions found.":
-                    memory_context += f"\n\nREASONING CHECKPOINT:\n{reasoning_prompt}"
-
                 logger.debug(
                     f"Using task manager memory context: {len(memory_context)} characters"
                 )

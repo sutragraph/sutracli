@@ -527,15 +527,6 @@ class AgentService:
                 # Add tool status -  FORMAT
                 user_message_parts.append(f"\n====\nTOOL STATUS\n\n{tool_status}\n====")
 
-                # Add reasoning prompt from SutraMemoryManager
-                reasoning_prompt = self.memory_manager.generate_reasoning_prompt(
-                    user_query
-                )
-                if reasoning_prompt != "No previous tool executions found.":
-                    user_message_parts.append(
-                        f"\n====\nREASONING CHECKPOINT\n\n{reasoning_prompt}\n===="
-                    )
-
                 user_message = "\n".join(user_message_parts)
 
                 logger.debug(

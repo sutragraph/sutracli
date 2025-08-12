@@ -206,42 +206,6 @@ class SutraMemoryManager:
 
         return validation_result
 
-    def generate_reasoning_prompt(self, user_query: str) -> str:
-        """Generate reasoning prompt based on tool history in memory"""
-        tool_history = self.get_tool_history()
-
-        if not tool_history:
-            return "No previous tool executions found."
-
-        reasoning_prompt = f"""
-REASONING CHECKPOINT:
-
-User Query: {user_query}
-
-Before selecting your next tool, think through:
-1. What specific information or action does this query require?
-2. Have I gathered sufficient context from previous tools?
-3. What is the most logical next step?
-4. How will this tool help answer the user's question?
-
-Previous Tool Results Summary:
-"""
-
-        for history_entry in tool_history[-3:]:  # Last 3 tools
-            tool_name = history_entry.tool_name
-            success = (
-                history_entry.validation_result.get("valid", True)
-                if history_entry.validation_result
-                else True
-            )
-            reasoning_prompt += f"- {tool_name}: {'SUCCESS' if success else 'FAILED'}\n"
-
-        reasoning_prompt += """
-Choose the most appropriate tool and explain your reasoning briefly.
-"""
-
-        return reasoning_prompt
-
     def analyze_task_completion(self, user_query: str) -> dict:
         """Analyze if the user's task has been completed based on tool history"""
         tool_history = self.get_tool_history()
