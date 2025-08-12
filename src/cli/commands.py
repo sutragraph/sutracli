@@ -10,7 +10,6 @@ from prompt_toolkit import prompt
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
-from graph.sqlite_client import SQLiteConnection
 from services.project_manager import ProjectManager
 from services.cross_indexing.core.cross_index_system import CrossIndexSystem
 from graph import ASTToSqliteConverter

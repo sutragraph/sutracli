@@ -27,7 +27,7 @@ class ConnectionMatchingManager:
         self.matching_prompt = CONNECTION_MATCHING_PROMPT
         self.db_client = SQLiteConnection()
 
-    def fetch_incoming_connections_from_db(self, project_id=None):
+    def fetch_incoming_connections_from_db(self):
         """
         Fetch incoming connections directly from database.
 
@@ -42,32 +42,20 @@ class ConnectionMatchingManager:
             return []
 
         try:
-            if project_id:
-                query = """
-                SELECT ic.id, ic.description, ic.technology_name as technology,
-                       ic.code_snippet, ic.snippet_lines, files.file_path, files.language
-                FROM incoming_connections ic
-                LEFT JOIN files ON ic.file_id = files.id
-                WHERE files.project_id = ?
-                ORDER BY ic.id
-                """
-                results = self.db_client.execute_query(query, (project_id,))
-            else:
-                query = """
-                SELECT ic.id, ic.description, ic.technology_name as technology,
-                       ic.code_snippet, ic.snippet_lines, files.file_path, files.language
-                FROM incoming_connections ic
-                LEFT JOIN files ON ic.file_id = files.id
-                ORDER BY ic.id
-                """
-                results = self.db_client.execute_query(query)
-
+            query = """
+            SELECT ic.id, ic.description, ic.technology_name as technology,
+                    ic.code_snippet, ic.snippet_lines, files.file_path, files.language
+            FROM incoming_connections ic
+            LEFT JOIN files ON ic.file_id = files.id
+            ORDER BY ic.id
+            """
+            results = self.db_client.execute_query(query)
             return results or []
         except Exception as e:
             print(f"Error fetching incoming connections: {e}")
             return []
 
-    def fetch_outgoing_connections_from_db(self, project_id=None):
+    def fetch_outgoing_connections_from_db(self):
         """
         Fetch outgoing connections directly from database.
 
@@ -82,33 +70,21 @@ class ConnectionMatchingManager:
             return []
 
         try:
-            if project_id:
-                query = """
-                SELECT oc.id, oc.description, oc.technology_name as technology,
-                        oc.code_snippet, oc.snippet_lines, files.file_path, files.language
-                FROM outgoing_connections oc
-                LEFT JOIN files ON oc.file_id = files.id
-                WHERE files.project_id = ?
-                ORDER BY oc.id
-                """
-                results = self.db_client.execute_query(query, (project_id,))
-            else:
-                query = """
-                SELECT oc.id, oc.description, oc.technology_name as technology,
-                        oc.code_snippet, oc.snippet_lines, files.file_path, files.language
-                FROM outgoing_connections oc
-                LEFT JOIN files ON oc.file_id = files.id
-                ORDER BY oc.id
-                """
-                results = self.db_client.execute_query(query)
-
+            query = """
+            SELECT oc.id, oc.description, oc.technology_name as technology,
+                    oc.code_snippet, oc.snippet_lines, files.file_path, files.language
+            FROM outgoing_connections oc
+            LEFT JOIN files ON oc.file_id = files.id
+            ORDER BY oc.id
+            """
+            results = self.db_client.execute_query(query)
             return results or []
         except Exception as e:
             print(f"Error fetching outgoing connections: {e}")
             return []
 
     def build_matching_prompt(
-        self, incoming_connections=None, outgoing_connections=None, project_id=None
+        self, incoming_connections=None, outgoing_connections=None
     ):
         """
         Build the complete prompt for connection matching analysis.
@@ -125,10 +101,10 @@ class ConnectionMatchingManager:
 
         # If connections are not provided, fetch from database
         if incoming_connections is None:
-            incoming_connections = self.fetch_incoming_connections_from_db(project_id)
+            incoming_connections = self.fetch_incoming_connections_from_db()
 
         if outgoing_connections is None:
-            outgoing_connections = self.fetch_outgoing_connections_from_db(project_id)
+            outgoing_connections = self.fetch_outgoing_connections_from_db()
 
         # Format incoming connections
         incoming_formatted = self._format_connections(incoming_connections, "INCOMING")
@@ -320,10 +296,7 @@ code_snippet:
 
 
 def run_connection_matching(
-    incoming_connections=None,
-    outgoing_connections=None,
     llm_client=None,
-    project_id=None,
 ):
     """
     Main function to run connection matching analysis.
@@ -341,16 +314,12 @@ def run_connection_matching(
     """
     manager = ConnectionMatchingManager()
 
-    # Build prompt - will fetch from database if connections not provided
-    prompt = manager.build_matching_prompt(
-        incoming_connections, outgoing_connections, project_id
-    )
-
     # Get the actual connections for validation (fetch from DB if needed)
-    if incoming_connections is None:
-        incoming_connections = manager.fetch_incoming_connections_from_db(project_id)
-    if outgoing_connections is None:
-        outgoing_connections = manager.fetch_outgoing_connections_from_db(project_id)
+    incoming_connections = manager.fetch_incoming_connections_from_db()
+    outgoing_connections = manager.fetch_outgoing_connections_from_db()
+
+    # Build prompt - will fetch from database if connections not provided
+    prompt = manager.build_matching_prompt(incoming_connections, outgoing_connections)
 
     # Add logging to show what connections we're trying to match
     print(

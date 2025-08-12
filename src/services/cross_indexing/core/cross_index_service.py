@@ -23,7 +23,7 @@ from services.cross_indexing.code_manager.prompts.code_manager_prompt_manager im
 )
 from graph.graph_operations import GraphOperations
 from services.cross_indexing.core.connection_matching_manager import (
-    run_connection_matching as manager_run_connection_matching,
+    run_connection_matching,
 )
 
 
@@ -459,13 +459,8 @@ class CrossIndexService:
 
                                         try:
                                             # Delegate to ConnectionMatchingManager to handle prompts and validation
-                                            matching_exec = (
-                                                manager_run_connection_matching(
-                                                    incoming_connections=None,
-                                                    outgoing_connections=None,
-                                                    llm_client=self.llm_client,
-                                                    project_id=project_id,
-                                                )
+                                            matching_exec = run_connection_matching(
+                                                llm_client=self.llm_client,
                                             )
 
                                             # Check if user cancelled connection matching
@@ -1431,200 +1426,6 @@ Content:
         except Exception as e:
             logger.error(f"Error retrieving existing connections: {e}")
             return {"incoming": [], "outgoing": []}
-
-    def run_connection_matching(
-        self, incoming_ids: List[int], outgoing_ids: List[int]
-    ) -> Dict[str, Any]:
-        """
-        Run connection matching analysis using LLM to match incoming and outgoing connections.
-
-        Args:
-            incoming_ids: List of stored incoming connection IDs
-            outgoing_ids: List of stored outgoing connection IDs
-
-        Returns:
-            Result dictionary with matching status and created mappings
-        """
-        try:
-            logger.info(
-                f"📊 Analyzing {len(incoming_ids)} incoming and {len(outgoing_ids)} outgoing connections"
-            )
-
-            # Get connection details from database
-            incoming_connections = self._get_connections_by_ids(
-                incoming_ids, "incoming"
-            )
-            outgoing_connections = self._get_connections_by_ids(
-                outgoing_ids, "outgoing"
-            )
-
-            if not incoming_connections or not outgoing_connections:
-                return {
-                    "success": False,
-                    "error": "No connections found for matching",
-                    "message": "Connection matching skipped - no connections to match",
-                }
-
-            # Get Phase 5 prompt manager and build prompts
-            phase5_manager = self.prompt_manager.phase5_manager
-            system_prompt = phase5_manager.get_system_prompt()
-            user_prompt = phase5_manager.get_user_prompt(
-                incoming_connections, outgoing_connections
-            )
-
-            if not get_user_confirmation_for_llm_call():
-                logger.info(
-                    "User cancelled Cross-indexing connection matching LLM call in debug mode"
-                )
-                return {
-                    "success": False,
-                    "user_cancelled": True,
-                    "error": "User cancelled connection matching in debug mode",
-                    "message": "Connection matching cancelled by user in debug mode",
-                }
-
-            # Call LLM for Phase 5 connection matching
-            logger.debug("🔗 Starting Phase 5 connection matching analysis...")
-            logger.debug(
-                f"📊 Analyzing {len(incoming_connections)} incoming and {len(outgoing_connections)} outgoing connections"
-            )
-            response = self.llm_client.call_llm(
-                system_prompt, user_prompt, return_raw=True
-            )
-
-            # Parse JSON response from raw text
-            try:
-                import json
-
-                # Handle both string response and dict response
-                if isinstance(response, str):
-                    response_text = response
-                else:
-                    response_text = (
-                        response.get("content", "")
-                        if isinstance(response, dict)
-                        else str(response)
-                    )
-
-                # Clean up response text - remove any markdown formatting
-                response_text = response_text.strip()
-                if response_text.startswith("```json"):
-                    start = response_text.find("```json") + 7
-                    end = response_text.find("```", start)
-                    if end != -1:
-                        response_text = response_text[start:end].strip()
-                elif response_text.startswith("```"):
-                    start = response_text.find("```") + 3
-                    end = response_text.find("```", start)
-                    if end != -1:
-                        response_text = response_text[start:end].strip()
-
-                response_json = json.loads(response_text)
-            except json.JSONDecodeError as e:
-                logger.error(
-                    f"Failed to parse connection matching response as JSON: {e}"
-                )
-                logger.error(f"Raw response: {response}")
-                return {
-                    "success": False,
-                    "error": f"Invalid JSON response from LLM: {str(e)}",
-                    "message": "Connection matching failed due to invalid response format",
-                }
-
-            # Validate Phase 5 JSON response structure
-            if not isinstance(response_json, dict) or "matches" not in response_json:
-                logger.error(
-                    f"Invalid Phase 5 matching response structure: {response_json}"
-                )
-                return {
-                    "success": False,
-                    "error": "Invalid response structure - missing 'matches' field",
-                    "message": "Phase 5 connection matching failed due to invalid response structure",
-                }
-
-            # Create connection mappings in database
-            matches = response_json.get("matches", [])
-            if matches:
-                # Convert matches to database format
-                db_matches = []
-                for match in matches:
-                    db_matches.append(
-                        {
-                            "sender_id": match.get("outgoing_id"),
-                            "receiver_id": match.get("incoming_id"),
-                            "connection_type": match.get("connection_type", "api_call"),
-                            "description": match.get(
-                                "match_reason", "Auto-detected connection"
-                            ),
-                            "match_confidence": self._convert_confidence_to_float(
-                                match.get("match_confidence", "medium")
-                            ),
-                        }
-                    )
-
-                # Store mappings in database
-                mapping_result = self.graph_ops.create_connection_mappings(db_matches)
-
-                if mapping_result.get("success"):
-                    print(f"🎯 Found {len(matches)} connection matches:")
-                    for i, match in enumerate(matches, 1):
-                        print(
-                            f"   {i}. {match.get('match_reason', 'Unknown match')} (confidence: {match.get('match_confidence', 'unknown')})"
-                        )
-                    print(f"✅ Successfully created {len(matches)} connection mappings")
-                    return {
-                        "success": True,
-                        "matches_found": len(matches),
-                        "mappings_created": len(mapping_result.get("mapping_ids", [])),
-                        "message": f"Successfully matched and stored {len(matches)} connections",
-                    }
-                else:
-                    return {
-                        "success": False,
-                        "error": mapping_result.get("error"),
-                        "message": "Connection matching completed but failed to store mappings",
-                    }
-            else:
-                print(
-                    "🔍 No connection matches found between incoming and outgoing connections"
-                )
-                return {
-                    "success": True,
-                    "matches_found": 0,
-                    "mappings_created": 0,
-                    "message": "Connection matching completed - no matches found",
-                }
-
-        except Exception as e:
-            logger.error(f"Error during connection matching: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Connection matching failed due to unexpected error",
-            }
-
-    def _get_connections_by_ids(
-        self, connection_ids: List[int], connection_type: str
-    ) -> List[Dict[str, Any]]:
-        """
-        Get connection details by IDs from database.
-
-        Args:
-            connection_ids: List of connection IDs
-            connection_type: "incoming" or "outgoing"
-
-        Returns:
-            List of connection dictionaries with details
-        """
-        try:
-            # Use wrapper function from GraphOperations
-            return self.graph_ops.get_connections_by_ids(
-                connection_ids, connection_type
-            )
-
-        except Exception as e:
-            logger.error(f"Error getting connections by IDs: {e}")
-            return []
 
     def _convert_confidence_to_float(self, confidence: str) -> float:
         """Convert confidence level string to float."""
