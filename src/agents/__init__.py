@@ -35,6 +35,14 @@ def get_agent_identity(agent_name: AgentName) -> str:
         )
     return module.IDENTITY
 
+def get_agent_tool_usage_cases(agent_name: AgentName) -> str:
+    """Get agent tool usage cases prompt."""
+    module = _import_agent_module(agent_name, "tool_use_cases")
+    if not hasattr(module, "TOOL_USAGE_CASES"):
+        raise AttributeError(
+            f"Agent '{agent_name.value}' missing 'TOOL_USAGE_CASES' in tool_usage_examples.py"
+        )
+    return module.TOOL_USAGE_CASES
 
 def get_agent_objective(agent_name: AgentName) -> str:
     """Get agent objective prompt."""
@@ -102,6 +110,7 @@ def get_agent_system_prompt(agent_name: AgentName) -> str:
     rules = get_agent_rules(agent_name)
     guidelines = get_agent_guidelines(agent_name)
     tool_names = get_agent_tools(agent_name)
+    tool_usage_cases = get_agent_tool_usage_cases(agent_name)
 
     # Get actual tool prompts using the existing get_tool_prompt function
     tools_section = "## AVAILABLE TOOLS\n\n"
@@ -115,17 +124,19 @@ def get_agent_system_prompt(agent_name: AgentName) -> str:
     # Combine all sections
     complete_prompt = f"""{identity}
 
+{tools_section}
+
+{SUTRA_MEMORY}
+
 {objective}
 
 {capabilities}
 
-{tools_section}
-
 {guidelines}
 
-{rules}
+{tool_usage_cases}
 
-{SUTRA_MEMORY}
+{rules}
 
 {SYSTEM_INFO}
 

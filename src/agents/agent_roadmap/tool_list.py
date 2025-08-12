@@ -11,7 +11,6 @@ TOOL_LIST_ENUM = [
     ToolName.LIST_FILES,
     ToolName.DATABASE_SEARCH,
     ToolName.SEARCH_KEYWORD,
-    ToolName.TERMINAL_COMMANDS,
 ]
 
 

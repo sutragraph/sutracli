@@ -11,12 +11,38 @@ from typing import Dict, Any, List, Optional
 from tools.utils.code_processing_utils import add_line_numbers_to_code
 
 
+def _format_node_id_display(node_id: Optional[str]) -> str:
+    """
+    Extract and format node_id for display.
+
+    Args:
+        node_id: Node identifier (e.g., 'block_123', 'file_456', 'block_123_chunk_0')
+
+    Returns:
+        Formatted string like ' | Block ID: 123' or ' | File ID: 456'
+    """
+    if not node_id:
+        return ""
+
+    if node_id.startswith("block_"):
+        # Handle both 'block_123' and 'block_123_chunk_0' formats
+        extracted_id = node_id.split("_")[1]
+        return f" | Block ID: {extracted_id}"
+    elif node_id.startswith("file_"):
+        # Handle both 'file_456' and 'file_456_chunk_0' formats
+        extracted_id = node_id.split("_")[1]
+        return f" | File ID: {extracted_id}"
+    else:
+        return f" | Node ID: {node_id}"
+
+
 def beautify_enriched_block_context(
     enriched_context: Dict[str, Any],
     index: int = 1,
     total_nodes: int = 1,
     include_code: bool = True,
-    max_code_lines: Optional[int] = None
+    max_code_lines: Optional[int] = None,
+    node_id: Optional[str] = None
 ) -> str:
     """
     Format enriched block context into a beautiful, readable string.
@@ -27,6 +53,7 @@ def beautify_enriched_block_context(
         total_nodes: Total number of results
         include_code: Whether to include code content
         max_code_lines: Maximum lines of code to display
+        node_id: Optional node identifier (e.g., 'block_123' or 'file_456')
 
     Returns:
         Formatted string representation
@@ -42,7 +69,8 @@ def beautify_enriched_block_context(
 
     # Header
     result_parts = []
-    result_parts.append(f"Result {index}/{total_nodes}")
+    header = f"Result {index}/{total_nodes}" + _format_node_id_display(node_id)
+    result_parts.append(header)
     result_parts.append("=" * 60)
 
     # Block information
@@ -145,8 +173,9 @@ def beautify_enriched_file_context(
     enriched_context: Dict[str, Any],
     index: int = 1,
     total_nodes: int = 1,
-    include_code: bool = False,
-    max_code_lines: Optional[int] = 50
+    include_code: bool = True,
+    max_code_lines: Optional[int] = None,
+    node_id: Optional[str] = None
 ) -> str:
     """
     Format enriched file context into a beautiful, readable string.
@@ -155,8 +184,9 @@ def beautify_enriched_file_context(
         enriched_context: Result from GraphOperations.get_enriched_file_context()
         index: Position in search results
         total_nodes: Total number of results
-        include_code: Whether to include file content
+        include_code: Whether to include code content
         max_code_lines: Maximum lines of code to display
+        node_id: Optional node identifier (e.g., 'block_123' or 'file_456')
 
     Returns:
         Formatted string representation
@@ -173,7 +203,8 @@ def beautify_enriched_file_context(
 
     # Header
     result_parts = []
-    result_parts.append(f"File Result {index}/{total_nodes}")
+    header = f"Result {index}/{total_nodes}" + _format_node_id_display(node_id)
+    result_parts.append(header)
     result_parts.append("=" * 60)
 
     # File information
@@ -279,7 +310,8 @@ def beautify_enriched_context_auto(
     index: int = 1,
     total_nodes: int = 1,
     include_code: bool = True,
-    max_code_lines: Optional[int] = None
+    max_code_lines: Optional[int] = None,
+    node_id: Optional[str] = None
 ) -> str:
     """
     Automatically determine whether to format as block or file context.
@@ -290,6 +322,7 @@ def beautify_enriched_context_auto(
         total_nodes: Total number of results
         include_code: Whether to include code content
         max_code_lines: Maximum lines of code to display
+        node_id: Optional node identifier (e.g., 'block_123' or 'file_456')
 
     Returns:
         Formatted string representation
@@ -300,14 +333,15 @@ def beautify_enriched_context_auto(
     # Determine type based on presence of 'block' or 'file' key
     if 'block' in enriched_context:
         return beautify_enriched_block_context(
-            enriched_context, index, total_nodes, include_code, max_code_lines
+            enriched_context, index, total_nodes, include_code, max_code_lines, node_id
         )
     elif 'file' in enriched_context:
         return beautify_enriched_file_context(
-            enriched_context, index, total_nodes, include_code, max_code_lines
+            enriched_context, index, total_nodes, include_code, max_code_lines, node_id
         )
     else:
-        return f"Node {index}/{total_nodes}: Unknown context type"
+        node_info = _format_node_id_display(node_id)
+        return f"Node {index}/{total_nodes}{node_info}: Unknown context type"
 
 
 def format_chunk_with_enriched_context(
@@ -316,28 +350,30 @@ def format_chunk_with_enriched_context(
     chunk_end_line: int,
     chunk_code: str,
     index: int = 1,
-    total_nodes: int = 1
+    total_nodes: int = 1,
+    node_id: Optional[str] = None
 ) -> str:
     """
-    Format enriched context with specific chunk information highlighted.
+    Format enriched context with specific chunk information.
 
     Args:
         enriched_context: Result from GraphOperations enriched context functions
-        chunk_start_line: Start line of the chunk
-        chunk_end_line: End line of the chunk
-        chunk_code: The specific chunk code content
+        chunk_start_line: Starting line of the chunk
+        chunk_end_line: Ending line of the chunk
+        chunk_code: Code content of the specific chunk
         index: Position in search results
         total_nodes: Total number of results
+        node_id: Optional node identifier (e.g., 'block_123' or 'file_456')
 
     Returns:
-        Formatted string with chunk information highlighted
+        Formatted string representation with chunk-specific code
     """
     if not enriched_context:
         return f"Chunk {index}/{total_nodes}: No context available"
 
     # Get base formatting
     base_format = beautify_enriched_context_auto(
-        enriched_context, index, total_nodes, include_code=False
+        enriched_context, index, total_nodes, include_code=False, node_id=node_id
     )
 
     # Add chunk-specific information

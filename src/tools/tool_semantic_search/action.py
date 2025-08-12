@@ -174,7 +174,7 @@ def _process_sequential_chunk_results(
                 # For code blocks: Always show full block for better context
                 # Even if the block was chunked for embedding efficiency
                 beautified_result = beautify_enriched_context_auto(
-                    enriched_context, i, include_code=True, total_nodes=total_nodes
+                    enriched_context, i, include_code=True, total_nodes=total_nodes, node_id=result["node_id"]
                 )
             elif (
                 result["node_id"].startswith("file_")
@@ -195,16 +195,17 @@ def _process_sequential_chunk_results(
                         chunk_code,
                         i,
                         total_nodes,
+                        node_id=result["node_id"]
                     )
                 else:
                     # No chunk code available, use full context
                     beautified_result = beautify_enriched_context_auto(
-                        enriched_context, i, include_code=True, total_nodes=total_nodes
+                        enriched_context, i, include_code=True, total_nodes=total_nodes, node_id=result["node_id"]
                     )
             else:
                 # No chunk boundaries or unknown type, use full context
                 beautified_result = beautify_enriched_context_auto(
-                    enriched_context, i, include_code=True, total_nodes=total_nodes
+                    enriched_context, i, include_code=True, total_nodes=total_nodes, node_id=result["node_id"]
                 )
 
             # Collect processed result
