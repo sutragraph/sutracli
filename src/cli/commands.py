@@ -448,7 +448,6 @@ def handle_search_command(args) -> None:
             query_text=args.query,
             limit=args.limit,
             threshold=args.threshold,
-            max_display_lines=None,  # Show full chunks without truncation
         )
 
         if not chunks:

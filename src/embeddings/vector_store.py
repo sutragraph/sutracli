@@ -39,19 +39,6 @@ class EmbeddingModel:
             tokenizer_file = self.model_path / "tokenizer.json"
             if tokenizer_file.exists():
                 self.tokenizer = Tokenizer.from_file(str(tokenizer_file))
-                # Ensure accurate counting: disable built-in truncation/padding
-                try:
-                    # Ensure the tokenizer does not cap at 128 by setting a very high truncation length.
-                    # We'll still truncate to 256 in _tokenize for the model input, but counting can see >128.
-                    self.tokenizer.enable_truncation(max_length=100000)
-                    self.tokenizer.disable_padding()
-                    logger.debug(
-                        "Tokenizer truncation set to 100000 and padding disabled"
-                    )
-                except Exception as tweak_err:
-                    logger.warning(
-                        f"Could not adjust tokenizer settings (non-fatal): {tweak_err}"
-                    )
             else:
                 logger.warning("Tokenizer file not found, using basic tokenization")
 
