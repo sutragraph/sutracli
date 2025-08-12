@@ -15,10 +15,10 @@ GUIDELINES = """
    - list_files → inspect directory layout when needed
    - terminal_commands → run targeted, non-interactive checks (prefix with `cd <path> && ...` if needed)
 3. To search for symbol usage, first compute a small scope via get_search_scope_by_import_graph(anchor_file_id, both, depth≤2), then run search_keyword limited to those paths.
-4. One tool per iteration. Wait for the user's message confirming the result before proceeding. Do not assume outcomes.
+4. One tool per iteration. Proceed autonomously based on tool results without waiting for user confirmation. Analyze outcomes and continue with the next logical step.
 5. After each tool use, update Sutra Memory: add_history (tool, params, results), store critical code with exact file paths and line ranges, adjust tasks, and remove stale entries.
 6. Keep result sets focused (5–25). Ensure outputs include file paths and line numbers. Hide raw database IDs.
-7. For completion: in <thinking>, verify that tool outcomes have been acknowledged, then use attempt_completion to present the ordered roadmap.
+7. For completion: in <thinking>, verify that sufficient tool outcomes have been gathered, then use attempt_completion to present the ordered roadmap.
 
 # Roadmap Construction Heuristics
 
@@ -29,5 +29,3 @@ GUIDELINES = """
 5. Patterns & Effort: Compute limited search scopes from imports/importers before symbol search; use file complexity to estimate relative effort.
 6. Output: Produce an ordered, actionable plan with file paths, line ranges, dependencies, affected files, and external impacts.
 """
-
-
