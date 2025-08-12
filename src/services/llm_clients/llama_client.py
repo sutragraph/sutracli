@@ -3,7 +3,7 @@ import sys
 import requests
 from loguru import logger
 from typing import List, Dict, Any, Union
-from .llm_client_base import LLMClientBase
+from .llm_client_base import LLMClientBase, TokenUsage, LLMResponse
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from config import config
@@ -60,6 +60,23 @@ class LlamaClient(LLMClientBase):
         Returns:
             Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
         """
+        # Use the new method with usage tracking and just return the content
+        response = self.call_llm_with_usage(system_prompt, user_message, return_raw)
+        return response.content
+
+    def call_llm_with_usage(
+        self, system_prompt: str, user_message: str, return_raw: bool = False
+    ) -> LLMResponse:
+        """Call Llama with separate system prompt and user message, returning content and token usage.
+
+        Args:
+            system_prompt (str): System prompt
+            user_message (str): User message
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
+
+        Returns:
+            LLMResponse: Response containing both content and token usage information
+        """
         access_token = self._get_access_token()
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -78,11 +95,33 @@ class LlamaClient(LLMClientBase):
             data = response.json()
             raw_response = data["choices"][0]["message"]["content"]
 
-            # Return raw response or parse XML based on return_raw parameter
+            # Extract token usage if available
+            token_usage = None
+            if "usage" in data:
+                usage = data["usage"]
+                input_tokens = usage.get("prompt_tokens", 0)
+                output_tokens = usage.get("completion_tokens", 0)
+                total_tokens = usage.get("total_tokens", input_tokens + output_tokens)
+
+                token_usage = TokenUsage(
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens
+                )
+                logger.info(
+                    f"Token usage - Input: {input_tokens}, "
+                    f"Output: {output_tokens}, "
+                    f"Total: {total_tokens}"
+                )
+
+            # Return content based on return_raw parameter
             if return_raw:
-                return raw_response
+                content = raw_response
             else:
-                return self.parse_xml_response(raw_response)
+                content = self.parse_xml_response(raw_response)
+
+            return LLMResponse(content=content, token_usage=token_usage)
+
         except Exception as e:
             logger.error(f"Llama LLM call with system prompt failed: {e}")
             raise

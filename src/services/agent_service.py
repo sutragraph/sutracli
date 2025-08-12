@@ -1,7 +1,7 @@
 """Agent Service with unified tool status handling."""
 
 import time
-from typing import Dict, Any, List, Optional, Iterator
+from typing import Dict, Any, List, Optional, Iterator, Union
 from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection
@@ -75,6 +75,12 @@ class AgentService:
 
         # Performance monitoring
         self.performance_monitor = get_performance_monitor()
+
+        # Token usage tracking
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.total_tokens_used = 0
+        self.llm_call_count = 0
 
         # Check if project exists in database and auto-index if needed
         self.project_manager.ensure_project_indexed(
@@ -257,12 +263,12 @@ class AgentService:
             current_iteration += 1
 
             # Show progress for each iteration
-            print(f"🔄 Iteration {current_iteration}/{max_iterations}")
+            print(f"Iteration {current_iteration}/{max_iterations}")
 
             # User confirmation every 15 iterations
             if current_iteration % 15 == 0:
                 print(
-                    f"\n⚠️  This process has been running for {current_iteration} iterations."
+                    f"\nWarning: This process has been running for {current_iteration} iterations."
                 )
                 user_input = (
                     input("Do you want to continue? (yes/no): ").lower().strip()
@@ -278,9 +284,28 @@ class AgentService:
                 # Get XML response from LLM
                 xml_response = self._get_xml_response(user_query, current_iteration)
 
+                # Handle error responses from LLM
+                if isinstance(xml_response, dict) and xml_response.get("type") == "error":
+                    yield xml_response
+                    break
+
+                # Ensure xml_response is a list for processing
+                if isinstance(xml_response, str):
+                    # If it's a string, we need to parse it as XML first
+                    # This shouldn't normally happen but handle it gracefully
+                    yield {
+                        "type": "error",
+                        "error": "Received string response instead of parsed XML",
+                        "iteration": current_iteration,
+                    }
+                    break
+
                 # Process XML response using XML action executor
                 task_complete = False
                 tool_failed = False
+                # Ensure xml_response is a list for processing
+                if not isinstance(xml_response, list):
+                    xml_response = []
                 for event in self.action_executor.process_xml_response(
                     xml_response, user_query
                 ):
@@ -321,7 +346,7 @@ class AgentService:
                         # Show validation results
                         if not validation_result["valid"]:
                             print(
-                                f"⚠️  Tool validation failed: {validation_result['issues']}"
+                                f"Warning: Tool validation failed: {validation_result['issues']}"
                             )
                             if validation_result["suggestions"]:
                                 print(
@@ -331,7 +356,7 @@ class AgentService:
                         # Show verification results
                         if not verification_result["verified"]:
                             print(
-                                f"❌ Result verification failed: {verification_result['issues']}"
+                                f"Error: Result verification failed: {verification_result['issues']}"
                             )
                             if verification_result["recommendations"]:
                                 print(
@@ -359,7 +384,7 @@ class AgentService:
                                 "error", event.get("message", "Unknown error")
                             )
                             logger.error(f"Tool {tool_name} failed: {error_msg}")
-                            print(f"❌ Tool {tool_name} failed: {error_msg}")
+                            print(f"Error: Tool {tool_name} failed: {error_msg}")
 
                             # Stop on critical tool failures
                             if self._is_critical_tool_failure(event):
@@ -377,7 +402,7 @@ class AgentService:
 
                             # Check for simple completion
                             if self._detect_simple_completion(event, user_query):
-                                print(f"🎯 Simple task completed with {tool_name}")
+                                print(f"Target: Simple task completed with {tool_name}")
                                 task_complete = True
 
                         # Check if execution should continue based on validation
@@ -422,7 +447,7 @@ class AgentService:
                     )
                     if completion_analysis["likely_complete"]:
                         print(
-                            f"🎯 Task likely complete: {completion_analysis['reason']}"
+                            f"Target: Task likely complete: {completion_analysis['reason']}"
                         )
                         task_complete = True
 
@@ -441,18 +466,20 @@ class AgentService:
                 # Break if task was completed
                 if task_complete:
                     logger.debug(
-                        f"🎯 Task completed in iteration {current_iteration}, stopping loop"
+                        f"Target: Task completed in iteration {current_iteration}, stopping loop"
                     )
                     print(
-                        f"✅ Task completed successfully in {current_iteration} iterations"
+                        f"Success: Task completed successfully in {current_iteration} iterations"
                     )
                     # Log performance summary
                     self.performance_monitor.log_performance_summary()
+                    # Log token usage summary
+                    self.log_token_usage_summary()
                     break
 
             except Exception as e:
                 logger.error(
-                    f"❌ Error in solving loop iteration {current_iteration}: {e}"
+                    f"Error: Error in solving loop iteration {current_iteration}: {e}"
                 )
                 yield {
                     "type": "error",
@@ -460,6 +487,8 @@ class AgentService:
                     "iteration": current_iteration,
                     "session_id": self.session_manager.session_id,
                 }
+                # Log token usage summary even when there's an error
+                self.log_token_usage_summary()
                 break
 
         if current_iteration >= max_iterations:
@@ -467,15 +496,17 @@ class AgentService:
                 "type": "warning",
                 "message": f"Maximum iterations ({max_iterations}) reached. Terminating session.",
             }
+            # Log token usage summary when max iterations reached
+            self.log_token_usage_summary()
 
     @performance_timer("get_xml_response")
     def _get_xml_response(
         self, user_query: str, current_iteration: int
-    ) -> Dict[str, Any]:
+    ) -> Union[List[Dict[str, Any]], str, Dict[str, Any]]:
         """Get XML response from LLM using the new prompt system with retry on XML parsing failures."""
         if not get_user_confirmation_for_llm_call():
             logger.info("User cancelled Agent LLM call in debug mode")
-            return "User cancelled the operation in debug mode"
+            return {"type": "error", "message": "User cancelled the operation in debug mode"}
 
         max_retries = 5
         retry_count = 0
@@ -530,20 +561,37 @@ class AgentService:
                 user_message = "\n".join(user_message_parts)
 
                 logger.debug(
-                    f"🔍 Iteration {current_iteration}: Sending prompt to LLM (attempt {retry_count + 1})"
+                    f"Debug: Iteration {current_iteration}: Sending prompt to LLM (attempt {retry_count + 1})"
                 )
 
                 logger.debug(
-                    f"🔍 Iteration {current_iteration}: System prompt length: {len(system_prompt)}"
+                    f"Debug: Iteration {current_iteration}: System prompt length: {len(system_prompt)}"
                 )
                 logger.debug(
-                    f"🔍 Iteration {current_iteration}: User message length: {len(user_message)}"
+                    f"Debug: Iteration {current_iteration}: User message length: {len(user_message)}"
                 )
 
-                response = self.llm_client.call_llm(system_prompt, user_message)
+                # Use call_llm_with_usage to get token information
+                llm_response = self.llm_client.call_llm_with_usage(system_prompt, user_message)
+                response = llm_response.content
+
+                # Track token usage
+                self.llm_call_count += 1
+                if llm_response.token_usage:
+                    self.total_input_tokens += llm_response.token_usage.input_tokens
+                    self.total_output_tokens += llm_response.token_usage.output_tokens
+                    self.total_tokens_used += llm_response.token_usage.total_tokens
+
+                    call_msg = f"Token LLM Call #{self.llm_call_count} - Input: {llm_response.token_usage.input_tokens}, Output: {llm_response.token_usage.output_tokens}, Total: {llm_response.token_usage.total_tokens}"
+                    session_msg = f"Stats Session Total - Input: {self.total_input_tokens}, Output: {self.total_output_tokens}, Total: {self.total_tokens_used} (across {self.llm_call_count} calls)"
+                    logger.info(call_msg)
+                    logger.info(session_msg)
+                else:
+                    logger.warning(f"Token LLM Call #{self.llm_call_count} - No token usage information available")
+
                 logger.debug(f"RESPONSE: {response}")
                 logger.debug(
-                    f"🔍 Iteration {current_iteration}: Got XML response from LLM"
+                    f"Debug: Iteration {current_iteration}: Got XML response from LLM"
                 )
                 return response
 
@@ -593,6 +641,9 @@ class AgentService:
                 else:
                     logger.warning("Attempting to continue despite error")
                     raise
+
+        # Fallback return for all code paths
+        return {"type": "error", "message": "Failed to get valid response after all retries"}
 
     def _build_tool_status(self, last_tool_result: Optional[Dict[str, Any]]) -> str:
         """
@@ -938,11 +989,41 @@ class AgentService:
             logger.error(f"Failed to load session {session_id}: {e}")
             return None
 
+    def get_token_usage_summary(self) -> Dict[str, Any]:
+        """Get summary of token usage for the current session.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing token usage statistics
+        """
+        return {
+            "llm_call_count": self.llm_call_count,
+            "total_input_tokens": self.total_input_tokens,
+            "total_output_tokens": self.total_output_tokens,
+            "total_tokens_used": self.total_tokens_used,
+            "average_tokens_per_call": (
+                self.total_tokens_used / self.llm_call_count
+                if self.llm_call_count > 0 else 0
+            ),
+            "input_output_ratio": (
+                self.total_input_tokens / self.total_output_tokens
+                if self.total_output_tokens > 0 else 0
+            )
+        }
+
+    def log_token_usage_summary(self) -> None:
+        """Log a summary of token usage for the current session."""
+        summary = self.get_token_usage_summary()
+        logger.info(
+            f"Stats Token Usage Summary - "
+            f"Calls: {summary['llm_call_count']}, "
+            f"Total: {summary['total_tokens_used']} tokens "
+            f"({summary['total_input_tokens']} input + {summary['total_output_tokens']} output), "
+            f"Avg per call: {summary['average_tokens_per_call']:.1f}"
+        )
+
     def __enter__(self):
-        """Context manager entry."""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
-        if hasattr(self, "db_connection"):
-            self.db_connection.__exit__(exc_type, exc_val, exc_tb)
+        pass
