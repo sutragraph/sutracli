@@ -121,29 +121,6 @@ class SutraMemoryManager:
         """Add history entry (mandatory in every response)"""
         return self.memory_ops.add_history(summary)
 
-    def add_tool_history(
-        self,
-        tool_name: str,
-        tool_result: dict,
-        validation_result: dict,
-        user_query: str,
-    ) -> bool:
-        """Add enhanced history entry with tool execution details"""
-        from datetime import datetime
-
-        # Create enhanced history entry
-        history_entry = HistoryEntry(
-            timestamp=datetime.now(),
-            summary=f"Tool: {tool_name} - {validation_result.get('valid', True)}",
-            tool_name=tool_name,
-            tool_result=tool_result,
-            validation_result=validation_result,
-            user_query=user_query,
-        )
-
-        # Add to memory operations (extend the existing add_history method)
-        return self.memory_ops.add_history_entry(history_entry)
-
     def get_recent_history(self, count: int = 5) -> List[HistoryEntry]:
         """Get recent history entries"""
         return self.memory_ops.get_recent_history(count)
@@ -226,9 +203,6 @@ class SutraMemoryManager:
         # Store validation result in reasoning context
         if self.reasoning_context:
             self.reasoning_context.validation_results.append(validation_result)
-
-        # Add to tool history
-        self.add_tool_history(tool_name, tool_result, validation_result, user_query)
 
         return validation_result
 
