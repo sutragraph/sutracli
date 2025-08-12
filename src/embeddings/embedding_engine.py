@@ -174,13 +174,12 @@ class EmbeddingEngine:
 
             batch_embedding_data.append(
                 {
-                    "block_id": f"block_{block.id}",
+                    "node_id": f"block_{block.id}",
                     "project_id": project_id,
                     "embedding": embedding,
                     "chunk_index": chunk_index,
                     "chunk_start_line": chunk_start_line,
                     "chunk_end_line": chunk_end_line,
-                    "block_id": block.id,
                 }
             )
 

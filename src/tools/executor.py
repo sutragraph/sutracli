@@ -199,10 +199,12 @@ class ActionExecutor:
                         yield event
 
                 # Always try to register delivery queue - let delivery system decide if it should handle it
-
-                register_delivery_queue_and_get_first_batch(
+                delivery_result = register_delivery_queue_and_get_first_batch(
                     tool_name, action.parameters, delivery_items, tool_enum
                 )
+                if delivery_result:
+                    yield delivery_result
+
                 logger.debug(
                     f"📦 Attempted to register delivery queue for {tool_name} with {len(delivery_items)} items"
                 )
