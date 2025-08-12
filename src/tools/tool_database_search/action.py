@@ -25,11 +25,6 @@ from tools.utils.constants import (
     SEARCH_CONFIG,
 )
 
-
-
-
-
-
 def execute_structured_database_query(
     action: AgentAction, context: str = "agent"
 ) -> Iterator[Dict[str, Any]]:
@@ -688,10 +683,6 @@ def should_chunk_content(code_content: str, chunking_threshold: int) -> bool:
     """
     code_lines = code_content.split("\n")
     return len(code_lines) > chunking_threshold
-
-
-
-
 
 def process_metadata_only_results(results: List[Any], total_nodes: int) -> List[str]:
     """
