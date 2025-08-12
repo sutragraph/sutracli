@@ -42,33 +42,33 @@ def beautify_enriched_block_context(
 
     # Header
     result_parts = []
-    result_parts.append(f"🎯 Result {index}/{total_nodes}")
+    result_parts.append(f"Result {index}/{total_nodes}")
     result_parts.append("=" * 60)
 
     # Block information
     block_type = block.get('type', 'unknown').title()
     block_name = block.get('name', 'unnamed')
-    result_parts.append(f"📦 **{block_type}**: `{block_name}`")
+    result_parts.append(f"{block_type}: `{block_name}`")
 
     # File context
     file_path = file_context.get('file_path', 'unknown')
     language = file_context.get('language', 'unknown')
     project_name = file_context.get('project_name', 'unknown')
-    result_parts.append(f"📁 **File**: {file_path}")
-    result_parts.append(f"🏷️  **Language**: {language} | **Project**: {project_name}")
+    result_parts.append(f"File: {file_path}")
+    result_parts.append(f"Language: {language} | Project: {project_name}")
 
     # Line information
     start_line = block.get('start_line')
     end_line = block.get('end_line')
     if start_line and end_line:
         line_count = end_line - start_line + 1
-        result_parts.append(f"📏 **Lines**: {start_line}-{end_line} ({line_count} lines)")
+        result_parts.append(f"Lines: {start_line}-{end_line} ({line_count} lines)")
 
     # Hierarchy information
     if parent_block:
         parent_name = parent_block.get('name', 'unnamed')
         parent_type = parent_block.get('type', 'unknown')
-        result_parts.append(f"⬆️  **Parent**: {parent_type} `{parent_name}`")
+        result_parts.append(f"Parent: {parent_type} `{parent_name}`")
 
     if child_blocks:
         child_count = len(child_blocks)
@@ -76,7 +76,7 @@ def beautify_enriched_block_context(
         child_summary = ", ".join(child_names)
         if child_count > 3:
             child_summary += f" ... (+{child_count - 3} more)"
-        result_parts.append(f"⬇️  **Children** ({child_count}): {child_summary}")
+        result_parts.append(f"Children ({child_count}): {child_summary}")
 
     # Connection details
     connections = enriched_context.get('connections', {})
@@ -85,11 +85,13 @@ def beautify_enriched_block_context(
         outgoing_conns = connections.get('outgoing', [])
 
         if incoming_conns or outgoing_conns:
-            result_parts.append(f"🔗 **Connections**: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing")
+            result_parts.append(
+                f"🔗 Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
+            )
 
             # Show detailed incoming connections grouped by technology
             if incoming_conns:
-                result_parts.append("📥 **Incoming connections**:")
+                result_parts.append("Incoming connections:")
                 grouped_incoming = _group_connections_by_technology(incoming_conns, "incoming")
                 tech_count = 0
                 for technology, tech_connections in grouped_incoming.items():
@@ -104,7 +106,7 @@ def beautify_enriched_block_context(
 
             # Show detailed outgoing connections grouped by technology
             if outgoing_conns:
-                result_parts.append("📤 **Outgoing connections**:")
+                result_parts.append("Outgoing connections:")
                 grouped_outgoing = _group_connections_by_technology(outgoing_conns, "outgoing")
                 tech_count = 0
                 for technology, tech_connections in grouped_outgoing.items():
@@ -120,7 +122,7 @@ def beautify_enriched_block_context(
     # Code content
     if include_code and block.get('content'):
         result_parts.append("")
-        result_parts.append("💻 **Code**:")
+        result_parts.append("Code:")
         result_parts.append("-" * 40)
 
         content = block['content']
@@ -160,7 +162,7 @@ def beautify_enriched_file_context(
         Formatted string representation
     """
     if not enriched_context:
-        return f"❌ Node {index}/{total_nodes}: No context available"
+        return f"Node {index}/{total_nodes}: No context available"
 
     file_data = enriched_context.get('file', {})
     blocks_summary = enriched_context.get('blocks_summary', {})
@@ -171,15 +173,15 @@ def beautify_enriched_file_context(
 
     # Header
     result_parts = []
-    result_parts.append(f"📄 File Result {index}/{total_nodes}")
+    result_parts.append(f"File Result {index}/{total_nodes}")
     result_parts.append("=" * 60)
 
     # File information
     file_path = file_data.get('file_path', 'unknown')
     language = file_data.get('language', 'unknown')
     project_name = file_data.get('project_name', 'unknown')
-    result_parts.append(f"📁 **File**: {file_path}")
-    result_parts.append(f"🏷️  **Language**: {language} | **Project**: {project_name}")
+    result_parts.append(f"File: {file_path}")
+    result_parts.append(f"Language: {language} | Project: {project_name}")
 
     # Block summary
     if blocks_summary:
@@ -190,7 +192,7 @@ def beautify_enriched_file_context(
                                      for bt in block_types[:3]])
             if len(block_types) > 3:
                 types_summary += f" ... (+{len(block_types) - 3} more types)"
-            result_parts.append(f"📦 **Blocks** ({block_count}): {types_summary}")
+            result_parts.append(f"Blocks ({block_count}): {types_summary}")
 
     # Dependency information
     if dependency_context:
@@ -199,12 +201,12 @@ def beautify_enriched_file_context(
         importers_count = dependency_context.get('importers_count', 0)
 
         if imports_count > 0:
-            dep_parts.append(f"📥 imports {imports_count}")
+            dep_parts.append(f"imports {imports_count}")
         if importers_count > 0:
-            dep_parts.append(f"📤 imported by {importers_count}")
+            dep_parts.append(f"imported by {importers_count}")
 
         if dep_parts:
-            result_parts.append(f"🔗 **Dependencies**: {' | '.join(dep_parts)}")
+            result_parts.append(f"🔗 Dependencies: {' | '.join(dep_parts)}")
 
     # Connection details
     connections = enriched_context.get('connections', {})
@@ -213,11 +215,13 @@ def beautify_enriched_file_context(
         outgoing_conns = connections.get('outgoing', [])
 
         if incoming_conns or outgoing_conns:
-            result_parts.append(f"🔗 **Connections**: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing")
+            result_parts.append(
+                f"🔗 Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
+            )
 
             # Show detailed incoming connections grouped by technology
             if incoming_conns:
-                result_parts.append("📥 **Incoming connections**:")
+                result_parts.append("📥 Incoming connections:")
                 grouped_incoming = _group_connections_by_technology(incoming_conns, "incoming")
                 tech_count = 0
                 for technology, tech_connections in grouped_incoming.items():
@@ -232,7 +236,7 @@ def beautify_enriched_file_context(
 
             # Show detailed outgoing connections grouped by technology
             if outgoing_conns:
-                result_parts.append("📤 **Outgoing connections**:")
+                result_parts.append("📤 Outgoing connections:")
                 grouped_outgoing = _group_connections_by_technology(outgoing_conns, "outgoing")
                 tech_count = 0
                 for technology, tech_connections in grouped_outgoing.items():
@@ -251,13 +255,12 @@ def beautify_enriched_file_context(
         import_summary = ", ".join(f"`{name}`" for name in import_names)
         if len(imports) > 5:
             import_summary += f" ... (+{len(imports) - 5} more)"
-        result_parts.append(f"📥 **Top Imports**: {import_summary}")
+        result_parts.append(f"Top Imports: {import_summary}")
 
     # File content (if requested)
     if include_code and file_data.get('content'):
         result_parts.append("")
-        result_parts.append("💻 **File Content**:")
-        result_parts.append("-" * 40)
+        result_parts.append("File Content:")
 
         content = file_data['content']
         if max_code_lines and len(content.split('\n')) > max_code_lines:
@@ -292,7 +295,7 @@ def beautify_enriched_context_auto(
         Formatted string representation
     """
     if not enriched_context:
-        return f"❌ Node {index}/{total_nodes}: No context available"
+        return f"Node {index}/{total_nodes}: No context available"
 
     # Determine type based on presence of 'block' or 'file' key
     if 'block' in enriched_context:
@@ -304,7 +307,7 @@ def beautify_enriched_context_auto(
             enriched_context, index, total_nodes, include_code, max_code_lines
         )
     else:
-        return f"❌ Node {index}/{total_nodes}: Unknown context type"
+        return f"Node {index}/{total_nodes}: Unknown context type"
 
 
 def format_chunk_with_enriched_context(
@@ -330,7 +333,7 @@ def format_chunk_with_enriched_context(
         Formatted string with chunk information highlighted
     """
     if not enriched_context:
-        return f"❌ Chunk {index}/{total_nodes}: No context available"
+        return f"Chunk {index}/{total_nodes}: No context available"
 
     # Get base formatting
     base_format = beautify_enriched_context_auto(
@@ -340,16 +343,15 @@ def format_chunk_with_enriched_context(
     # Add chunk-specific information
     chunk_parts = [base_format]
     chunk_parts.append("")
-    chunk_parts.append("🎯 **Chunk Details**:")
-    chunk_parts.append("-" * 40)
-
+    chunk_parts.append("Chunk Details:")
     line_count = chunk_end_line - chunk_start_line + 1
-    chunk_parts.append(f"📏 **Chunk Lines**: {chunk_start_line}-{chunk_end_line} ({line_count} lines)")
+    chunk_parts.append(
+        f"Chunk Lines: {chunk_start_line}-{chunk_end_line} ({line_count} lines)"
+    )
 
     # Add chunk code with line numbers
     chunk_parts.append("")
-    chunk_parts.append("💻 **Chunk Code**:")
-    chunk_parts.append("-" * 40)
+    chunk_parts.append("Chunk Code:")
     numbered_chunk = add_line_numbers_to_code(chunk_code, chunk_start_line)
     chunk_parts.append(numbered_chunk)
 
@@ -434,12 +436,12 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
     # Format file list
     unique_files = list(set(files_info))
     if len(unique_files) == 1:
-        parts.append(f"**{unique_files[0]}**")
+        parts.append(f"{unique_files[0]}")
     elif len(unique_files) <= 3:
-        file_list = ", ".join(f"**{f}**" for f in unique_files)
+        file_list = ", ".join(f"{f}" for f in unique_files)
         parts.append(file_list)
     else:
-        first_three = ", ".join(f"**{f}**" for f in unique_files[:3])
+        first_three = ", ".join(f"{f}" for f in unique_files[:3])
         parts.append(f"{first_three} (+{len(unique_files)-3} more)")
 
     # Add project info if unified
@@ -464,62 +466,3 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
             parts.append(f"({min_conf:.1%}-{max_conf:.1%} confidence)")
 
     return " ".join(parts)
-
-def _format_connection_detail(connection: Dict[str, Any], direction: str) -> str:
-    """
-    Format a single connection with detailed information.
-    (Kept for backward compatibility)
-    """
-    if not connection:
-        return ""
-
-    # Get connection details
-    technology = connection.get('technology_name', 'unknown')
-    description = connection.get('description', 'No description')
-    connection_type = connection.get('connection_type', '')
-    confidence = connection.get('match_confidence', 0)
-
-    # Get connected file and project info based on direction
-    if direction == "incoming":
-        file_path = connection.get('source_file_path', connection.get('connected_file_path', 'unknown'))
-        project_name = connection.get('source_project_name', connection.get('connected_project_name', 'unknown'))
-        project_id = connection.get('source_project_id', connection.get('connected_project_id', ''))
-    else:
-        file_path = connection.get('target_file_path', connection.get('connected_file_path', 'unknown'))
-        project_name = connection.get('target_project_name', connection.get('connected_project_name', 'unknown'))
-        project_id = connection.get('target_project_id', connection.get('connected_project_id', ''))
-
-    # Format the connection info
-    parts = []
-
-    # Add technology if available
-    if technology and technology != 'unknown':
-        parts.append(f"`{technology}`")
-
-    # Add file path (shortened)
-    if file_path and file_path != 'unknown':
-        if len(file_path) > 40:
-            filename = file_path.split('/')[-1]
-            parts.append(f"**{filename}**")
-        else:
-            parts.append(f"**{file_path}**")
-
-    # Add project info
-    if project_name and project_name != 'unknown':
-        parts.append(f"(project: {project_name})")
-
-    # Add connection type if available
-    if connection_type:
-        parts.append(f"[{connection_type}]")
-
-    # Add confidence if meaningful
-    if confidence and confidence > 0:
-        parts.append(f"({confidence:.1%} confidence)")
-
-    result = " ".join(parts) if parts else description[:50]
-
-    # Fallback to description if no other info
-    if not result or result.strip() == "":
-        result = description[:60] + ("..." if len(description) > 60 else "")
-
-    return result
