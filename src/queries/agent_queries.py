@@ -77,7 +77,6 @@ SELECT
 FROM code_blocks cb
 WHERE cb.file_id = ?
 ORDER BY cb.start_line
-LIMIT 20
 """
 
 GET_CHILD_BLOCKS = """
@@ -86,7 +85,6 @@ SELECT
 FROM code_blocks cb
 WHERE cb.parent_block_id = ?
 ORDER BY cb.start_line
-LIMIT 15
 """
 
 GET_PARENT_BLOCK = """

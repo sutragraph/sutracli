@@ -9,8 +9,6 @@ from tools.utils import (
 from queries.agent_queries import (
     GET_FILE_BY_ID,
     GET_FILE_BLOCK_SUMMARY,
-    GET_CHILD_BLOCKS,
-    GET_PARENT_BLOCK,
     GET_FILE_IMPORTS,
     GET_DEPENDENCY_CHAIN,
 )
@@ -92,8 +90,7 @@ def execute_structured_database_query(
         sql_mapping = {
             "GET_FILE_BY_PATH": GET_FILE_BY_ID,
             "GET_FILE_BLOCK_SUMMARY": GET_FILE_BLOCK_SUMMARY,
-            "GET_CHILD_BLOCKS": GET_CHILD_BLOCKS,
-            "GET_PARENT_BLOCK": GET_PARENT_BLOCK,
+            "GET_BLOCK_DETAILS": "",
             "GET_FILE_IMPORTS": GET_FILE_IMPORTS,
             "GET_DEPENDENCY_CHAIN": GET_DEPENDENCY_CHAIN,
         }
@@ -323,40 +320,16 @@ def execute_structured_database_query(
                         results = []
                 else:
                     results = []
-            elif base_query_name == "GET_CHILD_BLOCKS":
-                parent_block_id = final_params.get("parent_block_id")
-                results = (
-                    graph_ops.connection.execute_query(sql_query, (parent_block_id,))
-                    if parent_block_id
-                    else []
-                )
-            elif base_query_name == "GET_PARENT_BLOCK":
+            elif base_query_name == "GET_BLOCK_DETAILS":
                 block_id = final_params.get("block_id")
-                results = (
-                    graph_ops.connection.execute_query(sql_query, (block_id,))
-                    if block_id
-                    else []
-                )
+                block_details = graph_ops.get_block_details(block_id)
+                if block_details:
+                    results = [block_details]
+                else:
+                    results = []
             else:
                 results = []
         logger.debug(f"📊 Query returned {len(results)} results")
-
-        # Get project_id for connection lookup from the first result if available
-        current_project_id = None
-        if results and len(results) > 0:
-            # Try to get project_id from the first result
-            first_result = results[0]
-            if isinstance(first_result, dict) and "project_id" in first_result:
-                current_project_id = first_result["project_id"]
-                logger.debug(
-                    f"🔗 Using project_id {current_project_id} for connection lookup"
-                )
-            else:
-                logger.debug(
-                    "🔗 No project_id found in database results for connection lookup"
-                )
-        else:
-            logger.debug("🔗 No results available for project_id extraction")
 
         if not results:
             # For GET_FILE_BY_PATH, try ripgrep fallback to find similar file names
@@ -443,7 +416,7 @@ def execute_structured_database_query(
                 result_dict = dict(row) if hasattr(row, "keys") else row
                 result_dict = clean_result_dict(result_dict)
 
-                # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'
+                # For GET_FILE_BY_PATH and GET_BLOCK_DETAILS, the content is in 'content' field, for other queries it's in 'code_snippet'
                 code_content = result_dict.get(
                     "content", result_dict.get("code_snippet", "")
                 )
@@ -458,6 +431,13 @@ def execute_structured_database_query(
                         and "code_snippet" not in result_dict
                     ):
                         result_dict["code_snippet"] = code_content
+                    
+                    # For GET_BLOCK_DETAILS, ensure line information is available
+                    if base_query_name == "GET_BLOCK_DETAILS":
+                        start_line = result_dict.get("start_line")
+                        end_line = result_dict.get("end_line")
+                        if start_line is not None and end_line is not None:
+                            result_dict["lines"] = [start_line, end_line]
 
             if code_content:
                 # Parse line information
@@ -646,7 +626,7 @@ def execute_structured_database_query(
                 result_dict = dict(row) if hasattr(row, "keys") else row
                 result_dict = clean_result_dict(result_dict)
 
-                # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'
+                # For GET_FILE_BY_PATH and GET_BLOCK_DETAILS, the content is in 'content' field, for other queries it's in 'code_snippet'
                 code_content = result_dict.get(
                     "content", result_dict.get("code_snippet", "")
                 )
@@ -658,6 +638,13 @@ def execute_structured_database_query(
                     and "code_snippet" not in result_dict
                 ):
                     result_dict["code_snippet"] = code_content
+                
+                # For GET_BLOCK_DETAILS, ensure line information is available
+                if base_query_name == "GET_BLOCK_DETAILS":
+                    start_line = result_dict.get("start_line")
+                    end_line = result_dict.get("end_line")
+                    if start_line is not None and end_line is not None:
+                        result_dict["lines"] = [start_line, end_line]
 
                 if code_content:
                     # Parse line information
@@ -749,9 +736,6 @@ def execute_structured_database_query(
                             }
                         )
                 else:
-                    # No code content available - use proper enum scenario
-                    # No code content available for this node
-
                     beautified_result = beautify_node_result(
                         result_dict, i, include_code=True, total_nodes=total_nodes
                     )

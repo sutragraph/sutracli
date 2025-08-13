@@ -1012,8 +1012,9 @@ class GraphOperations:
             if not block:
                 return None
 
-            # Get parent block if exists
+            # Get parent block details and all its children if parent exists
             parent = None
+            parent_children = []
             if block["parent_block_id"]:
                 parent_results = self.connection.execute_query(
                     GET_PARENT_BLOCK, (block_id,)
@@ -1026,11 +1027,14 @@ class GraphOperations:
                         "name": parent_result["name"],
                         "start_line": parent_result["start_line"],
                         "end_line": parent_result["end_line"],
-                        "file_path": parent_result["file_path"],
+                        "file_path": parent_result.get("file_path", block["file_path"]),
                     }
 
-            # Get connections overlapping this block's range
-            connections = self.get_connections_overlapping_range(
+                    # Get all children of the parent block
+                    parent_children = self.get_block_children(parent["id"])
+
+            # Get connections overlapping this block's range with code snippets
+            connections = self._get_connections_for_file_and_lines(
                 block["file_id"], block["start_line"], block["end_line"]
             )
 
@@ -1044,8 +1048,12 @@ class GraphOperations:
                 "end_line": block["end_line"],
                 "start_col": block["start_col"],
                 "end_col": block["end_col"],
+                "content": block["content"],
                 "parent": parent,
+                "parent_children": parent_children,
                 "connections_in_range": connections,
+                "incoming_connections": connections.get("incoming", []),
+                "outgoing_connections": connections.get("outgoing", []),
             }
         except Exception as e:
             logger.error(f"Error getting block details for block {block_id}: {e}")

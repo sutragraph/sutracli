@@ -72,6 +72,13 @@ def beautify_node_result(
     block_id = node.get("id", node.get("block_id"))
     if block_id:
         result_parts.append(f"block_id: {block_id}")
+        # Add block type and name if available (for GET_BLOCK_DETAILS)
+        block_type = node.get("type")
+        block_name = node.get("name")
+        if block_type:
+            result_parts.append(f"block_type: {block_type}")
+        if block_name:
+            result_parts.append(f"block_name: {block_name}")
     else:
         result_parts.append(f'file_id: {node.get("file_id", "unknown")}')
 
@@ -92,6 +99,94 @@ def beautify_node_result(
         else:
             start_end_str = "unknown"
     result_parts.append(f"start_line:end_line: {start_end_str}")
+
+    # Add parent block details section if available (for GET_BLOCK_DETAILS)
+    parent = node.get("parent")
+    parent_children = node.get("parent_children", [])
+    if parent:
+        result_parts.append("parent_block_details:")
+        result_parts.append(f'  parent_id: {parent.get("id", "unknown")}')
+        result_parts.append(f'  parent_type: {parent.get("type", "unknown")}')
+        result_parts.append(f'  parent_name: {parent.get("name", "unknown")}')
+        result_parts.append(
+            f'  parent_lines: {parent.get("start_line", "?")}:{parent.get("end_line", "?")}'
+        )
+
+        # Add all children of the parent block
+        if parent_children:
+            result_parts.append(
+                f"  parent_children: {len(parent_children)} child blocks"
+            )
+            for i, child in enumerate(parent_children, 1):
+                child_id = child.get("id", "unknown")
+                child_type = child.get("type", "unknown")
+                child_name = child.get("name", "unknown")
+                child_lines = (
+                    f'{child.get("start_line", "?")}:{child.get("end_line", "?")}'
+                )
+                result_parts.append(
+                    f"    child_{i}: id={child_id}, type={child_type}, name={child_name}, lines={child_lines}"
+                )
+
+    # Add connection information if available (for GET_BLOCK_DETAILS)
+    incoming_connections = node.get("incoming_connections", [])
+    outgoing_connections = node.get("outgoing_connections", [])
+    total_connections = len(incoming_connections) + len(outgoing_connections)
+
+    if total_connections > 0:
+        result_parts.append(f"connections_found: {total_connections}")
+
+        # Display incoming connections
+        if incoming_connections:
+            result_parts.append(f"incoming_connections: {len(incoming_connections)}")
+            for i, conn in enumerate(incoming_connections, 1):
+                description = conn.get("description", "No description")
+                technology = conn.get("technology_name", "unknown")
+                source_file = conn.get("source_file_path", "unknown")
+                result_parts.append(f"  incoming_{i}: [{technology}] {description}")
+                result_parts.append(f"    from_file: {source_file}")
+
+                # Add code snippet if available
+                code_snippet = conn.get("code_snippet", "")
+                if code_snippet and code_snippet.strip():
+                    # Truncate long code snippets for readability
+                    lines = code_snippet.strip().split("\n")
+                    if len(lines) > 5:
+                        snippet_preview = (
+                            "\n".join(lines[:3])
+                            + "\n    ... ("
+                            + str(len(lines) - 3)
+                            + " more lines)"
+                        )
+                    else:
+                        snippet_preview = code_snippet.strip()
+                    result_parts.append(f"    code: {snippet_preview}")
+
+        # Display outgoing connections
+        if outgoing_connections:
+            result_parts.append(f"outgoing_connections: {len(outgoing_connections)}")
+            for i, conn in enumerate(outgoing_connections, 1):
+                description = conn.get("description", "No description")
+                technology = conn.get("technology_name", "unknown")
+                target_file = conn.get("target_file_path", "unknown")
+                result_parts.append(f"  outgoing_{i}: [{technology}] {description}")
+                result_parts.append(f"    to_file: {target_file}")
+
+                # Add code snippet if available
+                code_snippet = conn.get("code_snippet", "")
+                if code_snippet and code_snippet.strip():
+                    # Truncate long code snippets for readability
+                    lines = code_snippet.strip().split("\n")
+                    if len(lines) > 5:
+                        snippet_preview = (
+                            "\n".join(lines[:3])
+                            + "\n    ... ("
+                            + str(len(lines) - 3)
+                            + " more lines)"
+                        )
+                    else:
+                        snippet_preview = code_snippet.strip()
+                    result_parts.append(f"    code: {snippet_preview}")
 
     # Add code snippet if requested and available
     if include_code:
