@@ -59,7 +59,7 @@ def beautify_enriched_block_context(
         Formatted string representation
     """
     if not enriched_context:
-        return f"❌ Node {index}/{total_nodes}: No context available"
+        return f"Node {index}/{total_nodes}: No context available"
 
     block = enriched_context.get('block', {})
     file_context = enriched_context.get('file_context', {})
@@ -114,7 +114,7 @@ def beautify_enriched_block_context(
 
         if incoming_conns or outgoing_conns:
             result_parts.append(
-                f"🔗 Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
+                f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
             )
 
             # Show detailed incoming connections grouped by technology
@@ -203,16 +203,13 @@ def beautify_enriched_file_context(
 
     # Header
     result_parts = []
-    header = f"Result {index}/{total_nodes}" + _format_node_id_display(node_id)
+    result_parts.append("")
+    header = f"Chunk: {index}/{total_nodes}" + _format_node_id_display(node_id)
     result_parts.append(header)
-    result_parts.append("=" * 60)
 
     # File information
-    file_path = file_data.get('file_path', 'unknown')
-    language = file_data.get('language', 'unknown')
-    project_name = file_data.get('project_name', 'unknown')
+    file_path = file_data.get("file_path", "unknown")
     result_parts.append(f"File: {file_path}")
-    result_parts.append(f"Language: {language} | Project: {project_name}")
 
     # Block summary
     if blocks_summary:
@@ -237,7 +234,7 @@ def beautify_enriched_file_context(
             dep_parts.append(f"imported by {importers_count}")
 
         if dep_parts:
-            result_parts.append(f"🔗 Dependencies: {' | '.join(dep_parts)}")
+            result_parts.append(f"Dependencies: {' | '.join(dep_parts)}")
 
     # Connection details
     connections = enriched_context.get('connections', {})
@@ -247,12 +244,12 @@ def beautify_enriched_file_context(
 
         if incoming_conns or outgoing_conns:
             result_parts.append(
-                f"🔗 Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
+                f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
             )
 
             # Show detailed incoming connections grouped by technology
             if incoming_conns:
-                result_parts.append("📥 Incoming connections:")
+                result_parts.append("Incoming connections:")
                 grouped_incoming = _group_connections_by_technology(incoming_conns, "incoming")
                 tech_count = 0
                 for technology, tech_connections in grouped_incoming.items():
@@ -267,7 +264,7 @@ def beautify_enriched_file_context(
 
             # Show detailed outgoing connections grouped by technology
             if outgoing_conns:
-                result_parts.append("📤 Outgoing connections:")
+                result_parts.append("Outgoing connections:")
                 grouped_outgoing = _group_connections_by_technology(outgoing_conns, "outgoing")
                 tech_count = 0
                 for technology, tech_connections in grouped_outgoing.items():
@@ -378,16 +375,13 @@ def format_chunk_with_enriched_context(
 
     # Add chunk-specific information
     chunk_parts = [base_format]
-    chunk_parts.append("")
-    chunk_parts.append("Chunk Details:")
     line_count = chunk_end_line - chunk_start_line + 1
     chunk_parts.append(
         f"Chunk Lines: {chunk_start_line}-{chunk_end_line} ({line_count} lines)"
     )
 
     # Add chunk code with line numbers
-    chunk_parts.append("")
-    chunk_parts.append("Chunk Code:")
+    chunk_parts.append("Code:")
     numbered_chunk = add_line_numbers_to_code(chunk_code, chunk_start_line)
     chunk_parts.append(numbered_chunk)
 
