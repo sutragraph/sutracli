@@ -190,7 +190,7 @@ class EmbeddingEngine:
         for i, embedding_id in enumerate(embedding_ids):
             data = batch_embedding_data[i]
             logger.debug(
-                f"Stored embedding {embedding_id} for block {data['block_id']} chunk {data['chunk_index']} "
+                f"Stored embedding {embedding_id} for block {data['node_id']} chunk {data['chunk_index']} "
                 f"(lines {data['chunk_start_line']}-{data['chunk_end_line']})"
             )
 

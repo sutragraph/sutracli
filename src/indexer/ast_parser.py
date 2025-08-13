@@ -277,6 +277,11 @@ class ASTParser:
             # Parse and extract from files in current directory
             for file in files:
                 file_path = root_path / file
+                
+                # Skip ignored files
+                if should_ignore_file(file_path):
+                    continue
+                
                 result = self.parse_and_extract(file_path)
                 if result.get("ast") or result.get("error"):
                     file_path_str = str(file_path)

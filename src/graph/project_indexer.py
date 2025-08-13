@@ -19,6 +19,7 @@ from indexer.ast_parser import ASTParser
 from utils.file_utils import (
     get_extraction_file_path,
     get_last_extraction_file_path,
+    should_ignore_file,
 )
 
 from models.schema import (
@@ -352,6 +353,11 @@ class ProjectIndexer:
 
                 for file_path in files_to_parse:
                     try:
+                        # Skip ignored files
+                        if should_ignore_file(file_path):
+                            logger.debug(f"🚫 Skipping ignored file: {file_path}")
+                            continue
+                            
                         # file_path is already a Path object from compute_directory_hashes
                         # Parse and extract from this single file
                         result = parser.parse_and_extract(file_path)

@@ -325,6 +325,7 @@ class Extractor:
         from indexer.extractors.python_extractor import PythonExtractor
 
         self.register_extractor("typescript", TypeScriptExtractor)
+        self.register_extractor("javascript", TypeScriptExtractor)
         self.register_extractor("python", PythonExtractor)
 
     def register_extractor(

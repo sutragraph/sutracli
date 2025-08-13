@@ -12,7 +12,7 @@ from datetime import datetime
 
 from .ast_parser import ASTParser
 from utils.json_serializer import make_json_serializable
-from utils.file_utils import get_extraction_file_path, get_last_extraction_file_path
+from utils.file_utils import get_extraction_file_path, get_last_extraction_file_path, should_ignore_file
 from .export_ast_to_json import main as export_ast_to_json
 
 
@@ -285,6 +285,11 @@ def incremental_parse(
         parser = ASTParser()
 
         for file_path in files_to_parse:
+            # Skip ignored files
+            if should_ignore_file(file_path):
+                print(f"Skipping ignored file: {file_path}")
+                continue
+                
             result = parser.parse_and_extract(file_path)
             if result.get("ast") or result.get("error"):
                 file_path_str = str(Path(file_path))

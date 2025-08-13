@@ -52,6 +52,7 @@ class RelationshipExtractor:
 
         self.register_extractor("python", PythonRelationshipExtractor)
         self.register_extractor("typescript", TypeScriptRelationshipExtractor)
+        self.register_extractor("javascript", TypeScriptRelationshipExtractor)
 
     def register_extractor(
         self, language: SupportedLanguage, extractor_class: type

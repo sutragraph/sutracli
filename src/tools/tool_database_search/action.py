@@ -267,11 +267,13 @@ def execute_structured_database_query(
                 file_path = final_params.get("file_path")
                 if file_path:
                     file_id = graph_ops._get_file_id_by_path(file_path)
-                    results = (
+                    summary = (
                         graph_ops.get_file_block_summary(file_id)
                         if file_id
                         else []
                     )
+
+                    results = [summary]
             elif base_query_name == "GET_FILE_IMPORTS":
                 # Special handling for GET_FILE_IMPORTS - consolidate all imports into one result
                 file_path = final_params.get("file_path")
