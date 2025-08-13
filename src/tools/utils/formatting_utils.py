@@ -188,6 +188,22 @@ def beautify_node_result(
                         snippet_preview = code_snippet.strip()
                     result_parts.append(f"    code: {snippet_preview}")
 
+    # Add hierarchy path if available (for GET_FILE_BLOCK_SUMMARY results)
+    hierarchy_path = node.get("hierarchy_path")
+    if hierarchy_path and isinstance(hierarchy_path, list) and len(hierarchy_path) > 0:
+        path_parts = []
+        for path_node in hierarchy_path:
+            id = path_node.get("id", "unknown")
+            name = path_node.get("name", "unknown")
+            node_type = path_node.get("type", "unknown")
+            start_line = path_node.get("start_line", "unknown")
+            end_line = path_node.get("end_line", "unknown")
+            path_parts.append(
+                f"id={id}, name={name}, type={node_type}, lines={start_line}:{end_line}"
+            )
+        hierarchy_str = " → ".join(path_parts)
+        result_parts.append(f"hierarchy_path: {hierarchy_str}")
+
     # Add code snippet if requested and available
     if include_code:
         # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'

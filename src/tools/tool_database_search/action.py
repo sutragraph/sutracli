@@ -268,7 +268,7 @@ def execute_structured_database_query(
                 if file_path:
                     file_id = graph_ops._get_file_id_by_path(file_path)
                     results = (
-                        graph_ops.connection.execute_query(sql_query, (file_id,))
+                        graph_ops.get_file_block_summary(file_id)
                         if file_id
                         else []
                     )

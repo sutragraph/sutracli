@@ -971,17 +971,21 @@ class GraphOperations:
         """Overview of classes/functions in a file (no content)."""
         try:
             results = self.connection.execute_query(GET_FILE_BLOCK_SUMMARY, (file_id,))
-            return [
-                {
+            summary_results = []
+
+            for result in results:
+                hierarchy_path = self.get_block_hierarchy_path(result["id"])
+                summary_results.append({
                     "id": result["id"],
                     "type": result["type"],
                     "name": result["name"],
                     "start_line": result["start_line"],
                     "end_line": result["end_line"],
                     "parent_block_id": result["parent_block_id"],
-                }
-                for result in results
-            ]
+                    "hierarchy_path": hierarchy_path,
+                })
+
+            return summary_results
         except Exception as e:
             logger.error(f"Error getting file block summary for file {file_id}: {e}")
             return []
@@ -1087,19 +1091,6 @@ class GraphOperations:
         except Exception as e:
             logger.error(
                 f"Error getting block hierarchy path for block {block_id}: {e}"
-            )
-            return []
-
-    def get_blocks_by_type_in_file(
-        self, file_id: int, block_type: str
-    ) -> List[Dict[str, Any]]:
-        """Retrieve all blocks of a given type in a file."""
-        try:
-            blocks = self.get_file_block_summary(file_id)
-            return [block for block in blocks if block["type"] == block_type]
-        except Exception as e:
-            logger.error(
-                f"Error getting blocks by type {block_type} in file {file_id}: {e}"
             )
             return []
 
