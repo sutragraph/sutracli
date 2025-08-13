@@ -3,9 +3,6 @@
 import time
 from typing import Dict, Any, List, Optional, Iterator, Union
 from loguru import logger
-
-from graph.sqlite_client import SQLiteConnection
-
 from .llm_clients.llm_factory import llm_client_factory
 from tools import ActionExecutor
 from .agent.session_management import SessionManager
@@ -334,7 +331,26 @@ class AgentService:
                         # Show tool execution for all relevant events
                         event_type = event.get("type", "unknown")
 
-                        print(f"🔧 Tool: {tool_name} ({event_type})")
+                        # BUGFIX: Only log the main tool_use events, not individual search results
+                        # This prevents multiple log entries for semantic search individual results
+                        # Only log once per tool execution, not for each individual result
+                        should_log = False
+                        if event_type == "tool_use":
+                            # For semantic_search, only log if this is the first result or has batch_info
+                            if tool_name == "semantic_search":
+                                node_index = event.get("node_index", 1)
+                                batch_info = event.get("batch_info")
+                                # Only log for first node or when batch info is present
+                                should_log = node_index == 1 or batch_info is not None
+                            else:
+                                # For other tools, always log tool_use events
+                                should_log = True
+                        elif tool_name != "semantic_search":
+                            # For non-semantic_search tools, log other event types
+                            should_log = True
+                        
+                        if should_log:
+                            print(f"🔧 Tool: {tool_name} ({event_type})")
 
                         # Validate tool result using SutraMemoryManager
                         validation_result = self.memory_manager.validate_tool_result(

@@ -274,7 +274,7 @@ Your tool usage is successful when you can provide:
 2. **Type Understanding**:
    - SEARCH_KEYWORD "validateUserInput" to find the function definition and signature
    - SEARCH_KEYWORD "const.*=.*userData" to find destructuring patterns
-   - SEARCH_KEYWORD "typeof.*userData\.|userData\..*!==" to find validation logic
+   - SEARCH_KEYWORD "typeof.*userData.|userData..*!==" to find validation logic
    - SEARCH_KEYWORD "return.*error|throw.*Error" to understand error patterns
 
 3. **Flow Analysis**:

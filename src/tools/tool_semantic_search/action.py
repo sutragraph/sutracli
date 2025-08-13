@@ -149,8 +149,7 @@ def _process_sequential_chunk_results(
     deduplicated_results = _deduplicate_block_results(vector_results)
     total_nodes = len(deduplicated_results)
 
-    # Collect all chunk items for processing
-    all_results = []
+    # Process results for delivery
     graph_ops = GraphOperations()
 
     for i, result in enumerate(deduplicated_results, 1):
@@ -201,44 +200,37 @@ def _process_sequential_chunk_results(
                     enriched_context, i, include_code=True, total_nodes=total_nodes, node_id=result["node_id"]
                 )
 
-            # Collect processed result
-            all_results.append(
-                {
-                    "type": "tool_use",
-                    "tool_name": "semantic_search",
-                    "query": query,
-                    "result": f"Found {len(deduplicated_results)} nodes",
-                    "node_index": i,
-                    "total_nodes": total_nodes,
-                    "data": beautified_result,
-                    "code_snippet": True,
-                    "node_id": result["node_id"],
-                    "chunk_info": {
-                        "start_line": chunk_start_line,
-                        "end_line": chunk_end_line,
-                        "similarity": result.get("similarity", 0.0),
-                    },
-                }
-            )
+            # Yield processed result for delivery system to handle batching
+            yield {
+                "type": "tool_use",
+                "tool_name": "semantic_search",
+                "query": query,
+                "result": f"Found {len(deduplicated_results)} nodes",
+                "node_index": i,
+                "total_nodes": total_nodes,
+                "data": beautified_result,
+                "code_snippet": True,
+                "node_id": result["node_id"],
+                "chunk_info": {
+                    "start_line": chunk_start_line,
+                    "end_line": chunk_end_line,
+                    "similarity": result.get("similarity", 0.0),
+                },
+            }
         else:
             # Handle missing enriched context
-            all_results.append(
-                {
-                    "type": "tool_use",
-                    "tool_name": "semantic_search",
-                    "query": query,
-                    "node_index": i,
-                    "total_nodes": total_nodes,
-                    "data": f"❌ Node {i}/{total_nodes}: Could not retrieve enriched context for {result['node_id']}.",
-                    "code_snippet": True,
-                    "node_id": result["node_id"],
-                }
-            )
+            yield {
+                "type": "tool_use",
+                "tool_name": "semantic_search",
+                "query": query,
+                "node_index": i,
+                "total_nodes": total_nodes,
+                "data": f"❌ Node {i}/{total_nodes}: Could not retrieve enriched context for {result['node_id']}.",
+                "code_snippet": True,
+                "node_id": result["node_id"],
+            }
 
-    # Yield all results directly
-    for item in all_results:
-        yield item
-    else:
+    if not deduplicated_results:
         # No results to return - send completion signal
         yield {
             "tool_name": "semantic_search",
@@ -267,21 +259,21 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
         vector_results = _perform_vector_search(vector_store, query, project_id)
         total_nodes = len(vector_results)
 
-        # Yield tool usage information for logging
-        yield {
-            "tool_name": "semantic_search",
-            "type": "tool_use",
-            "query": query,
-            "result": f"Found {total_nodes} nodes",
-            "code_snippet": True,
-            "total_nodes": total_nodes,
-        }
-
         # Handle empty results
         if total_nodes == 0:
+            yield {
+                "tool_name": "semantic_search",
+                "type": "tool_use",
+                "query": query,
+                "result": f"Found {total_nodes} nodes",
+                "code_snippet": True,
+                "total_nodes": total_nodes,
+                "data": "No results found for the query.",
+            }
             return
 
-        # Always use sequential processing for semantic search
+        # Process results and yield them for delivery system to handle
+        # The delivery system will handle batching according to DELIVERY_QUEUE_CONFIG
         yield from _process_sequential_chunk_results(
             vector_results,
             query,

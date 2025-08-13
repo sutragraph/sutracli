@@ -178,7 +178,8 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
         total_nodes = delivery_items[0].get("total_nodes", len(delivery_items))
         query = action_parameters.get("query", "")
         delivered_count = len(batch_items)
-        remaining_count = len(delivery_items) - delivered_count
+        # BUGFIX: Calculate remaining count correctly - use total_nodes, not delivery_items length
+        remaining_count = total_nodes - delivered_count
 
         # Combine data from all items
         combined_data = "\n\n".join(str(item.get("data", "")) for item in batch_items)

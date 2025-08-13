@@ -101,16 +101,17 @@ def build_guidance_message(
         remaining_count = kwargs.get("remaining_count", 0)
 
         if search_type == SearchType.SEMANTIC:
-            # Enhanced guidance for semantic search
+            # Enhanced guidance for semantic search - show fetch_next_code note but NO line numbers
             start_range = (
                 (delivered_count - len(range(delivered_count))) + 1
                 if delivered_count > 0
                 else 1
             )
             end_range = delivered_count if delivered_count > 0 else total_nodes
-            message = f"Found {total_nodes} nodes from {search_type.value} search. Showing nodes {start_range} to {end_range}."
+            message = f"Showing nodes {start_range} to {end_range} of {total_nodes}."
+            # BUGFIX: Show fetch_next_code note but without line numbers for semantic search
             if remaining_count > 0:
-                message += _get_fetch_next_code_note()
+                message += f"\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query. ({remaining_count} more nodes available)"
         else:
             # Original logic for other search types
             message = f"Found {total_nodes} results from {search_type.value} search"
@@ -501,19 +502,10 @@ def enhance_semantic_search_event(
     start_node = max(1, delivered_count - batch_info.get("batch_size", 15) + 1)
     end_node = delivered_count
 
-    guidance_message = f"Found {total_nodes} nodes from semantic search. Showing nodes {start_node} to {end_node}"
-
-    if current_lines > 0:
-        guidance_message += f" ({current_lines} lines)"
+    guidance_message = f"Showing nodes {start_node} to {end_node} of {total_nodes}"
 
     if remaining_count > 0:
-        guidance_message += build_enhanced_fetch_note(
-            remaining_items=remaining_count,
-            item_type="nodes",
-            estimated_lines=(
-                current_lines * remaining_count if current_lines > 0 else None
-            ),
-        )
+        guidance_message += f"\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query. ({remaining_count} more nodes available)"
     else:
         guidance_message += "."
 
@@ -720,20 +712,17 @@ class SemanticSearchGuidance(BaseToolGuidance):
         delivered_count = batch_info.get("delivered_count", 0)
         remaining_count = batch_info.get("remaining_count", 0)
 
-        # Use the enhanced guidance function
-        scenario = determine_guidance_scenario(
-            total_nodes=total_nodes,
-            include_code=True,
-        )
+        # BUGFIX: For semantic search, show fetch_next_code note but no line numbers
+        start_range = max(1, delivered_count - batch_info.get("batch_size", 15) + 1)
+        end_range = delivered_count
 
-        return build_guidance_message(
-            search_type=SearchType.SEMANTIC,
-            scenario=scenario,
-            total_nodes=total_nodes,
-            delivered_count=delivered_count,
-            remaining_count=remaining_count,
-            has_more_results=remaining_count > 0,
-        )
+        message = f"Showing nodes {start_range} to {end_range} of {total_nodes}."
+
+        # Add fetch_next_code note if there are remaining nodes, but without line numbers
+        if remaining_count > 0:
+            message += f"\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query. ({remaining_count} more nodes available)"
+
+        return message
 
 
 class DatabaseSearchGuidance(BaseToolGuidance):

@@ -194,28 +194,30 @@ class ActionExecutor:
                         event = guidance.on_event(event, action)
                     if event:  # Only yield if guidance didn't filter it out
                         events.append(event)
-                        # Always collect potential delivery items - let delivery system decide
-                        delivery_items.append(event)
+                        # Only collect items for delivery if they don't have internal_delivery_handled flag
+                        if not event.get("internal_delivery_handled"):
+                            delivery_items.append(event)
                         yield event
 
                 # BUGFIX: Don't re-register delivery for items that already have internal_delivery_handled flag
-                # This prevents duplicate delivery registration for tools like database search
-                # that handle chunked delivery internally
+                # This prevents duplicate delivery registration for tools like semantic_search
+                # that handle delivery internally
                 has_internal_delivery = any(
-                    item.get("internal_delivery_handled") is True for item in delivery_items
+                    item.get("internal_delivery_handled") is True for item in events
                 )
 
                 if has_internal_delivery:
                     logger.debug(f"📦 Skipping delivery registration for {tool_name} - already handled internally")
-                else:
+                elif delivery_items:
                     # Try to register delivery queue for tools that don't handle delivery internally
                     delivery_result = register_delivery_queue_and_get_first_batch(
                         tool_name, action.parameters, delivery_items, tool_enum
                     )
                     if delivery_result:
                         yield delivery_result
-
-                logger.debug(f"📦 Registered delivery queue for {tool_name} with {len(delivery_items)} items")
+                    logger.debug(f"📦 Registered delivery queue for {tool_name} with {len(delivery_items)} items")
+                else:
+                    logger.debug(f"📦 No delivery items to register for {tool_name}")
 
             else:
                 yield {

@@ -6,7 +6,6 @@ GraphOperations.get_enriched_block_context() and GraphOperations.get_enriched_fi
 into human-readable, structured text for display in search results and agent responses.
 """
 
-import json
 from typing import Dict, Any, List, Optional
 from tools.utils.code_processing_utils import add_line_numbers_to_code
 
