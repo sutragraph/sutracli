@@ -215,6 +215,15 @@ def _process_agent_updates(updates_generator) -> None:
             print(f"❌ {error}")
             print("-" * 40)
 
+        elif update_type == "user_cancelled":
+            message = update.get("message", "User cancelled the operation")
+            iteration = update.get("iteration", "unknown")
+            print(f"❌ Operation cancelled by user in iteration {iteration}")
+            print(f"   {message}")
+            print("-" * 40)
+            # Break out of the update processing loop when user cancels
+            break
+
         else:
             pass
 

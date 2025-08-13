@@ -112,7 +112,11 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
     Returns:
         List of dictionaries with chunk information
     """
+    from loguru import logger
+
+    logger.debug(f"📦 Chunking file: max_lines={max_lines}, threshold={chunk_threshold}")
     if not code_snippet:
+        logger.debug("❌ No code snippet provided")
         return [
             {
                 "content": "",
@@ -127,10 +131,14 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
     lines = code_snippet.split("\n")
     total_lines = len(lines)
 
+    logger.debug(f"📦 Content has {total_lines} lines")
+
     # Only chunk if file is larger than threshold (e.g., >250 lines)
     # This prevents chunking 223 lines into 0-200, 201-223
     if total_lines <= chunk_threshold:
+        logger.debug(f"📊 File too small ({total_lines} <= {chunk_threshold}) - no chunking needed")
         numbered_code = add_line_numbers_to_code(code_snippet, file_start_line)
+
         return [
             {
                 "content": numbered_code,
@@ -143,16 +151,23 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
             }
         ]
 
+    logger.debug(f"📦 File requires chunking ({total_lines} > {chunk_threshold})")
+
     # Smart chunking: avoid small trailing chunks
     # Calculate optimal chunk distribution
     estimated_chunks = (total_lines + max_lines - 1) // max_lines  # Ceiling division
     remaining_after_full_chunks = total_lines % max_lines
 
+
+
     # If the last chunk would be very small (< 50 lines), redistribute
     if estimated_chunks > 1 and remaining_after_full_chunks > 0 and remaining_after_full_chunks < 50:
+        logger.debug("📦 Using redistribution to avoid small trailing chunk")
         # Redistribute lines more evenly
         lines_per_chunk = total_lines // (estimated_chunks - 1)
         extra_lines = total_lines % (estimated_chunks - 1)
+
+
 
         chunks = []
         start_idx = 0
@@ -182,8 +197,10 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
                 }
             )
 
-            start_idx = end_idx
+        start_idx = end_idx
+
     else:
+
         # Regular chunking for normal cases
         chunks = []
         chunk_num = 1
@@ -214,12 +231,15 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
             start_idx = end_idx
             chunk_num += 1
 
-        # Update total_chunks and original_file_lines for all chunks
-        total_chunks = len(chunks)
-        for chunk in chunks:
-            chunk["total_chunks"] = total_chunks
-            chunk["original_file_lines"] = total_lines
+
+
+    # Update total_chunks and original_file_lines for all chunks
+    total_chunks = len(chunks)
+
+    for chunk in chunks:
+        chunk["total_chunks"] = total_chunks
+        chunk["original_file_lines"] = total_lines
+
+    logger.debug(f"📦 Chunking completed - created {len(chunks)} chunks")
 
     return chunks
-
-

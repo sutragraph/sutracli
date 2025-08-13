@@ -29,7 +29,7 @@ DATABASE_QUERY_CONFIG = {
         "optional_params": [],
     },
     "GET_FILE_BLOCK_SUMMARY": {
-        "required_params": ["file_id"],
+        "required_params": ["file_path"],
         "optional_params": [],
     },
     "GET_CHILD_BLOCKS": {
@@ -53,7 +53,7 @@ DATABASE_QUERY_CONFIG = {
 # Error guidance messages for database queries - ONLY 6 EXPOSED QUERIES FOR AGENT
 DATABASE_ERROR_GUIDANCE = {
     "GET_FILE_BY_PATH": "Try using semantic_search to find the correct file path first.",
-    "GET_FILE_BLOCK_SUMMARY": "Ensure the file_id exists. Use GET_FILE_BY_PATH to get file_id from file_path first.",
+    "GET_FILE_BLOCK_SUMMARY": "Ensure the file_path exists.",
     "GET_CHILD_BLOCKS": "Ensure the parent_block_id exists. Use GET_FILE_BLOCK_SUMMARY to find block IDs first.",
     "GET_PARENT_BLOCK": "Ensure the block_id exists. Use GET_FILE_BLOCK_SUMMARY to find block IDs first.",
     "GET_FILE_IMPORTS": "Ensure the file_path exists. Use semantic_search to find the correct file path first.",

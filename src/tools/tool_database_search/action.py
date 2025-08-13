@@ -25,6 +25,49 @@ from tools.utils.constants import (
     SEARCH_CONFIG,
 )
 
+# Import delivery manager functionality
+from tools.delivery_actions import (
+    check_pending_delivery,
+    register_delivery_queue_and_get_first_batch_with_line_limit,
+)
+from tools import ToolName
+
+
+def should_chunk_content(code_content: str, chunking_threshold: int) -> bool:
+    """
+    Determine if content should be chunked.
+
+    Args:
+        code_content: Code content to check
+        chunking_threshold: Threshold for chunking
+
+    Returns:
+        True if content should be chunked
+    """
+    code_lines = code_content.split("\n")
+    return len(code_lines) > chunking_threshold
+
+
+def create_chunk_info(chunk: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create standardized chunk info dictionary.
+
+    Args:
+        chunk: Chunk data from chunk_large_code_clean
+
+    Returns:
+        Standardized chunk info dictionary
+    """
+    return {
+        "chunk_num": chunk.get("chunk_num", 1),
+        "total_chunks": chunk.get("total_chunks", 1),
+        "start_line": chunk.get("start_line", 1),
+        "end_line": chunk.get("end_line", 1),
+        "total_lines": chunk.get("total_lines", 0),
+        "original_file_lines": chunk.get("original_file_lines", 0),
+    }
+
+
 def execute_structured_database_query(
     action: AgentAction, context: str = "agent"
 ) -> Iterator[Dict[str, Any]]:
@@ -36,7 +79,6 @@ def execute_structured_database_query(
         # Get graph operations instance
         graph_ops = GraphOperations()
 
-
         query_params = {
             k: v
             for k, v in action.parameters.items()
@@ -45,7 +87,6 @@ def execute_structured_database_query(
 
         logger.debug(f"🗄️ Executing structured query: {query_name}")
         logger.debug(f"📋 Query parameters: {query_params}")
-        logger.debug(f"🔧 Code snippet mode: {code_snippet}")
 
         query_config = {}
         sql_mapping = {
@@ -173,24 +214,34 @@ def execute_structured_database_query(
         # Execute query using graph_operations
         if base_query_name == "GET_FILE_BY_PATH":
             # Special handling for GET_FILE_BY_PATH - convert file_path to file_id and use GET_FILE_BY_ID
+            logger.debug(f"🔍 TRACE PATH: *** GET_FILE_BY_PATH EXECUTION ***")
             file_path = final_params.get("file_path")
+            logger.debug(f"🔍 TRACE: GET_FILE_BY_PATH for file_path: {file_path}")
             if file_path:
                 file_id = graph_ops._get_file_id_by_path(file_path)
+                logger.debug(f"🔍 TRACE: Found file_id: {file_id}")
                 if file_id:
                     results = graph_ops.connection.execute_query(sql_query, (file_id,))
+                    logger.debug(
+                        f"🔍 TRACE: Database query returned {len(results) if results else 0} results"
+                    )
                 else:
                     results = []
+                    logger.debug(f"🔍 TRACE: No file_id found, empty results")
             else:
                 results = []
+                logger.debug(f"🔍 TRACE: No file_path provided, empty results")
         else:
             # For other queries, convert dict params to tuple based on query requirements
             if base_query_name == "GET_FILE_BLOCK_SUMMARY":
-                file_id = final_params.get("file_id")
-                results = (
-                    graph_ops.connection.execute_query(sql_query, (file_id,))
-                    if file_id
-                    else []
-                )
+                file_path = final_params.get("file_path")
+                if file_path:
+                    file_id = graph_ops._get_file_id_by_path(file_path)
+                    results = (
+                        graph_ops.connection.execute_query(sql_query, (file_id,))
+                        if file_id
+                        else []
+                    )
             elif base_query_name in ["GET_FILE_IMPORTS", "GET_DEPENDENCY_CHAIN"]:
                 # These queries now take file_path and convert to file_id internally
                 file_path = final_params.get("file_path")
@@ -245,22 +296,6 @@ def execute_structured_database_query(
         else:
             logger.debug("🔗 No results available for project_id extraction")
 
-        # Yield tool usage information for logging
-        search_term = query_params.get(
-            "name",
-            query_params.get(
-                "function_name",
-                query_params.get("file_path", query_params.get("keyword", "unknown")),
-            ),
-        )
-        yield {
-            "type": "tool_use",
-            "tool_name": "database",
-            "query": search_term,
-            "query_name": base_query_name,
-            "result": f"Found {len(results)} nodes",
-        }
-
         if not results:
             # For GET_FILE_BY_PATH, try ripgrep fallback to find similar file names
             if base_query_name == "GET_FILE_BY_PATH" and "file_path" in final_params:
@@ -305,9 +340,6 @@ def execute_structured_database_query(
                 }
                 return
 
-
-
-
         total_nodes = len(results)
 
         # Handle different scenarios based on include_code and number of results
@@ -317,12 +349,6 @@ def execute_structured_database_query(
             batches = [results[i : i + batch_size] for i in range(0, len(results), batch_size)]
 
             for batch_num, batch in enumerate(batches, 1):
-                current_start = (batch_num - 1) * batch_size + 1
-                current_end = min(batch_num * batch_size, total_nodes)
-                has_more = batch_num < len(batches)
-
-
-
                 # Process metadata-only results for this batch
                 processed_batch = process_metadata_only_results(batch, len(batch))
 
@@ -347,23 +373,29 @@ def execute_structured_database_query(
             return
 
         elif len(results) == 1:
-            # Single result with code - check if chunking is needed
-            row = results[0]
-            result_dict = dict(row) if hasattr(row, "keys") else row
-            result_dict = clean_result_dict(result_dict)
+            logger.debug(f"📊 Processing single result with code content")
 
-            # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'
-            code_content = result_dict.get(
-                "content", result_dict.get("code_snippet", "")
-            )
+            if include_code:
+                # Single result with code - check if chunking is needed
+                row = results[0]
+                result_dict = dict(row) if hasattr(row, "keys") else row
+                result_dict = clean_result_dict(result_dict)
 
-            # Ensure code_snippet field is available for beautify_node_result
-            if (
-                code_content
-                and "content" in result_dict
-                and "code_snippet" not in result_dict
-            ):
-                result_dict["code_snippet"] = code_content
+                # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'
+                code_content = result_dict.get(
+                    "content", result_dict.get("code_snippet", "")
+                )
+
+                if code_content:
+                    code_lines = len(code_content.split("\n"))
+                else:
+                    # Ensure code_snippet field is available for beautify_node_result
+                    if (
+                        code_content
+                        and "content" in result_dict
+                        and "code_snippet" not in result_dict
+                    ):
+                        result_dict["code_snippet"] = code_content
 
             if code_content:
                 # Parse line information
@@ -386,26 +418,56 @@ def execute_structured_database_query(
                 # Note: GET_CODE_FROM_FILE_LINES is no longer supported - removed legacy code
                 line_filtered = False
 
-                # Check if chunking is needed for single result (but not for line-filtered results)
-                code_lines = code_content.split("\n")
+                # DEBUG: Check chunking decision
+                code_lines = len(code_content.split("\n"))
+                chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
+                should_chunk = should_chunk_content(code_content, chunking_threshold)
+                logger.debug(
+                    f"🔍 TRACE CHUNKING: code_lines={code_lines}, threshold={chunking_threshold}, should_chunk={should_chunk}, line_filtered={line_filtered}"
+                )
+                logger.debug(f"🔍 TRACE: About to check if chunking is needed...")
+
                 if (
                     should_chunk_content(
                         code_content, SEARCH_CONFIG["chunking_threshold"]
                     )
                     and not line_filtered
                 ):
-                    # Single result with chunking needed - process chunks directly
-                    all_results = []
+                    # Single result with chunking needed - use delivery manager
+                    logger.debug(
+                        f"📦 Chunking required for {len(code_content.split('\n'))} lines"
+                    )
+
+                    # Check if we have a pending delivery for this query
+                    next_item = check_pending_delivery(
+                        "database", action.parameters, ToolName.DATABASE_SEARCH
+                    )
+                    if next_item is not None:
+                        logger.debug(
+                            f"🔍 TRACE CHUNKING: Found pending delivery, returning it"
+                        )
+                        yield next_item
+                        return
+
+                    # No pending delivery - collect all chunks and register them
+                    logger.debug("📦 Creating chunks for large file")
+                    delivery_items = []
                     chunks = chunk_large_code_clean(
                         code_content,
                         file_start_line=start_line or 1,
                         max_lines=SEARCH_CONFIG["chunk_size"],
                     )
 
-                    code_lines = code_content.split("\n")
-                    for chunk in chunks:
+                    logger.debug(
+                        f"📦 Created {len(chunks)} chunks from {len(code_content.split('\n'))} lines"
+                    )
+
+                    for i, chunk in enumerate(chunks):
                         chunked_result = result_dict.copy()
+                        # Set the chunk content and remove the original full content
                         chunked_result["code_snippet"] = chunk["content"]
+                        if "content" in chunked_result:
+                            chunked_result["content"] = chunk["content"]
 
                         chunk_info = create_chunk_info(chunk)
 
@@ -419,27 +481,47 @@ def execute_structured_database_query(
 
                         result_data = beautified_result
 
-                        # Create result item
-                        all_results.append(
+                        # Create delivery item
+                        delivery_items.append(
                             {
                                 "type": "tool_use",
                                 "tool_name": "database",
                                 "query_name": base_query_name,
                                 "query": final_params,
-                                "result": f"result found: 1",
+                                "result": "result found: 1",
                                 "chunk_info": chunk_info,
                                 "data": result_data,
                                 "include_code": True,
                                 "total_nodes": 1,
+                                "chunk_index": chunk["chunk_num"] - 1,
+                                "total_items": len(chunks),
                             }
                         )
 
-                    # Yield all results directly
-                    for item in all_results:
-                        yield item
+                    # Register delivery queue and get first batch with line limit for guidance
+                    logger.debug(
+                        f"📦 Registering {len(delivery_items)} chunk delivery items"
+                    )
+                    first_item = (
+                        register_delivery_queue_and_get_first_batch_with_line_limit(
+                            "database",
+                            action.parameters,
+                            delivery_items,
+                            ToolName.DATABASE_SEARCH,
+                        )
+                    )
+                    if first_item:
+                        logger.debug("📦 First chunk delivered successfully")
+                        yield first_item
+                    else:
+                        logger.debug("❌ No first chunk returned")
                     return
                 else:
                     # Single result with small code - no chunking needed
+                    logger.debug(
+                        f"📊 No chunking needed for {len(code_content.split('\n'))} lines"
+                    )
+
                     beautified_result = beautify_node_result(
                         result_dict,
                         1,
@@ -450,12 +532,15 @@ def execute_structured_database_query(
                     # Send single batch result for small files
                     result_data = beautified_result
 
+                    logger.debug(
+                        f"🔍 TRACE: *** RETURNING SINGLE RESULT (NO CHUNKS) ***"
+                    )
                     yield {
                         "type": "tool_use",
                         "tool_name": "database",
                         "query_name": base_query_name,
                         "query": final_params,
-                        "result": f"result found",
+                        "result": "result found",
                         "data": result_data,
                         "include_code": include_code,
                         "total_nodes": 1,
@@ -483,8 +568,17 @@ def execute_structured_database_query(
                 return
 
         else:
-            # Multiple results with code - collect all items and yield them
-            all_results = []
+            # Multiple results with code - use delivery manager for sequential delivery
+            # Check if we have a pending delivery for this query
+            next_item = check_pending_delivery(
+                "database", action.parameters, ToolName.DATABASE_SEARCH
+            )
+            if next_item is not None:
+                yield next_item
+                return
+
+            # No pending delivery - collect all items and register them
+            delivery_items = []
 
             for i, row in enumerate(results, 1):
                 result_dict = dict(row) if hasattr(row, "keys") else row
@@ -554,8 +648,8 @@ def execute_structured_database_query(
 
                             result_data = beautified_result
 
-                            # Collect processed result
-                            all_results.append(
+                            # Collect delivery item
+                            delivery_items.append(
                                 {
                                     "type": "tool_use",
                                     "tool_name": "database",
@@ -566,6 +660,8 @@ def execute_structured_database_query(
                                     "chunk_info": chunk_info,
                                     "data": result_data,
                                     "include_code": include_code,
+                                    "chunk_index": chunk["chunk_num"] - 1,
+                                    "total_items": len(chunks),
                                 }
                             )
                     else:
@@ -576,8 +672,8 @@ def execute_structured_database_query(
 
                         result_data = beautified_result
 
-                        # Collect processed result
-                        all_results.append(
+                        # Collect delivery item
+                        delivery_items.append(
                             {
                                 "type": "tool_use",
                                 "tool_name": "database",
@@ -587,6 +683,7 @@ def execute_structured_database_query(
                                 "total_nodes": total_nodes,
                                 "data": result_data,
                                 "include_code": include_code,
+                                "total_items": total_nodes,
                             }
                         )
                 else:
@@ -599,8 +696,8 @@ def execute_structured_database_query(
 
                     result_data = beautified_result
 
-                    # Collect processed result
-                    all_results.append(
+                    # Collect delivery item
+                    delivery_items.append(
                         {
                             "type": "tool_use",
                             "tool_name": "database",
@@ -610,12 +707,16 @@ def execute_structured_database_query(
                             "total_nodes": total_nodes,
                             "data": result_data,
                             "include_code": include_code,
+                            "total_items": total_nodes,
                         }
                     )
 
-            # Yield all results directly
-            for item in all_results:
-                yield item
+            # Register delivery queue and get first batch with line limit for guidance
+            first_item = register_delivery_queue_and_get_first_batch_with_line_limit(
+                "database", action.parameters, delivery_items, ToolName.DATABASE_SEARCH
+            )
+            if first_item:
+                yield first_item
     except Exception as e:
         error_msg = f"Database query execution failed: {str(e)}"
         logger.error(f"❌ {error_msg}")
@@ -650,39 +751,6 @@ def execute_database_action(
 # Alias for consistency with new naming convention
 execute_database_search_action = execute_database_action
 
-
-def create_chunk_info(chunk: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Create standardized chunk info dictionary.
-
-    Args:
-        chunk: Chunk data from chunk_large_code_clean
-
-    Returns:
-        Standardized chunk info dictionary
-    """
-    return {
-        "chunk_num": chunk["chunk_num"],
-        "total_chunks": chunk["total_chunks"],
-        "chunk_start_line": chunk.get("chunk_start_line", chunk.get("start_line")),
-        "chunk_end_line": chunk.get("chunk_end_line", chunk.get("end_line")),
-        "total_lines": chunk["total_lines"],
-    }
-
-
-def should_chunk_content(code_content: str, chunking_threshold: int) -> bool:
-    """
-    Determine if content should be chunked.
-
-    Args:
-        code_content: Code content to check
-        chunking_threshold: Threshold for chunking
-
-    Returns:
-        True if content should be chunked
-    """
-    code_lines = code_content.split("\n")
-    return len(code_lines) > chunking_threshold
 
 def process_metadata_only_results(results: List[Any], total_nodes: int) -> List[str]:
     """

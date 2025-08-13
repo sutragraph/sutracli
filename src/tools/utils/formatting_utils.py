@@ -75,8 +75,13 @@ def beautify_node_result(
     else:
         result_parts.append(f'file_id: {node.get("file_id", "unknown")}')
 
-    # Format start_line:end_line - for files, show total line count
-    if start_line is not None and end_line is not None:
+    # Format start_line:end_line - use chunk info if available, otherwise node info
+    if chunk_info:
+        # Use chunk-specific line range when chunking is active
+        chunk_start = chunk_info.get("start_line", start_line)
+        chunk_end = chunk_info.get("end_line", end_line)
+        start_end_str = f"{chunk_start}:{chunk_end}"
+    elif start_line is not None and end_line is not None:
         start_end_str = f"{start_line}:{end_line}"
     else:
         # For file queries, try to get line count from content

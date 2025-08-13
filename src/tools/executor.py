@@ -198,16 +198,24 @@ class ActionExecutor:
                         delivery_items.append(event)
                         yield event
 
-                # Always try to register delivery queue - let delivery system decide if it should handle it
-                delivery_result = register_delivery_queue_and_get_first_batch(
-                    tool_name, action.parameters, delivery_items, tool_enum
+                # BUGFIX: Don't re-register delivery for items that already have internal_delivery_handled flag
+                # This prevents duplicate delivery registration for tools like database search
+                # that handle chunked delivery internally
+                has_internal_delivery = any(
+                    item.get("internal_delivery_handled") is True for item in delivery_items
                 )
-                if delivery_result:
-                    yield delivery_result
 
-                logger.debug(
-                    f"📦 Attempted to register delivery queue for {tool_name} with {len(delivery_items)} items"
-                )
+                if has_internal_delivery:
+                    logger.debug(f"📦 Skipping delivery registration for {tool_name} - already handled internally")
+                else:
+                    # Try to register delivery queue for tools that don't handle delivery internally
+                    delivery_result = register_delivery_queue_and_get_first_batch(
+                        tool_name, action.parameters, delivery_items, tool_enum
+                    )
+                    if delivery_result:
+                        yield delivery_result
+
+                logger.debug(f"📦 Registered delivery queue for {tool_name} with {len(delivery_items)} items")
 
             else:
                 yield {

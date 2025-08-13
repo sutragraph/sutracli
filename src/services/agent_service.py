@@ -12,7 +12,10 @@ from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from .agent.error_handler import ErrorHandler, ResultVerifier
 from .project_manager import ProjectManager
-from utils.xml_parsing_exceptions import XMLParsingFailedException
+from utils.xml_parsing_exceptions import (
+    XMLParsingFailedException,
+    UserCancelledException,
+)
 from utils.performance_monitor import get_performance_monitor, performance_timer
 from utils.debug_utils import get_user_confirmation_for_llm_call
 from agents import get_agent_system_prompt, AgentName
@@ -477,6 +480,18 @@ class AgentService:
                     self.log_token_usage_summary()
                     break
 
+            except UserCancelledException as e:
+                logger.info(
+                    f"User cancelled operation in iteration {current_iteration}"
+                )
+                yield {
+                    "type": "user_cancelled",
+                    "message": str(e),
+                    "iteration": current_iteration,
+                    "session_id": self.session_manager.session_id,
+                }
+                break
+
             except Exception as e:
                 logger.error(
                     f"Error: Error in solving loop iteration {current_iteration}: {e}"
@@ -506,7 +521,7 @@ class AgentService:
         """Get XML response from LLM using the new prompt system with retry on XML parsing failures."""
         if not get_user_confirmation_for_llm_call():
             logger.info("User cancelled Agent LLM call in debug mode")
-            return {"type": "error", "message": "User cancelled the operation in debug mode"}
+            raise UserCancelledException("User cancelled the operation in debug mode")
 
         max_retries = 5
         retry_count = 0
@@ -652,7 +667,6 @@ class AgentService:
         if not last_tool_result:
             return "No previous tool execution"
 
-        logger.debug(f"Building tool status for last tool result: {last_tool_result}")
         tool_name = last_tool_result.get("tool_name", "unknown_tool")
 
         # Build tool-specific status using if-else statements
@@ -709,11 +723,45 @@ class AgentService:
 
         data = result.get("data", "")
         if data:
-            status += f"Results:\n{data}"
+            # Clean up duplicate guidance messages in the data
+            cleaned_data = self._remove_duplicate_guidance_messages(data)
+            status += f"Results:\n{cleaned_data}"
 
         status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
 
         return status.rstrip()
+
+    def _remove_duplicate_guidance_messages(self, data: str) -> str:
+        """Remove duplicate guidance messages from tool result data."""
+        lines = data.split("\n")
+        cleaned_lines = []
+        guidance_seen = False
+        skip_until_empty = False
+
+        for line in lines:
+            # Skip duplicate guidance messages
+            if (
+                line.startswith("Found ")
+                and ("nodes" in line or "node" in line)
+                and "total lines" in line
+            ):
+                if guidance_seen:
+                    skip_until_empty = True
+                    continue
+                else:
+                    guidance_seen = True
+                    cleaned_lines.append(line)
+            elif line.startswith("NOTE: There are more results"):
+                if not skip_until_empty:
+                    cleaned_lines.append(line)
+                continue
+            elif skip_until_empty and line.strip() == "":
+                skip_until_empty = False
+                continue
+            elif not skip_until_empty:
+                cleaned_lines.append(line)
+
+        return "\n".join(cleaned_lines)
 
     def _build_semantic_status(self, result: Dict[str, Any]) -> str:
         """Build status for semantic search tool."""

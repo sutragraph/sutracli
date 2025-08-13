@@ -14,13 +14,6 @@ from tools.utils.enriched_context_formatter import (
     format_chunk_with_enriched_context,
 )
 
-
-def _extract_search_parameters(action: AgentAction) -> str:
-    """Extract query parameter from action."""
-    query = action.parameters.get("query", "")
-    return query
-
-
 def _perform_vector_search(
     vector_store: VectorStore, query: str, project_id: Optional[int] = None
 ) -> List[Dict[str, Any]]:
