@@ -1174,19 +1174,6 @@ class GraphOperations:
             logger.error(f"Error getting dependency chain for file {file_id}: {e}")
             return []
 
-    def get_files_using_symbol(
-        self, symbol_pattern: str, paths: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
-        """Usage sites across the codebase - delegates to search_keyword tool."""
-        return {
-            "tool_required": "search_keyword",
-            "action": "Search for symbol usage across codebase",
-            "symbol_pattern": symbol_pattern,
-            "paths": paths,
-            "suggestion": f'Use search_keyword tool with pattern "{symbol_pattern}"'
-            + (f" scoped to {len(paths)} files" if paths else " across all files"),
-        }
-
     def get_search_scope_by_import_graph(
         self, anchor_file_id: int, direction: str = "both", max_depth: int = 2
     ) -> Dict[str, Any]:

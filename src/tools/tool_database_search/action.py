@@ -322,6 +322,8 @@ def execute_structured_database_query(
                     results = []
             elif base_query_name == "GET_BLOCK_DETAILS":
                 block_id = final_params.get("block_id")
+                if not block_id:
+                    return []
                 block_details = graph_ops.get_block_details(block_id)
                 if block_details:
                     results = [block_details]
