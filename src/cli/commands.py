@@ -195,8 +195,12 @@ def _process_agent_updates(updates_generator) -> None:
             elif tool_name == "semantic_search":
                 query = update.get("query", "")
                 results = update.get("result", "")
-                print(f'🔍 Semantic search "{query}" | {results}')
-                print("-" * 40)
+                # Only print for the first result or results with batch info to avoid spam
+                batch_info = update.get("batch_info")
+                node_index = update.get("node_index", 1)
+                if node_index == 1 or batch_info is not None:
+                    print(f'🔍 Semantic search "{query}" | {results}')
+                    print("-" * 40)
 
             elif tool_name == "list_files":
                 directory = update.get("directory", "")
@@ -916,8 +920,12 @@ def handle_cross_indexing_command(args) -> None:
                 elif tool_name == "semantic_search":
                     query = update.get("query", "")
                     results = update.get("result", "")
-                    print(f'🔍 Semantic search "{query}" | {results}')
-                    print("-" * 40)
+                    # Only print for the first result or results with batch info to avoid spam
+                    batch_info = update.get("batch_info")
+                    node_index = update.get("node_index", 1)
+                    if node_index == 1 or batch_info is not None:
+                        print(f'🔍 Semantic search "{query}" | {results}')
+                        print("-" * 40)
 
                 elif tool_name == "list_files":
                     directory = update.get("directory", "")

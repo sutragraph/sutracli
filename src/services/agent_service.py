@@ -348,7 +348,7 @@ class AgentService:
                         elif tool_name != "semantic_search":
                             # For non-semantic_search tools, log other event types
                             should_log = True
-                        
+
                         if should_log:
                             print(f"🔧 Tool: {tool_name} ({event_type})")
 
@@ -797,8 +797,6 @@ class AgentService:
                     start_node = count - remaining - delivered + 1
                     end_node = count - remaining
                     status += f"Found {count} nodes from semantic search. Showing nodes {start_node}-{end_node} of {count}\n"
-                    if remaining > 0:
-                        status += f"Remaining nodes: {remaining}\n"
                 else:
                     status += f"Found {count} nodes from semantic search\n"
             else:
