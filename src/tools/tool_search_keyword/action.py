@@ -7,9 +7,14 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
     """Execute search keyword tool using ripgrep."""
     try:
         keyword = action.parameters.get("keyword", "")
-        file_path = action.parameters.get("file_path", "")
-        before_lines = int(action.parameters.get("before_lines", 0))
-        after_lines = int(action.parameters.get("after_lines", 2))
+        file_paths_str = action.parameters.get("file_paths", "")
+        # Parse comma-separated file paths
+        if file_paths_str:
+            file_paths = [path.strip() for path in file_paths_str.split(",") if path.strip()]
+        else:
+            file_paths = []
+        before_lines = int(action.parameters.get("before_lines", 5))
+        after_lines = int(action.parameters.get("after_lines", 5))
         case_sensitive = str(action.parameters.get("case_sensitive", "false")).lower() == "true"
         use_regex = str(action.parameters.get("regex", "false")).lower() == "true"
 
@@ -21,10 +26,19 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             }
             return
 
+        # Validate file_paths_str if provided
+        if file_paths_str and not isinstance(file_paths_str, str):
+            yield {
+                "type": "tool_error",
+                "error": "file_paths parameter must be a comma-separated string",
+                "tool_name": "search_keyword"
+            }
+            return
+
         def build_base_cmd():
             """Build base ripgrep command with common options."""
             cmd = ["rg"]
-            
+
             # Add context lines
             if before_lines > 0:
                 cmd.extend(["-B", str(before_lines)])
@@ -51,19 +65,20 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
 
         # Search in normal files (respects .gitignore)
         cmd1 = build_base_cmd()
-        if file_path:
-            cmd1.append(file_path)
-        
+        if file_paths:
+            # Add each file path to the command
+            cmd1.extend(file_paths)
+
         result1 = subprocess.run(cmd1, capture_output=True, text=True, cwd=".")
         if result1.returncode == 0:
             all_results.append(result1.stdout)
         commands_run.append(" ".join(cmd1))
 
-        # Search in .env* files specifically (if no specific file path given)
-        if not file_path:
+        # Search in .env* files specifically (if no specific file paths given)
+        if not file_paths:
             cmd2 = build_base_cmd()
             cmd2.extend(["--glob", ".env*"])
-            
+
             result2 = subprocess.run(cmd2, capture_output=True, text=True, cwd=".")
             if result2.returncode == 0:
                 all_results.append(result2.stdout)
@@ -77,7 +92,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                 "type": "tool_use",
                 "tool_name": "search_keyword",
                 "keyword": keyword,
-                "file_path": file_path or "all files (including .env*)",
+                "file_paths": file_paths if file_paths else "all files (including .env*)",
                 "matches_found": True,
                 "data": combined_output,
                 "command": " | ".join(commands_run),
@@ -88,7 +103,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                 "type": "tool_use",
                 "tool_name": "search_keyword",
                 "keyword": keyword,
-                "file_path": file_path or "all files (including .env*)",
+                "file_paths": file_paths if file_paths else "all files (including .env*)",
                 "matches_found": False,
                 "data": f"No matches found for '{keyword}'",
                 "command": " | ".join(commands_run),

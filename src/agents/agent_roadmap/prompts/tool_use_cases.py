@@ -25,16 +25,17 @@ TOOL_USAGE_CASES = """
 4. SEMANTIC_SEARCH for "utils" or "helpers" to find reusable components
 
 **Before Creating New Functions**:
-1. SEMANTIC_SEARCH for similar functionality: "user authentication", "data validation", "cache management"
-2. SEARCH_KEYWORD for existing function names: "function validateUser", "class UserService"
-3. DATABASE_SEARCH: GET_FILE_BLOCK_SUMMARY on relevant files to understand existing patterns
+1. SEARCH_KEYWORD for existing function names: "function validateUser", "class UserService" in specific service files (gets line numbers)
+2. DATABASE_SEARCH: GET_FILE_BY_PATH with start_line/end_line from SEARCH_KEYWORD results
+3. SEARCH_KEYWORD for similar functionality patterns: "validation.*function", "auth.*method" across relevant files
 4. DATABASE_SEARCH: GET_CHILD_BLOCKS to examine method signatures and parameters
 
-**Parameter Analysis Workflow**:
-1. DATABASE_SEARCH: GET_FILE_BY_PATH on target file to see function signature
-2. SEARCH_KEYWORD for function calls to understand how parameters are passed
-3. DATABASE_SEARCH: GET_DEPENDENCY_CHAIN to find all callers of the function
-4. SEMANTIC_SEARCH for "validation" or "input handling" to understand parameter processing patterns
+**Efficient Parameter Analysis Workflow**:
+1. SEARCH_KEYWORD for function definition: "function functionName" in target file (gets line numbers)
+2. GET_FILE_BY_PATH with start_line/end_line around the function (gets complete context)
+3. SEARCH_KEYWORD for function calls: "functionName(" across multiple caller files (gets call site line numbers)
+4. GET_FILE_BY_PATH on caller files with line ranges around call sites (gets full usage context)
+5. Store complete function implementations and call contexts in memory
 
 ### 1. ATTEMPT_COMPLETION Tool
 **When to use**: After gathering sufficient context for specific file-level changes
@@ -140,12 +141,12 @@ TOOL_USAGE_CASES = """
 - Scope searches to relevant directories only
 
 **Search Pattern Examples**:
-- Search "FirebaseRealtimeDB": Find all Firebase usage to replace
-- Search "function createUser": Find specific function implementations
-- Search "import.*firebase": Find import statements to update
-- Search "TODO.*migration": Find migration-related code
-- Search "class.*Service": Find service classes to modify
-- Search "export.*Config": Find configuration exports to update
+- Search "FirebaseRealtimeDB" in file_paths="src/services/cache-service.ts, src/utils/firebase-db.ts": Find specific Firebase usage
+- Search "function createUser" in file_paths="src/services/user-service.ts": Find function in specific file
+- Search "import.*firebase" with file_paths="": Find all Firebase imports across entire codebase
+- Search "TODO.*migration" in file_paths="src/migrations/*.ts": Find migration-related code in specific directory
+- Search "class.*Service" in file_paths="src/services/*.ts": Find service classes in services directory
+- Search "export.*Config" with file_paths="": Find all configuration exports across project
 
 ## Agent Workflow
 
@@ -157,33 +158,28 @@ TOOL_USAGE_CASES = """
 
 ## Implementation Scenarios
 
-### Project Context Discovery Before Implementation
+### Efficient Discovery: "Add caching to user service"
 
-**New Feature Request**: "Add caching to user service"
-
-**Step 1: Project Verification**
-1. LIST_FILES src/ to understand project structure
-2. DATABASE_SEARCH: GET_FILE_BY_PATH package.json to check for existing cache libraries
-3. SEMANTIC_SEARCH "cache" to find existing caching implementations
-4. SEARCH_KEYWORD "redis|memcached|cache" to find current cache usage
+**Step 1: Targeted Discovery**
+1. SEARCH_KEYWORD "getUserById" file_paths="src/services/user-service.ts" → finds line 45
+2. GET_FILE_BY_PATH user-service.ts start_line=40 end_line=60 → gets complete function context
+3. SEARCH_KEYWORD "constructor.*UserService" file_paths="src/services/user-service.ts" → finds line 12
+4. GET_FILE_BY_PATH user-service.ts start_line=10 end_line=20 → gets complete constructor context
+5. Store complete implementations in memory for roadmap decisions
 
 **Step 2: Pattern Discovery**
-1. SEMANTIC_SEARCH "user service" to find the target service
-2. DATABASE_SEARCH: GET_FILE_BLOCK_SUMMARY on user service to understand current structure
-3. SEMANTIC_SEARCH "service pattern" to understand how services are structured
-4. SEARCH_KEYWORD "constructor|dependency injection" to understand how dependencies are added
+1. SEARCH_KEYWORD "redis|cache" file_paths="src/config/*.ts, src/services/*.ts" → finds cache usage line numbers
+2. GET_FILE_BY_PATH cache-config.ts with line ranges → gets complete cache implementation context
+3. SEARCH_KEYWORD "import.*redis" file_paths="" → finds import line numbers across codebase
+4. GET_FILE_BY_PATH on files with redis imports → gets complete import and usage context
+5. Store complete cache patterns and import contexts in memory
 
-**Step 3: Parameter Analysis**
-1. DATABASE_SEARCH: GET_CHILD_BLOCKS on getUserById method to understand current parameters
-2. SEARCH_KEYWORD "getUserById(" to find all call sites
-3. DATABASE_SEARCH: GET_DEPENDENCY_CHAIN to understand what calls this method
-4. SEMANTIC_SEARCH "error handling" to understand how errors are managed
-
-**Step 4: Integration Planning**
-1. Check if Redis is in package.json dependencies
-2. Find existing Redis configurations or connection patterns
-3. Understand existing async/await patterns in the service
-4. Verify error handling patterns for external dependencies
+**Step 3: Efficient Verification**
+1. LIST_FILES to check package.json exists
+2. SEARCH_KEYWORD "redis" file_paths="package.json" → finds dependency line
+3. GET_FILE_BY_PATH package.json with line range → gets dependency context
+4. SEARCH_KEYWORD "async.*await" file_paths="src/services/user-service.ts" → finds async patterns
+5. All complete contexts stored in memory - no redundant file reads needed
 
 ### Bulk Replacement Detection Workflow
 
@@ -218,20 +214,20 @@ TOOL_USAGE_CASES = """
 ### Code Migration (e.g., Firebase to Redis)
 1. SEMANTIC_SEARCH for current implementation: "firebase database operations"
 2. DATABASE queries for main implementation files
-3. SEARCH_KEYWORD for all Firebase import/usage patterns
-4. Find Redis patterns if they exist
+3. SEARCH_KEYWORD for all Firebase import/usage patterns file_paths="" (entire codebase)
+4. SEARCH_KEYWORD for Redis patterns file_paths="src/config/*.ts, src/utils/*.ts" if they exist
 5. Generate specific file modifications with exact function/import changes
 
 ### API Updates
 1. SEMANTIC_SEARCH for existing API patterns: "API endpoint handler"
 2. GET_FILE_BLOCK_SUMMARY of route/controller files
-3. SEARCH_KEYWORD for specific endpoint implementations
+3. SEARCH_KEYWORD for specific endpoint implementations file_paths="src/routes/*.ts, src/controllers/*.ts"
 4. Generate exact endpoint modifications and new additions
 
 ### Dependency Updates
 1. SEMANTIC_SEARCH for current dependency usage patterns
 2. GET_DEPENDENCY_CHAIN for affected files
-3. SEARCH_KEYWORD for all usage instances of old dependency
+3. SEARCH_KEYWORD for all usage instances of old dependency file_paths="" (entire codebase)
 4. Generate specific import statement changes and usage updates
 
 ### New Feature Implementation
@@ -267,15 +263,16 @@ Your tool usage is successful when you can provide:
 **Example: Modifying `validateUserInput(userData, options)` function**
 
 1. **Source Analysis**:
-   - SEARCH_KEYWORD "validateUserInput(" to find all call sites
+   - SEARCH_KEYWORD "validateUserInput(" file_paths="src/controllers/*.ts, src/middleware/*.ts" to find all call sites
    - Understand where `userData` comes from: req.body, database, form input
    - Understand `options` usage: validation rules, feature flags, configuration
 
-2. **Type Understanding**:
-   - SEARCH_KEYWORD "validateUserInput" to find the function definition and signature
-   - SEARCH_KEYWORD "const.*=.*userData" to find destructuring patterns
-   - SEARCH_KEYWORD "typeof.*userData.|userData..*!==" to find validation logic
-   - SEARCH_KEYWORD "return.*error|throw.*Error" to understand error patterns
+2. **Efficient Type Understanding**:
+   - SEARCH_KEYWORD "validateUserInput" file_paths="src/utils/helpers.ts" → finds function at line 23
+   - GET_FILE_BY_PATH helpers.ts start_line=20 end_line=35 → gets complete function implementation
+   - SEARCH_KEYWORD "const.*=.*userData" file_paths="src/utils/helpers.ts" → finds destructuring at line 25
+   - GET_FILE_BY_PATH helpers.ts with expanded range → gets complete validation context
+   - Store complete function implementation and validation logic in memory
 
 3. **Flow Analysis**:
    - SEMANTIC_SEARCH "user input validation" to find similar validation patterns
@@ -286,6 +283,102 @@ Your tool usage is successful when you can provide:
    - Check existing validation libraries in package.json
    - Find validation schemas or rules in the codebase
    - Understand logging patterns for validation failures
+
+## Memory-First Workflow Example
+
+**Scenario**: "Add Redis caching to getUserById method"
+
+**Step 1: Memory Check First**
+```
+<thinking>
+Checking Sutra Memory for:
+- getUserById function complete implementation
+- Existing cache patterns with full context
+- Constructor patterns with dependency injection context
+Memory shows: No previous discoveries stored
+</thinking>
+```
+
+**Step 2: Two-Step Discovery Process**
+```
+SEARCH_KEYWORD "getUserById" file_paths="src/services/user-service.ts"
+Result: Found at line 45
+
+GET_FILE_BY_PATH user-service.ts start_line=40 end_line=55
+Result: Complete function context retrieved
+
+Store in Memory:
+Discovery: getUserById function
+File: src/services/user-service.ts
+Lines: 40-55 (complete context)
+Code:
+```
+export class UserService {
+  async getUserById(id: string): Promise<User> {
+    const user = await this.database.get(`user:${id}`);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
+  }
+
+  async updateUser(id: string, data: Partial<User>): Promise<User> {
+    // ... surrounding context for better understanding
+  }
+}
+```
+```
+
+**Step 3: Memory-First Next Discovery**
+```
+<thinking>
+Need constructor info for dependency injection.
+Checking Memory: getUserById complete implementation stored ✓
+Memory shows: Need constructor context
+</thinking>
+
+SEARCH_KEYWORD "constructor.*UserService" file_paths="src/services/user-service.ts"
+Result: Found at line 12
+
+GET_FILE_BY_PATH user-service.ts start_line=8 end_line=18
+Result: Complete constructor context retrieved
+
+Store in Memory:
+Discovery: UserService constructor
+File: src/services/user-service.ts
+Lines: 8-18 (complete context)
+Code:
+```
+export class UserService {
+  constructor(
+    private database: DatabaseService,
+    private logger: Logger
+  ) {
+    this.logger.info('UserService initialized');
+  }
+```
+```
+
+**Step 4: Using Memory for Roadmap**
+```
+<thinking>
+Memory contains complete contexts:
+- getUserById at line 40-55 with full function implementation and surrounding methods
+- Constructor at line 8-18 with complete dependency injection pattern and initialization
+- Sufficient complete code context available - no additional file reads needed
+</thinking>
+
+ATTEMPT_COMPLETION using complete implementations stored in memory
+```
+
+**Memory-Based Roadmap Output:**
+```
+**File:** src/services/user-service.ts
+1. Constructor (line 12): Add cache dependency parameter after logger
+2. Method getUserById (line 45): Add cache check before database query
+3. Method getUserById (line 47): Add cache storage after successful database retrieval
+4. Overview: Transform getUserById from database-only to cache-first pattern
+```
 
 ## Bulk Replacement Efficiency Guidelines
 
@@ -309,22 +402,49 @@ Use SEARCH_KEYWORD to identify repetitive patterns. When the same replacement oc
 2. Overview: Bulk method renaming for consistency
 ```
 
-**Detection Strategy**:
-1. Use SEARCH_KEYWORD to count pattern occurrences
-2. If 3+ identical replacements in a file → suggest bulk replacement
-3. Focus on strategic guidance, not implementation details
+**Efficient Detection Strategy**:
+1. SEARCH_KEYWORD to find pattern occurrences with line numbers (e.g., "firebase.get" file_paths="src/services/*.ts" finds lines 15, 23, 31)
+2. If 3+ identical patterns with similar context → suggest bulk replacement
+3. Store line numbers in memory for targeted modifications
+4. Focus on strategic guidance, not implementation details
 
 ## Verification Before Changes Checklist
 
 **Always verify before proposing changes**:
-1. ✓ Project dependencies and available packages analyzed
-2. ✓ Existing similar functions/classes discovered
-3. ✓ Parameter sources and types understood
-4. ✓ Return value usage analyzed
-5. ✓ Error handling patterns identified
-6. ✓ Integration points mapped
-7. ✓ Existing utilities that can be reused found
-8. ✓ Repetitive patterns identified for bulk replacement efficiency
+1. ✓ Memory checked first for existing complete implementations and line numbers
+2. ✓ Project dependencies and available packages analyzed
+3. ✓ Existing similar functions/classes discovered WITH complete implementations from GET_FILE_BY_PATH
+4. ✓ Parameter sources and types understood WITH full function context from memory
+5. ✓ Function parameter sources, types, and usage patterns WITH complete implementations stored
+6. ✓ Return value usage analyzed WITH call site complete contexts AND surrounding code stored
+7. ✓ Error handling patterns identified WITH complete function contexts AND surrounding implementations
+8. ✓ Integration points mapped WITH complete code contexts AND full implementation details
+9. ✓ Existing utilities that can be reused found WITH complete import contexts AND surrounding code
+10. ✓ Repetitive patterns identified for bulk replacement WITH complete implementation contexts
+11. ✓ Two-step discovery: SEARCH_KEYWORD for locations → GET_FILE_BY_PATH for complete context → memory storage
+12. ✓ No redundant file reads when complete implementations already exist in memory
 
-Focus on strategic precision: exact element names, current components, specific replacements, roadmap-level modification steps.
+Focus on strategic precision: exact element names, current components, specific replacements with line numbers, roadmap-level modification steps. Always use two-step discovery: SEARCH_KEYWORD with targeted file_paths to get line numbers, then GET_FILE_BY_PATH with line ranges to get complete context, then store full implementations in memory.
+
+## SEARCH_KEYWORD File Targeting Examples
+
+**Multiple Specific Files**:
+```
+SEARCH_KEYWORD "getUserById" file_paths="src/services/user-service.ts, src/controllers/user-controller.ts"
+```
+
+**Entire Codebase Search**:
+```
+SEARCH_KEYWORD "FirebaseRealtimeDB" file_paths=""
+```
+
+**Directory Pattern Targeting**:
+```
+SEARCH_KEYWORD "class.*Service" file_paths="src/services/*.ts, src/utils/*.ts"
+```
+
+**Single File Precision**:
+```
+SEARCH_KEYWORD "constructor" file_paths="src/services/user-service.ts"
+```
 """

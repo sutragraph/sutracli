@@ -225,9 +225,42 @@ def execute_structured_database_query(
                     logger.debug(
                         f"🔍 TRACE: Database query returned {len(results) if results else 0} results"
                     )
+
+                    # Apply line range filtering if start_line and end_line are provided
+                    start_line = final_params.get("start_line")
+                    end_line = final_params.get("end_line")
+                    if results and (start_line is not None or end_line is not None):
+                        for i, result in enumerate(results):
+                            result_dict = dict(result) if hasattr(result, 'keys') else result
+                            content = result_dict.get('content', '')
+                            if content:
+                                content_lines = content.split('\n')
+                                total_lines = len(content_lines)
+
+                                # Default to full range if not specified
+                                start_idx = (start_line - 1) if start_line is not None else 0
+                                end_idx = end_line if end_line is not None else total_lines
+
+                                # Ensure indices are within bounds
+                                start_idx = max(0, min(start_idx, total_lines - 1))
+                                end_idx = max(start_idx + 1, min(end_idx, total_lines))
+
+                                # Filter content to specified line range
+                                filtered_lines = content_lines[start_idx:end_idx]
+                                filtered_content = '\n'.join(filtered_lines)
+
+                                # Update the result with filtered content
+                                if isinstance(result, dict):
+                                    result['content'] = filtered_content
+                                else:
+                                    # Convert to dict if it's not already
+                                    result_dict['content'] = filtered_content
+                                    results[i] = result_dict
+
+                                logger.debug(f"🔍 TRACE: Filtered content from lines {start_idx + 1}-{end_idx} ({len(filtered_lines)} lines)")
                 else:
                     results = []
-                    logger.debug(f"🔍 TRACE: No file_id found, empty results")
+                    logger.debug("🔍 TRACE: No file_id found, empty results")
             else:
                 results = []
                 logger.debug(f"🔍 TRACE: No file_path provided, empty results")
@@ -260,7 +293,7 @@ def execute_structured_database_query(
                                 if import_content:
                                     all_imports.append(import_content)
                                     target_files.append(file_path_target)
-                            
+
                             # Create consolidated result
                             consolidated_result = {
                                 'file_path': file_path,  # Original source file

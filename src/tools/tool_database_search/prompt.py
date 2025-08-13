@@ -13,22 +13,15 @@ Gets summary of all code blocks (functions, classes, methods) within a file.
 Required: query_name, file_path
 Optional: code_content, fetch_next_code
 
-3. GET_CHILD_BLOCKS:
-Gets all child blocks of a parent block (e.g., methods within a class).
-Required: query_name, parent_block_id
-Optional: code_content, fetch_next_code
+3. GET_BLOCK_DETAILS:
+====TODO====
 
-4. GET_PARENT_BLOCK:
-Gets the parent block of a given block (e.g., class containing a method).
-Required: query_name, block_id
-Optional: code_content, fetch_next_code
-
-5. GET_FILE_IMPORTS:
+4. GET_FILE_IMPORTS:
 Gets all imports/dependencies for a specific file.
 Required: query_name, file_path
 Optional: code_content, fetch_next_code
 
-6. GET_DEPENDENCY_CHAIN:
+5. GET_DEPENDENCY_CHAIN:
 Gets multi-hop dependency chain for a file showing recursive dependencies.
 Required: query_name, file_path
 Optional: depth, code_content, fetch_next_code
@@ -38,7 +31,7 @@ Notes:
 - When code_content is true, the response includes the complete actual source code implementation
 - When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_code command - if the user does not tell you to use it, do not use it
 - Most queries now use file_path directly - the system handles internal ID conversion automatically
-- For block-specific operations, you may need block_id or parent_block_id (obtained from GET_FILE_BLOCK_SUMMARY)
+- For block-specific operations, you may need block_id (obtained from GET_FILE_BLOCK_SUMMARY)
 - Line numbers are 1-indexed
 - Use this tool when you need structured codebase information and relationships
 - IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
@@ -47,8 +40,7 @@ Usage:
 <database>
 <query_name>query_type</query_name>
 <file_path>path/to/file</file_path>
-<block_id>block_identifier</block_id>  <!-- Only for GET_PARENT_BLOCK -->
-<parent_block_id>parent_block_identifier</parent_block_id>  <!-- Only for GET_CHILD_BLOCKS -->
+<block_id>block_identifier</block_id>  <!-- Only for GET_BLOCK_DETAILS -->
 <depth>dependency_depth</depth>  <!-- Only for GET_DEPENDENCY_CHAIN -->
 <code_content>true|false</code_content>
 <fetch_next_code>true|false</fetch_next_code>
@@ -70,11 +62,11 @@ Examples:
 <code_content>true</code_content>
 </database>
 
-3. Get child blocks of a parent block:
+3. Get block details:
 <database>
-<query_name>GET_CHILD_BLOCKS</query_name>
-<parent_block_id>456</parent_block_id>
-<code_content>true</code_content>
+<query_name>GET_BLOCK_DETAILS</query_name>
+<block_id>456</block_id>
+====TODO====
 </database>
 
 4. Get file imports and dependencies:

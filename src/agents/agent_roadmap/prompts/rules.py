@@ -6,7 +6,7 @@ RULES = """
 ## Operating Environment
 
 - The project base directory is: {current_dir}
-- Use available tools for targeted code discovery and precise modification specifications
+- Use SEARCH_KEYWORD first to get line numbers, then DATABASE queries with line ranges for efficient discovery
 
 ## Critical Constraints
 
@@ -16,36 +16,45 @@ RULES = """
 
 3. **One Tool Per Iteration**: Select exactly ONE tool per iteration. Never respond without a tool call.
 
-4. **Work with Discovery**: When faced with ambiguous requirements, use tools to discover existing implementations and make precise assumptions based on actual code patterns.
+4. **Efficient Discovery Pattern**: Use SEARCH_KEYWORD first to locate exact code with line numbers, then DATABASE queries with start_line/end_line for targeted access.
 
-5. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications.
+5. **Work with Discovery**: When faced with ambiguous requirements, use tools to discover existing implementations and make precise assumptions based on actual code patterns.
+
+6. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications.
 
 ## Memory Management Requirements
 
 You MUST include Sutra Memory updates in EVERY response using `<sutra_memory></sutra_memory>`. Always include at least one `<add_history>` entry.
 
 **Store precisely**:
-- Exact file paths with function/class/method names
-- Specific function signatures and current implementations
-- Current import statements requiring modification
-- Actual method calls with current parameters
-- Exact constant/variable declarations and current values
+- Exact file paths with function/class/method names AND line numbers from SEARCH_KEYWORD
+- FULL CODE CONTEXT from GET_FILE_BY_PATH queries (not limited SEARCH_KEYWORD snippets)
+- Complete function implementations with surrounding context from GET_FILE_BY_PATH
+- Current import statements and their surrounding code context from GET_FILE_BY_PATH
+- Actual method calls with full function context and parameters from GET_FILE_BY_PATH
+- Exact constant/variable declarations with meaningful surrounding code from GET_FILE_BY_PATH
+- WORKFLOW: Use SEARCH_KEYWORD to find line numbers → GET_FILE_BY_PATH with line ranges → store full context
 
 **Remove from memory**:
 - General architectural concepts
 - Broad system understanding
 - Vague modification areas
+- File path references WITHOUT actual code content
+- Limited SEARCH_KEYWORD snippets (use GET_FILE_BY_PATH for full context instead)
+- Partial function definitions that lack sufficient context for roadmap decisions
 
 ## Output Standards
 
 - NEVER provide generic instructions like "replace X with Y throughout the codebase"
-- ALWAYS specify exact file paths with function/class/method names
+- ALWAYS specify exact file paths with function/class/method names AND line numbers
 - ALWAYS use numbered steps for each modification within a file
-- ALWAYS name exact functions, classes, variables, and constants being modified
+- ALWAYS name exact functions, classes, variables, and constants being modified WITH line locations
 - Maximum instruction count: 10-15 numbered steps per file
 - Each step must specify exactly what element exists now and what it should become
 - NEVER provide full code implementations or detailed code snippets
 - Focus on roadmap-level guidance: what to change, not how to implement it
+- Avoid reading entire files: use SEARCH_KEYWORD first, then DATABASE with line ranges
+- CRITICAL: Never re-read files if code content is already stored in memory with line numbers
 
 ## Bulk Replacement Efficiency
 
@@ -62,6 +71,9 @@ When the same pattern repeats 3+ times in a file, optimize with bulk instruction
 - Use direct, technical language focused on exact specifications
 - Work with discovered code to provide exact modification specifications
 - If specific implementations cannot be found, state what you searched for and provide precise assumptions based on common patterns
+- MANDATORY: Use SEARCH_KEYWORD to find locations → GET_FILE_BY_PATH with line ranges → store full context in memory
+- FORBIDDEN: Storing limited SEARCH_KEYWORD snippets that lack sufficient context for roadmap decisions
+- REQUIRED: Always follow up SEARCH_KEYWORD with GET_FILE_BY_PATH to get meaningful code context
 
 ## Roadmap Focus Constraints
 

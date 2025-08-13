@@ -7,7 +7,7 @@ CAPABILITIES = """
 
 **SEMANTIC_SEARCH**: Discover files containing specific implementations, functions, or patterns. Finds files based on semantic meaning and code functionality.
 
-**SEARCH_KEYWORD**: Find exact symbols, function names, import statements, and method calls using regex patterns. Locate specific code elements across the codebase.
+**SEARCH_KEYWORD**: Find exact symbols, function names, import statements, and method calls using regex patterns. Accepts file_paths list to target specific files or searches entire codebase when list is empty. Returns 10 lines of context with line numbers.
 
 **DATABASE_SEARCH**: Query structured code graph for exact content and dependencies:
 - GET_FILE_BY_PATH: Complete file content and structure

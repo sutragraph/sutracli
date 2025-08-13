@@ -26,7 +26,7 @@ DELIVERY_QUEUE_CONFIG = {
 DATABASE_QUERY_CONFIG = {
     "GET_FILE_BY_PATH": {
         "required_params": ["file_path"],
-        "optional_params": [],
+        "optional_params": ["start_line", "end_line"],
     },
     "GET_FILE_BLOCK_SUMMARY": {
         "required_params": ["file_path"],

@@ -66,9 +66,10 @@ SELECT
 FROM files f
 JOIN projects p ON f.project_id = p.id
 LEFT JOIN code_blocks cb ON f.id = cb.file_id
-WHERE f.id = ? 
+WHERE f.id = ?
 GROUP BY f.id
 """
+
 
 GET_FILE_BLOCK_SUMMARY = """
 SELECT

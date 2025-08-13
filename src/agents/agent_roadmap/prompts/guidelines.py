@@ -36,21 +36,48 @@ Before proposing any changes, understand the project ecosystem:
    - Decide which tool will reveal exact implementation details
    - Confirm you're seeking precise modification points
 
-2. **Targeted Discovery**: Execute exactly ONE tool per iteration:
-   - SEMANTIC_SEARCH → find files containing specific implementations
-   - DATABASE → get precise function definitions, method signatures, import statements
-   - SEARCH_KEYWORD → locate exact symbols, function names, import patterns
+2. **Efficient Discovery Pattern**: Execute exactly ONE tool per iteration:
+   - SEARCH_KEYWORD → find exact symbols with 10-line context (preferred first step)
+   - DATABASE with line ranges → get targeted file sections based on SEARCH_KEYWORD results
+   - SEMANTIC_SEARCH → find files containing specific implementations (when broad discovery needed)
    - LIST_FILES → verify exact file locations when needed
 
 3. **Memory Management**: After each tool result, update Sutra Memory with ADD_HISTORY:
-   - Store ONLY precise code locations with file paths, function names, class names
-   - Record specific function signatures and import statements
-   - Remove vague information, keep actionable details
-   - Maximum focus: 5-10 targeted results per discovery
+   - Store precise code locations with file paths, function names, LINE NUMBERS from SEARCH_KEYWORD
+   - **CRITICAL**: Store FULL CODE CONTEXT from GET_FILE_BY_PATH queries (not limited SEARCH_KEYWORD snippets)
+   - Record complete function implementations with surrounding context from GET_FILE_BY_PATH
+   - Store meaningful code blocks that provide sufficient context for roadmap decisions
+   - Remove vague information, keep actionable details with complete code context
+   - Maximum focus: 5-10 targeted results per discovery WITH full function/class context
+
+**Required Workflow for Memory Storage**:
+1. SEARCH_KEYWORD to find exact line numbers
+2. GET_FILE_BY_PATH with start_line/end_line to get full context
+3. Store complete code context in memory
+
+**Example Memory Storage**:
+```
+SEARCH_KEYWORD found getUserById at line 45 in user-service.ts
+GET_FILE_BY_PATH user-service.ts start_line=40 end_line=55 retrieved:
+
+class UserService {
+  async getUserById(id: string): Promise<User> {
+    const user = await this.database.get(`user:${id}`);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
+  }
+
+  async updateUser(id: string, data: Partial<User>): Promise<User> {
+    // ... rest of context
+  }
+}
+```
 
 4. **Completion Criteria**: Use ATTEMPT_COMPLETION when you have:
-   - Exact file paths with specific function/class/method names
-   - Current implementation details (what exists now)
+   - Exact file paths with specific function/class/method names AND line numbers
+   - Current implementation details (what exists now) from targeted searches
    - Specific replacement instructions (what it should become)
    - Complete modification specifications for all affected files
 
@@ -80,13 +107,18 @@ When the same replacement pattern occurs multiple times, provide efficient bulk 
 - Only specific occurrences need modification (not all instances)
 - Complex logic changes beyond simple name replacement
 
-## Discovery Strategy
+## Efficient Discovery Strategy
 
-**Find Implementation** → Use SEMANTIC_SEARCH to locate files, then DATABASE queries for current code
-**Identify Modifications** → Use SEARCH_KEYWORD to find instances of symbols, imports, function calls
+**Locate Precisely** → Use SEARCH_KEYWORD to find exact line numbers (gets limited 10-line context)
+**Get Full Context** → Use GET_FILE_BY_PATH with start_line/end_line from SEARCH_KEYWORD to get complete code context
+**Store Complete Context** → Store full function/class implementations from GET_FILE_BY_PATH in memory
+**Find Broader Patterns** → Use SEMANTIC_SEARCH only when broader file discovery is needed
 **Map Dependencies** → Use GET_FILE_IMPORTS and GET_DEPENDENCY_CHAIN for impact analysis
 **Specify Changes** → For each location found, specify current element and exact replacement
 **Optimize Instructions** → When same pattern repeats, suggest bulk replacements instead of individual steps
+
+**Two-Step Process**: SEARCH_KEYWORD for line numbers → GET_FILE_BY_PATH for full context → store in memory
+**MANDATORY**: Store complete code context from GET_FILE_BY_PATH - never rely on limited SEARCH_KEYWORD snippets
 
 ## Roadmap Focus Anti-Patterns
 
@@ -130,13 +162,48 @@ Method getUserById(): Add cache check before database query, store result in cac
 Before completion, confirm you have discovered:
 - Project context and available dependencies/packages
 - Existing similar patterns or reusable components
-- Function parameter sources, types, and usage patterns
-- Exact import statements that need changing
-- Specific function signatures and their current parameters
-- Actual method calls with current argument patterns
-- Precise constant/variable declarations and their current values
-- Current code implementations that need replacement
+- Function parameter sources, types, and usage patterns WITH line numbers
+- Exact import statements that need changing WITH line locations
+- Specific function signatures and their current parameters WITH line ranges
+- Actual method calls with current argument patterns WITH line numbers
+- Precise constant/variable declarations and their current values WITH locations
+- Current code implementations that need replacement WITH line ranges
 - Dependencies and files that import modified components
+
+**Key**: All discoveries should include line numbers AND actual code snippets from SEARCH_KEYWORD for efficient targeted access
+
+## Memory Storage Examples
+
+**GOOD Memory Entry (Two-Step Process)**:
+```
+Step 1: SEARCH_KEYWORD "getUserById" in user-service.ts → Found at line 45
+Step 2: GET_FILE_BY_PATH user-service.ts start_line=40 end_line=60 → Full context:
+
+export class UserService {
+  constructor(private database: DatabaseService) {}
+
+  async getUserById(id: string): Promise<User> {
+    const user = await this.database.get(`user:${id}`);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
+  }
+
+  async updateUser(id: string, data: Partial<User>): Promise<User> {
+    // ... context continues
+  }
+}
+```
+
+**BAD Memory Entry**:
+```
+Tool: SEARCH_KEYWORD "getUserById"
+Result: Found getUserById function in user-service.ts at line 45
+(Limited 10-line snippet without sufficient context)
+```
+
+**MANDATORY WORKFLOW**: SEARCH_KEYWORD for location → GET_FILE_BY_PATH for full context → store complete implementation
 
 ## Discovery Checklist
 
