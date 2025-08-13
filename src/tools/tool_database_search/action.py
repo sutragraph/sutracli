@@ -242,21 +242,50 @@ def execute_structured_database_query(
                         if file_id
                         else []
                     )
-            elif base_query_name in ["GET_FILE_IMPORTS", "GET_DEPENDENCY_CHAIN"]:
-                # These queries now take file_path and convert to file_id internally
+            elif base_query_name == "GET_FILE_IMPORTS":
+                # Special handling for GET_FILE_IMPORTS - consolidate all imports into one result
                 file_path = final_params.get("file_path")
                 if file_path:
                     file_id = graph_ops._get_file_id_by_path(file_path)
                     if file_id:
-                        if base_query_name == "GET_DEPENDENCY_CHAIN":
-                            depth = final_params.get("depth", 5)
-                            results = graph_ops.connection.execute_query(
-                                sql_query, (file_id, depth)
-                            )
+                        raw_results = graph_ops.connection.execute_query(sql_query, (file_id,))
+                        if raw_results:
+                            # Consolidate all import statements into a single result
+                            all_imports = []
+                            target_files = []
+                            for result in raw_results:
+                                result_dict = dict(result) if hasattr(result, 'keys') else result
+                                import_content = result_dict.get('code_snippet', result_dict.get('import_content', ''))
+                                file_path_target = result_dict.get('file_path', '')
+                                if import_content:
+                                    all_imports.append(import_content)
+                                    target_files.append(file_path_target)
+                            
+                            # Create consolidated result
+                            consolidated_result = {
+                                'file_path': file_path,  # Original source file
+                                'code_snippet': '\n'.join(all_imports),
+                                'import_count': len(all_imports),
+                                'target_files': target_files,
+                                'language': raw_results[0].get('language', 'unknown') if raw_results else 'unknown'
+                            }
+                            results = [consolidated_result]
                         else:
-                            results = graph_ops.connection.execute_query(
-                                sql_query, (file_id,)
-                            )
+                            results = []
+                    else:
+                        results = []
+                else:
+                    results = []
+            elif base_query_name == "GET_DEPENDENCY_CHAIN":
+                # Handle GET_DEPENDENCY_CHAIN separately
+                file_path = final_params.get("file_path")
+                if file_path:
+                    file_id = graph_ops._get_file_id_by_path(file_path)
+                    if file_id:
+                        depth = final_params.get("depth", 5)
+                        results = graph_ops.connection.execute_query(
+                            sql_query, (file_id, depth)
+                        )
                     else:
                         results = []
                 else:

@@ -99,14 +99,12 @@ WHERE cb.id = (SELECT parent_block_id FROM code_blocks WHERE id = ?)
 
 GET_FILE_IMPORTS = """
 SELECT
-    r.import_content,
+    r.import_content as code_snippet,
     f.file_path, f.language, p.name as project_name
 FROM relationships r
 JOIN files f ON r.target_id = f.id
 JOIN projects p ON f.project_id = p.id
 WHERE r.source_id = ?
-ORDER BY f.file_path
-LIMIT 15
 """
 
 GET_DEPENDENCY_CHAIN = """
