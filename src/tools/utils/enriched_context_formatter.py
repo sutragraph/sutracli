@@ -68,9 +68,8 @@ def beautify_enriched_block_context(
 
     # Header
     result_parts = []
-    header = f"Result {index}/{total_nodes}" + _format_node_id_display(node_id)
+    header = f"Chunk: {index}/{total_nodes}" + _format_node_id_display(node_id)
     result_parts.append(header)
-    result_parts.append("=" * 60)
 
     # Block information
     block_type = block.get('type', 'unknown').title()
@@ -78,18 +77,17 @@ def beautify_enriched_block_context(
     result_parts.append(f"{block_type}: `{block_name}`")
 
     # File context
-    file_path = file_context.get('file_path', 'unknown')
-    language = file_context.get('language', 'unknown')
-    project_name = file_context.get('project_name', 'unknown')
+    file_path = file_context.get("file_path", "unknown")
     result_parts.append(f"File: {file_path}")
-    result_parts.append(f"Language: {language} | Project: {project_name}")
 
     # Line information
     start_line = block.get('start_line')
     end_line = block.get('end_line')
     if start_line and end_line:
         line_count = end_line - start_line + 1
-        result_parts.append(f"Lines: {start_line}-{end_line} ({line_count} lines)")
+        result_parts.append(
+            f"Chunk Lines: {start_line}-{end_line} ({line_count} lines)"
+        )
 
     # Hierarchy information
     if parent_block:
@@ -147,10 +145,8 @@ def beautify_enriched_block_context(
                     tech_count += 1
 
     # Code content
-    if include_code and block.get('content'):
-        result_parts.append("")
+    if include_code and block.get("content"):
         result_parts.append("Code:")
-        result_parts.append("-" * 40)
 
         content = block['content']
         if max_code_lines and len(content.split('\n')) > max_code_lines:

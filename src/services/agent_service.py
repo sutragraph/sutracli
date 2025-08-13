@@ -564,7 +564,7 @@ class AgentService:
                 # Add sutra memory from memory manager - check iteration for better logic
                 if current_iteration == 1:
                     user_message_parts.append(
-                        f"\n====\nSUTRA MEMORY STATUS\n\nNo previous memory available. This is first message from user.\n===="
+                        f"\n====\nSUTRA MEMORY STATUS\n\nNo previous memory available. This is first message from user."
                     )
                     logger.debug("Agent: First iteration with empty memory")
                 elif sutra_memory_rich and sutra_memory_rich.strip():
