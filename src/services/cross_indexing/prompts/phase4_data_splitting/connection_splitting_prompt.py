@@ -17,30 +17,31 @@ Process the collected connection data and categorize each connection as either i
 
 ### INCOMING CONNECTIONS
 Connections where OTHER services connect TO this service:
+Examples:
 - API endpoints and route handlers (Express routes, Flask routes, etc.)
 - WebSocket server endpoints that accept connections
 - Message queue consumers that receive messages
 - Server configurations that listen for connections
 
 ### OUTGOING CONNECTIONS  
-Connections where THIS service connects TO other services:
+Connections where THIS service connects TO other services
+Examples:
 - HTTP client calls (axios, fetch, requests, etc.)
 - WebSocket client connections to other services
 - Message queue producers that send messages
-- Database connections and external service calls
 
 ## PROCESSING RULES
 
 1. Analyze each connection individually - never group multiple connections
-2. Extract complete parameter details including:
+2. Focus ONLY on code that sends or receives data, exclude connection establishment
+3. Extract complete parameter details including:
    - Exact endpoints, queue names, event names
    - HTTP methods, protocols, ports
-   - Environment variables and their resolved values
+   - Environment variables and their resolved values in descriptions
    - File paths and line numbers
-3. Classify direction correctly based on data flow
-4. Include comprehensive descriptions with variable context
-5. Maintain original code snippets exactly as stored
-6. Do not repeat/add-same connections - each connection must be unique
+4. Classify direction correctly based on data flow
+5. Include comprehensive descriptions with variable context
+6. Do not repeat/add-same connections - each data transmission operation must be unique
 ## OUTPUT FORMAT
 
 Return ONLY a valid JSON response with this exact structure:
@@ -64,7 +65,7 @@ Return ONLY a valid JSON response with this exact structure:
       "backend/server.js": [
         {
           "snippet_lines": "79-79",
-          "description": "WebSocket connection handler for real-time communication"
+          "description": "WebSocket connection handler for real-time communication using config variable SOCKET_PORT = 3000"
         }
       ]
     },
@@ -72,7 +73,7 @@ Return ONLY a valid JSON response with this exact structure:
       "backend/services/messageService.js": [
         {
           "snippet_lines": "45-47",
-          "description": "RabbitMQ consumer for order processing queue"
+          "description": "RabbitMQ consumer for order processing queue using env for ORDER_QUEUE = 'order_queue'"
         }
       ]
     }
@@ -82,17 +83,17 @@ Return ONLY a valid JSON response with this exact structure:
       "frontend/src/App.js": [
         {
           "snippet_lines": "37-37",
-          "description": "GET /users API call to backend service"
+          "description": "GET /get-user-data API call to backend service"
         },
         {
           "snippet_lines": "54-54",
-          "description": "POST /users API call to backend service"
+          "description": "POST /create-user API call to backend service"
         }
       ],
       "frontend/src/services/apiService.js": [
         {
           "snippet_lines": "40-40",
-          "description": "GET /users API call to backend service"
+          "description": "GET /get-users API call to backend service with app.use('/admin') route prefix"
         }
       ]
     },
@@ -108,7 +109,7 @@ Return ONLY a valid JSON response with this exact structure:
       "backend/services/eventService.js": [
         {
           "snippet_lines": "23-25",
-          "description": "Kafka producer for user events topic using environment variable KAFKA_BROKERS"
+          "description": "Kafka producer for user events topic using environment variable topic USER_EVENTS = 'user_events'"
         }
       ]
     }
@@ -140,10 +141,11 @@ Structure Requirements:
 ## CRITICAL LINE SELECTION RULES - STORE ACTUAL CALLS NOT WRAPPER DEFINITIONS:
 - For API endpoints: Store ONLY the route decorator lines (@app.route, @api.route, etc.), NOT the function implementation
 - For HTTP client calls: Store ACTUAL API calls like `axios.get('${process.env.API_URL}get-data')`, NOT wrapper function definitions
+Examples:
 - For wrapper function calls: Store the CALL SITES with actual parameters like `apiCallFunction('/users', 'GET')`, NOT the wrapper definition
-- For database connections: Store ONLY the connection establishment lines, NOT query execution code
 - For external API calls: Store ACTUAL fetch/axios calls with real URLs, NOT generic wrapper implementations
-- For cache connections: Store ONLY the cache client creation lines, NOT cache usage code
+- For message queues: Store ONLY publish/consume operations that send/receive messages, NOT queue connection setup
+- For WebSocket connections: Store ONLY send/receive message operations, NOT connection establishment code
 - PRIORITY: Focus on where connections are USED with real values, not where they are defined generically
 - ENVIRONMENT VARIABLES: Include resolved environment variable values in descriptions
 
@@ -152,14 +154,16 @@ Examples of what TO store (ACTUAL CALLS WITH REAL VALUES):
 - const response = await axios.get(`${process.env.API_BASE_URL}/get-data`)  # Store this line
 - const response = await fetch(`${process.env.SERVICE_URL}/api/users/${userId}`)  # Store this line
 - apiCallFunction('/admin/users', 'POST', userData)  # Store this call with actual parameters
+- producer.send('user-events', message)  # Store this line - sends data to queue
+- consumer.on('message', handleMessage)  # Store this line - receives data from queue
 
 Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
 - function apiCallFunction(endpoint, method, data) { ... }  # Don't store wrapper definitions
 - const sendData = (url, payload) => { ... }  # Don't store generic wrapper implementations
 - const endpointUrl = `${process.env.SERVER}path`  # Don't store variable assignments
 - def login_user(): ...                   # Don't store function body
-- user = User.query.filter_by(...)        # Don't store query code
-- cache.set('key', value)                 # Don't store cache usage code
+- const db = new Database(connectionString)  # Don't store connection establishment
+- const cache = redis.createClient()  # Don't store cache client creation
 
 ## CRITICAL SNIPPET RULES - ONE ENDPOINT PER SNIPPET:
 - MANDATORY: Each snippet must represent EXACTLY ONE connection - NEVER group multiple connections
@@ -197,11 +201,11 @@ Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
       "src/services/userService.js": [
         {
           "snippet_lines": "12-14",
-          "description": "HTTP GET call for initial data retrieval using environment variable API_BASE_URL"
+          "description": "HTTP GET call for initial data retrieval using environment variable API_BASE_URL = 'http://localhost:3000/api'"
         },
         {
           "snippet_lines": "28-30",
-          "description": "HTTP GET call for user data using environment variable SERVICE_URL"
+          "description": "HTTP GET call for user data using environment variable SERVICE_URL = 'http://localhost:4000/api/users'"
         }
       ]
     }
