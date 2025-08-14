@@ -128,7 +128,6 @@ Structure Requirements:
 - Each snippet has "snippet_lines" (range format like "15-20") and "description"
 - Use actual technology names as they appear in the project
 - Provide relative file paths from project root
-- Use line ranges for cleaner database storage
 - Include concise descriptions focusing on purpose and environment variables when relevant (e.g., "HTTP GET call for user data using environment variable API_BASE_URL")
 
 ## PROJECT SUMMARY GENERATION RULES
