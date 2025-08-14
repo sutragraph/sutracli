@@ -321,7 +321,7 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
             path_parts.append(
                 f"id={id}, name={name}, type={node_type}, lines={start_line_path}:{end_line_path}"
             )
-        hierarchy_str = " → ".join(path_parts)
+        hierarchy_str = " -> ".join(path_parts)
         result_parts.append(f"hierarchy_path: {hierarchy_str}")
 
     return "\n".join(result_parts)
