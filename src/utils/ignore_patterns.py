@@ -171,7 +171,6 @@ IGNORE_DIRECTORY_PATTERNS: List[str] = [
     "out",
     ".next",
     ".nuxt",
-    ".cache",
     ".parcel-cache",
     ".vuepress",
     # Java specific
@@ -240,10 +239,6 @@ IGNORE_DIRECTORY_PATTERNS: List[str] = [
     # Log directories
     "logs",
     "log",
-    # Cache directories
-    ".cache",
-    "cache",
-    ".sass-cache",
     # Backup directories
     "backup",
     "backups",
