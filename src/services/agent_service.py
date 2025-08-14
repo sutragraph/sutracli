@@ -586,8 +586,8 @@ class AgentService:
                         f"\nTask Progress History:\n{task_progress}"
                     )
 
-                # Add tool status -  FORMAT
-                user_message_parts.append(f"\n====\nTOOL STATUS\n\n{tool_status}\n====")
+                # Add tool status - FORMAT
+                user_message_parts.append(f"\nTOOL STATUS\n\n{tool_status}\n====")
 
                 user_message = "\n".join(user_message_parts)
 
