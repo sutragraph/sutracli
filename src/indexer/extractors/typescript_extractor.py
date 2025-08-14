@@ -39,44 +39,62 @@ class TypeScriptExtractor(BaseExtractor):
         return ""
 
     def _extract_names_from_node(self, node: Any) -> List[str]:
-        """Extract all identifier names from a node (handles various patterns)."""
-        names = []
+        """Extract all identifier names from a node.
+
+        Only special-case class field definitions to pick the left-hand field name.
+        """
+        names: List[str] = []
 
         if node.type in ["identifier", "property_identifier"]:
             names.append(self._get_node_text(node))
+
         elif node.type == "variable_declarator":
             name_node = node.child_by_field_name("name")
             if name_node:
                 names.extend(self._extract_names_from_node(name_node))
+
         elif node.type in ["object_pattern", "array_pattern"]:
             names.extend(self._extract_destructuring_names(node))
-        elif node.type == "function_declaration":
+
+        elif node.type in [
+            "function_declaration",
+            "class_declaration",
+            "interface_declaration",
+            "enum_declaration",
+            "method_definition",
+        ]:
             name_node = node.child_by_field_name("name")
             if name_node:
                 names.append(self._get_node_text(name_node))
-        elif node.type == "class_declaration":
+
+        elif node.type in ["field_definition", "public_field_definition"]:
+            # Minimal: use explicit name child, else first direct property_identifier/identifier
             name_node = node.child_by_field_name("name")
             if name_node:
                 names.append(self._get_node_text(name_node))
-        elif node.type == "interface_declaration":
-            name_node = node.child_by_field_name("name")
-            if name_node:
-                names.append(self._get_node_text(name_node))
-        elif node.type == "enum_declaration":
-            name_node = node.child_by_field_name("name")
-            if name_node:
-                names.append(self._get_node_text(name_node))
+            else:
+                for child in getattr(node, "children", []) or []:
+                    if child.type in ("property_identifier", "identifier"):
+                        names.append(self._get_node_text(child))
+                        break
+
         else:
-            # Generic fallback: find all identifiers in the node
             def find_identifiers(n):
                 if n.type in ["identifier", "property_identifier"]:
                     names.append(self._get_node_text(n))
-                for child in n.children:
+                for child in getattr(n, "children", []) or []:
                     find_identifiers(child)
 
             find_identifiers(node)
 
-        return list(set(names))  # Remove duplicates
+        # De-duplicate while preserving first occurrence
+        seen = set()
+        result: List[str] = []
+        for n in names:
+            if n not in seen:
+                seen.add(n)
+                result.append(n)
+        return result
 
     def _replace_nested_functions_with_references(
         self, original_content: str, nested_functions: List[CodeBlock]
@@ -257,13 +275,23 @@ class TypeScriptExtractor(BaseExtractor):
         return self._generic_traversal(root_node, export_types, process_export)
 
     def extract_functions(self, root_node: Any) -> List[CodeBlock]:
-        """Extract function declarations with nested function extraction for large functions."""
+        """Extract function declarations with nested function extraction for large functions.
+
+        Keep this minimal: skip class-member functions inline to avoid duplicates.
+        """
 
         def process_function(node):
+            # Skip functions that are members of a class; they are handled in extract_classes
+            cur = getattr(node, "parent", None)
+            while cur is not None:
+                if cur.type == "class_body":
+                    return None
+                cur = getattr(cur, "parent", None)
+                return None
+
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
-            # Use the new nested function extraction logic
             return self._create_function_block_with_nested_extraction(
                 node, BlockType.FUNCTION, names, self.FUNCTION_TYPES
             )
@@ -473,20 +501,28 @@ class TypeScriptExtractor(BaseExtractor):
             return self._get_node_text(key_node)
         return ""
 
-    def _is_function_assignment(self, node: Any) -> bool:
-        """Check if node is a function assignment."""
-        if node.type != "assignment_expression":
-            return False
-
-        right_node = node.child_by_field_name("right")
-        return right_node and right_node.type in [
-            "function_expression",
-            "arrow_function",
-        ]
-
     def _extract_class_level_fields(self, class_node: Any) -> List[CodeBlock]:
-        """Extract only class-level field definitions, not variables inside methods."""
+        """Extract class-level field definitions and arrow-function methods.
+
+        Minimal approach: detect arrow/functions inline and derive name from the
+        left-hand property identifier only (avoid scanning inner identifiers).
+        """
         fields = []
+        
+        def get_field_name(field_node: Any) -> Optional[str]:
+            # Prefer named child 'name'
+            name_node = field_node.child_by_field_name("name")
+            if name_node:
+                return self._get_node_text(name_node)
+            # Strong heuristic: first direct property_identifier (field name)
+            for child in getattr(field_node, "children", []) or []:
+                if child.type == "property_identifier":
+                    return self._get_node_text(child)
+            # Next best: direct identifier
+            for child in getattr(field_node, "children", []) or []:
+                if child.type == "identifier":
+                    return self._get_node_text(child)
+            return None
 
         # Look for the class body
         for child in class_node.children:
@@ -497,12 +533,34 @@ class TypeScriptExtractor(BaseExtractor):
                         "field_definition",
                         "public_field_definition",
                     ]:
-                        # This is a class-level field definition
-                        names = self._extract_names_from_node(body_child)
-                        if names:
-                            field_block = self._create_code_block(
-                                body_child, BlockType.VARIABLE, names
-                            )
-                            fields.append(field_block)
+                        # Inline check: treat as method if it contains arrow/function expression
+                        def contains_func(n: Any) -> bool:
+                            if n.type in ("arrow_function", "function_expression"):
+                                return True
+                            for c in getattr(n, "children", []) or []:
+                                if contains_func(c):
+                                    return True
+                            return False
+
+                        if contains_func(body_child):
+                            # This is an arrow function method
+                            field_name = get_field_name(body_child)
+                            if field_name:
+                                # Create as a function block with nested extraction for large functions
+                                method_block = self._create_function_block_with_nested_extraction(
+                                    body_child,
+                                    BlockType.FUNCTION,
+                                    [field_name],
+                                    self.FUNCTION_TYPES,
+                                )
+                                fields.append(method_block)
+                        else:
+                            # This is a regular class field
+                            names = self._extract_names_from_node(body_child)
+                            if names:
+                                field_block = self._create_code_block(
+                                    body_child, BlockType.VARIABLE, names
+                                )
+                                fields.append(field_block)
 
         return fields
