@@ -138,9 +138,10 @@ class ASTParser:
                 "language": "unknown",
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": "",
+                "content": read_file_content(file_path) or "",
                 "content_hash": hashlib.sha256(b"").hexdigest(),
                 "relationships": [],
+                "unsupported": True,
                 "error": "Failed to parse file"
             }
 
@@ -154,7 +155,7 @@ class ASTParser:
                 "language": "unknown",
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": "",
+                "content": read_file_content(file_path) or "",
                 "content_hash": hashlib.sha256(b"").hexdigest(),
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported file type

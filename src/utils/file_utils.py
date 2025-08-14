@@ -182,7 +182,7 @@ def get_extraction_file_path(project_name: str) -> Path:
     return Path(base_path).resolve() / f"{project_name}_extraction_{timestamp}.json"
 
 
-def get_last_extraction_file_path(project_name: str) -> Union[Path | None]:
+def get_last_extraction_file_path(project_name: str) -> Union[Path , None]:
     """
     Get the most recent extraction file path for a given project.
 
