@@ -167,7 +167,7 @@ code_snippet:
         Returns:
             tuple: (is_valid, error_message)
         """
-        required_fields = ["matches", "total_matches"]
+        required_fields = ["matches"]
 
         # Check required top-level fields
         for field in required_fields:
@@ -193,10 +193,6 @@ code_snippet:
             # Validate confidence level
             if match["match_confidence"] not in ["high", "medium", "low"]:
                 return False, f"Invalid confidence level: {match['match_confidence']}"
-
-        # Validate total_matches count
-        if response_json["total_matches"] != len(response_json["matches"]):
-            return False, "total_matches count doesn't match matches list length"
 
         return True, None
 
@@ -262,7 +258,6 @@ code_snippet:
         processed_response = {
             **response_json,
             "matches": validated_matches,
-            "total_matches": len(validated_matches),
             "validation_status": "processed",
         }
 
