@@ -978,6 +978,7 @@ class GraphOperations:
                         "start_line": result["start_line"],
                         "end_line": result["end_line"],
                         "parent_block_id": result["parent_block_id"],
+                        "file_path": result["file_path"],
                         "hierarchy_path": hierarchy_path,
                     }
                 )

@@ -18,6 +18,7 @@ def beautify_node_result(
         total_nodes: Total number of nodes being sent (for guidance)
         chunk_info: Dictionary with chunk information (chunk_num, total_chunks, start_line, end_line, total_lines)
     """
+
     # First try to get start_line and end_line directly from node
     start_line = node.get("start_line")
     end_line = node.get("end_line")
@@ -194,22 +195,6 @@ def beautify_node_result(
                         snippet_preview = code_snippet.strip()
                     result_parts.append(f"    code: {snippet_preview}")
 
-    # Add hierarchy path if available (for GET_FILE_BLOCK_SUMMARY results)
-    hierarchy_path = node.get("hierarchy_path")
-    if hierarchy_path and isinstance(hierarchy_path, list) and len(hierarchy_path) > 0:
-        path_parts = []
-        for path_node in hierarchy_path:
-            id = path_node.get("id", "unknown")
-            name = path_node.get("name", "unknown")
-            node_type = path_node.get("type", "unknown")
-            start_line = path_node.get("start_line", "unknown")
-            end_line = path_node.get("end_line", "unknown")
-            path_parts.append(
-                f"id={id}, name={name}, type={node_type}, lines={start_line}:{end_line}"
-            )
-        hierarchy_str = " → ".join(path_parts)
-        result_parts.append(f"hierarchy_path: {hierarchy_str}")
-
     # Add code snippet if requested and available
     if include_code:
         # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'
@@ -263,15 +248,6 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
                 except (json.JSONDecodeError, ValueError):
                     pass
 
-    # Build header with index if provided
-    if idx is not None:
-        if total_nodes:
-            header = f"=== NODE {idx} of {total_nodes} ==="
-        else:
-            header = f"=== NODE {idx} ==="
-    else:
-        header = "=== NODE ==="
-
     # Format start_line:end_line
     if start_line is not None and end_line is not None:
         start_end_str = f"{start_line}:{end_line}"
@@ -287,41 +263,52 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     # Show block_id if available, otherwise show file info
     block_id = node.get("id", node.get("block_id"))
     if block_id:
-        id_info = f"block_id: {block_id}"
         # Add block type and name if available
-        block_type = node.get("type")
-        block_name = node.get("name")
-        type_info = f"block_type: {block_type}" if block_type else ""
-        name_info = f"block_name: {block_name}" if block_name else ""
+        block_type = node.get("type", "unknown")
+        block_name = node.get("name", "unnamed")
     else:
-        id_info = f'file_id: {node.get("file_id", "unknown")}'
-        type_info = ""
-        name_info = ""
+        block_type = "file"
+        block_name = "unknown"
 
-    # Build the result
-    result_parts = [header, f'file_path: {node.get("file_path", "unknown")}', id_info]
+    # Calculate tree position for hierarchy display
+    hierarchy_path = node.get("hierarchy_path", [])
+    parent_block_id = node.get("parent_block_id")
+    
+    # Determine tree symbols based on hierarchy
+    if parent_block_id is None:
+        # Root level block
+        if idx == 1:
+            tree_symbol = "" if total_nodes == 1 else "├─ "
+        elif idx == total_nodes:
+            tree_symbol = "└─ "
+        else:
+            tree_symbol = "├─ "
+        indent = ""
+    else:
+        # Child block - determine depth from hierarchy path
+        depth = len(hierarchy_path) if hierarchy_path else 1
+        indent = "│  " * (depth - 1)
+        
+        # For now, assume it's the last child (in real implementation, 
+        # we'd need parent-child relationship info)
+        tree_symbol = "└─ "
 
-    if type_info:
-        result_parts.append(type_info)
-    if name_info:
-        result_parts.append(name_info)
-
-    result_parts.append(f"start_line:end_line: {start_end_str}")
-
-    # Add hierarchy path if available (for GET_FILE_BLOCK_SUMMARY results)
-    hierarchy_path = node.get("hierarchy_path")
-    if hierarchy_path and isinstance(hierarchy_path, list) and len(hierarchy_path) > 0:
-        path_parts = []
-        for path_node in hierarchy_path:
-            id = path_node.get("id", "unknown")
-            name = path_node.get("name", "unknown")
-            node_type = path_node.get("type", "unknown")
-            start_line_path = path_node.get("start_line", "unknown")
-            end_line_path = path_node.get("end_line", "unknown")
-            path_parts.append(
-                f"id={id}, name={name}, type={node_type}, lines={start_line_path}:{end_line_path}"
-            )
-        hierarchy_str = " -> ".join(path_parts)
-        result_parts.append(f"hierarchy_path: {hierarchy_str}")
+    # Build tree-style representation
+    tree_line = f"{indent}{tree_symbol}{block_type}: {block_name} (lines {start_end_str}) [block_id={block_id}]"
+    
+    # If this is the first node, add a header
+    if idx == 1:
+        file_path = node.get("file_path", "unknown")
+        result_parts = [
+            f"📁 File: {file_path}",
+            f"📊 Total blocks: {total_nodes}",
+            "",
+            "File Structure:",
+            tree_line
+        ]
+    else:
+        result_parts = [tree_line]
 
     return "\n".join(result_parts)
+
+

@@ -73,8 +73,10 @@ GROUP BY f.id
 
 GET_FILE_BLOCK_SUMMARY = """
 SELECT
-    cb.id, cb.type, cb.name, cb.start_line, cb.end_line, cb.parent_block_id
+    cb.id, cb.type, cb.name, cb.start_line, cb.end_line, cb.parent_block_id,
+    f.file_path
 FROM code_blocks cb
+JOIN files f ON cb.file_id = f.id
 WHERE cb.file_id = ?
 ORDER BY cb.start_line
 """
