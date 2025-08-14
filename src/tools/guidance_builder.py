@@ -109,7 +109,6 @@ def build_guidance_message(
             )
             end_range = delivered_count if delivered_count > 0 else total_nodes
             message = f"Showing nodes {start_range} to {end_range} of {total_nodes}."
-            # BUGFIX: Show fetch_next_code note but without line numbers for semantic search
             if remaining_count > 0:
                 message += f"\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query. ({remaining_count} more nodes available)"
         else:
@@ -733,7 +732,6 @@ class SemanticSearchGuidance(BaseToolGuidance):
         delivered_count = batch_info.get("delivered_count", 0)
         remaining_count = batch_info.get("remaining_count", 0)
 
-        # BUGFIX: For semantic search, show fetch_next_code note but no line numbers
         start_range = max(1, delivered_count - batch_info.get("batch_size", 15) + 1)
         end_range = delivered_count
 

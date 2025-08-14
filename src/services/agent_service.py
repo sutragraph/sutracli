@@ -331,9 +331,6 @@ class AgentService:
                         # Show tool execution for all relevant events
                         event_type = event.get("type", "unknown")
 
-                        # BUGFIX: Only log the main tool_use events, not individual search results
-                        # This prevents multiple log entries for semantic search individual results
-                        # Only log once per tool execution, not for each individual result
                         should_log = False
                         if event_type == "tool_use":
                             # For semantic_search, only log if this is the first result or has batch_info

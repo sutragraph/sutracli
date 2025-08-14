@@ -178,7 +178,6 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
         total_nodes = delivery_items[0].get("total_nodes", len(delivery_items))
         query = action_parameters.get("query", "")
         delivered_count = len(batch_items)
-        # BUGFIX: Calculate remaining count correctly - use total_nodes, not delivery_items length
         remaining_count = total_nodes - delivered_count
 
         # Combine data from all items
@@ -283,7 +282,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
             f"📦 Getting batch from {len(delivery_items)} items with line_limit={line_limit}"
         )
 
-        # BUGFIX: For chunked content, deliver only 1 chunk at a time regardless of line limit
         # This prevents all small chunks from being delivered in the first batch
         is_chunked_content = any(
             item.get("chunk_info")
@@ -429,7 +427,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         # Check if this is a metadata-only query
         query_name = action_parameters.get("query_name", "unknown")
         is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY"
-        
+
         event = {
             "type": "tool_use",
             "tool_name": "database",
@@ -588,8 +586,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         logger.debug(f"📦 Registered {len(delivery_items)} items for {action_type}")
 
         # For database search, find the item with actual content (not just status)
-        # BUGFIX: For chunked content, always respect chunk order instead of selecting by data size
-
         # Check if this is chunked content
         is_chunked_content = any(
             item.get("chunk_info")

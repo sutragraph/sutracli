@@ -199,9 +199,6 @@ class ActionExecutor:
                             delivery_items.append(event)
                         yield event
 
-                # BUGFIX: Don't re-register delivery for items that already have internal_delivery_handled flag
-                # This prevents duplicate delivery registration for tools like semantic_search
-                # that handle delivery internally
                 has_internal_delivery = any(
                     item.get("internal_delivery_handled") is True for item in events
                 )
