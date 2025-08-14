@@ -203,8 +203,15 @@ class ActionExecutor:
                     item.get("internal_delivery_handled") is True for item in events
                 )
 
+                # Skip delivery queue registration for tools that don't need it
+                tools_without_delivery = [ToolName.LIST_FILES, ToolName.SEARCH_KEYWORD, ToolName.APPLY_DIFF,
+                                        ToolName.COMPLETION, ToolName.TERMINAL_COMMANDS, ToolName.WEB_SCRAP,
+                                        ToolName.WEB_SEARCH, ToolName.WRITE_TO_FILE]
+
                 if has_internal_delivery:
                     logger.debug(f"📦 Skipping delivery registration for {tool_name} - already handled internally")
+                elif tool_enum in tools_without_delivery:
+                    logger.debug(f"📦 Skipping delivery registration for {tool_name} - tool doesn't use delivery queues")
                 elif delivery_items:
                     # Try to register delivery queue for tools that don't handle delivery internally
                     delivery_result = register_delivery_queue_and_get_first_batch(

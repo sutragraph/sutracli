@@ -708,9 +708,20 @@ class CrossIndexService:
             finally:
                 self.prompt_manager.task_manager.set_current_phase(old_phase)
 
+            if (
+                tool_status
+                and tool_status.strip()
+                != "No previous tool execution in cross-indexing analysis"
+            ):
+                memory_context_with_tool_status = (
+                    f"{memory_context}\n\nTOOL STATUS\n\n{tool_status}\n===="
+                )
+            else:
+                memory_context_with_tool_status = memory_context
+
             # Get phase-specific user prompt
             user_message = self.prompt_manager.get_user_prompt(
-                analysis_query, memory_context
+                analysis_query, memory_context_with_tool_status
             )
 
             logger.debug(
