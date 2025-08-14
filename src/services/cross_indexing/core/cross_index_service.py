@@ -1025,9 +1025,6 @@ class CrossIndexService:
                 formatted_tool_results
             )
 
-            logger.info(
-                "Calling LLM with code manager prompt (separate system/user prompts)"
-            )
             response = self.llm_client.call_llm(
                 system_prompt, user_prompt, return_raw=True
             )

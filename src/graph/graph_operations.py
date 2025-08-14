@@ -41,6 +41,7 @@ from queries.agent_queries import (
 )
 from .sqlite_client import SQLiteConnection
 
+
 class GraphOperations:
     """High-level operations for inserting code extraction data."""
 
@@ -358,22 +359,16 @@ class GraphOperations:
                     )
                     return file_id
 
-            filename = os.path.basename(file_path)
-            if filename:
+            if file_path:
                 result = self.connection.execute_query(
                     "SELECT id, file_path FROM files WHERE file_path LIKE ?",
-                    (f"%{filename}",),
+                    (f"%{file_path}",),
                 )
 
                 if result:
-                    # If multiple matches, prefer exact filename match
-                    for row in result:
-                        if os.path.basename(row["file_path"]) == filename:
-                            file_id = row["id"]
-                            logger.debug(
-                                f"Found file_id {file_id} by filename match for {filename} -> {row['file_path']}"
-                            )
-                            return file_id
+                    file_id = result[0]["id"]
+                    logger.debug(f"Found file_id {file_id} by filepath")
+                    return file_id
 
             logger.warning(
                 f"No file_id found for {file_path} (absolute: {absolute_file_path})"
@@ -975,15 +970,17 @@ class GraphOperations:
 
             for result in results:
                 hierarchy_path = self.get_block_hierarchy_path(result["id"])
-                summary_results.append({
-                    "id": result["id"],
-                    "type": result["type"],
-                    "name": result["name"],
-                    "start_line": result["start_line"],
-                    "end_line": result["end_line"],
-                    "parent_block_id": result["parent_block_id"],
-                    "hierarchy_path": hierarchy_path,
-                })
+                summary_results.append(
+                    {
+                        "id": result["id"],
+                        "type": result["type"],
+                        "name": result["name"],
+                        "start_line": result["start_line"],
+                        "end_line": result["end_line"],
+                        "parent_block_id": result["parent_block_id"],
+                        "hierarchy_path": hierarchy_path,
+                    }
+                )
 
             return summary_results
         except Exception as e:

@@ -9,9 +9,26 @@ CONNECTION_SPLITTING_PROMPT = """CONNECTION SPLITTING ANALYSIS
 
 You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format. Additionally, include a concise top-level "summary" describing what the project does based on the collected connections.
 
+## ABSOLUTE CRITICAL RULE - ONE CONNECTION PER SNIPPET
+
+MANDATORY: Each snippet entry must represent EXACTLY ONE connection. You are FORBIDDEN from grouping multiple connections together.
+
+EXAMPLES OF FORBIDDEN GROUPING:
+- "Message handlers for incoming events including eventA, eventB, eventC"
+- "API endpoints including endpointX, endpointY, endpointZ"  
+- "Multiple operations for data processing"
+- "Connection handlers including X, Y, Z"
+
+REQUIRED APPROACH:
+- "Message handler for eventA"
+- "Message handler for eventB"  
+- "Message handler for eventC"
+- "GET /endpointX for data retrieval"
+- "POST /endpointY for data creation"
+
 ## OBJECTIVE
 
-Process the collected connection data and categorize each connection as either incoming or outgoing, then return structured JSON with complete connection details. Also include a brief, evidence-based "summary" of the project's purpose and data flows.
+Process the collected connection data and categorize each connection as either incoming or outgoing, then return structured JSON with complete connection details. Each connection must be a separate entry with its own specific line numbers and description.
 
 ## CONNECTION CLASSIFICATION
 
@@ -33,15 +50,57 @@ Examples:
 ## PROCESSING RULES
 
 1. Analyze each connection individually - never group multiple connections
-2. Focus ONLY on code that sends or receives data, exclude connection establishment
-3. Extract complete parameter details including:
-   - Exact endpoints, queue names, event names
-   - HTTP methods, protocols, ports
+2. Create separate entries - If you find code with multiple operations, create separate entries for each
+3. Extract individual details - Each entry gets its own specific line numbers and operation details
+4. Focus on data transmission - Only code that sends or receives data, exclude setup
+5. Include complete parameter details:
+   - Exact endpoints, event names, queue names, method names
+   - Protocols, methods, parameters
    - Environment variables and their resolved values in descriptions
    - File paths and line numbers
-4. Classify direction correctly based on data flow
-5. Include comprehensive descriptions with variable context
-6. Do not repeat/add-same connections - each data transmission operation must be unique
+6. Classify direction correctly based on data flow
+7. No duplicates - each data transmission operation must be unique
+
+## GENERIC ANALYSIS INSTRUCTIONS
+
+### FOR CONDITIONAL/SWITCH STATEMENTS:
+If you find code with multiple branches handling different operations:
+```
+switch/if (condition) {
+  case/condition A: { /* handler code */ }
+  case/condition B: { /* handler code */ }
+  case/condition C: { /* handler code */ }
+}
+```
+
+You MUST create separate entries:
+- One for operation A handler
+- One for operation B handler  
+- One for operation C handler
+
+### FOR MULTIPLE OPERATION DEFINITIONS:
+If you find code defining multiple operations:
+```
+operation1(params);
+operation2(params);
+operation3(params);
+```
+
+You MUST create separate entries:
+- One for operation1
+- One for operation2
+- One for operation3
+
+### FOR ROUTER/HANDLER REGISTRATIONS:
+If you find code registering multiple handlers:
+```
+register('/pathA', handlerA);
+register('/pathB', handlerB);
+register('/pathC', handlerC);
+```
+
+You MUST create separate entries for each registration.
+
 ## OUTPUT FORMAT
 
 Return ONLY a valid JSON response with this exact structure:
@@ -49,185 +108,82 @@ Return ONLY a valid JSON response with this exact structure:
 ```json
 {
   "incoming_connections": {
-    "express": {
-      "backend/server.js": [
+    "technology_name": {
+      "file/path.ext": [
         {
           "snippet_lines": "23-23",
-          "description": "GET /api/health endpoint for health check"
+          "description": "Specific operation A for incoming data"
         },
         {
           "snippet_lines": "27-27",
-          "description": "GET /api/users endpoint for user retrieval"
-        }
-      ]
-    },
-    "socket.io": {
-      "backend/server.js": [
-        {
-          "snippet_lines": "79-79",
-          "description": "WebSocket connection handler for real-time communication using config variable SOCKET_PORT = 3000"
-        }
-      ]
-    },
-    "rabbitmq": {
-      "backend/services/messageService.js": [
-        {
-          "snippet_lines": "45-47",
-          "description": "RabbitMQ consumer for order processing queue using env for ORDER_QUEUE = 'order_queue'"
+          "description": "Specific operation B for incoming data"
         }
       ]
     }
   },
   "outgoing_connections": {
-    "axios": {
-      "frontend/src/App.js": [
+    "technology_name": {
+      "file/path.ext": [
         {
           "snippet_lines": "37-37",
-          "description": "GET /get-user-data API call to backend service"
+          "description": "Specific operation X for outgoing data"
         },
         {
           "snippet_lines": "54-54",
-          "description": "POST /create-user API call to backend service"
-        }
-      ],
-      "frontend/src/services/apiService.js": [
-        {
-          "snippet_lines": "40-40",
-          "description": "GET /get-users API call to backend service with app.use('/admin') route prefix"
-        }
-      ]
-    },
-    "socket.io-client": {
-      "frontend/src/App.js": [
-        {
-          "snippet_lines": "18-18",
-          "description": "WebSocket client connection to backend"
-        }
-      ]
-    },
-    "kafka": {
-      "backend/services/eventService.js": [
-        {
-          "snippet_lines": "23-25",
-          "description": "Kafka producer for user events topic using environment variable topic USER_EVENTS = 'user_events'"
+          "description": "Specific operation Y for outgoing data"
         }
       ]
     }
   },
-  "summary": "Brief 1-3 sentence summary of the project's purpose and main data flows based on observed connections"
+  "summary": "Brief summary of the project's purpose and main data flows based on observed connections"
 }
 ```
 
-Structure Requirements:
-- Group connections by direction: "incoming_connections" and "outgoing_connections"
-- Include a top-level string field "summary" (10-15 sentences) explaining what the project does and how components interact, derived strictly from the collected connections; neutral tone; no speculation beyond evidence
-- Place "summary" after both "incoming_connections" and "outgoing_connections" in the JSON object
-- Within each direction, group by technology name (flask, express, springboot, etc.)
-- Within each technology, group by file path
-- Each file path contains an array of connection snippets
-- Each snippet has "snippet_lines" (range format like "15-20") and "description"
-- Use actual technology names as they appear in the project
-- Provide relative file paths from project root
-- Include concise descriptions focusing on purpose and environment variables when relevant (e.g., "HTTP GET call for user data using environment variable API_BASE_URL")
+## MANDATORY SNIPPET SEPARATION RULES
 
-## PROJECT SUMMARY GENERATION RULES
+### RULE 1: ONE OPERATION PER SNIPPET
+For any code handling multiple operations:
+- Each operation gets its own snippet entry
+- Use specific line numbers for each operation block
+- Description must mention the specific operation
 
-1. Write 10-15 sentences summarizing the project's purpose and architecture inferred from the connections.
-2. Base the summary solely on evidence from incoming and outgoing connections (endpoints, clients, message queues, protocols, env vars).
-3. Write about the project's purpose and architecture, and how the connections are used to achieve the purpose.
-4. Keep it concise and strictly based on observed connections.
+### RULE 2: ONE ENDPOINT/EVENT/METHOD PER SNIPPET  
+For any code defining multiple endpoints/events/methods:
+- Each definition gets its own snippet entry
+- Use specific line numbers for each definition
+- Description must include the specific endpoint/event/method details
 
-## CRITICAL LINE SELECTION RULES - STORE ACTUAL CALLS NOT WRAPPER DEFINITIONS:
-- For API endpoints: Store ONLY the route decorator lines (@app.route, @api.route, etc.), NOT the function implementation
-- For HTTP client calls: Store ACTUAL API calls like `axios.get('${process.env.API_URL}get-data')`, NOT wrapper function definitions
-Examples:
-- For wrapper function calls: Store the CALL SITES with actual parameters like `apiCallFunction('/users', 'GET')`, NOT the wrapper definition
-- For external API calls: Store ACTUAL fetch/axios calls with real URLs, NOT generic wrapper implementations
-- For message queues: Store ONLY publish/consume operations that send/receive messages, NOT queue connection setup
-- For WebSocket connections: Store ONLY send/receive message operations, NOT connection establishment code
-- PRIORITY: Focus on where connections are USED with real values, not where they are defined generically
-- ENVIRONMENT VARIABLES: Include resolved environment variable values in descriptions
+### RULE 3: ONE DATA TRANSMISSION PER SNIPPET
+For any code performing multiple data transmissions:
+- Each transmission operation gets its own snippet entry
+- Use specific line numbers for each transmission
+- Description must specify what data is being transmitted
 
-Examples of what TO store (ACTUAL CALLS WITH REAL VALUES):
-- @app.route('/login', methods=['POST'])  # Store this line
-- const response = await axios.get(`${process.env.API_BASE_URL}/get-data`)  # Store this line
-- const response = await fetch(`${process.env.SERVICE_URL}/api/users/${userId}`)  # Store this line
-- apiCallFunction('/admin/users', 'POST', userData)  # Store this call with actual parameters
-- producer.send('user-events', message)  # Store this line - sends data to queue
-- consumer.on('message', handleMessage)  # Store this line - receives data from queue
+### RULE 4: PRECISE LINE NUMBERS
+- Use exact line numbers for each individual connection
+- For single-line connections: "23-23"
+- For multi-line connections: "23-27" (only if they're truly one logical connection)
+- Never use large ranges that span multiple different connections
 
-Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
-- function apiCallFunction(endpoint, method, data) { ... }  # Don't store wrapper definitions
-- const sendData = (url, payload) => { ... }  # Don't store generic wrapper implementations
-- const endpointUrl = `${process.env.SERVER}path`  # Don't store variable assignments
-- def login_user(): ...                   # Don't store function body
-- const db = new Database(connectionString)  # Don't store connection establishment
-- const cache = redis.createClient()  # Don't store cache client creation
+## EXAMPLES OF CORRECT SEPARATION
 
-## CRITICAL SNIPPET RULES - ONE ENDPOINT PER SNIPPET:
-- MANDATORY: Each snippet must represent EXACTLY ONE connection - NEVER group multiple connections
-- ONE ENDPOINT RULE: Each API endpoint must be stored as a separate snippet with its own specific line numbers
-- SEPARATE ENTRIES: If you find 10 API endpoints, create 10 separate snippet entries - NOT 1 grouped entry
-- INDIVIDUAL DESCRIPTIONS: Each snippet must describe ONE specific endpoint, method, and purpose
-- NO GROUPING: Never use descriptions like "Multiple endpoints" or "API endpoints including X, Y, Z"
-- STORE CALL SITES: Store where wrapper functions are called with actual values, not where they are defined
-- INCLUDE ENVIRONMENT VALUES: Add resolved environment variable values to descriptions
-- ACTUAL ENDPOINTS: Focus on real endpoints, methods, and data being sent/received
-
-## GOOD EXAMPLE - Each snippet is ONE connection with environment variable values:
+### CORRECT - Multiple Event Handlers:
 ```json
 {
   "incoming_connections": {
-    "express": {
-      "src/routers/userRouter.js": [
+    "event_system": {
+      "src/handlers.js": [
         {
-          "snippet_lines": "15-18",
-          "description": "POST /api/users endpoint for user creation"
+          "snippet_lines": "15-25",
+          "description": "Event handler for user_login event"
         },
         {
-          "snippet_lines": "25-28",
-          "description": "GET /api/users/:id endpoint for user retrieval"
+          "snippet_lines": "30-40", 
+          "description": "Event handler for user_logout event"
         },
         {
-          "snippet_lines": "35-38",
-          "description": "PUT /api/users/:id endpoint for user updates"
-        }
-      ]
-    }
-  },
-  "outgoing_connections": {
-    "axios": {
-      "src/services/userService.js": [
-        {
-          "snippet_lines": "12-14",
-          "description": "HTTP GET call for initial data retrieval using environment variable API_BASE_URL = 'http://localhost:3000/api'"
-        },
-        {
-          "snippet_lines": "28-30",
-          "description": "HTTP GET call for user data using environment variable SERVICE_URL = 'http://localhost:4000/api/users'"
-        }
-      ]
-    }
-  },
-  "summary": "Express-based user service exposing CRUD endpoints; Axios client integrates with external services; env-based configuration for base URLs."
-}
-```
-
-## BAD EXAMPLE - Grouping multiple endpoints (NEVER DO THIS):
-```json
-{
-  "incoming_connections": {
-    "express": {
-      "src/routers/userRouter.js": [
-        {
-          "snippet_lines": "15-45",
-          "description": "API endpoints for communication using route prefix including check-room-demo, store-embeddings, get-embeddings, health-check, and end-interview endpoints"
-        }
-      ],
-      "src/routers/adminRouter.js": [
-        {
-          "snippet_lines": "71-133",
-          "description": "Multiple user service endpoints for admin"
+          "snippet_lines": "45-55",
+          "description": "Event handler for data_update event"
         }
       ]
     }
@@ -235,19 +191,23 @@ Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
 }
 ```
 
-## BAD EXAMPLE - Storing wrapper function definitions instead of calls (NEVER DO THIS):
+### CORRECT - Multiple Operations:
 ```json
 {
   "outgoing_connections": {
-    "axios": {
-      "src/utils/apiClient.js": [
+    "http_client": {
+      "src/client.js": [
         {
-          "snippet_lines": "41-41",
-          "description": "HTTP GET wrapper function for service communication"
+          "snippet_lines": "15-15",
+          "description": "GET request for user data retrieval"
         },
         {
-          "snippet_lines": "43-43",
-          "description": "HTTP POST wrapper function for service communication"
+          "snippet_lines": "23-23",
+          "description": "POST request for user data creation"
+        },
+        {
+          "snippet_lines": "31-31",
+          "description": "PUT request for user data update"
         }
       ]
     }
@@ -255,15 +215,17 @@ Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
 }
 ```
 
-## BAD EXAMPLE - Vague descriptions without environment variable values (NEVER DO THIS):
+## EXAMPLES OF FORBIDDEN GROUPING
+
+### FORBIDDEN - Grouping Multiple Operations:
 ```json
 {
   "incoming_connections": {
-    "express": {
-      "src/index.js": [
+    "event_system": {
+      "src/handlers.js": [
         {
-          "snippet_lines": "71-78",
-          "description": "Router mounts for 8 different service endpoints"
+          "snippet_lines": "15-55",
+          "description": "Event handlers for multiple events including user_login, user_logout, and data_update"
         }
       ]
     }
@@ -271,138 +233,47 @@ Examples of what NOT to store (WRAPPER DEFINITIONS AND GENERIC CODE):
 }
 ```
 
-REMEMBER: If you find 26 API endpoints, create 26 separate snippet entries, each with specific line numbers and descriptions for that ONE endpoint.
-
-CRITICAL ENDPOINT SEPARATION RULE:
-- NEVER group multiple endpoints in one snippet description
-- NEVER use phrases like "including X, Y, Z endpoints" or "Multiple endpoints for..."
-- ALWAYS create separate snippet entries for each individual endpoint
-- Each endpoint gets its own snippet_lines and description
-- Example: If you find 5 endpoints on lines 10, 15, 20, 25, 30 - create 5 separate snippets, NOT 1 snippet with "10-30" lines
-
-CORRECT APPROACH FOR MULTIPLE ENDPOINTS:
-Instead of:
+### FORBIDDEN - Grouping Multiple Endpoints:
 ```json
 {
-  "snippet_lines": "648-658",
-  "description": "API endpoints including endpoint-a, endpoint-b, endpoint-c, endpoint-d, and endpoint-e"
+  "outgoing_connections": {
+    "http_client": {
+      "src/client.js": [
+        {
+          "snippet_lines": "15-31",
+          "description": "HTTP requests including GET, POST, and PUT operations for user management"
+        }
+      ]
+    }
+  }
 }
 ```
 
-Do this:
-```json
-{
-  "snippet_lines": "650-650",
-  "description": "GET /endpoint-a/:id endpoint for resource verification"
-},
-{
-  "snippet_lines": "651-651",
-  "description": "POST /endpoint-b endpoint for data storage"
-},
-{
-  "snippet_lines": "652-652",
-  "description": "GET /endpoint-c/:uid endpoint for data retrieval"
-},
-{
-  "snippet_lines": "657-657",
-  "description": "GET /endpoint-d endpoint for service health monitoring"
-},
-{
-  "snippet_lines": "658-658",
-  "description": "POST /endpoint-e endpoint for process termination"
-}
-```
+## STEP-BY-STEP ANALYSIS PROCESS
 
-## EXAMPLE FOR NO CONNECTIONS FOUND:
-If no connections are discovered during analysis, you MUST still return JSON with empty objects:
-
-```json
-{
-  "incoming_connections": {},
-  "outgoing_connections": {},
-  "summary": "No connections discovered in code; insufficient data to infer project purpose."
-}
-```
+1. Identify all connections: Scan through all code snippets and identify every individual connection
+2. Separate each connection: For each connection found, create a separate JSON entry
+3. Extract precise details: Get exact line numbers and specific details for each connection
+4. Write specific descriptions: Each description must be about ONE specific connection
 
 ## CRITICAL REQUIREMENTS
 
-1. Process ALL connections - never skip or sample connections
-2. Maintain exact code snippets as stored in sutra memory
-3. Use the exact format shown in examples above
-4. Include complete variable context in descriptions
-5. Classify direction accurately based on data flow
-6. Return valid JSON only - no additional text or explanations
-7. DEDUPLICATION RULE - Avoid overlapping code snippets in the same file:
-   - If you have snippets with lines "13-19" and "12-20" in the same file, they overlap significantly
-   - Choose the snippet with the most complete context
-   - Exception: Non-overlapping snippets in the same file should all be included
+1. Process all connections - never skip or sample connections
+2. Separate all connections - never group multiple connections into one entry
+3. Use exact line numbers - be precise about where each connection is located
+4. Write specific descriptions - each description must be about one connection only
+5. Return valid JSON only - no additional text or explanations
+6. No phrases like: "including", "multiple", "various", "several", "operations for"
 
 ## RESPONSE REQUIREMENTS
 
 - Return ONLY valid JSON with no additional text
 - Process every single connection from sutra memory data
-- Include a concise top-level "summary" as described above
-- Group by technology and file path as shown in format
-- Use line ranges for snippet_lines (e.g., "15-20" or "23-23")
+- Create separate entries for each individual connection
+- Use precise line numbers for each connection
+- Write specific descriptions for each connection
 - Include environment variable information in descriptions
+- Group by technology and file path as shown in format
 
-## DEDUPLICATION EXAMPLES
-
-GOOD - No overlapping snippets:
-```json
-{
-  "outgoing_connections": {
-    "axios": {
-      "src/api/client.js": [
-        {
-          "snippet_lines": "10-12",
-          "description": "HTTP GET call to user service"
-        },
-        {
-          "snippet_lines": "25-27",
-          "description": "HTTP POST call to order service"
-        }
-      ]
-    }
-  }
-}
-```
-
-BAD - Overlapping snippets (lines 13-19 overlap with 12-20):
-```json
-{
-  "outgoing_connections": {
-    "axios": {
-      "src/api/client.js": [
-        {
-          "snippet_lines": "13-19",
-          "description": "HTTP GET call to user service"
-        },
-        {
-          "snippet_lines": "12-20",
-          "description": "HTTP GET call to user service with config"
-        }
-      ]
-    }
-  }
-}
-```
-
-CORRECTED - Keep only the more comprehensive snippet:
-```json
-{
-  "outgoing_connections": {
-    "axios": {
-      "src/api/client.js": [
-        {
-          "snippet_lines": "12-20",
-          "description": "HTTP GET call to user service with config"
-        }
-      ]
-    }
-  }
-}
-```
-
-The system expects complete processing of all connection data with no omissions or grouping of multiple connections into single entries, but without redundant overlapping code snippets.
+Remember: If you find 26 different connections, you must create 26 separate JSON entries. No exceptions.
 """

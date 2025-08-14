@@ -97,7 +97,8 @@ CREATE TABLE IF NOT EXISTS connection_mappings (
     match_confidence REAL DEFAULT 0.0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES outgoing_connections(id) ON DELETE CASCADE,
-    FOREIGN KEY (receiver_id) REFERENCES incoming_connections(id) ON DELETE CASCADE
+    FOREIGN KEY (receiver_id) REFERENCES incoming_connections(id) ON DELETE CASCADE,
+    UNIQUE(sender_id, receiver_id)
 )
 """
 
