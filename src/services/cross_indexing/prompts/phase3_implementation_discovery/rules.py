@@ -58,22 +58,53 @@ RULES
    - Python: Built-in `urllib.request`, `http.client`, `socket` module
    - These patterns should be analyzed alongside imported package usage when relevant
 
-10. WRAPPER FUNCTION ANALYSIS RULES:
-    - CRITICAL: When you find wrapper functions with dynamic parameters (like url, endpoint, method variables), you MUST analyze the complete file first to find the function name
-    - MANDATORY WORKFLOW: Found wrapper function → Read entire file with database tool → Identify function name → Create search_keyword task to find all calls with actual values
-    - EXAMPLE: If you see `axios.get(url, config)` inside a function, you must find what that function is called (e.g., `apiCallFunction`) then search for `apiCallFunction\\(` to find real usage
-    - DO NOT move to next task when wrapper functions have dynamic parameters - you must find actual usage sites with real endpoint values
-    - CREATE TASKS for wrapper functions with dynamic parameters: "Use search_keyword to find [functionName] usage patterns: [functionName]\\("
-    - Use generic function names in examples like `apiCallFunction()`, `makeRequest()`, `sendData()` - avoid specific domain references
+10. WRAPPER FUNCTION ANALYSIS RULES - MANDATORY EXECUTION:
+     - CRITICAL DETECTION: When you find ANY connection code with VARIABLE/PARAMETER names instead of actual values, you MUST search for wrapper function calls
+     - TRIGGER PATTERNS: Look for these patterns that indicate wrapper functions:
+       * HTTP: `axios.get(url, config)`, `fetch(endpoint)`, `requests.get(api_url)`
+       * Queue: `channel.sendToQueue(queueName, message)`, `producer.send(topic, data)`, `publisher.publish(queue, msg)`
+       * Socket: `socket.emit(eventName, data)`, `io.emit(event, payload)`, `ws.send(channel, message)`
+       * Database: `db.query(tableName, conditions)`, `collection.find(query)`, `model.create(data)`
+     
+     - MANDATORY WORKFLOW FOR VARIABLE PARAMETERS:
+       1. DETECT: Found connection code with variable parameters (not hardcoded values)
+       2. READ FILE: Use database tool to read the complete file containing this code
+       3. IDENTIFY: Find the wrapper function name that contains this connection code
+       4. SEARCH USAGE: Create search_keyword task to find ALL calls to this wrapper function across the codebase
+       5. COLLECT: Gather all wrapper function calls with actual parameter values
+     
+     - EXAMPLE WORKFLOW:
+       * Found: `this.channel.sendToQueue(queueName, Buffer.from(message))` (variable queueName)
+       * Action: Read complete file to find wrapper function name (e.g., `publishMessage`)
+       * Search: Create task "Use search_keyword to find publishMessage usage: publishMessage\\("
+       * Result: Find calls like `publishMessage('user-notifications', data)`, `publishMessage('email-queue', emailData)`
+     
+     - CRITICAL: DO NOT move to next task when you find variable parameters - you MUST search for actual usage sites
+     - CREATE TASKS for ALL wrapper functions with variable parameters: "Use search_keyword to find [functionName] usage patterns: [functionName]\\("
+     - NEVER accept variable names as final connection data - always search for the actual values passed to wrapper functions
 
 11. TASK CREATION WITHIN IMPLEMENTATION DISCOVERY:
-    - ALWAYS THINK BEFORE CREATING TASKS: Ask yourself "Do I need to search further for actual usage?"
-    - Can create additional tasks for further searching within current analysis when discovering new patterns
-    - CREATE TASKS for wrapper functions with dynamic parameters to find all usage sites with real values
-    - DON'T CREATE TASKS when you already found actual usage sites with real endpoint/parameter values
-    - DON'T CREATE TASKS for wrapper functions with hardcoded endpoints (the connection info is already visible)
-    - Create tasks for environment variable resolution with complete tool guidance
-    - Add tasks for complex connection patterns requiring deeper analysis with proper tool parameters
+     - MANDATORY THINKING PROCESS: Before proceeding, ask these specific questions:
+       1. "Did I find connection code with VARIABLE NAMES instead of actual values?" (queueName, endpoint, url, topic, eventName, etc.)
+       2. "Are these variables being passed as parameters to a function?" (indicating wrapper function usage)
+       3. "Do I need to search for where this wrapper function is called with real values?"
+       4. "Have I already found the actual usage sites with hardcoded connection details?"
+     
+     - CREATE TASKS IMMEDIATELY when you find:
+       * Connection code with variable parameters: `sendToQueue(queueName, message)` → Search for wrapper function calls
+       * Environment variables in connection code: `process.env.API_URL` → Search for config files
+       * Dynamic endpoints/topics/events: `axios.get(url)` → Search for function calls with actual URLs
+       * Custom wrapper classes: `apiClient.makeRequest(endpoint)` → Search for all method calls
+     
+     - DON'T CREATE TASKS when you find:
+       * Hardcoded connection details: `axios.get('https://api.example.com/users')` → This IS the actual connection
+       * Direct usage with real values: `socket.emit('user-joined', data)` → This IS the actual usage
+       * Configuration objects with fixed values: `{ baseURL: 'https://api.service.com' }` → This IS the actual config
+     
+     - TASK CREATION EXAMPLES:
+       * Found: `channel.sendToQueue(queueName, Buffer.from(message))` → CREATE: "Use search_keyword to find wrapper function calls with actual queue names"
+       * Found: `axios.get(process.env.API_BASE_URL + endpoint)` → CREATE: "Use list_files to find .env files and search for API_BASE_URL configuration"
+       * Found: `socket.emit(eventName, eventData)` → CREATE: "Use search_keyword to find wrapper function calls with actual event names"
 
 12. ENVIRONMENT VARIABLE AND CONFIG FILE ANALYSIS RULES - MANDATORY EXECUTION:
     - TRIGGER: When you see process.env.API_URL, process.env.DATABASE_URL, config.endpoint, or any environment/config variable in connection code

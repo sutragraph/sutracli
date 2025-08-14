@@ -141,26 +141,52 @@ When import discovery found many files (6+) or wrapper functions:
 
 4. TASK CREATION EXAMPLES
 
-**CRITICAL THINKING PROCESS FOR TASK CREATION**
+**CRITICAL THINKING PROCESS FOR TASK CREATION - ENHANCED WRAPPER FUNCTION DETECTION**
 
-Before creating any task, ask yourself these questions:
-1. "Did I find a wrapper function definition that takes dynamic parameters (URLs, endpoints, queue names, socket events, channels, topics)?"
-2. "Do I need to search for all usage sites of this wrapper function across the codebase?"
-3. "Are the parameters in the wrapper function calls hardcoded or dynamic?"
-4. "Have I already found the actual usage sites with real values?"
+Before creating any task, ask yourself these specific questions:
+1. "Did I find connection code with VARIABLE NAMES instead of actual hardcoded values?"
+   - Examples: `sendToQueue(queueName, message)`, `axios.get(url)`, `socket.emit(eventName, data)`
+   - These indicate wrapper functions that need further analysis
+2. "Are these variables being passed as parameters from a calling function?"
+   - This means I found the low-level implementation, not the actual usage
+3. "Do I need to search for where this wrapper function is called with real connection values?"
+   - YES if I see variables/parameters, NO if I see hardcoded strings
+4. "Have I already found the actual usage sites with real endpoint/queue/event names?"
+   - If YES, collect this data. If NO, create search tasks.
 
-**WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES**
+**VARIABLE PARAMETER DETECTION PATTERNS:**
+- Queue Operations: `queueName`, `topicName`, `channelName` → Search for wrapper calls
+- HTTP Operations: `url`, `endpoint`, `apiUrl`, `baseUrl` → Search for wrapper calls
+- Socket Operations: `eventName`, `event`, `channel` → Search for wrapper calls
+- Database Operations: `tableName`, `collection`, `query` → Search for wrapper calls
 
-Example 1: HTTP wrapper function with dynamic endpoints - CREATE TASK
-When you find a wrapper function definition like:
+**WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - ENHANCED EXAMPLES**
+
+Example 1: Queue operation with variable parameter - CREATE TASK IMMEDIATELY
+When you find connection code like:
 ```javascript
-function apicall(endpoint, method, data) {
-  return axios.request({ url: endpoint, method, data })
-}
+// Found in file analysis
+this.channel.sendToQueue(queueName, Buffer.from(message), {
+  persistent: true,
+});
 ```
-THINKING: "I found a wrapper function that takes dynamic endpoint parameter. I need to search for all apicall() calls to find the actual endpoints being used."
-CREATE TASK: <task><add id="21">Use search_keyword to find all apicall( wrapper function usage: apicall\\(</add></task>
-Reason: Need to find all actual usage sites of this wrapper function across the codebase with real endpoint values
+THINKING: "I found queue operation with variable 'queueName' instead of actual queue name. This is a wrapper function implementation. I need to find where this function is called with real queue names."
+IMMEDIATE ACTION:
+1. Read complete file to find wrapper function name (e.g., `publishMessage`)
+2. CREATE TASK: <task><add id="21">Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\\(</add></task>
+EXPECTED RESULT: Find calls like `publishMessage('user-notifications', data)`, `publishMessage('email-queue', emailData)`
+
+Example 2: HTTP operation with variable endpoint - CREATE TASK IMMEDIATELY
+When you find connection code like:
+```javascript
+// Found in file analysis
+const response = await axios.get(url, config);
+```
+THINKING: "I found HTTP call with variable 'url' instead of actual endpoint. This is wrapper function usage. I need to find where this function is called with real URLs."
+IMMEDIATE ACTION:
+1. Read complete file to find wrapper function name (e.g., `makeApiCall`)
+2. CREATE TASK: <task><add id="22">Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\\(</add></task>
+EXPECTED RESULT: Find calls like `makeApiCall('/api/users', 'GET')`, `makeApiCall('/admin/data', 'POST', userData)`
 
 Example 2: Message queue wrapper function with dynamic topics - CREATE TASK
 When you find a queue wrapper function like:
@@ -194,16 +220,25 @@ THINKING: "I found a custom service client class with dynamic parameters. I need
 CREATE TASK: <task><add id="24">Use search_keyword to find all serviceClient usage patterns: serviceClient\\.(send_request|subscribe_to_events)\\(</add></task>
 Reason: Need to find all method calls on this custom client across the project with real service communication parameters
 
-**WHEN NOT TO CREATE TASKS**
+**WHEN NOT TO CREATE TASKS - ENHANCED DECISION MAKING**
 
-Example 1: Already found actual HTTP usage with real values - DON'T CREATE TASK
-When you find actual wrapper function calls with real parameters:
+Example 1: Already found actual connection usage with hardcoded values - DON'T CREATE TASK
+When you find direct connection calls with real parameters:
 ```javascript
-const result = await apicall('/api/users', 'GET', null)
-const response = await apicall('/admin/data', 'POST', userData)
+// Direct HTTP calls with actual endpoints
+const result = await axios.get('/api/users', config)
+const response = await fetch('https://api.service.com/data', options)
+
+// Direct queue operations with actual queue names
+channel.sendToQueue('user-notifications', Buffer.from(message))
+producer.send('email-queue', emailData)
+
+// Direct socket operations with actual event names
+socket.emit('user-joined', { userId, roomId })
+io.emit('status-update', statusData)
 ```
-THINKING: "These are already the actual usage sites with real endpoint values. No need to search further."
-DON'T CREATE TASK: This is already the actual usage we want to collect
+THINKING: "These are direct connection calls with hardcoded connection details (actual endpoints, queue names, event names). This IS the actual connection code I need to collect."
+DON'T CREATE TASK: This is already actual connection code with real values - collect this data immediately
 
 Example 2: Already found actual queue usage with real topics - DON'T CREATE TASK
 When you find actual message queue calls with real topics:
@@ -271,9 +306,37 @@ When you find any code during analysis, follow this thinking process:
    - If direct library call with real values → DON'T CREATE TASK (collect this code)
    - If wrapper function with hardcoded values → DON'T CREATE TASK (collect this code)
 
-4. THINK EXPLICITLY: Always include your reasoning
-   - "THINKING: Found wrapper function with dynamic communication parameter. Need to search for usage sites."
-   - "THINKING: Found actual communication call with real parameters. This is the connection code to collect."
+4. THINK EXPLICITLY: Always include your reasoning with specific examples
+     - "THINKING: Found queue operation `sendToQueue(queueName, message)` with variable 'queueName'. This is wrapper function implementation. Need to search for actual calls with real queue names."
+     - "THINKING: Found HTTP call `axios.get(url, config)` with variable 'url'. This is wrapper function usage. Need to search for actual calls with real endpoints."
+     - "THINKING: Found direct queue call `sendToQueue('user-notifications', message)` with hardcoded queue name. This IS the actual connection code to collect."
+     - "THINKING: Found direct HTTP call `axios.get('/api/users')` with hardcoded endpoint. This IS the actual connection code to collect."
+
+5. SPECIFIC QUEUE EXAMPLE WORKFLOW:
+   
+   **SCENARIO: Found this code during analysis**
+   ```javascript
+   // Line 49-51 in message-service.js
+   this.channel.sendToQueue(queueName, Buffer.from(message), {
+     persistent: true,
+   });
+   ```
+   
+   **CORRECT ANALYSIS PROCESS:**
+   1. DETECT: "Found `sendToQueue(queueName, message)` with variable 'queueName' - this is NOT the actual queue name"
+   2. IDENTIFY: "This is a wrapper function implementation, not the actual usage site"
+   3. READ FILE: Use database tool to read complete message-service.js file
+   4. FIND WRAPPER: Look for function name containing this code (e.g., `publishMessage`, `sendNotification`, etc.)
+   5. CREATE TASK: "Use search_keyword to find [wrapperFunctionName] calls with actual queue names: [wrapperFunctionName]\\("
+   6. EXPECTED RESULTS: Find calls like:
+      - `publishMessage('user-notifications', userData)`
+      - `publishMessage('email-queue', emailData)`
+      - `publishMessage('order-processing', orderData)`
+   
+   **WRONG APPROACH (WHAT NOT TO DO):**
+   - ❌ Collecting `sendToQueue(queueName, message)` as final connection data
+   - ❌ Moving to next task without searching for actual queue names
+   - ❌ Accepting variable names as connection endpoints
 
 6. COMPLETION EXAMPLES
 
