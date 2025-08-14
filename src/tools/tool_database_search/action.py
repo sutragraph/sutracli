@@ -273,7 +273,7 @@ def execute_structured_database_query(
                         else []
                     )
 
-                    results = [summary]
+                    results = summary
             elif base_query_name == "GET_FILE_IMPORTS":
                 # Special handling for GET_FILE_IMPORTS - consolidate all imports into one result
                 file_path = final_params.get("file_path")

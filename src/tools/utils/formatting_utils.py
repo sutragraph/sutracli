@@ -226,8 +226,6 @@ def beautify_node_result(
             else:
                 # Code already has line numbers
                 result_parts.append(code_snippet)
-        else:
-            result_parts.append("code_snippet:\n(no code available)")
 
     return "\n".join(result_parts)
 
