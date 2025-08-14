@@ -18,19 +18,24 @@ def beautify_node_result(
         total_nodes: Total number of nodes being sent (for guidance)
         chunk_info: Dictionary with chunk information (chunk_num, total_chunks, start_line, end_line, total_lines)
     """
-    lines = node.get("lines")
-    start_line, end_line = None, None
-    if lines:
-        if isinstance(lines, list) and len(lines) >= 2:
-            # Lines is already a list [start_line, end_line]
-            start_line, end_line = lines[0], lines[1]
-        elif isinstance(lines, str):
-            try:
-                lines_data = json.loads(lines)
-                if isinstance(lines_data, list) and len(lines_data) >= 2:
-                    start_line, end_line = lines_data[0], lines_data[1]
-            except (json.JSONDecodeError, ValueError):
-                pass
+    # First try to get start_line and end_line directly from node
+    start_line = node.get("start_line")
+    end_line = node.get("end_line")
+
+    # If not found, try to extract from lines field
+    if start_line is None or end_line is None:
+        lines = node.get("lines")
+        if lines:
+            if isinstance(lines, list) and len(lines) >= 2:
+                # Lines is already a list [start_line, end_line]
+                start_line, end_line = lines[0], lines[1]
+            elif isinstance(lines, str):
+                try:
+                    lines_data = json.loads(lines)
+                    if isinstance(lines_data, list) and len(lines_data) >= 2:
+                        start_line, end_line = lines_data[0], lines_data[1]
+                except (json.JSONDecodeError, ValueError):
+                    pass
 
     # Build result parts
     result_parts = []
@@ -66,7 +71,8 @@ def beautify_node_result(
         )
 
     # Add basic node information
-    result_parts.append(f'file_path: {node.get("file_path", "unknown")}')
+    if node.get("file_path"):
+        result_parts.append(f'file_path: {node.get("file_path", "unknown")}')
 
     # Show block_id if available, otherwise show file info
     block_id = node.get("id", node.get("block_id"))
@@ -239,30 +245,34 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
         idx: Node index number
         total_nodes: Total number of nodes being sent (for guidance)
     """
-    lines = node.get("lines")
-    start_line, end_line = None, None
-    if lines:
-        if isinstance(lines, list) and len(lines) >= 2:
-            # Lines is already a list [start_line, end_line]
-            start_line, end_line = lines[0], lines[1]
-        elif isinstance(lines, str):
-            try:
-                lines_data = json.loads(lines)
-                if isinstance(lines_data, list) and len(lines_data) >= 2:
-                    start_line, end_line = lines_data[0], lines_data[1]
-            except (json.JSONDecodeError, ValueError):
-                pass
+    start_line = node.get("start_line")
+    end_line = node.get("end_line")
+
+    # If not found, try to extract from lines field
+    if start_line is None or end_line is None:
+        lines = node.get("lines")
+        if lines:
+            if isinstance(lines, list) and len(lines) >= 2:
+                # Lines is already a list [start_line, end_line]
+                start_line, end_line = lines[0], lines[1]
+            elif isinstance(lines, str):
+                try:
+                    lines_data = json.loads(lines)
+                    if isinstance(lines_data, list) and len(lines_data) >= 2:
+                        start_line, end_line = lines_data[0], lines_data[1]
+                except (json.JSONDecodeError, ValueError):
+                    pass
 
     # Build header with index if provided
     if idx is not None:
         if total_nodes:
-            header = f"=== NODE {idx} of {total_nodes} (metadata only) ==="
+            header = f"=== NODE {idx} of {total_nodes} ==="
         else:
-            header = f"=== NODE {idx} (metadata only) ==="
+            header = f"=== NODE {idx} ==="
     else:
-        header = "=== NODE (metadata only) ==="
+        header = "=== NODE ==="
 
-    # Format start_line:end_line - for files, show total line count
+    # Format start_line:end_line
     if start_line is not None and end_line is not None:
         start_end_str = f"{start_line}:{end_line}"
     else:
@@ -278,12 +288,40 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     block_id = node.get("id", node.get("block_id"))
     if block_id:
         id_info = f"block_id: {block_id}"
+        # Add block type and name if available
+        block_type = node.get("type")
+        block_name = node.get("name")
+        type_info = f"block_type: {block_type}" if block_type else ""
+        name_info = f"block_name: {block_name}" if block_name else ""
     else:
         id_info = f'file_id: {node.get("file_id", "unknown")}'
+        type_info = ""
+        name_info = ""
 
-    return (
-        f"{header}\n"
-        f'file_path: {node.get("file_path", "unknown")}\n'
-        f"{id_info}\n"
-        f"start_line:end_line: {start_end_str}"
-    )
+    # Build the result
+    result_parts = [header, f'file_path: {node.get("file_path", "unknown")}', id_info]
+
+    if type_info:
+        result_parts.append(type_info)
+    if name_info:
+        result_parts.append(name_info)
+
+    result_parts.append(f"start_line:end_line: {start_end_str}")
+
+    # Add hierarchy path if available (for GET_FILE_BLOCK_SUMMARY results)
+    hierarchy_path = node.get("hierarchy_path")
+    if hierarchy_path and isinstance(hierarchy_path, list) and len(hierarchy_path) > 0:
+        path_parts = []
+        for path_node in hierarchy_path:
+            id = path_node.get("id", "unknown")
+            name = path_node.get("name", "unknown")
+            node_type = path_node.get("type", "unknown")
+            start_line_path = path_node.get("start_line", "unknown")
+            end_line_path = path_node.get("end_line", "unknown")
+            path_parts.append(
+                f"id={id}, name={name}, type={node_type}, lines={start_line_path}:{end_line_path}"
+            )
+        hierarchy_str = " → ".join(path_parts)
+        result_parts.append(f"hierarchy_path: {hierarchy_str}")
+
+    return "\n".join(result_parts)

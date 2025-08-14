@@ -536,6 +536,27 @@ def enhance_database_search_event(
     if total_nodes == 0 or not data:
         return event
 
+    # Check if this is a metadata-only query (like GET_FILE_BLOCK_SUMMARY)
+    query_name = action_parameters.get("query_name", "")
+    include_code = event.get("code_snippet", True)
+    is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY" or not include_code
+
+    # For metadata-only queries, just show node count without line information
+    if is_metadata_only:
+        if total_nodes == 1:
+            guidance_message = f"Found 1 node."
+        else:
+            remaining_nodes = (
+                delivery_context.get("remaining_nodes", 0) if delivery_context else 0
+            )
+            guidance_message = f"Found {total_nodes} nodes."
+            if remaining_nodes > 0:
+                guidance_message += _get_fetch_next_code_note()
+        
+        # Add guidance as prefix to data
+        event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
+        return event
+
     # Use delivery context line info if available, otherwise calculate
     if delivery_context and "delivered_lines" in delivery_context:
         current_lines = delivery_context["delivered_lines"]

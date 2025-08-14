@@ -816,7 +816,16 @@ def process_metadata_only_results(results: List[Any], total_nodes: int) -> List[
     processed_results = []
 
     for i, row in enumerate(results, 1):
-        result_dict = dict(row) if hasattr(row, "keys") else row
+        # Handle both SQLite Row objects and dictionaries
+        if hasattr(row, "keys"):
+            result_dict = dict(row)
+        else:
+            result_dict = row
+
+        # Ensure result_dict is a dictionary
+        if not isinstance(result_dict, dict):
+            result_dict = dict(result_dict)
+
         cleaned_dict = clean_result_dict(result_dict)
 
         beautified_result = beautify_node_result_metadata_only(
@@ -839,7 +848,7 @@ def clean_result_dict(result_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     cleaned = result_dict.copy()
 
-    # Remove unnecessary fields
+    # Remove unnecessary fields (but preserve start_line, end_line, and other essential fields)
     for field in ["project_id", "project_name", "language", "file_size"]:
         cleaned.pop(field, None)
 

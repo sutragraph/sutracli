@@ -426,14 +426,18 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
 
         combined_data = "\n\n".join(cleaned_data_items)
 
+        # Check if this is a metadata-only query
+        query_name = action_parameters.get("query_name", "unknown")
+        is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY"
+        
         event = {
             "type": "tool_use",
             "tool_name": "database",
-            "query_name": action_parameters.get("query_name", "unknown"),
+            "query_name": query_name,
             "query": action_parameters,
             "result": f"found: {total_nodes}",
             "data": combined_data,
-            "code_snippet": True,
+            "code_snippet": not is_metadata_only,  # Set to False for metadata-only queries
             "total_nodes": total_nodes,
             "batch_info": {
                 "delivered_count": delivered_nodes,
