@@ -1,15 +1,89 @@
 import os
 import subprocess
+import fnmatch
 from pathlib import Path
 from typing import Iterator, Dict, Any
 
 from models.agent import AgentAction
+from utils.ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
+
+
+def should_ignore_path(path: str, is_directory: bool = False) -> bool:
+    """
+    Check if a file or directory path should be ignored based on ignore patterns.
+
+    Args:
+        path: The relative path to check
+        is_directory: Whether the path is a directory
+
+    Returns:
+        True if the path should be ignored, False otherwise
+    """
+    path_name = os.path.basename(path.rstrip("/"))
+
+    # Check directory patterns
+    if is_directory:
+        for pattern in IGNORE_DIRECTORY_PATTERNS:
+            if fnmatch.fnmatch(path_name, pattern):
+                return True
+            # Also check the full path for patterns with slashes
+            if "/" in pattern and fnmatch.fnmatch(path, pattern):
+                return True
+
+    # Check file patterns
+    for pattern in IGNORE_FILE_PATTERNS:
+        if fnmatch.fnmatch(path_name, pattern):
+            return True
+        # Also check the full path for patterns with slashes
+        if "/" in pattern and fnmatch.fnmatch(path, pattern):
+            return True
+
+    return False
+
+
+def filter_ignored_paths(files_list: list, directory_path: str) -> list:
+    """
+    Filter out ignored files and directories from the list.
+
+    Args:
+        files_list: List of file/directory paths
+        directory_path: Base directory path
+
+    Returns:
+        Filtered list with ignored paths removed
+    """
+    filtered_list = []
+
+    for item in files_list:
+        is_directory = item.endswith("/")
+
+        # Skip if the item should be ignored
+        if should_ignore_path(item, is_directory):
+            continue
+
+        # Check if any parent directory in the path should be ignored
+        path_parts = item.rstrip("/").split(os.sep)
+        should_skip = False
+
+        for i in range(len(path_parts)):
+            partial_path = os.sep.join(path_parts[: i + 1])
+            if i < len(path_parts) - 1:  # Parent directories
+                if should_ignore_path(partial_path + "/", True):
+                    should_skip = True
+                    break
+
+        if not should_skip:
+            filtered_list.append(item)
+
+    return filtered_list
+
 
 def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
     """Execute list files tool."""
     try:
         directory_path = action.parameters.get("path", ".")
         recursive = action.parameters.get("recursive", False)
+        ignore_patterns = action.parameters.get("ignore_patterns", True)
 
         path = Path(directory_path)
         if not path.exists():
@@ -23,7 +97,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         files_list = []
 
         if recursive == "true" or recursive == "True":
-            # Recursive listing using rg 
+            # Recursive listing using rg
             try:
                 # First, get normal files (respects .gitignore)
                 result = subprocess.run(
@@ -136,6 +210,10 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
 
         files_list.sort()
 
+        # Apply ignore patterns to filter out unwanted files and directories (if enabled)
+        if ignore_patterns:
+            files_list = filter_ignored_paths(files_list, directory_path)
+
         # Convert to absolute path for tool status
         abs_directory_path = os.path.abspath(directory_path)
 
@@ -151,6 +229,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
             "type": "tool_use",
             "directory": abs_directory_path,
             "recursive": recursive,
+            "ignore_patterns": ignore_patterns,
             "count": len(files_list),
             "data": data_message,
             "tool_name": "list_files",

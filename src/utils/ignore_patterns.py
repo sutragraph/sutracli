@@ -138,7 +138,6 @@ IGNORE_DIRECTORY_PATTERNS: List[str] = [
     "jspm_packages",
     "vendor",
     "packages",
-    "libs",
     "third_party",
     "external",
     # Python specific
