@@ -20,6 +20,7 @@ RULES = """
 4. **Efficient Discovery Pattern**: Use SEARCH_KEYWORD first to locate exact code with line numbers, then DATABASE queries with start_line/end_line for targeted access.
    - If a block reference comment like `// [BLOCK_REF:<id>]` is encountered in code, MANDATORY: run GET_BLOCK_DETAILS with that `block_id` before any file fetch to retrieve precise block context and connections
    - When the file path is known but target unknown, MANDATORY: run GET_FILE_BLOCK_SUMMARY before GET_FILE_BY_PATH to get top-level element names and types
+   - To find what files are connected to a given file, MANDATORY: run GET_FILE_DEPENDENCIES with that `file_path` to retrieve a list of files that depend on it with detailed information about each dependency.
 
 5. **Work with Discovery**: When faced with ambiguous requirements, use tools to discover existing implementations and make precise assumptions based on actual code patterns.
 

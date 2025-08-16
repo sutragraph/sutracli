@@ -221,7 +221,7 @@ def beautify_node_result(
     return "\n".join(result_parts)
 
 
- 
+
 
 def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     """
@@ -237,6 +237,7 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     if dependency_scope:
         scope = dependency_scope
         anchor = scope.get("anchor_file_path", "unknown")
+        error = scope.get("error")
         imports = scope.get("imports", []) or []
         importers = scope.get("importers", []) or []
         chains = scope.get("dependency_chain", []) or []
@@ -245,6 +246,9 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
 
         out = []
         out.append(f"FILE: {anchor}")
+        if error:
+            out.append("")
+            out.append(f"ERROR: {error}")
 
         if imports:
             out.append("")
@@ -378,7 +382,7 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     # Calculate tree position for hierarchy display
     hierarchy_path = node.get("hierarchy_path", [])
     parent_block_id = node.get("parent_block_id")
-    
+
     # Determine tree symbols based on hierarchy
     if parent_block_id is None:
         # Root level block
@@ -393,14 +397,14 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
         # Child block - determine depth from hierarchy path
         depth = len(hierarchy_path) if hierarchy_path else 1
         indent = "│  " * (depth - 1)
-        
-        # For now, assume it's the last child (in real implementation, 
+
+        # For now, assume it's the last child (in real implementation,
         # we'd need parent-child relationship info)
         tree_symbol = "└─ "
 
     # Build tree-style representation
     tree_line = f"{indent}{tree_symbol}{block_type}: {block_name} (lines {start_end_str}) [block_id={block_id}]"
-    
+
     # If this is the first node, add a header
     if idx == 1:
         file_path = node.get("file_path", "unknown")
@@ -415,5 +419,3 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
         result_parts = [tree_line]
 
     return "\n".join(result_parts)
-
-

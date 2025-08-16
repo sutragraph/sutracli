@@ -42,6 +42,7 @@ Before proposing any changes, understand the project ecosystem:
    - SEMANTIC_SEARCH → find files containing specific implementations (when broad discovery needed)
    - LIST_FILES → verify exact file locations when needed
    - Before running GET_FILE_BY_PATH on any file, prefer to run GET_FILE_BLOCK_SUMMARY to obtain top-level element names and types, then target specific line ranges with GET_FILE_BY_PATH
+   - GET_DEPENDENCY_CHAIN → retrieve the dependency chain of a given file, like what it depends on and what depends on it.
    - When encountering a block reference comment like `// [BLOCK_REF:<id>]`, directly use GET_BLOCK_DETAILS with that block_id to retrieve the block’s content and its incoming/outgoing connections before proposing changes
 
 3. **Memory Management**: After each tool result, update Sutra Memory with ADD_HISTORY:

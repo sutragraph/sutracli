@@ -115,15 +115,12 @@ TOOL_USAGE_CASES = """
 - **Use for**: Retrieving the block’s code, start/end lines, parent/children, and all incoming/outgoing connections for impact analysis
 - **Focus**: Use the block’s start/end lines to bound subsequent GET_FILE_BY_PATH requests; leverage connections to understand affected files/components
 
-#### GET_CHILD_BLOCKS
-- **When**: Need details of methods within a class for modification
-- **Use for**: Understanding method signatures and implementations
-- **Focus**: Find specific methods to update or replace
-
 #### GET_DEPENDENCY_CHAIN
-- **When**: Need to understand which files will be affected by changes
-- **Use for**: Finding all files that import a modified component
-- **Focus**: Locate files that need import/usage updates
+- **When**: Need to understand a file's relationships and impacts across the system
+- **Use for**:
+  - Finding connected components through imports, APIs, message queues, etc.
+  - Understanding dependencies across files and projects
+  - Seeing how changes might affect the broader system
 
 **Database Usage Guidelines**:
 - Always use CODE_CONTENT=TRUE when you need implementation details

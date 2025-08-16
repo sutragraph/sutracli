@@ -276,30 +276,34 @@ def execute_structured_database_query(
                     results = summary
                     # Route through metadata-only pipeline to get tree-style output
                     include_code = False
-            
+
             elif base_query_name == "GET_DEPENDENCY_CHAIN":
                 file_path = final_params.get("file_path")
-                depth = final_params.get("depth", 5)
+                depth = int(final_params.get("depth", 5))
+                file_id = None
+
                 if file_path:
                     file_id = graph_ops._get_file_id_by_path(file_path)
-                    if file_id:
-                        scope = graph_ops.get_search_scope_by_import_graph(
-                            file_id, "both", depth
-                        )
-                        # Provide raw scope to the metadata-only formatter
-                        results = [
-                            {
-                                "file_path": scope.get("anchor_file_path", "unknown"),
-                                "dependency_scope": scope,
-                            }
-                        ]
-                        # Route through metadata-only pipeline to use beautify_node_result_metadata_only
-                        include_code = False
-                    else:
-                        results = []
+
+                if not file_path or not file_id:
+                    error_msg = "No file path provided. Please specify a file path to analyze dependencies." if not file_path else "File not found in database."
+                    results = [{
+                        "file_path": file_path,
+                        "dependency_scope": {
+                            "anchor_file_path": file_path or "unknown",
+                            "error": error_msg,
+                            "imports": [],
+                            "importers": [],
+                            "dependency_chain": [],
+                            "connection_impacts": [],
+                            "max_depth": depth
+                        }
+                    }]
                 else:
-                    results = []
-                    
+                    scope = graph_ops.get_search_scope_by_import_graph(file_id, "both", depth)
+                    results = [{"file_path": scope.get("anchor_file_path", "unknown"), "dependency_scope": scope}]
+                include_code = False
+
             elif base_query_name == "GET_BLOCK_DETAILS":
                 block_id = final_params.get("block_id")
                 if not block_id:
@@ -413,7 +417,7 @@ def execute_structured_database_query(
                         and "code_snippet" not in result_dict
                     ):
                         result_dict["code_snippet"] = code_content
-                    
+
                     # For GET_BLOCK_DETAILS, ensure line information is available
                     if base_query_name == "GET_BLOCK_DETAILS":
                         start_line = result_dict.get("start_line")
@@ -620,7 +624,7 @@ def execute_structured_database_query(
                     and "code_snippet" not in result_dict
                 ):
                     result_dict["code_snippet"] = code_content
-                
+
                 # For GET_BLOCK_DETAILS, ensure line information is available
                 if base_query_name == "GET_BLOCK_DETAILS":
                     start_line = result_dict.get("start_line")
