@@ -9,10 +9,11 @@ from tools.utils import (
 from queries.agent_queries import (
     GET_FILE_BY_ID,
     GET_FILE_BLOCK_SUMMARY,
-    GET_FILE_IMPORTS,
     GET_DEPENDENCY_CHAIN,
 )
-from tools.utils.formatting_utils import beautify_node_result_metadata_only
+from tools.utils.formatting_utils import (
+    beautify_node_result_metadata_only,
+)
 from pathlib import Path
 import os
 import json
@@ -91,7 +92,6 @@ def execute_structured_database_query(
             "GET_FILE_BY_PATH": GET_FILE_BY_ID,
             "GET_FILE_BLOCK_SUMMARY": GET_FILE_BLOCK_SUMMARY,
             "GET_BLOCK_DETAILS": "",
-            "GET_FILE_IMPORTS": GET_FILE_IMPORTS,
             "GET_DEPENDENCY_CHAIN": GET_DEPENDENCY_CHAIN,
         }
 
@@ -274,54 +274,32 @@ def execute_structured_database_query(
                     )
 
                     results = summary
-            elif base_query_name == "GET_FILE_IMPORTS":
-                # Special handling for GET_FILE_IMPORTS - consolidate all imports into one result
-                file_path = final_params.get("file_path")
-                if file_path:
-                    file_id = graph_ops._get_file_id_by_path(file_path)
-                    if file_id:
-                        raw_results = graph_ops.connection.execute_query(sql_query, (file_id,))
-                        if raw_results:
-                            # Consolidate all import statements into a single result
-                            all_imports = []
-                            target_files = []
-                            for result in raw_results:
-                                result_dict = dict(result) if hasattr(result, 'keys') else result
-                                import_content = result_dict.get('code_snippet', result_dict.get('import_content', ''))
-                                file_path_target = result_dict.get('file_path', '')
-                                if import_content:
-                                    all_imports.append(import_content)
-                                    target_files.append(file_path_target)
-
-                            # Create consolidated result
-                            consolidated_result = {
-                                'file_path': file_path,  # Original source file
-                                'code_snippet': '\n'.join(all_imports),
-                                'import_count': len(all_imports),
-                                'target_files': target_files,
-                                'language': raw_results[0].get('language', 'unknown') if raw_results else 'unknown'
-                            }
-                            results = [consolidated_result]
-                        else:
-                            results = []
-                    else:
-                        results = []
-                else:
-                    results = []
+                    # Route through metadata-only pipeline to get tree-style output
+                    include_code = False
+            
             elif base_query_name == "GET_DEPENDENCY_CHAIN":
-                # Handle GET_DEPENDENCY_CHAIN separately
                 file_path = final_params.get("file_path")
+                depth = final_params.get("depth", 5)
                 if file_path:
                     file_id = graph_ops._get_file_id_by_path(file_path)
                     if file_id:
-                        depth = final_params.get("depth", 5)
-                        results = graph_ops.connection.execute_query(
-                            sql_query, (file_id, depth)
+                        scope = graph_ops.get_search_scope_by_import_graph(
+                            file_id, "both", depth
                         )
+                        # Provide raw scope to the metadata-only formatter
+                        results = [
+                            {
+                                "file_path": scope.get("anchor_file_path", "unknown"),
+                                "dependency_scope": scope,
+                            }
+                        ]
+                        # Route through metadata-only pipeline to use beautify_node_result_metadata_only
+                        include_code = False
                     else:
                         results = []
                 else:
                     results = []
+                    
             elif base_query_name == "GET_BLOCK_DETAILS":
                 block_id = final_params.get("block_id")
                 if not block_id:

@@ -110,15 +110,15 @@ TOOL_USAGE_CASES = """
 - **Use for**: Finding specific methods/functions to modify
 - **Focus**: Locate exact code blocks that need changes
 
+#### GET_BLOCK_DETAILS
+- **When**: A block reference is present in code comments (e.g., `// [BLOCK_REF:123]`) or when you need the precise block and its relationships
+- **Use for**: Retrieving the block’s code, start/end lines, parent/children, and all incoming/outgoing connections for impact analysis
+- **Focus**: Use the block’s start/end lines to bound subsequent GET_FILE_BY_PATH requests; leverage connections to understand affected files/components
+
 #### GET_CHILD_BLOCKS
 - **When**: Need details of methods within a class for modification
 - **Use for**: Understanding method signatures and implementations
 - **Focus**: Find specific methods to update or replace
-
-#### GET_FILE_IMPORTS
-- **When**: Need to understand import dependencies for updates
-- **Use for**: Planning import statement changes
-- **Focus**: Identify which imports need adding/removing/updating
 
 #### GET_DEPENDENCY_CHAIN
 - **When**: Need to understand which files will be affected by changes
@@ -151,9 +151,9 @@ TOOL_USAGE_CASES = """
 ## Agent Workflow
 
 1. **Quick Discovery**: Use SEMANTIC_SEARCH to find relevant files and patterns
-2. **Targeted Analysis**: Use DATABASE queries on specific files to understand current implementation
+2. **Targeted Analysis**: Prefer GET_FILE_BLOCK_SUMMARY first to scope elements; then use GET_FILE_BY_PATH for the relevant line range
 3. **Pattern Identification**: Use SEARCH_KEYWORD to find all instances of code that needs changes
-4. **Dependency Check**: Use GET_FILE_IMPORTS to understand what needs updating
+4. **Dependency Check**: Use GET_DEPENDENCY_CHAIN or GET_BLOCK_DETAILS respectively to understand what needs updating
 5. **Direct Instructions**: Use ATTEMPT_COMPLETION to provide specific file-by-file changes
 
 ## Implementation Scenarios
@@ -175,11 +175,27 @@ TOOL_USAGE_CASES = """
 5. Store complete cache patterns and import contexts in memory
 
 **Step 3: Efficient Verification**
-1. LIST_FILES to check package.json exists
-2. SEARCH_KEYWORD "redis" file_paths="package.json" → finds dependency line
-3. GET_FILE_BY_PATH package.json with line range → gets dependency context
-4. SEARCH_KEYWORD "async.*await" file_paths="src/services/user-service.ts" → finds async patterns
-5. All complete contexts stored in memory - no redundant file reads needed
+### Handling Block Reference Markers
+1. If a provided code snippet contains a comment like `// [BLOCK_REF:<id>]`, directly run GET_BLOCK_DETAILS with that `block_id` if you think the code inside it might be helpful.
+2. Use incoming/outgoing connections from the block details to plan impact and dependencies
+
+### Summary-First File Scoping
+1. When a file path is known but the target element is not: run GET_FILE_BLOCK_SUMMARY first
+2. Choose the relevant block by name/type → then run GET_FILE_BY_PATH with that block’s line range
+3. Use GET_DEPENDENCY_CHAIN for file-level dependency mapping
+
+### Cross-Repo API/Controller Discovery (when indexed)
+1. If an API call or client fetch is observed in the current block, run GET_BLOCK_DETAILS on that block to retrieve outgoing connections
+2. Inspect outgoing connections for connected file paths and project names; when the index includes external repos, the connection may provide the controller’s `file_path` and `connected_project_name`
+
+### Connection-Aware Impact Analysis
+1. For a given file or block: run GET_DEPENDENCY_CHAIN or GET_BLOCK_DETAILS respectively to get incoming/outgoing runtime connections and mapped relationships
+2. Combine both to identify files/projects linked to the change and affected areas
+3. LIST_FILES to check package.json exists
+4. SEARCH_KEYWORD "redis" file_paths="package.json" → finds dependency line
+5. GET_FILE_BY_PATH package.json with line range → gets dependency context
+6. SEARCH_KEYWORD "async.*await" file_paths="src/services/user-service.ts" → finds async patterns
+7. All complete contexts stored in memory - no redundant file reads needed
 
 ### Bulk Replacement Detection Workflow
 

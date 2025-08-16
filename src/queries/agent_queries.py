@@ -100,7 +100,7 @@ WHERE cb.id = (SELECT parent_block_id FROM code_blocks WHERE id = ?)
 
 GET_FILE_IMPORTS = """
 SELECT
-    r.import_content as code_snippet,
+    r.import_content as import_content,
     f.file_path, f.language, p.name as project_name
 FROM relationships r
 JOIN files f ON r.target_id = f.id
@@ -257,8 +257,15 @@ SELECT
         WHEN ic.file_id = ? THEN 'receives_from'
         WHEN oc.file_id = ? THEN 'sends_to'
     END as impact_type,
+    COALESCE(if2.id, of2.id) as other_file_id,
     COALESCE(if2.file_path, of2.file_path) as other_file,
-    COALESCE(ic2.technology_name, oc2.technology_name) as technology
+    COALESCE(ip2.name, op2.name) as other_project_name,
+    COALESCE(ip2.id, op2.id) as other_project_id,
+    COALESCE(ic2.technology_name, oc2.technology_name) as technology,
+    COALESCE(ic.code_snippet, oc.code_snippet) as anchor_code_snippet,
+    COALESCE(ic2.code_snippet, oc2.code_snippet) as other_code_snippet,
+    COALESCE(ic.snippet_lines, oc.snippet_lines) as anchor_snippet_lines,
+    COALESCE(ic2.snippet_lines, oc2.snippet_lines) as other_snippet_lines
 FROM connection_mappings cm
 LEFT JOIN incoming_connections ic ON cm.receiver_id = ic.id
 LEFT JOIN outgoing_connections oc ON cm.sender_id = oc.id
@@ -266,6 +273,8 @@ LEFT JOIN incoming_connections ic2 ON cm.sender_id = ic2.id
 LEFT JOIN outgoing_connections oc2 ON cm.receiver_id = oc2.id
 LEFT JOIN files if2 ON ic2.file_id = if2.id
 LEFT JOIN files of2 ON oc2.file_id = of2.id
+LEFT JOIN projects ip2 ON if2.project_id = ip2.id
+LEFT JOIN projects op2 ON of2.project_id = op2.id
 WHERE (ic.file_id = ? OR oc.file_id = ?) AND cm.match_confidence > 0.5
 ORDER BY cm.match_confidence DESC
 LIMIT 15

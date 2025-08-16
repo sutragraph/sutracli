@@ -7,6 +7,7 @@ RULES = """
 
 - The project base directory is: {current_dir}
 - Use SEARCH_KEYWORD first to get line numbers, then DATABASE queries with line ranges for efficient discovery
+ - Prefer GET_FILE_BLOCK_SUMMARY before GET_FILE_BY_PATH to scope to the correct elements
 
 ## Critical Constraints
 
@@ -17,6 +18,8 @@ RULES = """
 3. **One Tool Per Iteration**: Select exactly ONE tool per iteration. Never respond without a tool call.
 
 4. **Efficient Discovery Pattern**: Use SEARCH_KEYWORD first to locate exact code with line numbers, then DATABASE queries with start_line/end_line for targeted access.
+   - If a block reference comment like `// [BLOCK_REF:<id>]` is encountered in code, MANDATORY: run GET_BLOCK_DETAILS with that `block_id` before any file fetch to retrieve precise block context and connections
+   - When the file path is known but target unknown, MANDATORY: run GET_FILE_BLOCK_SUMMARY before GET_FILE_BY_PATH to get top-level element names and types
 
 5. **Work with Discovery**: When faced with ambiguous requirements, use tools to discover existing implementations and make precise assumptions based on actual code patterns.
 
@@ -71,7 +74,7 @@ When the same pattern repeats 3+ times in a file, optimize with bulk instruction
 - Use direct, technical language focused on exact specifications
 - Work with discovered code to provide exact modification specifications
 - If specific implementations cannot be found, state what you searched for and provide precise assumptions based on common patterns
-- MANDATORY: Use SEARCH_KEYWORD to find locations → GET_FILE_BY_PATH with line ranges → store full context in memory
+- MANDATORY: Use SEARCH_KEYWORD to find locations → GET_FILE_BLOCK_SUMMARY to scope → GET_FILE_BY_PATH with line ranges → store full context in memory
 - FORBIDDEN: Storing limited SEARCH_KEYWORD snippets that lack sufficient context for roadmap decisions
 - REQUIRED: Always follow up SEARCH_KEYWORD with GET_FILE_BY_PATH to get meaningful code context
 

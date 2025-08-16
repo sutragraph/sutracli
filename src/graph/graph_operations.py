@@ -216,109 +216,6 @@ class GraphOperations:
                 "files_by_project": {},
             }
 
-    def get_agent_context_for_semantic_results(
-        self, semantic_node_ids: List[str]
-    ) -> Dict[str, Any]:
-        """
-        Agent-centric context extraction from semantic search results.
-
-        Flow:
-        1. Agent does semantic search → gets node_ids (file_28403, block_238408)
-        2. Resolve nodes to get concrete data (file info, block info)
-        3. For blocks: add file context and check if file connections overlap with block lines
-        4. For files: get all relevant connections
-        5. Return intuitive, actionable data for the agent
-
-        Args:
-            semantic_node_ids: List of node IDs from semantic search (e.g., ["block_123", "file_456"])
-
-        Returns:
-            Dictionary with agent-friendly context for each semantic result
-        """
-        try:
-            if not semantic_node_ids:
-                return {}
-
-            context_results = {}
-
-            for i, node_id in enumerate(semantic_node_ids):
-                result_key = f"semantic_result_{i}"
-
-                if node_id.startswith("block_"):
-                    # Handle block context
-                    block_id = int(node_id.split("_")[1])
-                    block_data = self.resolve_block(block_id)
-
-                    if block_data:
-                        # Get connections that overlap with this block's line range
-                        connections = self._get_connections_for_file_and_lines(
-                            block_data["file_id"],
-                            block_data["start_line"],
-                            block_data["end_line"],
-                        )
-
-                        context_results[result_key] = {
-                            "node_type": "block",
-                            "block_id": block_id,
-                            "block_info": block_data,
-                            "file_context": {
-                                "file_path": block_data["file_path"],
-                                "file_id": block_data["file_id"],
-                                "language": block_data["language"],
-                                "project_name": block_data["project_name"],
-                            },
-                            "relevant_connections": connections,
-                            "summary": f"Block '{block_data['name']}' ({block_data['type']}) in {block_data['file_path']} lines {block_data['start_line']}-{block_data['end_line']}",
-                        }
-
-                elif node_id.startswith("file_"):
-                    # Handle file context
-                    file_id = int(node_id.split("_")[1])
-                    file_data = self.resolve_file(file_id)
-
-                    if file_data:
-                        # Get all connections for this file
-                        connections = self._get_connections_for_file_and_lines(
-                            file_id, None, None
-                        )
-                        file_blocks = self.get_file_block_summary(file_id)
-
-                        context_results[result_key] = {
-                            "node_type": "file",
-                            "node_id": block_id,
-                            "file_info": file_data,
-                            "blocks_summary": file_blocks,
-                            "all_connections": connections,
-                            "summary": f"File '{file_data['file_path']}' ({file_data['language']}) with {file_data['block_count']} blocks",
-                        }
-
-            return context_results
-
-        except Exception as e:
-            logger.error(f"Error getting agent context for semantic results: {e}")
-            return {}
-
-    def get_agent_context_for_single_node(
-        self, node_id: str
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Get comprehensive context for a single semantic search node.
-
-        Args:
-            node_id: Single node ID from semantic search (e.g., "block_123" or "file_456")
-
-        Returns:
-            Dictionary with comprehensive context or None if not found
-        """
-        try:
-            results = self.get_agent_context_for_semantic_results([node_id])
-            if results:
-                return list(results.values())[0]
-            return None
-        except Exception as e:
-            logger.error(f"Error getting agent context for node {node_id}: {e}")
-            return None
-
     def _get_file_id_by_path(self, file_path: str) -> Optional[int]:
         """Get file_id by file path with robust path resolution."""
         try:
@@ -1129,26 +1026,6 @@ class GraphOperations:
             logger.error(f"Error getting importers for file {file_id}: {e}")
             return []
 
-    def get_file_impact_scope(self, file_id: int) -> List[Dict[str, Any]]:
-        """Importers + dependencies in one view."""
-        try:
-            results = self.connection.execute_query(
-                GET_FILE_IMPACT_SCOPE, (file_id, file_id)
-            )
-            return [
-                {
-                    "relationship_type": result["relationship_type"],
-                    "file_path": result["file_path"],
-                    "language": result["language"],
-                    "project_name": result["project_name"],
-                    "import_content": result["import_content"],
-                }
-                for result in results
-            ]
-        except Exception as e:
-            logger.error(f"Error getting file impact scope for file {file_id}: {e}")
-            return []
-
     def get_dependency_chain(
         self, file_id: int, depth: int = 5
     ) -> List[Dict[str, Any]]:
@@ -1175,40 +1052,68 @@ class GraphOperations:
     def get_search_scope_by_import_graph(
         self, anchor_file_id: int, direction: str = "both", max_depth: int = 2
     ) -> Dict[str, Any]:
-        """Compute a small set of file paths likely impacted based on imports/importers."""
+        """
+        Compute a small set of file paths likely impacted based on imports/importers and connection impacts.
+        
+        Args:
+            anchor_file_id: ID of the file to analyze
+            direction: Direction of dependencies to consider ("both", "dependencies", or "importers")
+            max_depth: Maximum depth to traverse the dependency graph
+            
+        Returns:
+            Dictionary with:
+            - anchor_file_path: Path of the anchor file
+            - imports: List of files this file imports with import content
+            - importers: List of files that import this file with import content
+            - dependency_chain: List of path rows including full path string
+            - connection_impacts: List of connection impact details (incl. code and snippet lines)
+            - max_depth: The max traversal depth used
+        """
         try:
             anchor_file = self.resolve_file(anchor_file_id)
             if not anchor_file:
-                return {"anchor_file_path": None, "paths": []}
+                return {
+                    "anchor_file_path": None,
+                    "imports": [],
+                    "importers": [],
+                    "dependency_chain": [],
+                    "connection_impacts": [],
+                    "max_depth": max_depth,
+                }
 
-            paths = set([anchor_file["file_path"]])
+            # Collect data for formatted output (do not aggregate paths here)
+            connection_impacts = self.get_connection_impact(anchor_file_id)
 
+            imports: List[Dict[str, Any]] = []
+            importers: List[Dict[str, Any]] = []
             if direction in ["both", "dependencies"]:
-                # Get files this file imports
                 imports = self.get_imports(anchor_file_id)
-                for imp in imports:
-                    paths.add(imp["file_path"])
 
             if direction in ["both", "importers"]:
-                # Get files that import this file
                 importers = self.get_importers(anchor_file_id)
-                for imp in importers:
-                    paths.add(imp["file_path"])
 
-            # For depth > 1, expand recursively (simplified implementation)
+            dependency_chain: List[Dict[str, Any]] = []
             if max_depth > 1:
                 dependency_chain = self.get_dependency_chain(anchor_file_id, max_depth)
-                for dep in dependency_chain:
-                    paths.add(dep["file_path"])
-                    paths.add(dep["target_path"])
 
             return {
                 "anchor_file_path": anchor_file["file_path"],
-                "paths": sorted(list(paths)),
+                "imports": imports,
+                "importers": importers,
+                "dependency_chain": dependency_chain,
+                "connection_impacts": connection_impacts,
+                "max_depth": max_depth,
             }
         except Exception as e:
             logger.error(f"Error getting search scope for file {anchor_file_id}: {e}")
-            return {"anchor_file_path": None, "paths": []}
+            return {
+                "anchor_file_path": None,
+                "imports": [],
+                "importers": [],
+                "dependency_chain": [],
+                "connection_impacts": [],
+                "max_depth": max_depth,
+            }
 
     def get_external_connections(self, file_id: int) -> List[Dict[str, Any]]:
         """Incoming/outgoing integrations for a file."""
@@ -1263,8 +1168,15 @@ class GraphOperations:
                     "description": result["description"],
                     "match_confidence": result["match_confidence"],
                     "impact_type": result["impact_type"],
+                    "other_file_id": result.get("other_file_id"),
                     "other_file": result["other_file"],
+                    "other_project_id": result.get("other_project_id"),
+                    "other_project_name": result.get("other_project_name"),
                     "technology": result["technology"],
+                    "anchor_code_snippet": result.get("anchor_code_snippet"),
+                    "other_code_snippet": result.get("other_code_snippet"),
+                    "anchor_snippet_lines": result.get("anchor_snippet_lines"),
+                    "other_snippet_lines": result.get("other_snippet_lines"),
                 }
                 for result in results
             ]

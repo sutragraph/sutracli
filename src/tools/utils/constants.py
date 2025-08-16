@@ -36,22 +36,17 @@ DATABASE_QUERY_CONFIG = {
         "required_params": ["block_id"],
         "optional_params": [],
     },
-    "GET_FILE_IMPORTS": {
-        "required_params": ["file_path"],
-        "optional_params": [],
-    },
     "GET_DEPENDENCY_CHAIN": {
         "required_params": ["file_path"],
         "optional_params": ["depth"],
     },
 }
 
-# Error guidance messages for database queries - ONLY 6 EXPOSED QUERIES FOR AGENT
+# Error guidance messages for database queries 
 DATABASE_ERROR_GUIDANCE = {
     "GET_FILE_BY_PATH": "Try using semantic_search to find the correct file path first.",
     "GET_FILE_BLOCK_SUMMARY": "Ensure the file_path exists. Use semantic_search to find the correct file path first.",
     "GET_BLOCK_DETAILS": "Ensure the block_id exists. Use semantic_search to find block IDs first.",
-    "GET_FILE_IMPORTS": "Ensure the file_path exists. Use semantic_search to find the correct file path first.",
     "GET_DEPENDENCY_CHAIN": "Ensure the file_path exists. Use semantic_search to find the correct file path first.",
 }
 

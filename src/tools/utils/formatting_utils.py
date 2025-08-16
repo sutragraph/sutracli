@@ -221,6 +221,8 @@ def beautify_node_result(
     return "\n".join(result_parts)
 
 
+ 
+
 def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     """
     Format node result with only essential metadata (no code content).
@@ -230,6 +232,109 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
         idx: Node index number
         total_nodes: Total number of nodes being sent (for guidance)
     """
+    # Handle dependency scope single-node formatting
+    dependency_scope = node.get("dependency_scope")
+    if dependency_scope:
+        scope = dependency_scope
+        anchor = scope.get("anchor_file_path", "unknown")
+        imports = scope.get("imports", []) or []
+        importers = scope.get("importers", []) or []
+        chains = scope.get("dependency_chain", []) or []
+        impacts = scope.get("connection_impacts", []) or []
+        max_depth = scope.get("max_depth")
+
+        out = []
+        out.append(f"FILE: {anchor}")
+
+        if imports:
+            out.append("")
+            out.append(f"Imports ({len(imports)})")
+            for i, row in enumerate(imports, 1):
+                fp = row.get("file_path", "?")
+                lang = row.get("language", "?")
+                proj = row.get("project_name", "?")
+                imp = row.get("import_content", "")
+                out.append(f"{i}) {anchor} -> {fp} [lang={lang}; proj={proj}]")
+                if imp:
+                    out.append(f"   import: {imp}")
+
+        if importers:
+            out.append("")
+            out.append(f"Imported By ({len(importers)})")
+            for i, row in enumerate(importers, 1):
+                fp = row.get("file_path", "?")
+                lang = row.get("language", "?")
+                proj = row.get("project_name", "?")
+                imp = row.get("import_content", "")
+                out.append(f"{i}) {fp} -> {anchor} [lang={lang}; proj={proj}]")
+                if imp:
+                    out.append(f"   import: {imp}")
+
+        if chains:
+            out.append("")
+            chains_count = len(chains)
+            if max_depth is not None:
+                out.append(f"Dependency Chain (max_depth={max_depth}, chains={chains_count})")
+            else:
+                out.append(f"Dependency Chain (chains={chains_count})")
+            for i, row in enumerate(chains, 1):
+                path = row.get("path") or ""
+                out.append(f"{i}) {path}")
+
+        if impacts:
+            out.append("")
+            out.append(f"Connection Impact ({len(impacts)})")
+            for i, imp in enumerate(impacts, 1):
+                other = imp.get("other_file", "?")
+                ctype = imp.get("connection_type", "?")
+                itype = imp.get("impact_type", "?")
+                conf = imp.get("match_confidence")
+                tech = imp.get("technology", "?")
+                desc = imp.get("description", "")
+                conf_str = f"{int(conf)}%" if isinstance(conf, (int, float)) else str(conf)
+                out.append(
+                    f"{i}) {anchor} => {other} [type={ctype}; impact={itype}; conf={conf_str} ; tech={tech}]"
+                )
+                if desc:
+                    out.append(f"   desc: {desc}")
+
+                def _num_snip(code_snippet, lines_json):
+                    try:
+                        if isinstance(lines_json, str):
+                            lines = json.loads(lines_json) if lines_json else []
+                        else:
+                            lines = lines_json or []
+                        if not isinstance(lines, list):
+                            lines = []
+                    except Exception:
+                        lines = []
+                    snippet = (code_snippet or "").rstrip("\n")
+                    if not snippet:
+                        return ""
+                    code_lines = snippet.split("\n")
+                    parts = []
+                    n = min(len(lines), len(code_lines))
+                    for j in range(n):
+                        parts.append(f"L{lines[j]}: {code_lines[j]}")
+                    for j in range(n, len(code_lines)):
+                        parts.append(code_lines[j])
+                    return "\n".join(parts)
+
+                a_snip = _num_snip(imp.get("anchor_code_snippet", ""), imp.get("anchor_snippet_lines"))
+                if a_snip:
+                    out.append("   code@anchor:")
+                    out.extend([f"     {line}" for line in a_snip.split("\n")])
+
+                o_snip = _num_snip(imp.get("other_code_snippet", ""), imp.get("other_snippet_lines"))
+                if o_snip:
+                    out.append("   code@other:")
+                    out.extend([f"     {line}" for line in o_snip.split("\n")])
+
+        return "\n".join(out)
+
+    # Fall through to default metadata formatting
+    start_line = node.get("start_line")
+    end_line = node.get("end_line")
     start_line = node.get("start_line")
     end_line = node.get("end_line")
 
@@ -261,11 +366,11 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
             start_end_str = "unknown"
 
     # Show block_id if available, otherwise show file info
-    block_id = node.get("id", node.get("block_id"))
+    block_id = node.get("block_id", node.get("id"))
     if block_id:
-        # Add block type and name if available
-        block_type = node.get("type", "unknown")
-        block_name = node.get("name", "unnamed")
+        # Prefer explicit block_* keys
+        block_type = node.get("block_type", node.get("type", "unknown"))
+        block_name = node.get("block_name", node.get("name", "unnamed"))
     else:
         block_type = "file"
         block_name = "unknown"
@@ -300,8 +405,8 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
     if idx == 1:
         file_path = node.get("file_path", "unknown")
         result_parts = [
-            f"📁 File: {file_path}",
-            f"📊 Total blocks: {total_nodes}",
+            f"File: {file_path}",
+            f"Total blocks: {total_nodes}",
             "",
             "File Structure:",
             tree_line

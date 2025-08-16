@@ -3,13 +3,12 @@ Description: Query structured codebase metadata and retrieve complete code conte
 
 Available Query Types:
 
-1. GET_FILE_BY_PATH:
-Gets complete file information by file path including content, language, and project details.
-Required: query_name, file_path
-Optional: fetch_next_code
-
-2. GET_FILE_BLOCK_SUMMARY:
+1. GET_FILE_BLOCK_SUMMARY:
 Gets summary of all code blocks (functions, classes, methods) within a file.
+Required: query_name, file_path
+
+2. GET_FILE_BY_PATH:
+Gets complete file information by file path including content, language, and project details.
 Required: query_name, file_path
 Optional: fetch_next_code
 
@@ -18,15 +17,10 @@ Gets detailed information about a specific code block (function, class, method) 
 Required: query_name, block_id
 Optional: fetch_next_code
 
-4. GET_FILE_IMPORTS:
-Gets all imports/dependencies for a specific file.
-Required: query_name, file_path
-Optional: fetch_next_code
-
-5. GET_DEPENDENCY_CHAIN:
+4. GET_DEPENDENCY_CHAIN:
 Gets multi-hop dependency chain for a file showing recursive dependencies.
 Required: query_name, file_path
-Optional: depth, fetch_next_code
+Optional: depth
 
 Notes:
 - All file paths should be relative to the current workspace directory ({current_dir})
@@ -66,13 +60,7 @@ Examples:
 <block_id>456</block_id>
 </database>
 
-4. Get file imports and dependencies:
-<database>
-<query_name>GET_FILE_IMPORTS</query_name>
-<file_path>src/utils/helpers.py</file_path>
-</database>
-
-5. Get dependency chain for a file:
+4. Get dependency chain for a file:
 <database>
 <query_name>GET_DEPENDENCY_CHAIN</query_name>
 <file_path>src/utils/helpers.py</file_path>

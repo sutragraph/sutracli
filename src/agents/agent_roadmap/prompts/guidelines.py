@@ -41,6 +41,8 @@ Before proposing any changes, understand the project ecosystem:
    - DATABASE with line ranges → get targeted file sections based on SEARCH_KEYWORD results
    - SEMANTIC_SEARCH → find files containing specific implementations (when broad discovery needed)
    - LIST_FILES → verify exact file locations when needed
+   - Before running GET_FILE_BY_PATH on any file, prefer to run GET_FILE_BLOCK_SUMMARY to obtain top-level element names and types, then target specific line ranges with GET_FILE_BY_PATH
+   - When encountering a block reference comment like `// [BLOCK_REF:<id>]`, directly use GET_BLOCK_DETAILS with that block_id to retrieve the block’s content and its incoming/outgoing connections before proposing changes
 
 3. **Memory Management**: After each tool result, update Sutra Memory with ADD_HISTORY:
    - Store precise code locations with file paths, function names, LINE NUMBERS from SEARCH_KEYWORD
@@ -110,10 +112,11 @@ When the same replacement pattern occurs multiple times, provide efficient bulk 
 ## Efficient Discovery Strategy
 
 **Locate Precisely** → Use SEARCH_KEYWORD to find exact line numbers (gets limited 10-line context)
-**Get Full Context** → Use GET_FILE_BY_PATH with start_line/end_line from SEARCH_KEYWORD to get complete code context
+**Get Structural Overview First** → Use GET_FILE_BLOCK_SUMMARY before pulling full files to focus on relevant blocks
+**Get Full Context** → Use GET_FILE_BY_PATH with start_line/end_line from SEARCH_KEYWORD or from block summary ranges to get complete code context
 **Store Complete Context** → Store full function/class implementations from GET_FILE_BY_PATH in memory
 **Find Broader Patterns** → Use SEMANTIC_SEARCH only when broader file discovery is needed
-**Map Dependencies** → Use GET_FILE_IMPORTS and GET_DEPENDENCY_CHAIN for impact analysis
+**Map Dependencies** → Use GET_DEPENDENCY_CHAIN for impact analysis; for file-level impact use GET_DEPENDENCY_CHAIN, and for block-level impact use GET_BLOCK_DETAILS
 **Specify Changes** → For each location found, specify current element and exact replacement
 **Optimize Instructions** → When same pattern repeats, suggest bulk replacements instead of individual steps
 

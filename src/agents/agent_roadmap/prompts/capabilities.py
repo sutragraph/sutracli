@@ -10,10 +10,9 @@ CAPABILITIES = """
 **SEARCH_KEYWORD**: Find exact symbols, function names, import statements, and method calls using regex patterns. Accepts file_paths list to target specific files or searches entire codebase when list is empty. Returns 10 lines of context with line numbers.
 
 **DATABASE_SEARCH**: Query structured code graph for exact content and dependencies:
-- GET_FILE_BY_PATH: Complete file content and structure
 - GET_FILE_BLOCK_SUMMARY: Function/class overviews within files
-- GET_CHILD_BLOCKS: Method details within classes
-- GET_FILE_IMPORTS: Dependency analysis and import statements
+- GET_FILE_BY_PATH: Complete file content and structure
+- GET_BLOCK_DETAILS: Detailed info for a specific block (function/class/method) including incoming/outgoing connections
 - GET_DEPENDENCY_CHAIN: Files affected by component changes
 
 **LIST_FILES**: Verify file locations and directory structure. Understand project organization for file creation or path confirmation.
