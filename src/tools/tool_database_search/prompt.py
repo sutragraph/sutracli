@@ -10,7 +10,7 @@ Required: query_name, file_path
 2. GET_FILE_BY_PATH:
 Gets complete file information by file path including content, language, and project details.
 Required: query_name, file_path
-Optional: fetch_next_code
+Optional: start_line, end_line, fetch_next_code
 
 3. GET_BLOCK_DETAILS:
 Gets detailed information about a specific code block (function, class, method) including its content and all incoming and outgoing connections with other repository nodes.
@@ -35,6 +35,8 @@ Usage:
 <database>
 <query_name>query_type</query_name>
 <file_path>path/to/file</file_path>
+<start_line>start_line_number</start_line>
+<end_line>end_line_number</end_line>
 <block_id>block_identifier</block_id>  <!-- Only for GET_BLOCK_DETAILS -->
 <depth>dependency_depth</depth>  <!-- Only for GET_DEPENDENCY_CHAIN -->
 <fetch_next_code>true|false</fetch_next_code>
@@ -48,19 +50,27 @@ Examples:
 <file_path>src/utils/helpers.py</file_path>
 </database>
 
-2. Get all code blocks in a file:
+2. Get specific section of a file:
+<database>
+<query_name>GET_FILE_BY_PATH</query_name>
+<file_path>src/utils/helpers.py</file_path>
+<start_line>20</start_line>
+<end_line>50</end_line>
+</database>
+
+3. Get all code blocks in a file:
 <database>
 <query_name>GET_FILE_BLOCK_SUMMARY</query_name>
 <file_path>src/utils/helpers.py</file_path>
 </database>
 
-3. Get block details:
+4. Get block details:
 <database>
 <query_name>GET_BLOCK_DETAILS</query_name>
 <block_id>456</block_id>
 </database>
 
-4. Get dependency chain for a file:
+5. Get dependency chain for a file:
 <database>
 <query_name>GET_DEPENDENCY_CHAIN</query_name>
 <file_path>src/utils/helpers.py</file_path>
