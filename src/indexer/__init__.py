@@ -12,7 +12,14 @@ from datetime import datetime
 
 from .ast_parser import ASTParser
 from utils.json_serializer import make_json_serializable
-from utils.file_utils import get_extraction_file_path, get_last_extraction_file_path, should_ignore_file
+from utils.file_utils import (
+    get_extraction_file_path,
+    get_last_extraction_file_path,
+    should_ignore_file,
+    should_ignore_directory,
+    is_text_file,
+    get_language_from_extension,
+)
 from .export_ast_to_json import main as export_ast_to_json
 
 
@@ -129,7 +136,6 @@ def compute_file_hash(file_path: Union[str, Path]) -> Optional[str]:
 def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
     """
     Compute SHA256 hashes for all relevant files in a directory.
-    Uses the same filtering logic as the AST parser.
 
     Args:
         dir_path: Path to the directory
@@ -138,7 +144,6 @@ def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
         Dictionary mapping absolute file Path objects to their content hashes
     """
     import os
-    from utils.file_utils import should_ignore_file, should_ignore_directory, is_text_file
 
     dir_path = Path(dir_path)
     file_hashes = {}
@@ -165,6 +170,12 @@ def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
 
                 # Skip non-text files
                 if not is_text_file(file_path):
+                    continue
+
+                # Skip files without language support
+                # These files get parsed with errors but are not properly stored in DB
+                language = get_language_from_extension(file_path)
+                if not language:
                     continue
 
                 # Compute hash for this file
@@ -289,7 +300,7 @@ def incremental_parse(
             if should_ignore_file(file_path):
                 print(f"Skipping ignored file: {file_path}")
                 continue
-                
+
             result = parser.parse_and_extract(file_path)
             if result.get("ast") or result.get("error"):
                 file_path_str = str(Path(file_path))
