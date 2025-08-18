@@ -16,6 +16,7 @@ class BlockType(Enum):
     FUNCTION = "function"
     CLASS = "class"
     INTERFACE = "interface"
+    TYPE = "type"
     IMPORT = "import"
     EXPORT = "export"
 

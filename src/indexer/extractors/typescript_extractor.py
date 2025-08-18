@@ -287,7 +287,6 @@ class TypeScriptExtractor(BaseExtractor):
                 if cur.type == "class_body":
                     return None
                 cur = getattr(cur, "parent", None)
-                return None
 
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
@@ -365,6 +364,20 @@ class TypeScriptExtractor(BaseExtractor):
             root_node, {"interface_declaration"}, process_interface
         )
 
+    def extract_type_aliases(self, root_node: Any) -> List[CodeBlock]:
+        """Extract type alias declarations."""
+
+        def process_type_alias(node):
+            name_node = node.child_by_field_name("name")
+            names = [self._get_node_text(name_node)] if name_node else []
+
+            # Don't extract nested blocks for type aliases
+            return self._create_code_block(node, BlockType.TYPE, names)
+
+        return self._generic_traversal(
+            root_node, {"type_alias_declaration"}, process_type_alias
+        )
+
     def extract_enums(self, root_node: Any) -> List[CodeBlock]:
         """Extract enum declarations."""
 
@@ -410,6 +423,7 @@ class TypeScriptExtractor(BaseExtractor):
         all_blocks.extend(self.extract_functions(root_node))
         all_blocks.extend(self.extract_classes(root_node))
         all_blocks.extend(self.extract_interfaces(root_node))
+        all_blocks.extend(self.extract_type_aliases(root_node))
         return all_blocks
 
     # ============================================================================
@@ -508,7 +522,7 @@ class TypeScriptExtractor(BaseExtractor):
         left-hand property identifier only (avoid scanning inner identifiers).
         """
         fields = []
-        
+
         def get_field_name(field_node: Any) -> Optional[str]:
             # Prefer named child 'name'
             name_node = field_node.child_by_field_name("name")
