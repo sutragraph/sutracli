@@ -75,19 +75,16 @@ def beautify_node_result(
     if node.get("file_path"):
         result_parts.append(f'file_path: {node.get("file_path", "unknown")}')
 
-    # Show block_id if available, otherwise show file info
-    block_id = node.get("id", node.get("block_id"))
-    if block_id:
+    # Only show block info for GET_BLOCK_DETAILS results
+    if node.get("type") and node.get("block_id"):  # Block details result
+        block_id = node.get("block_id")
         result_parts.append(f"block_id: {block_id}")
-        # Add block type and name if available (for GET_BLOCK_DETAILS)
         block_type = node.get("type")
         block_name = node.get("name")
         if block_type:
             result_parts.append(f"block_type: {block_type}")
         if block_name:
             result_parts.append(f"block_name: {block_name}")
-    else:
-        result_parts.append(f'file_id: {node.get("file_id", "unknown")}')
 
     # Format start_line:end_line - use chunk info if available, otherwise node info
     if chunk_info:
@@ -369,9 +366,9 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
         else:
             start_end_str = "unknown"
 
-    # Show block_id if available, otherwise show file info
-    block_id = node.get("block_id", node.get("id"))
-    if block_id:
+    # Only show block info for actual blocks
+    block_id = node.get("block_id")
+    if block_id and node.get("type"):  # Block details result
         # Prefer explicit block_* keys
         block_type = node.get("block_type", node.get("type", "unknown"))
         block_name = node.get("block_name", node.get("name", "unnamed"))

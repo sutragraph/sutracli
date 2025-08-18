@@ -246,15 +246,42 @@ def execute_structured_database_query(
                                 filtered_lines = content_lines[start_idx:end_idx]
                                 filtered_content = '\n'.join(filtered_lines)
 
-                                # Update the result with filtered content
+                                # Update the result with filtered content and line info
                                 if isinstance(result, dict):
                                     result['content'] = filtered_content
+                                    result['start_line'] = start_line if start_line is not None else 1
+                                    result['end_line'] = end_line if end_line is not None else total_lines
+                                    result['lines'] = [result['start_line'], result['end_line']]
+                                    # Remove block-related fields for GET_FILE_BY_PATH
+                                    result.pop('id', None)
+                                    result.pop('block_id', None)
                                 else:
                                     # Convert to dict if it's not already
                                     result_dict['content'] = filtered_content
+                                    result_dict['start_line'] = start_line if start_line is not None else 1
+                                    result_dict['end_line'] = end_line if end_line is not None else total_lines
+                                    result_dict['lines'] = [result_dict['start_line'], result_dict['end_line']]
+                                    # Remove block-related fields for GET_FILE_BY_PATH
+                                    result_dict.pop('id', None)
+                                    result_dict.pop('block_id', None)
                                     results[i] = result_dict
 
                                 logger.debug(f"🔍 TRACE: Filtered content from lines {start_idx + 1}-{end_idx} ({len(filtered_lines)} lines)")
+
+                    # Get connections for the file/line range if we have results
+                    if results:
+                        connections = graph_ops._get_connections_for_file_and_lines(
+                            file_id, start_line, end_line
+                        )
+                        logger.debug(f"🔗 CONNECTIONS: Retrieved connections for file_id {file_id}, lines {start_line}-{end_line}")
+                        logger.debug(f"🔗 CONNECTIONS: Incoming count: {len(connections.get('incoming', []))}")
+                        logger.debug(f"🔗 CONNECTIONS: Outgoing count: {len(connections.get('outgoing', []))}")
+                        if connections:
+                            result_dict = dict(results[0]) if hasattr(results[0], 'keys') else results[0]
+                            result_dict['incoming_connections'] = connections.get('incoming', [])
+                            result_dict['outgoing_connections'] = connections.get('outgoing', [])
+                            results[0] = result_dict
+                            logger.debug(f"🔗 CONNECTIONS: Added connections to result_dict")
                 else:
                     results = []
                     logger.debug("🔍 TRACE: No file_id found, empty results")
