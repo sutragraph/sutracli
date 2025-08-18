@@ -1,7 +1,7 @@
 import os
 from loguru import logger
 from typing import List, Dict, Any, Union
-from .llm_client_base import LLMClientBase
+from .llm_client_base import LLMClientBase, TokenUsage, LLMResponse
 from google import genai
 from config import config
 import sys
@@ -55,6 +55,23 @@ class GeminiClient(LLMClientBase):
         Returns:
             Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
         """
+        # Use the new method with usage tracking and just return the content
+        response = self.call_llm_with_usage(system_prompt, user_message, return_raw)
+        return response.content
+
+    def call_llm_with_usage(
+        self, system_prompt: str, user_message: str, return_raw: bool = False
+    ) -> LLMResponse:
+        """Call Gemini with separate system prompt and user message, returning content and token usage.
+
+        Args:
+            system_prompt (str): System prompt
+            user_message (str): User message
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
+
+        Returns:
+            LLMResponse: Response containing both content and token usage information
+        """
         try:
             # Gemini doesn't have explicit system prompts, so combine them
             combined_prompt = f"{system_prompt}\n\n{user_message}"
@@ -69,11 +86,32 @@ class GeminiClient(LLMClientBase):
             if response.text:
                 raw_response = response.text
 
-                # Return raw response or parse XML based on return_raw parameter
+                # Extract token usage if available
+                token_usage = None
+                if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                    usage = response.usage_metadata
+                    input_tokens = getattr(usage, 'prompt_token_count', 0)
+                    output_tokens = getattr(usage, 'candidates_token_count', 0)
+                    total_tokens = getattr(usage, 'total_token_count', input_tokens + output_tokens)
+
+                    token_usage = TokenUsage(
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        total_tokens=total_tokens
+                    )
+                    logger.info(
+                        f"Token usage - Input: {input_tokens}, "
+                        f"Output: {output_tokens}, "
+                        f"Total: {total_tokens}"
+                    )
+
+                # Return content based on return_raw parameter
                 if return_raw:
-                    return raw_response
+                    content = raw_response
                 else:
-                    return self.parse_xml_response(raw_response)
+                    content = self.parse_xml_response(raw_response)
+
+                return LLMResponse(content=content, token_usage=token_usage)
 
             raise Exception("Unexpected response format from Gemini API")
 

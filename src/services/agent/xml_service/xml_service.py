@@ -23,7 +23,6 @@ from .xml_validator import XMLValidator
 from .xml_repair import XMLRepair
 from .xml_issue import XMLIssue
 
-
 class XMLService:
     """Comprehensive service for all XML processing operations."""
 
@@ -31,15 +30,13 @@ class XMLService:
         self.llm_client = llm_client
         self.cleaner = XMLCleaner()
         self.validator = XMLValidator()
-        self.repair_service = XMLRepair(llm_client)
+        self.repair_service = XMLRepair(self.llm_client)
         self.parser = XMLParser()
         self.block_finder = XMLBlockFinder()
 
     def parse_xml_response(self, response_text: str) -> List[Dict[str, Any]]:
         """Parse LLM response and extract only XML data."""
         try:
-            logger.debug(f"Parsing XML response: {response_text[:200]}...")
-
             # Clean and fix common XML spacing issues
             cleaned_text = self.cleaner.clean_xml_spacing(response_text)
 
@@ -68,6 +65,10 @@ class XMLService:
         """Repair a single malformed XML block."""
         return self.repair_service.repair_xml(malformed_xml)
 
+    def repair_malformed_xml_in_text(self, text: str) -> str:
+        """Detect and repair all malformed XML in text."""
+        return self.repair_service.repair_malformed_xml_in_text(text)
+
     def clean_xml_spacing(self, text: str) -> str:
         """Clean and fix common XML spacing issues."""
         return self.cleaner.clean_xml_spacing(text)
@@ -92,14 +93,13 @@ class XMLService:
         for i, match in enumerate(xml_matches):
             xml_block = match.group(0)
             try:
-                logger.debug(f"Parsing XML block {i+1}: {xml_block}")
                 parsed_xml = self.parser.parse_single_xml_block(xml_block)
                 parsed_xml_list.append(parsed_xml)
                 logger.debug(f"Successfully parsed XML block {i+1}")
             except Exception as e:
                 logger.error(f"Failed to parse XML block {i+1}: {e}")
                 raise XMLParsingFailedException(
-                    f"Failed to parse XML block {i+1}: {e}",
+                    f"Failed to parse XML block {i+1} - {xml_block}: {e}",
                     failed_block_index=i + 1,
                     original_error=e,
                 )

@@ -75,5 +75,4 @@ class ReasoningContext:
     user_query: str
     tool_history: list
     validation_results: list
-    confidence_scores: list
     created_at: datetime = field(default_factory=datetime.now)

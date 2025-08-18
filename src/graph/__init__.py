@@ -2,7 +2,9 @@
 Graph module initialization.
 """
 
-from .sqlite_client import SQLiteConnection, GraphOperations
-from .converter import TreeSitterToSQLiteConverter
+from graph.sqlite_client import SQLiteConnection
+from graph.graph_operations import GraphOperations
+from graph.converter import ASTToSqliteConverter
+from graph.project_indexer import ProjectIndexer
 
-__all__ = ["SQLiteConnection", "GraphOperations", "TreeSitterToSQLiteConverter"]
+__all__ = ["SQLiteConnection", "GraphOperations", "ASTToSqliteConverter", "ProjectIndexer"]

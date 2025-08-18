@@ -1,5 +1,18 @@
-from typing import Dict, List, Any, Union
+from typing import Dict, List, Any, Union, NamedTuple, Optional
 from ..agent.xml_service import XMLService
+
+
+class TokenUsage(NamedTuple):
+    """Token usage information from LLM calls."""
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+
+
+class LLMResponse(NamedTuple):
+    """Response from LLM call including content and token usage."""
+    content: Union[List[Dict[str, Any]], str]
+    token_usage: Optional[TokenUsage]
 
 
 class LLMClientBase:
@@ -35,3 +48,21 @@ class LLMClientBase:
                                             raw response text if return_raw=True
         """
         raise NotImplementedError("Subclasses must implement call_llm method")
+
+    def call_llm_with_usage(self, *args, return_raw: bool = False, **kwargs) -> LLMResponse:
+        """
+        Call LLM and return both content and token usage information.
+        Default implementation falls back to call_llm with no token tracking.
+
+        Args:
+            return_raw (bool): If True, return raw LLM response text without XML parsing.
+                              If False (default), parse and return XML elements.
+
+        Returns:
+            LLMResponse: Response containing both content and token usage information
+        """
+        try:
+            content = self.call_llm(*args, return_raw=return_raw, **kwargs)
+            return LLMResponse(content=content, token_usage=None)
+        except NotImplementedError:
+            raise NotImplementedError("Subclasses must implement either call_llm or call_llm_with_usage method")

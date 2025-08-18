@@ -17,15 +17,15 @@ from .code_fetcher import CodeFetcher
 class MemoryOperations:
     """Handles core memory operations for tasks, code snippets, and file changes"""
 
-    def __init__(self, db_connection: Optional[Any] = None):
+    def __init__(self):
         self.tasks: Dict[str, Task] = {}
         self.code_snippets: Dict[str, CodeSnippet] = {}
         self.history: List[HistoryEntry] = []
         self.file_changes: List[FileChange] = []
         self.task_id_counter = 0
         self.code_id_counter = 0
-        self.max_history_entries = 20
-        self.code_fetcher = CodeFetcher(db_connection)
+        self.max_history_entries = 50
+        self.code_fetcher = CodeFetcher()
 
     def get_next_task_id(self) -> str:
         """Generate next unique task ID"""
@@ -244,38 +244,42 @@ class MemoryOperations:
         """
         # Normalize the input file path
         normalized_input = os.path.normpath(file_path)
-        
+
         matching_snippets = []
         for snippet in self.code_snippets.values():
             # Normalize the stored file path
             normalized_stored = os.path.normpath(snippet.file_path)
-            
+
             # Check for exact match first
             if normalized_stored == normalized_input:
                 matching_snippets.append(snippet)
                 continue
-            
+
             # Check if one is absolute and other is relative but point to same file
             try:
                 # Convert both to absolute paths for comparison
                 abs_input = str(Path(file_path).resolve())
                 abs_stored = str(Path(snippet.file_path).resolve())
-                
+
                 if abs_input == abs_stored:
                     matching_snippets.append(snippet)
                     continue
-                    
+
             except Exception:
                 # If path resolution fails, fall back to basename comparison
                 pass
-            
+
             # Fall back to basename comparison (filename only)
-            if os.path.basename(normalized_stored) == os.path.basename(normalized_input):
+            if os.path.basename(normalized_stored) == os.path.basename(
+                normalized_input
+            ):
                 # Additional check: ensure they're likely the same file
                 # by checking if the relative path ends with the same structure
-                if normalized_input.endswith(normalized_stored) or normalized_stored.endswith(os.path.basename(normalized_input)):
+                if normalized_input.endswith(
+                    normalized_stored
+                ) or normalized_stored.endswith(os.path.basename(normalized_input)):
                     matching_snippets.append(snippet)
-        
+
         return matching_snippets
 
     # File Change Tracking Methods
@@ -309,12 +313,11 @@ class MemoryOperations:
         """
         self.history.append(HistoryEntry(timestamp=datetime.now(), summary=summary))
 
-        # Keep only last 20 entries
         if len(self.history) > self.max_history_entries:
             self.history = self.history[-self.max_history_entries :]
 
         return True
-    
+
     def add_history_entry(self, history_entry: HistoryEntry) -> bool:
         """
         Add enhanced history entry with full details.
@@ -327,7 +330,6 @@ class MemoryOperations:
         """
         self.history.append(history_entry)
 
-        # Keep only last 20 entries
         if len(self.history) > self.max_history_entries:
             self.history = self.history[-self.max_history_entries :]
 
