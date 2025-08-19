@@ -23,7 +23,15 @@ CONSTRAINTS = """## Operating Environment
 
 5. **Work with Discovery**: When faced with ambiguous requirements, use tools to discover existing implementations and make precise assumptions based on actual code patterns.
 
-6. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications.
+6. **MANDATORY CONNECTION ANALYSIS**: When database queries return connection mappings, you MUST follow and analyze ALL connections:
+   - **Never ignore connection mappings** from GET_FILE_BY_PATH or GET_BLOCK_DETAILS results
+   - **Always examine both sides**: Source component sending data AND target component receiving data
+   - **Verify data flow consistency**: What's sent must match what's processed
+   - **Identify gaps**: Missing fields like timestamps, audit trails, validation, error handling
+   - **Cross-repository analysis**: Use DATABASE_SEARCH to examine controllers in connected repositories
+   - **Update both sides**: Provide roadmap changes for source AND target when inconsistencies found
+
+7. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications.
 
 ## Memory Management Requirements
 
@@ -108,6 +116,15 @@ When the same pattern repeats 3+ times in a file, optimize with bulk instruction
 - Step-by-step coding instructions ("add this line, then add this line")
 - Complete file content or large code blocks
 - Implementation logic for new methods
+
+**CONNECTION ANALYSIS - ABSOLUTELY FORBIDDEN**:
+- Ignoring connection mappings returned by database queries
+- Analyzing only one side of a connection (source OR target instead of both)
+- Providing roadmaps without examining connected controllers/handlers
+- Skipping cross-repository analysis when connections point to external repos
+- Missing data flow gaps (timestamps, audit fields, validation)
+- Assuming connected components are correct without verification
+- Providing generic "update the API" without examining actual controller implementation
 
 **ROADMAP GUIDANCE ONLY - DO provide**:
 - Strategic modification points: "Method getUserById(): Add caching layer"

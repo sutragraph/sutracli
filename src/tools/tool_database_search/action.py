@@ -268,20 +268,18 @@ def execute_structured_database_query(
 
                                 logger.debug(f"🔍 TRACE: Filtered content from lines {start_idx + 1}-{end_idx} ({len(filtered_lines)} lines)")
 
-                    # Get connections for the file/line range if we have results
+                    # Get connection mappings for the file/line range if we have results
                     if results:
-                        connections = graph_ops._get_connections_for_file_and_lines(
+                        connection_mappings = graph_ops._get_connection_mappings_for_display(
                             file_id, start_line, end_line
                         )
-                        logger.debug(f"🔗 CONNECTIONS: Retrieved connections for file_id {file_id}, lines {start_line}-{end_line}")
-                        logger.debug(f"🔗 CONNECTIONS: Incoming count: {len(connections.get('incoming', []))}")
-                        logger.debug(f"🔗 CONNECTIONS: Outgoing count: {len(connections.get('outgoing', []))}")
-                        if connections:
+                        logger.debug(f"🔗 CONNECTIONS: Retrieved connection mappings for file_id {file_id}, lines {start_line}-{end_line}")
+                        logger.debug(f"🔗 CONNECTIONS: Found {len(connection_mappings)} connection mappings")
+                        if connection_mappings:
                             result_dict = dict(results[0]) if hasattr(results[0], 'keys') else results[0]
-                            result_dict['incoming_connections'] = connections.get('incoming', [])
-                            result_dict['outgoing_connections'] = connections.get('outgoing', [])
+                            result_dict['connection_mappings'] = connection_mappings
                             results[0] = result_dict
-                            logger.debug(f"🔗 CONNECTIONS: Added connections to result_dict")
+                            logger.debug(f"🔗 CONNECTIONS: Added connection mappings to result_dict")
                 else:
                     results = []
                     logger.debug("🔍 TRACE: No file_id found, empty results")

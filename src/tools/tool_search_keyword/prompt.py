@@ -1,21 +1,23 @@
 SEARCH_KEYWORD_TOOL = """## search_keyword
-Description: Search for specific keywords or phrases in the codebase. Use this tool when you need to find occurrences of a term across files, such as function names, variable names, or specific code patterns. This tool is faster than terminal commands like grep and provides flexible search capabilities. The tool returns results with line numbers for precise location tracking.
+Description: Search for keywords or patterns in the codebase using ripgrep. Supports single keywords, multiple patterns (using OR), and regex patterns. Faster than terminal commands and provides line numbers for precise location tracking.
 
 Required Parameters:
-- keyword: The keyword or phrase to search for in the codebase.
+- keyword: The search pattern. Can be:
+  * Single keyword: "functionName"
+  * Multiple patterns: "pattern1|pattern2|pattern3" (use with regex=true)
+  * Regex pattern: "\\.(get|post|put)\\s*\\(" (use with regex=true)
 
 Optional Parameters:
-- before_lines: Number of lines to include before the matched line (default: 5).
-- after_lines: Number of lines to include after the matched line (default: 5).
-- case_sensitive: Whether the search should be case-sensitive (default: false).
-- regex: Whether the keyword is a regular expression (default: false).
-- file_paths: Comma-separated list of specific file paths to search within (relative to the current workspace directory {current_dir}). If empty or not provided, the search will be performed across all files in the workspace.
+- before_lines: Lines before match (default: 5)
+- after_lines: Lines after match (default: 5) 
+- case_sensitive: Case-sensitive search (default: false)
+- regex: Treat keyword as regex pattern (default: false)
+- file_paths: Comma-separated file or directory paths to search, or empty for all files
 
 Notes:
-- When regex is true, the search parameter is treated as a regular expression pattern
-- When case_sensitive is true, the search is case-sensitive regardless of regex mode
-- Use file_paths comma-separated string for multiple specific files, or leave empty for whole directory search
-- Results include 10 lines of context (5 before + 5 after) by default for better understanding
+- For multiple patterns, use "pattern1|pattern2" with regex=true
+- Leave file_paths empty to search all files when uncertain about locations
+- Use \\b for word boundaries in regex patterns
 
 Usage:
 <search_keyword>
@@ -63,5 +65,31 @@ Examples:
 <case_sensitive>false</case_sensitive>
 <regex>true</regex>
 <file_paths>src/services/cache-service.ts, src/config/database.ts, src/utils/redis-cache.ts</file_paths>
+</search_keyword>
+
+5. Searching for multiple patterns (API endpoints):
+<search_keyword>
+<keyword>\\b(app|router)\\.(put|PUT)\\s*\\([^)]*apiFunction\\b|\\bapiFunction\\b.*\\b(put|PUT)\\b</keyword>
+<case_sensitive>false</case_sensitive>
+<regex>true</regex>
+<after_lines>3</after_lines>
+<before_lines>1</before_lines>
+<file_paths></file_paths>
+</search_keyword>
+
+6. Searching for multiple function names:
+<search_keyword>
+<keyword>getUserData|setUserData|deleteUserData</keyword>
+<case_sensitive>false</case_sensitive>
+<regex>true</regex>
+<file_paths></file_paths>
+</search_keyword>
+
+7. Searching within specific directories:
+<search_keyword>
+<keyword>config|Config</keyword>
+<case_sensitive>false</case_sensitive>
+<regex>true</regex>
+<file_paths>src/config, src/utils</file_paths>
 </search_keyword>
 """

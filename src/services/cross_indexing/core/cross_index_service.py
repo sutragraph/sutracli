@@ -838,6 +838,15 @@ class CrossIndexService:
             if keyword:
                 status += f"Keyword: '{keyword}'\n"
 
+            # Add searched paths information
+            file_paths = result.get("file_paths")
+            if file_paths:
+                if isinstance(file_paths, list) and file_paths:
+                    paths_str = ", ".join(file_paths)
+                    status += f"Searched in: {paths_str}\n"
+                elif isinstance(file_paths, str):
+                    status += f"Searched in: {file_paths}\n"
+
             matches_found = result.get("matches_found")
             if matches_found is not None:
                 matches_status = "Found" if matches_found else "Not Found"

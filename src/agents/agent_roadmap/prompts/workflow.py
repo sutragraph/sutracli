@@ -36,16 +36,87 @@ WORKFLOW = """## Core Workflow
    - Track current import statements with complete file context from GET_FILE_BY_PATH
    - Remove general information, keep only actionable details with complete code implementations
 
+## Connection Mapping Analysis (MANDATORY)
+
+**CRITICAL REQUIREMENT**: When database queries return connection mappings, you MUST analyze both sides of connections:
+
+### Mandatory Connection Analysis Workflow
+
+1. **Identify Connections**: When GET_FILE_BY_PATH or GET_BLOCK_DETAILS returns connection mappings:
+   ```
+   connections:
+   1. /source/path → [connection_type] → /target/path
+   ```
+
+2. **Follow ALL Connections**: For EVERY connection mapping discovered:
+   - **Source Analysis**: Examine what data/parameters are being sent
+   - **Target Analysis**: Examine the receiving component implementation
+   - **Gap Analysis**: Compare what's sent vs what's processed
+   - **Impact Assessment**: Determine if both sides need updates
+
+3. **Cross-Repository Analysis**: When connections point to external repositories:
+   - Examine the target controller/handler implementation
+   - Analyze current implementation vs requirements
+   - Identify missing fields (timestamps, status updates, validation)
+   - Check for consistency in data handling
+
+4. **Bidirectional Verification**: For each connection:
+   - Check receiving component implementation matches sender data
+   - Verify data format consistency between connected components
+   - Ensure operations include all required fields and metadata
+   - Validate proper error handling and edge cases
+
+### Connection Analysis Examples
+
+**Missing Field Pattern**:
+```
+Source sends limited data
+Target implementation shows it handles additional fields
+Action: Identify and recommend adding missing fields to source
+```
+
+**Format Mismatch Pattern**:
+```
+Sender uses one data structure
+Receiver expects different structure or additional metadata
+Action: Align data formats between connected components
+```
+
+**Audit Trail Pattern**:
+```
+Operation updates core fields only
+System requires tracking fields for compliance/debugging
+Action: Add missing audit and timestamp fields to operations
+```
+
+### Memory Storage for Connections
+
+Store in Sutra Memory:
+- **Complete connection chain**: Source → Connection Type → Target
+- **Data flow analysis**: What's sent, what's received, what's missing
+- **Both-side implementations**: Full context from source and target files
+- **Gap identification**: Missing fields, validation, error handling
+
+### Verification Checklist for Connections
+
+Before completing any roadmap that involves connections:
+- ✓ All connection mappings from database queries have been followed
+- ✓ Both source and target implementations examined
+- ✓ Data flow consistency verified between connected components
+- ✓ Missing fields identified (timestamps, audit fields, validation)
+- ✓ Both sides of connection updated in roadmap when needed
+- ✓ Error handling and edge cases considered for connection points
+
 ## Efficient Discovery Strategy
 
-**Two-Step Process**: 
+**Two-Step Process**:
 1. SEARCH_KEYWORD for line numbers → GET_FILE_BY_PATH for full context → store in memory
 2. **MANDATORY**: Store complete code context from GET_FILE_BY_PATH - never rely on limited SEARCH_KEYWORD snippets
 
 **Tool Usage Patterns**:
 - **SEMANTIC_SEARCH**: Find files containing specific implementations, functions, or patterns
 - **SEARCH_KEYWORD**: Find exact symbols with regex patterns. Returns 10 lines of context with line numbers
-- **DATABASE_SEARCH**: 
+- **DATABASE_SEARCH**:
   - GET_FILE_BLOCK_SUMMARY: Function/class overviews within files (use before GET_FILE_BY_PATH)
   - GET_FILE_BY_PATH: Complete file content with line ranges
   - GET_BLOCK_DETAILS: Detailed info for specific blocks with connections
@@ -244,5 +315,9 @@ Memory shows: No previous discoveries stored
 4. ✓ Parameter sources and types understood with full function context from memory
 5. ✓ Two-step discovery: SEARCH_KEYWORD for locations → GET_FILE_BY_PATH for complete context → memory storage
 6. ✓ No redundant file reads when complete implementations already exist in memory
+7. ✓ **ALL CONNECTION MAPPINGS FOLLOWED**: Every connection from database queries analyzed
+8. ✓ **BOTH SIDES EXAMINED**: Source and target components of connections verified
+9. ✓ **DATA FLOW CONSISTENCY**: What's sent matches what's received and processed
+10. ✓ **MISSING FIELDS IDENTIFIED**: Timestamps, audit fields, validation gaps found
 
 Focus on strategic precision: exact element names, current components, specific replacements with line numbers, roadmap-level modification steps."""

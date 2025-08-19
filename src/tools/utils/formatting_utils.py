@@ -132,66 +132,6 @@ def beautify_node_result(
                     f"    child_{i}: id={child_id}, type={child_type}, name={child_name}, lines={child_lines}"
                 )
 
-    # Add connection information if available (for GET_BLOCK_DETAILS)
-    incoming_connections = node.get("incoming_connections", [])
-    outgoing_connections = node.get("outgoing_connections", [])
-    total_connections = len(incoming_connections) + len(outgoing_connections)
-
-    if total_connections > 0:
-        result_parts.append(f"connections_found: {total_connections}")
-
-        # Display incoming connections
-        if incoming_connections:
-            result_parts.append(f"incoming_connections: {len(incoming_connections)}")
-            for i, conn in enumerate(incoming_connections, 1):
-                description = conn.get("description", "No description")
-                technology = conn.get("technology_name", "unknown")
-                source_file = conn.get("source_file_path", "unknown")
-                result_parts.append(f"  incoming_{i}: [{technology}] {description}")
-                result_parts.append(f"    from_file: {source_file}")
-
-                # Add code snippet if available
-                code_snippet = conn.get("code_snippet", "")
-                if code_snippet and code_snippet.strip():
-                    # Truncate long code snippets for readability
-                    lines = code_snippet.strip().split("\n")
-                    if len(lines) > 5:
-                        snippet_preview = (
-                            "\n".join(lines[:3])
-                            + "\n    ... ("
-                            + str(len(lines) - 3)
-                            + " more lines)"
-                        )
-                    else:
-                        snippet_preview = code_snippet.strip()
-                    result_parts.append(f"    code: {snippet_preview}")
-
-        # Display outgoing connections
-        if outgoing_connections:
-            result_parts.append(f"outgoing_connections: {len(outgoing_connections)}")
-            for i, conn in enumerate(outgoing_connections, 1):
-                description = conn.get("description", "No description")
-                technology = conn.get("technology_name", "unknown")
-                target_file = conn.get("target_file_path", "unknown")
-                result_parts.append(f"  outgoing_{i}: [{technology}] {description}")
-                result_parts.append(f"    to_file: {target_file}")
-
-                # Add code snippet if available
-                code_snippet = conn.get("code_snippet", "")
-                if code_snippet and code_snippet.strip():
-                    # Truncate long code snippets for readability
-                    lines = code_snippet.strip().split("\n")
-                    if len(lines) > 5:
-                        snippet_preview = (
-                            "\n".join(lines[:3])
-                            + "\n    ... ("
-                            + str(len(lines) - 3)
-                            + " more lines)"
-                        )
-                    else:
-                        snippet_preview = code_snippet.strip()
-                    result_parts.append(f"    code: {snippet_preview}")
-
     # Add code snippet if requested and available
     if include_code:
         # For GET_FILE_BY_PATH, the content is in 'content' field, for other queries it's in 'code_snippet'
@@ -214,6 +154,86 @@ def beautify_node_result(
             else:
                 # Code already has line numbers
                 result_parts.append(code_snippet)
+
+    # Add connection mappings information if available
+    connection_mappings = node.get("connection_mappings", [])
+
+    if connection_mappings:
+        result_parts.append("\nconnections:")
+        result_parts.append("")
+
+        # Group mappings by sender (source) to handle 1-to-many relationships
+        sender_groups = {}
+        for mapping in connection_mappings:
+            sender_key = (
+                mapping.get("sender_file_path", "unknown"),
+                mapping.get("sender_code_snippet", ""),
+                mapping.get("sender_snippet_lines", "")
+            )
+            if sender_key not in sender_groups:
+                sender_groups[sender_key] = []
+            sender_groups[sender_key].append(mapping)
+
+        group_num = 1
+        for sender_key, mappings in sender_groups.items():
+            sender_file_path, sender_code_snippet, sender_snippet_lines = sender_key
+
+            result_parts.append(f"{group_num}. {sender_file_path}")
+
+            # Add sender code snippet with line numbers (only once per group)
+            if sender_code_snippet and sender_code_snippet.strip():
+                sender_lines = []
+                try:
+                    if sender_snippet_lines:
+                        sender_lines = json.loads(sender_snippet_lines)
+                except:
+                    pass
+
+                code_lines = sender_code_snippet.strip().split("\n")
+                for j, line in enumerate(code_lines):
+                    if j < len(sender_lines):
+                        result_parts.append(f"   {sender_lines[j]:4d} | {line}")
+                    else:
+                        result_parts.append(f"      | {line}")
+
+            # Add single arrow with connection type for the group
+            connection_type = mappings[0].get("connection_type", "unknown")
+            result_parts.append(f"   ↓ [{connection_type}]")
+            result_parts.append("")
+
+            # Add all targets for this sender
+            for i, mapping in enumerate(mappings):
+                receiver_file_path = mapping.get("receiver_file_path", "unknown")
+                receiver_code_snippet = mapping.get("receiver_code_snippet", "")
+                receiver_snippet_lines = mapping.get("receiver_snippet_lines", "")
+
+                result_parts.append(f"   {receiver_file_path}")
+
+                # Add receiver code snippet with line numbers
+                if receiver_code_snippet and receiver_code_snippet.strip():
+                    receiver_lines = []
+                    try:
+                        if receiver_snippet_lines:
+                            receiver_lines = json.loads(receiver_snippet_lines)
+                    except:
+                        pass
+
+                    code_lines = receiver_code_snippet.strip().split("\n")
+                    for j, line in enumerate(code_lines):
+                        if j < len(receiver_lines):
+                            result_parts.append(f"   {receiver_lines[j]:4d} | {line}")
+                        else:
+                            result_parts.append(f"      | {line}")
+
+                # Add spacing between targets (but not after the last one in a group)
+                if i < len(mappings) - 1:
+                    result_parts.append("")
+
+            # Add spacing between sender groups
+            if group_num < len(sender_groups):
+                result_parts.append("")
+
+            group_num += 1
 
     return "\n".join(result_parts)
 

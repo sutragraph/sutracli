@@ -534,6 +534,99 @@ class GraphOperations:
             logger.error(f"Error getting mapped connections for {connection_id}: {e}")
             return []
 
+    def _get_connection_mappings_for_display(
+        self,
+        file_id: int,
+        start_line: Optional[int] = None,
+        end_line: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get connection mappings for display formatting with sender/receiver details.
+
+        Args:
+            file_id: File ID to get mappings for
+            start_line: Optional start line filter
+            end_line: Optional end line filter
+
+        Returns:
+            List of connection mappings with full sender/receiver details
+        """
+        try:
+            # Query to get all mappings where either sender or receiver belongs to the file
+            query = """
+                SELECT
+                    cm.id as mapping_id,
+                    cm.connection_type,
+                    cm.description as mapping_description,
+                    cm.match_confidence,
+
+                    -- Sender (outgoing) details
+                    oc.id as sender_id,
+                    oc.description as sender_description,
+                    oc.code_snippet as sender_code_snippet,
+                    oc.technology_name as sender_technology,
+                    oc.snippet_lines as sender_snippet_lines,
+                    sender_file.file_path as sender_file_path,
+                    sender_file.language as sender_language,
+
+                    -- Receiver (incoming) details
+                    ic.id as receiver_id,
+                    ic.description as receiver_description,
+                    ic.code_snippet as receiver_code_snippet,
+                    ic.technology_name as receiver_technology,
+                    ic.snippet_lines as receiver_snippet_lines,
+                    receiver_file.file_path as receiver_file_path,
+                    receiver_file.language as receiver_language
+
+                FROM connection_mappings cm
+                JOIN outgoing_connections oc ON cm.sender_id = oc.id
+                JOIN incoming_connections ic ON cm.receiver_id = ic.id
+                LEFT JOIN files sender_file ON oc.file_id = sender_file.id
+                LEFT JOIN files receiver_file ON ic.file_id = receiver_file.id
+
+                WHERE (oc.file_id = ? OR ic.file_id = ?)
+                ORDER BY cm.match_confidence DESC, cm.created_at DESC
+            """
+
+            results = self.connection.execute_query(query, (file_id, file_id))
+
+            # Filter by line range if specified
+            if start_line is not None and end_line is not None:
+                filtered_results = []
+                for result in results:
+                    # Check if either sender or receiver overlaps with the line range
+                    sender_lines = self._parse_snippet_lines(result.get("sender_snippet_lines") or "")
+                    receiver_lines = self._parse_snippet_lines(result.get("receiver_snippet_lines") or "")
+
+                    # Include if either sender or receiver overlaps with the requested range
+                    sender_overlaps = (result.get("sender_file_path") and
+                                     sender_lines and
+                                     self._lines_overlap(sender_lines, start_line, end_line))
+                    receiver_overlaps = (result.get("receiver_file_path") and
+                                       receiver_lines and
+                                       self._lines_overlap(receiver_lines, start_line, end_line))
+
+                    if sender_overlaps or receiver_overlaps:
+                        filtered_results.append(result)
+
+                return filtered_results
+            else:
+                return results
+
+        except Exception as e:
+            logger.error(f"Error getting connection mappings for display: {e}")
+            return []
+
+    def _parse_snippet_lines(self, snippet_lines_json: Optional[str]) -> List[int]:
+        """Parse snippet_lines JSON string into list of integers."""
+        try:
+            if snippet_lines_json:
+                import json
+                return json.loads(snippet_lines_json)
+            return []
+        except:
+            return []
+
     def _generate_connection_note(
         self, connections: Dict[str, List[Dict[str, Any]]]
     ) -> str:
@@ -932,8 +1025,8 @@ class GraphOperations:
                     # Get all children of the parent block
                     parent_children = self.get_block_children(parent["id"])
 
-            # Get connections overlapping this block's range with code snippets
-            connections = self._get_connections_for_file_and_lines(
+            # Get connection mappings overlapping this block's range
+            connection_mappings = self._get_connection_mappings_for_display(
                 block["file_id"], block["start_line"], block["end_line"]
             )
 
@@ -950,9 +1043,7 @@ class GraphOperations:
                 "content": block["content"],
                 "parent": parent,
                 "parent_children": parent_children,
-                "connections_in_range": connections,
-                "incoming_connections": connections.get("incoming", []),
-                "outgoing_connections": connections.get("outgoing", []),
+                "connection_mappings": connection_mappings,
             }
         except Exception as e:
             logger.error(f"Error getting block details for block {block_id}: {e}")
@@ -1054,12 +1145,12 @@ class GraphOperations:
     ) -> Dict[str, Any]:
         """
         Compute a small set of file paths likely impacted based on imports/importers and connection impacts.
-        
+
         Args:
             anchor_file_id: ID of the file to analyze
             direction: Direction of dependencies to consider ("both", "dependencies", or "importers")
             max_depth: Maximum depth to traverse the dependency graph
-            
+
         Returns:
             Dictionary with:
             - anchor_file_path: Path of the anchor file
