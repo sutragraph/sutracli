@@ -18,7 +18,7 @@
   "embedding": {
     "model_name": "all-MiniLM-L12-v2",
     "model_path": "~/.sutra/models/all-MiniLM-L12-v2",
-    "max_tokens": 230,
+    "max_tokens": 240,
     "overlap_tokens": 30,
     "similarity_threshold": 0.2,
     "enable_optimization": false

@@ -16,7 +16,7 @@ Core Responsibilities:
 - Generate XML format for connection code output
 - Ensure comprehensive coverage of all connection points
 
-Output Format
+Output Format:
 
 <connection_code>
 <code>
@@ -29,8 +29,6 @@ Output Format
 </code>
 </connection_code>
 
-If no connection code is found, return nothing.
-
 Output Examples:
 
 Example 1: Direct endpoint discovery - extracting multiple endpoints found
@@ -39,7 +37,7 @@ Example 1: Direct endpoint discovery - extracting multiple endpoints found
 <add id="1">
 <file>src/api/routes.py</file>
 <start_line>12</start_line>
-<end_line>50</end_line>
+<end_line>250</end_line>
 <description>Found 30+ REST API endpoints that accept incoming connections - includes user management, order processing, and notification endpoints</description>
 </add>
 </code>

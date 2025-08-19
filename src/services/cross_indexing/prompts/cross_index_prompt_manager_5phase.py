@@ -4,7 +4,6 @@ Cross-Index 5-Phase Prompt Manager
 Main orchestrator for all 5-phase cross-indexing prompts and workflow.
 """
 from loguru import logger
-from services.agent.xml_service.xml_service import XMLService
 from ..task_manager.cross_indexing_task_manager import CrossIndexingTaskManager
 from .phase1_package_discovery.phase1_prompt_manager import Phase1PromptManager
 from .phase2_import_discovery.phase2_prompt_manager import Phase2PromptManager
@@ -93,9 +92,7 @@ class CrossIndex5PhasePromptManager:
         elif phase == 4:
             return self.phase4_manager.get_user_prompt(memory_context)
         elif phase == 5:
-            incoming_connections = kwargs.get('incoming_connections', [])
-            outgoing_connections = kwargs.get('outgoing_connections', [])
-            return self.phase5_manager.get_user_prompt(incoming_connections, outgoing_connections)
+            return "DEPRECATED: Phase 5 user prompt is no longer used. Use task manager instead."
         else:
             raise ValueError(f"Invalid phase number: {phase}. Must be 1-5.")
 
@@ -136,111 +133,3 @@ class CrossIndex5PhasePromptManager:
             self.task_manager.set_current_phase(phase)
         else:
             raise ValueError(f"Invalid phase number: {phase}. Must be 1-5.")
-
-    def is_final_phase(self) -> bool:
-        """Check if currently at the final phase."""
-        return self.current_phase == 5
-
-    def get_task_aware_memory_context(self, memory_context: str = "") -> str:
-        """
-        Get memory context with task management integration.
-
-        Args:
-            memory_context: Base memory context
-
-        Returns:
-            Enhanced memory context with task information
-        """
-        return self.task_manager.get_memory_context_for_phase(self.current_phase)
-
-    def get_task_summary(self) -> dict:
-        """
-        Get summary of tasks across all phases.
-
-        Returns:
-            Task summary dictionary
-        """
-        return self.task_manager.get_task_summary()
-
-    def validate_phase_completion(self, response: str, phase: int = None) -> bool:
-        """
-        Validate that the phase response contains proper completion.
-
-        Args:
-            response: LLM response to validate
-            phase: Phase number (1-5), defaults to current phase
-
-        Returns:
-            True if response indicates phase completion, False otherwise
-        """
-        phase = phase or self.current_phase
-
-        if phase in [1, 2, 3]:
-            # Phases 1-3 use attempt_completion tool - validate XML structure
-            try:
-                xml_service = XMLService()
-                xml_blocks = xml_service.parse_xml_response(response)
-
-                # Check if any XML block contains attempt_completion with result
-                for block in xml_blocks:
-                    if isinstance(block, dict) and "attempt_completion" in block:
-                        attempt_completion = block["attempt_completion"]
-                        if isinstance(attempt_completion, dict) and "result" in attempt_completion:
-                            result = attempt_completion["result"]
-                            if result and str(result).strip():
-                                return True
-
-                return False
-            except Exception as e:
-                # XML parsing must work - no fallbacks allowed
-                logger.error(f"XML parsing failed for phase {phase} response: {e}")
-                return False
-
-        elif phase in [4, 5]:
-            # Phases 4-5 return JSON directly
-            try:
-                import json
-                response_stripped = response.strip()
-                if response_stripped.startswith('{') and response_stripped.endswith('}'):
-                    json.loads(response_stripped)  # Validate JSON structure
-                    return True
-                return False
-            except (json.JSONDecodeError, ValueError):
-                return False
-        else:
-            return False
-
-    def get_phase_description(self, phase: int = None) -> str:
-        """
-        Get a description of what the specified phase does.
-        
-        Args:
-            phase: Phase number (1-5), defaults to current phase
-            
-        Returns:
-            Description string for the phase
-        """
-        phase = phase or self.current_phase
-
-        descriptions = {
-            1: "Discovers connection-related packages in the project and creates tasks for subsequent analysis",
-            2: "Finds import statements for discovered packages and creates tasks for subsequent analysis",
-            3: "Analyzes actual usage of imported methods and stores connection code via code manager",
-            4: "Processes collected connection data and splits it into incoming/outgoing JSON format",
-            5: "Matches incoming and outgoing connections and returns matched pairs in JSON format"
-        }
-
-        return descriptions.get(phase, "Unknown phase")
-
-    def requires_code_manager(self, phase: int = None) -> bool:
-        """
-        Check if the specified phase requires code manager integration.
-        
-        Args:
-            phase: Phase number (1-5), defaults to current phase
-            
-        Returns:
-            True if phase requires code manager, False otherwise
-        """
-        phase = phase or self.current_phase
-        return phase == 3  # Only Phase 3 requires code manager integration

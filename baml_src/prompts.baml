@@ -1,11 +1,7 @@
-"""
-Connection Matching Prompt
+// Shared prompt templates that can be reused across different providers
 
-This prompt runs after cross-indexing analysis to match incoming and outgoing connections
-and provide JSON response with matched connection IDs for database storage.
-"""
-
-CONNECTION_MATCHING_PROMPT = """CONNECTION MATCHING ANALYSIS
+template_string ConnectionMatchingSystemPrompt() #"
+    CONNECTION MATCHING ANALYSIS
 
 Identify connection points between incoming and outgoing connections by matching endpoint names, event names, queue names, and other connection identifiers.
 
@@ -93,33 +89,41 @@ Match outgoing connections with incoming connections by identifying:
 - `/users/create` with `/users-create` - Opposite operations
 - `socket.emit('join')` with `socket.on('joinRoom')` - Opposite actions
 
+## ANALYSIS APPROACH
+
+**Important: Avoid Word Association Bias**
+- Don't assume connections match just because they have similar names
+- Focus on actual technical connection points, not linguistic similarities
+- Each identifier you encounter may trigger associations from training data - be mindful of this bias
+- Verify that your matches are based on technical logic, not just word patterns
 
 ## OUTPUT FORMAT
 
-Return ONLY a valid JSON response:
+Before you answer, please explain your reasoning step-by-step.
 
-```json
+For example:
+If we think step by step we can see that I found multiple exact matches across different connection types - API endpoints, queue names, and socket events. I focused on identical identifiers and avoided similar-sounding names to prevent false positives from word associations.
+
+Therefore the output is:
 {
   "matches": [
     {
       "outgoing_id": "string",
       "incoming_id": "string",
       "match_confidence": "high|medium|low",
-      "match_reason": "Brief explanation of connection point match",
+      "match_reason": "Detailed explanation of connection point match with technical justification",
       "connection_type": "string"
     }
   ]
 }
-```
 
 ## REQUIREMENTS
 
-- Return ONLY valid JSON with no additional text
+- Explain your step-by-step reasoning before providing the JSON response
 - Process ALL connections and return ALL valid matches
-- Match connection points by name/identifier
+- Match connection points by name/identifier with technical justification
 - Be conservative: prefer no match over incorrect match
+- Avoid assumptions based purely on word similarities
 
 **MANDATORY: ANALYZE ALL CONNECTIONS AND RETURN ALL CONNECTION POINT MATCHES**
-
-**FAILURE TO RETURN ALL MATCHES IS UNACCEPTABLE**
-"""
+"#

@@ -207,7 +207,7 @@ def setup_configuration():
         "embedding": {
             "model_name": "all-MiniLM-L12-v2",
             "model_path": f"{INSTALL_DIR}/models/all-MiniLM-L12-v2",
-            "max_tokens": 230,
+            "max_tokens": 240,
             "overlap_tokens": 30,
             "similarity_threshold": 0.2,
             "enable_optimization": False,

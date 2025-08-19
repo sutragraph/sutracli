@@ -70,40 +70,7 @@ Bad Example 3: Import/require statements
 - Extraction Decision: DO NOT EXTRACT - library imports are not connection points
 - Why bad: Library imports are not connection points
 
-4. OUTPUT FORMAT
-
-Return extracted connection code using this XML format:
-
-<connection_code>
-<code>
-<add id="unique_id">
-<file>relative/path/to/file</file>
-<start_line>number</start_line>
-<end_line>number</end_line>
-<description>brief description of the connection</description>
-</add>
-</code>
-</connection_code>
-
-**Example Output:**
-<connection_code>
-<code>
-<add id="1">
-<file>src/services/userService.js</file>
-<start_line>34</start_line>
-<end_line>36</end_line>
-<description>API call to '/admin/users' endpoint for user management</description>
-</add>
-<add id="2">
-<file>src/messaging/producer.js</file>
-<start_line>23</start_line>
-<end_line>25</end_line>
-<description>Queue publishing to 'user-notifications' for notifications</description>
-</add>
-</code>
-</connection_code>
-
-5. DESCRIPTION TEMPLATES
+4. DESCRIPTION TEMPLATES
 
 Template for direct API calls:
 "HTTP [METHOD] call to [service_name] using environment variable [env_var] configured as [actual_value] for endpoint [endpoint_path] for [purpose]"

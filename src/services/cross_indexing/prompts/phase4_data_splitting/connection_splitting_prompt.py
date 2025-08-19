@@ -56,7 +56,7 @@ Examples:
 5. Include complete parameter details:
    - Exact endpoints, event names, queue names, method names
    - Protocols, methods, parameters
-   - Environment variables and their resolved values in descriptions
+   - Environment variables and their resolved values in descriptions using format ENV_VAR=actual_value
    - File paths and line numbers
 6. Classify direction correctly based on data flow
 7. No duplicates - each data transmission operation must be unique
@@ -153,13 +153,7 @@ For any code defining multiple endpoints/events/methods:
 - Use specific line numbers for each definition
 - Description must include the specific endpoint/event/method details
 
-### RULE 3: ONE DATA TRANSMISSION PER SNIPPET
-For any code performing multiple data transmissions:
-- Each transmission operation gets its own snippet entry
-- Use specific line numbers for each transmission
-- Description must specify what data is being transmitted
-
-### RULE 4: PRECISE LINE NUMBERS
+### RULE 3: PRECISE LINE NUMBERS
 - Use exact line numbers for each individual connection
 - For single-line connections: "23-23"
 - For multi-line connections: "23-27" (only if they're truly one logical connection)
@@ -167,23 +161,38 @@ For any code performing multiple data transmissions:
 
 ## EXAMPLES OF CORRECT SEPARATION
 
-### CORRECT - Multiple Event Handlers:
+### EXAMPLE 1: HTTP API CALLS WITH LITERAL ENDPOINTS
+When you receive connection data with HTTP API calls:
+
+**Input Connection Data:**
+```
+src/api/client.js:15: axios.post('/admin/users', userData)
+src/api/client.js:23: axios.get('/api/orders', params)
+src/api/client.js:31: makeApiCall('/admin/users', 'POST', userData)
+src/api/client.js:45: makeApiCall('/api/orders', 'GET', params)
+```
+
+**CORRECT Splitting:**
 ```json
 {
-  "incoming_connections": {
-    "event_system": {
-      "src/handlers.js": [
+  "outgoing_connections": {
+    "http_client": {
+      "src/api/client.js": [
         {
-          "snippet_lines": "15-25",
-          "description": "Event handler for user_login event"
+          "snippet_lines": "15-15",
+          "description": "HTTP POST call to /admin/users endpoint for user creation"
         },
         {
-          "snippet_lines": "30-40", 
-          "description": "Event handler for user_logout event"
+          "snippet_lines": "23-23",
+          "description": "HTTP GET call to /api/orders endpoint for order retrieval"
         },
         {
-          "snippet_lines": "45-55",
-          "description": "Event handler for data_update event"
+          "snippet_lines": "31-31",
+          "description": "HTTP POST call using makeApiCall wrapper to /admin/users endpoint for user creation"
+        },
+        {
+          "snippet_lines": "45-45",
+          "description": "HTTP GET call using makeApiCall wrapper to /api/orders endpoint for order retrieval"
         }
       ]
     }
@@ -191,23 +200,181 @@ For any code performing multiple data transmissions:
 }
 ```
 
-### CORRECT - Multiple Operations:
+### EXAMPLE 2: ENVIRONMENT VARIABLE CONFIGURATIONS
+When you receive connection data with environment variables and their values:
+
+**Input Connection Data:**
+```
+src/config/api.js:12: const response = await axios.get(`${process.env.API_BASE_URL}/update/data`)
+src/config/queue.js:8: const queueName = process.env.QUEUE_NAME || 'default-queue'
+src/config/api.js:20: const apiUrl = 'http://localhost:3000/api'
+```
+
+**Environment Variables (if provided):**
+```
+API_BASE_URL=http://localhost:3001
+QUEUE_NAME=user-processing
+```
+
+**CORRECT Splitting:**
 ```json
 {
   "outgoing_connections": {
     "http_client": {
-      "src/client.js": [
+      "src/config/api.js": [
+        {
+          "snippet_lines": "12-12",
+          "description": "HTTP GET call using environment variable API_BASE_URL=http://localhost:3001 for endpoint /update/data"
+        },
+        {
+          "snippet_lines": "20-20",
+          "description": "Static API URL configuration for http://localhost:3000/api endpoint"
+        }
+      ]
+    },
+    "message_queue": {
+      "src/config/queue.js": [
+        {
+          "snippet_lines": "8-8",
+          "description": "Queue name configuration using environment variable QUEUE_NAME=user-processing with fallback to default-queue"
+        }
+      ]
+    }
+  }
+}
+```
+
+### EXAMPLE 3: SOCKET EVENTS AND MESSAGE HANDLERS
+When you receive connection data with WebSocket and message queue operations:
+
+**Input Connection Data:**
+```
+src/socket/handlers.js:15: socket.emit('user_status_update', data)
+src/socket/handlers.js:23: socket.emit('order_notification', orderData)
+src/socket/server.js:30: socket.on('user_login', handleUserLogin)
+src/socket/server.js:35: socket.on('user_logout', handleUserLogout)
+src/queue/consumer.js:42: queue.consume('order-processing', handler)
+```
+
+**CORRECT Splitting:**
+```json
+{
+  "outgoing_connections": {
+    "websocket": {
+      "src/socket/handlers.js": [
         {
           "snippet_lines": "15-15",
-          "description": "GET request for user data retrieval"
+          "description": "WebSocket emit for user_status_update event"
         },
         {
           "snippet_lines": "23-23",
-          "description": "POST request for user data creation"
+          "description": "WebSocket emit for order_notification event"
+        }
+      ]
+    },
+    "message_queue": {
+      "src/queue/consumer.js": [
+        {
+          "snippet_lines": "42-42",
+          "description": "Message queue consumer for order-processing queue"
+        }
+      ]
+    }
+  },
+  "incoming_connections": {
+    "websocket": {
+      "src/socket/server.js": [
+        {
+          "snippet_lines": "30-30",
+          "description": "WebSocket event handler for user_login event"
         },
         {
-          "snippet_lines": "31-31",
-          "description": "PUT request for user data update"
+          "snippet_lines": "35-35",
+          "description": "WebSocket event handler for user_logout event"
+        }
+      ]
+    }
+  }
+}
+```
+
+### EXAMPLE 4: EXPRESS ROUTE HANDLERS
+When you receive connection data with API route definitions:
+
+**Input Connection Data:**
+```
+src/routes/users.js:10: app.get('/api/users', getUsersHandler)
+src/routes/users.js:15: app.post('/api/users', createUserHandler)
+src/routes/orders.js:8: router.get('/orders/:id', getOrderHandler)
+src/routes/orders.js:12: router.put('/orders/:id', updateOrderHandler)
+```
+
+**CORRECT Splitting:**
+```json
+{
+  "incoming_connections": {
+    "express_routes": {
+      "src/routes/users.js": [
+        {
+          "snippet_lines": "10-10",
+          "description": "GET /api/users endpoint for user retrieval"
+        },
+        {
+          "snippet_lines": "15-15",
+          "description": "POST /api/users endpoint for user creation"
+        }
+      ],
+      "src/routes/orders.js": [
+        {
+          "snippet_lines": "8-8",
+          "description": "GET /orders/:id endpoint for order retrieval by ID"
+        },
+        {
+          "snippet_lines": "12-12",
+          "description": "PUT /orders/:id endpoint for order update by ID"
+        }
+      ]
+    }
+  }
+}
+```
+
+### EXAMPLE 5: WRAPPER FUNCTIONS WITH SPECIFIC IDENTIFIERS
+When you receive connection data with wrapper function calls:
+
+**Input Connection Data:**
+```
+src/services/notification.js:25: publishMessage('user-notifications', data)
+src/services/notification.js:30: publishMessage('order-updates', orderData)
+src/services/api.js:18: makeApiCall('/admin/users', 'POST', userData)
+src/services/api.js:22: makeApiCall('/api/orders', 'GET', params)
+```
+
+**CORRECT Splitting:**
+```json
+{
+  "outgoing_connections": {
+    "message_queue": {
+      "src/services/notification.js": [
+        {
+          "snippet_lines": "25-25",
+          "description": "Message publishing using publishMessage wrapper to user-notifications queue"
+        },
+        {
+          "snippet_lines": "30-30",
+          "description": "Message publishing using publishMessage wrapper to order-updates queue"
+        }
+      ]
+    },
+    "http_client": {
+      "src/services/api.js": [
+        {
+          "snippet_lines": "18-18",
+          "description": "HTTP POST call using makeApiCall wrapper to /admin/users endpoint for user creation"
+        },
+        {
+          "snippet_lines": "22-22",
+          "description": "HTTP GET call using makeApiCall wrapper to /api/orders endpoint for order retrieval"
         }
       ]
     }
@@ -249,6 +416,61 @@ For any code performing multiple data transmissions:
 }
 ```
 
+### FORBIDDEN - Grouping Wrapper Function Calls:
+```json
+{
+  "outgoing_connections": {
+    "http_client": {
+      "src/services/api.js": [
+        {
+          "snippet_lines": "18-45",
+          "description": "Multiple API calls using makeApiCall wrapper for various endpoints"
+        }
+      ]
+    }
+  }
+}
+```
+
+## DATA EXCLUSION RULES - DO NOT SPLIT THESE
+
+The following types of connection data should NOT be included in splitting:
+
+### EXCLUDE 1: Generic Library Calls Without Identifiers
+**Connection Data That Should Be Excluded:**
+```
+src/utils/http.js:25: await axios.get(url)
+src/utils/http.js:30: await axios.post(url, data)
+src/utils/socket.js:15: socket.emit(eventName, data)
+```
+**Why Excluded:** These use variable identifiers, not specific connection endpoints.
+
+### EXCLUDE 2: Function Definitions and Imports
+**Connection Data That Should Be Excluded:**
+```
+src/api/client.js:1: const axios = require('axios')
+src/utils/api.js:10: function apiCallFunction(endpoint, method, data) { ... }
+src/socket/handler.js:5: import { io } from 'socket.io-client'
+```
+**Why Excluded:** Library imports and generic function definitions are not actual connections.
+
+### EXCLUDE 3: Configuration Without Actual Usage
+**Connection Data That Should Be Excluded:**
+```
+src/config/settings.js:8: const API_BASE_URL = process.env.API_BASE_URL
+src/config/settings.js:12: const QUEUE_CONFIG = { host: 'localhost', port: 5672 }
+```
+**Why Excluded:** Configuration definitions without actual connection usage.
+
+### INCLUDE: Only Actual Connection Usage
+**Connection Data That SHOULD Be Included:**
+```
+src/api/client.js:25: const response = await axios.get(`${process.env.API_BASE_URL}/users`)
+src/services/queue.js:15: publishMessage('user-notifications', userData)
+src/routes/api.js:20: app.get('/api/users', handleGetUsers)
+```
+**Why Included:** These show actual connection usage with specific identifiers or environment variables.
+
 ## STEP-BY-STEP ANALYSIS PROCESS
 
 1. Identify all connections: Scan through all code snippets and identify every individual connection
@@ -272,7 +494,7 @@ For any code performing multiple data transmissions:
 - Create separate entries for each individual connection
 - Use precise line numbers for each connection
 - Write specific descriptions for each connection
-- Include environment variable information in descriptions
+- Include environment variable information in descriptions using format ENV_VAR=actual_value when values are provided
 - Group by technology and file path as shown in format
 
 Remember: If you find 26 different connections, you must create 26 separate JSON entries. No exceptions.

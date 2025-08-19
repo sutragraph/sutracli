@@ -22,7 +22,7 @@ from services.cross_indexing.code_manager.prompts.code_manager_prompt_manager im
     CodeManagerPromptManager,
 )
 from graph.graph_operations import GraphOperations
-from services.cross_indexing.core.connection_matching_manager import (
+from services.cross_indexing.prompts.phase5_connection_matching.phase5_prompt_manager import (
     run_connection_matching,
 )
 
