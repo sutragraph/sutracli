@@ -7,10 +7,9 @@ Uses the existing config system and llm_factory pattern for provider selection.
 
 from typing import Dict, Any
 from loguru import logger
-from baml_client.sync_client import b as baml
 from baml_client.types import ConnectionMatchingResponse
 from graph.sqlite_client import SQLiteConnection
-from config import config
+from services.cross_indexing.utils.baml_utils import call_baml
 
 
 class Phase5PromptManager:
@@ -19,19 +18,8 @@ class Phase5PromptManager:
     Uses the existing config system to determine which provider and function to use.
     """
 
-    # Provider mapping from config to BAML function prefix
-    PROVIDER_MAPPING = {
-        "aws": "Aws",
-        "openai": "ChatGPT",
-        "anthropic": "Anthropic",
-        "gcp": "Gemini",
-    }
-
     def __init__(self):
         self.db_client = SQLiteConnection()
-        self.provider = config.llm.provider.lower()
-        self.function_prefix = self.PROVIDER_MAPPING.get(self.provider, "Aws")
-
         logger.info(
             f"🤖 Phase5PromptManager initialized with provider: {self.provider}"
         )
@@ -148,24 +136,9 @@ code_snippet:
                 outgoing_connections, "OUTGOING"
             )
 
-            # Get the provider-specific function name
-            function_name = f"{self.function_prefix}ConnectionMatching"
-
-            # Call BAML function with role-based caching and token tracking
-            logger.info(
-                f"🤖 Calling BAML {function_name} (provider: {self.provider}) with role-based caching..."
-            )
-
-            # Get the function dynamically based on provider
-            if not hasattr(baml, function_name):
-                raise AttributeError(
-                    f"Function {function_name} not found in BAML client. Available providers: {list(self.PROVIDER_MAPPING.keys())}"
-                )
-
-            baml_function = getattr(baml, function_name)
-
-            # Call the provider-specific function
-            response: ConnectionMatchingResponse = baml_function(
+            # Call BAML function using the utility function
+            response: ConnectionMatchingResponse = call_baml(
+                function_name="ConnectionMatching",
                 incoming_connections=incoming_formatted,
                 outgoing_connections=outgoing_formatted,
             )
