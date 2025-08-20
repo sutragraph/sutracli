@@ -17,19 +17,33 @@ WORKFLOW = """## Core Workflow
    - Search for existing similar patterns, functions, or utilities that can be reused
    - Analyze parameter sources, types, and data flow for functions that will be modified
 
-3. **Execute Memory-First Discovery**: Use exactly one tool per iteration, only if information is NOT in memory:
+3. **MANDATORY: Architectural Placement Discovery**: Before suggesting ANY new function/method creation:
+   - **SEARCH_KEYWORD** "utils" or "helpers" or "lib" in file_paths to find utility directories
+   - **GET_FILE_BLOCK_SUMMARY** for discovered utility files to understand their purpose and patterns
+   - **SEMANTIC_SEARCH** for existing similar functionality before creating new functions
+   - **Follow established patterns**: If utility directories exist, new utility functions MUST go there
+   - **Reuse over recreation**: Suggest extending existing functions instead of creating duplicates
+   - **Project convention compliance**: Match existing naming patterns and organizational structure
+   - **SOLID Principles Validation**: Ensure architectural decisions follow SOLID principles:
+     - **Single Responsibility**: Functions/classes should have one reason to change
+     - **Open/Closed**: Suggest extending existing abstractions rather than modifying them
+     - **Liskov Substitution**: Ensure derived classes can replace base classes without breaking functionality
+     - **Interface Segregation**: Prefer specific interfaces over general ones
+     - **Dependency Inversion**: Depend on abstractions, not concretions
+
+4. **Execute Memory-First Discovery**: Use exactly one tool per iteration, only if information is NOT in memory:
    - FIRST: Check if exact function names and complete implementations are already in memory
    - SECOND: Check if specific import statements with full context are already stored
    - DISCOVERY WORKFLOW: Use SEARCH_KEYWORD to find line numbers → GET_FILE_BY_PATH for complete context
    - NEVER: Re-read files for code already stored in memory with full context
 
-4. **Think Before Acting**: Before each tool call, analyze within <thinking></thinking> tags:
+5. **Think Before Acting**: Before each tool call, analyze within <thinking></thinking> tags:
    - Review Sutra Memory for specific code locations AND actual code content already found
    - Verify if the information you need is already stored with line numbers and code snippets
    - Decide which tool will reveal NEW implementation details (not already in memory)
    - Confirm you're seeking precise modification points that aren't already discovered
 
-5. **Update Memory with Complete Context**: After each tool result, update Sutra Memory with ADD_HISTORY:
+6. **Update Memory with Complete Context**: After each tool result, update Sutra Memory with ADD_HISTORY:
    - Store exact code locations with file paths, function names, AND line numbers from SEARCH_KEYWORD
    - **CRITICAL**: Store COMPLETE CODE CONTEXT from GET_FILE_BY_PATH queries (not limited SEARCH_KEYWORD snippets)
    - Record full function/method implementations WITH surrounding context from GET_FILE_BY_PATH
@@ -120,7 +134,6 @@ Before completing any roadmap that involves connections:
   - GET_FILE_BLOCK_SUMMARY: Function/class overviews within files (use before GET_FILE_BY_PATH)
   - GET_FILE_BY_PATH: Complete file content with line ranges
   - GET_BLOCK_DETAILS: Detailed info for specific blocks with connections
-  - GET_DEPENDENCY_CHAIN: Files affected by component changes
 - **LIST_FILES**: Verify file locations and directory structure
 
 ## Memory-First Efficiency Rules
@@ -155,30 +168,7 @@ Before proposing any changes, understand the project ecosystem:
    - SEARCH_KEYWORD for parameter usage patterns within function bodies
    - SEARCH_KEYWORD for function calls to understand parameter sources
 
-## Bulk Replacement Efficiency Detection
 
-When the same replacement pattern occurs multiple times, provide efficient bulk instructions:
-
-**Detect Bulk Replacement Opportunities**:
-- Same import statement across multiple files: `FirebaseRealtimeDB` → `RedisCache`
-- Same method calls throughout files: `firebase.get()` → `redis.get()`
-- Same class/function name replacements: `OldService` → `NewService`
-- Same constant/variable renames: `OLD_CONFIG` → `NEW_CONFIG`
-
-**Provide Bulk Instructions When Efficient**:
-```
-**File:** src/services/vm-allocation.service.ts
-1. Import: Replace FirebaseRealtimeDB with RedisCache
-2. Replace All: FirebaseRealtimeDB.get() → RedisCache.get() (throughout file)
-3. Replace All: FirebaseRealtimeDB.set() → RedisCache.set() (throughout file)
-4. Overview: Bulk Firebase to Redis method replacements
-```
-
-**Use Individual Steps Only When**:
-- Different parameters or contexts require specific handling
-- Method signatures change between replacements
-- Only specific occurrences need modification (not all instances)
-- Complex logic changes beyond simple name replacement
 
 ## Tool Usage Examples
 
@@ -224,9 +214,7 @@ When the same replacement pattern occurs multiple times, provide efficient bulk 
 - **When**: Block reference comment like `// [BLOCK_REF:<id>]` is encountered
 - **Use for**: Retrieving block's code, connections, and impact analysis
 
-#### GET_DEPENDENCY_CHAIN
-- **When**: Need to understand file relationships and system impacts
-- **Use for**: Finding connected components and affected areas
+
 
 ## Implementation Scenarios
 
@@ -253,23 +241,6 @@ Memory shows: No previous discoveries stored
 1. SEARCH_KEYWORD "redis|cache" file_paths="src/config/*.ts, src/services/*.ts" → finds cache usage
 2. GET_FILE_BY_PATH cache-config.ts with line ranges → gets complete cache context
 3. Store complete cache patterns in memory
-
-### Bulk Replacement Detection
-**Scenario**: Multiple files need Firebase → Redis migration
-
-**Detection Strategy**:
-1. SEARCH_KEYWORD "FirebaseRealtimeDB" to find all usage instances
-2. Count occurrences - if same pattern repeats 3+ times, consider bulk replacement
-3. Provide efficient bulk instructions instead of individual steps
-
-**Efficient Output**:
-```
-**File:** src/services/vm-allocation.service.ts
-1. Import: Replace FirebaseRealtimeDB with RedisCache
-2. Replace All: FirebaseRealtimeDB.get() → RedisCache.get() (throughout file)
-3. Replace All: FirebaseRealtimeDB.set() → RedisCache.set() (throughout file)
-4. Overview: Bulk Firebase to Redis method replacements
-```
 
 ### Function Parameter Analysis
 **Before modifying any function, perform parameter analysis**:

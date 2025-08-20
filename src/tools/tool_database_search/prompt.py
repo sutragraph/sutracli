@@ -17,10 +17,7 @@ Gets detailed information about a specific code block (function, class, method) 
 Required: query_name, block_id
 Optional: fetch_next_code
 
-4. GET_DEPENDENCY_CHAIN:
-Gets multi-hop dependency chain for a file showing recursive dependencies.
-Required: query_name, file_path
-Optional: depth
+
 
 Notes:
 - All file paths should be relative to the current workspace directory ({current_dir})
@@ -38,7 +35,7 @@ Usage:
 <start_line>start_line_number</start_line>
 <end_line>end_line_number</end_line>
 <block_id>block_identifier</block_id>  <!-- Only for GET_BLOCK_DETAILS -->
-<depth>dependency_depth</depth>  <!-- Only for GET_DEPENDENCY_CHAIN -->
+
 <fetch_next_code>true|false</fetch_next_code>
 </database>
 
@@ -70,12 +67,7 @@ Examples:
 <block_id>456</block_id>
 </database>
 
-5. Get dependency chain for a file:
-<database>
-<query_name>GET_DEPENDENCY_CHAIN</query_name>
-<file_path>src/utils/helpers.py</file_path>
-<depth>3</depth>
-</database>
+
 
 6. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
 <database>
