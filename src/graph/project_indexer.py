@@ -384,18 +384,18 @@ class ProjectIndexer:
 
                 # Convert parsed results to FileData objects and update the files dict
                 for file_path_str, result in parsed_results.items():
-                    if not result.get("error"):
-                        file_data = FileData(
-                            id=result["id"],
-                            file_path=file_path_str,
-                            language=result["language"],
-                            content=result["content"],
-                            content_hash=result["content_hash"],
-                            blocks=result["blocks"],
-                            relationships=result.get("relationships", []),
-                        )
-                        updated_files[file_path_str] = file_data
-                        logger.debug(f"✅ Updated FileData for: {file_path_str}")
+                    file_data = FileData(
+                        id=result["id"],
+                        file_path=file_path_str,
+                        language=result["language"],
+                        content=result["content"],
+                        content_hash=result["content_hash"],
+                        blocks=result["blocks"],
+                        relationships=result.get("relationships", []),
+                        unsupported=result.get("unsupported", False),
+                    )
+                    updated_files[file_path_str] = file_data
+                    logger.debug(f"✅ Updated FileData for: {file_path_str}")
 
             # Create updated extraction data
             updated_extraction_data = ExtractionData(

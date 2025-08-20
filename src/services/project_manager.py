@@ -325,11 +325,20 @@ class ProjectManager:
         """
         logger.debug(f"🔄 Running incremental indexing for project {project_name}")
         stats = self.project_indexer.incremental_index_project(project_name)
-        yield {
-            "type": "incremental_indexing",
-            "stats": stats,
-            "timestamp": time.time(),
-        }
+
+        if stats.get("status") == "success":
+            yield {
+                "type": "indexing_complete",
+                "stats": stats,
+                "timestamp": time.time(),
+            }
+        else:
+            yield {
+                "type": "error",
+                "message": stats.get("error", "Unknown indexing error"),
+                "stats": stats,
+                "timestamp": time.time(),
+            }
 
     def list_projects(self) -> List[Project]:
         """List all projects in the database.

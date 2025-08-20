@@ -139,7 +139,7 @@ class ASTParser:
                 "id": file_id,
                 "file_path": str(file_path),
                 "content": read_file_content(file_path) or "",
-                "content_hash": hashlib.sha256(b"").hexdigest(),
+                "content_hash": hashlib.sha256((read_file_content(file_path) or "").encode("utf-8")).hexdigest(),
                 "relationships": [],
                 "unsupported": True,
                 "error": "Failed to parse file"
@@ -156,7 +156,7 @@ class ASTParser:
                 "id": file_id,
                 "file_path": str(file_path),
                 "content": read_file_content(file_path) or "",
-                "content_hash": hashlib.sha256(b"").hexdigest(),
+                "content_hash": hashlib.sha256((read_file_content(file_path) or "").encode("utf-8")).hexdigest(),
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported file type
                 "error": f"Unsupported file type: {file_path}",
@@ -278,11 +278,11 @@ class ASTParser:
             # Parse and extract from files in current directory
             for file in files:
                 file_path = root_path / file
-                
+
                 # Skip ignored files
                 if should_ignore_file(file_path):
                     continue
-                
+
                 result = self.parse_and_extract(file_path)
                 if result.get("ast") or result.get("error"):
                     file_path_str = str(file_path)

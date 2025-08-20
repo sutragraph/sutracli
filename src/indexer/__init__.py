@@ -172,12 +172,6 @@ def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
                 if not is_text_file(file_path):
                     continue
 
-                # Skip files without language support
-                # These files get parsed with errors but are not properly stored in DB
-                language = get_language_from_extension(file_path)
-                if not language:
-                    continue
-
                 # Compute hash for this file
                 file_hash = compute_file_hash(file_path)
                 if file_hash:
