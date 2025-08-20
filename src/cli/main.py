@@ -2,6 +2,11 @@
 """Main entry point for the Sutra Knowledge application."""
 
 import sys
+from pathlib import Path
+
+root_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(root_dir))
+
 from cli.parser import setup_argument_parser
 from cli.utils import setup_logging
 from cli.commands import (
