@@ -458,10 +458,7 @@ class CrossIndexService:
                                         }
 
                                         try:
-                                            # Delegate to ConnectionMatchingManager to handle prompts and validation
-                                            matching_exec = run_connection_matching(
-                                                llm_client=self.llm_client,
-                                            )
+                                            matching_exec = run_connection_matching()
 
                                             # Check if user cancelled connection matching
                                             if matching_exec.get("user_cancelled"):
