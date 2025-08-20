@@ -1,10 +1,3 @@
-"""
-BAML-based Connection Matching Prompt Manager
-
-This module integrates BAML with dynamic provider selection based on configuration.
-Uses the existing config system and llm_factory pattern for provider selection.
-"""
-
 from typing import Dict, Any
 from loguru import logger
 from baml_client.types import ConnectionMatchingResponse
@@ -13,17 +6,9 @@ from services.cross_indexing.utils.baml_utils import call_baml
 
 
 class Phase5PromptManager:
-    """
-    BAML-based connection matching manager with dynamic provider selection.
-    Uses the existing config system to determine which provider and function to use.
-    """
 
     def __init__(self):
         self.db_client = SQLiteConnection()
-        logger.info(
-            f"🤖 Phase5PromptManager initialized with provider: {self.provider}"
-        )
-        logger.info(f"🔧 Using function prefix: {self.function_prefix}")
 
     def fetch_incoming_connections_from_db(self):
         """
@@ -234,15 +219,12 @@ code_snippet:
                         "match_confidence": match.match_confidence,
                         "match_reason": match.match_reason,
                         "connection_type": match.connection_type,
-                        "provider": self.provider,
                     }
                 )
 
             return True, {
                 "matches": processed_matches,
                 "total_matches": len(processed_matches),
-                "provider": self.provider,
-                "function_used": f"{self.function_prefix}ConnectionMatching",
             }
 
         except Exception as e:
