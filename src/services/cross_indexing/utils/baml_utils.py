@@ -6,7 +6,6 @@ Utilities for calling BAML functions with dynamic function resolution and provid
 
 import logging
 from typing import Any
-from baml_client.sync_client import b as baml
 from config import config
 
 logger = logging.getLogger(__name__)
@@ -44,25 +43,27 @@ def call_baml(function_name: str, **kwargs) -> Any:
         ValueError: If provider is not supported
     """
     provider = config.llm.provider.lower()
-    
+
     # Get function prefix from provider mapping
     if provider not in PROVIDER_MAPPING:
         available_providers = list(PROVIDER_MAPPING.keys())
         raise ValueError(
             f"Provider '{provider}' not supported. Available providers: {available_providers}"
         )
-    
+
     function_prefix = PROVIDER_MAPPING[provider]
-    
+
     # Construct the full function name
     full_function_name = f"{function_prefix}{function_name}"
-    
+
     # Log the function call with provider info
     logger.info(
         f"🤖 Calling BAML {full_function_name} (provider: {provider})"
     )
-  
+
+    from baml_client.sync_client import b as baml
+
     baml_function = getattr(baml, full_function_name)
-    
+
     response = baml_function(**kwargs)
     return response
