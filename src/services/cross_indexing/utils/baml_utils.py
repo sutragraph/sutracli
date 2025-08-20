@@ -11,7 +11,6 @@ from config import config
 
 logger = logging.getLogger(__name__)
 
-# Built-in provider mapping - no need to pass this around
 PROVIDER_MAPPING = {
     "aws": "Aws",
     "openai": "ChatGPT",
@@ -67,4 +66,3 @@ def call_baml(function_name: str, **kwargs) -> Any:
     
     response = baml_function(**kwargs)
     return response
-
