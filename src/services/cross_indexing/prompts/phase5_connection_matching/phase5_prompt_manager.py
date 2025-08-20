@@ -122,11 +122,14 @@ code_snippet:
             )
 
             # Call BAML function using the utility function
-            response: ConnectionMatchingResponse = call_baml(
+            baml_response = call_baml(
                 function_name="ConnectionMatching",
                 incoming_connections=incoming_formatted,
                 outgoing_connections=outgoing_formatted,
             )
+
+            # Extract the actual response content from BAMLResponse
+            response = baml_response.content if hasattr(baml_response, 'content') else baml_response
 
             # Process and validate results
             is_valid, processed_results = self._validate_and_process_baml_results(
@@ -177,12 +180,6 @@ code_snippet:
             tuple: (is_valid, processed_results)
         """
         try:
-            if not hasattr(response, "matches") or not isinstance(
-                response.matches, list
-            ):
-                return False, {
-                    "error": "Invalid response format: missing or invalid matches"
-                }
 
             processed_matches = []
             incoming_ids = {str(conn.get("id")) for conn in incoming_connections}

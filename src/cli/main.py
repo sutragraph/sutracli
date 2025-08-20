@@ -100,6 +100,7 @@ from cli.commands import (
     handle_version_command,
     handle_cross_indexing_command,
 )
+from cli.phase5_command import handle_run_phase5_command
 from cli.utils import (
     process_multiple_projects,
     load_project_config,
@@ -174,6 +175,9 @@ def main():
 
         elif args.command == "cross-indexing":
             handle_cross_indexing_command(args)
+
+        elif args.command == "run-phase5":
+            handle_run_phase5_command()
 
         else:
             logger.error(f"Unknown command: {args.command}")
