@@ -2,7 +2,7 @@ import subprocess
 import re
 from pathlib import Path
 from typing import Iterator, Dict, Any
-
+from loguru import logger
 from models.agent import AgentAction
 
 def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
@@ -30,7 +30,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             raw_paths = [path.strip() for path in file_paths_str.split(",") if path.strip()]
             for path in raw_paths:
                 path_obj = Path(path)
-                
+
                 # Check if path exists (can be file or directory)
                 if path_obj.exists():
                     file_paths.append(path)
@@ -41,7 +41,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                         file_paths.append(path)  # Keep original relative path
                     else:
                         invalid_paths.append(path)
-            
+
             # Report invalid paths if any
             if invalid_paths:
                 yield {
@@ -98,16 +98,18 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
 
         # Debug: Log the command being executed
         cmd1_str = " ".join(cmd1)
-        print(f"🔍 DEBUG: Executing ripgrep command: {cmd1_str}")
-        
+        logger.debug(f"🔍 Executing ripgrep command: {cmd1_str}")
+
         result1 = subprocess.run(cmd1, capture_output=True, text=True, cwd=".")
-        
+
         # Debug: Log command result
-        print(f"🔍 DEBUG: Command exit code: {result1.returncode}")
+        logger.debug(f"🔍 Command exit code: {result1.returncode}")
         if result1.stderr:
-            print(f"🔍 DEBUG: Command stderr: {result1.stderr}")
-        print(f"🔍 DEBUG: Command stdout length: {len(result1.stdout) if result1.stdout else 0} chars")
-        
+            logger.debug(f"🔍 Command stderr: {result1.stderr}")
+        logger.debug(
+            f"🔍 Command stdout length: {len(result1.stdout) if result1.stdout else 0} chars"
+        )
+
         # Check for ripgrep errors (exit codes > 1 indicate errors)
         if result1.returncode > 1:
             yield {
@@ -117,7 +119,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                 "command": cmd1_str
             }
             return
-            
+
         if result1.returncode == 0:
             all_results.append(result1.stdout)
         commands_run.append(cmd1_str)
@@ -126,16 +128,16 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         if not file_paths:
             cmd2 = build_base_cmd()
             cmd2.extend(["--glob", ".env*"])
-            
+
             cmd2_str = " ".join(cmd2)
-            print(f"🔍 DEBUG: Executing .env search command: {cmd2_str}")
+            logger.debug(f"🔍 Executing .env search command: {cmd2_str}")
 
             result2 = subprocess.run(cmd2, capture_output=True, text=True, cwd=".")
-            
-            print(f"🔍 DEBUG: .env search exit code: {result2.returncode}")
+
+            logger.debug(f"🔍 .env search exit code: {result2.returncode}")
             if result2.stderr:
-                print(f"🔍 DEBUG: .env search stderr: {result2.stderr}")
-            
+                logger.debug(f"🔍 .env search stderr: {result2.stderr}")
+
             # Check for errors in .env search too
             if result2.returncode > 1:
                 yield {
@@ -149,9 +151,11 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
 
         # Combine results
         combined_output = "\n".join(all_results).strip()
-        
-        print(f"🔍 DEBUG: Combined output length: {len(combined_output) if combined_output else 0} chars")
-        
+
+        logger.debug(
+            f"🔍 Combined output length: {len(combined_output) if combined_output else 0} chars"
+        )
+
         if combined_output:
             yield {
                 "type": "tool_use",
