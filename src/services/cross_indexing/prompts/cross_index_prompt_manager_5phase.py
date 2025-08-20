@@ -13,11 +13,11 @@ from .phase5_connection_matching.phase5_prompt_manager import Phase5PromptManage
 
 class CrossIndex5PhasePromptManager:
     """
-    Main prompt manager for 5-phase cross-indexing analysis.
+    Main prompt manager for 5-phase cross-indexing analysis.f
 
     Orchestrates the complete 5-phase workflow:
     - Phase 1: Package Discovery
-    - Phase 2: Import Pattern Discovery  
+    - Phase 2: Import Pattern Discovery
     - Phase 3: Implementation Discovery
     - Phase 4: Data Splitting
     - Phase 5: Connection Matching

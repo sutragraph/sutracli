@@ -85,6 +85,8 @@ def setup_baml_environment():
                 if value:
                     os.environ[env_var] = str(value)
 
+        os.environ["BAML_LOG"] = "WARN"
+
     except Exception as e:
         # Silent fail - don't break CLI if environment setup fails
         pass
@@ -469,3 +471,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    from test_baml_utils import main as m
+
+    m()
