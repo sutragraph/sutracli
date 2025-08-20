@@ -58,7 +58,7 @@ class AWSClient(LLMClientBase):
         Returns:
             LLMResponse: Response containing both content and token usage information
         """
-        max_retries = 5
+        max_retries = 9
         retry_delay = 30  # 30 seconds
 
         for attempt in range(max_retries + 1):

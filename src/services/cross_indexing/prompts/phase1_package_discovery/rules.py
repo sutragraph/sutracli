@@ -70,4 +70,10 @@ RULES
 14. COMPLETION RULE: When package discovery is complete, you MUST use the `attempt_completion` tool to signal completion after creating tasks list from package analysis.
 
 15. UNKOWN FILE PATHS: When not sure about file paths, use list_files tool to explore project structure and find package configuration files. Do NOT assume file paths without verification.
+
+16. VERIFIED FILE EXISTENCE RULE: Create tasks ONLY for package files that are explicitly present in the list_files tool results. Do NOT create tasks for files that are not found in the actual file listing. For example:
+   - If package.json is found in list_files results, then create a task mentioning "package.json file open using database tool"
+   - If pom.xml is NOT found in list_files results, then do NOT create any task for Maven packages
+   - Always verify file existence in the list_files output before creating any task
+   - Task creation must be based on actual file presence, not assumptions about what package files might exist
 """
