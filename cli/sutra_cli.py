@@ -471,6 +471,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    from test_baml_utils import main as m
-
-    m()
