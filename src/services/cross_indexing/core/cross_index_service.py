@@ -492,10 +492,6 @@ class CrossIndexService:
                                                                 "receiver_id": match.get(
                                                                     "incoming_id"
                                                                 ),
-                                                                "connection_type": match.get(
-                                                                    "connection_type",
-                                                                    "api_call",
-                                                                ),
                                                                 "description": match.get(
                                                                     "match_reason",
                                                                     "Auto-detected connection",

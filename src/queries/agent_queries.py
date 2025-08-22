@@ -171,7 +171,7 @@ SELECT
     ic.code_snippet, ic.created_at,
     f.file_path as target_file_path, f.language as target_language,
     p.name as target_project_name, p.id as target_project_id,
-    cm.connection_type, cm.match_confidence,
+    oc.technology_name, cm.match_confidence,
     oc.description as source_description,
     sf.file_path as source_file_path, sf.language as source_language,
     sp.name as source_project_name, sp.id as source_project_id,
@@ -193,7 +193,7 @@ SELECT
     oc.code_snippet, oc.created_at,
     f.file_path as source_file_path, f.language as source_language,
     p.name as source_project_name, p.id as source_project_id,
-    cm.connection_type, cm.match_confidence,
+    ic.technology_name, cm.match_confidence,
     ic.description as target_description,
     tf.file_path as target_file_path, tf.language as target_language,
     tp.name as target_project_name, tp.id as target_project_id,
@@ -212,7 +212,7 @@ ORDER BY oc.created_at DESC, cm.match_confidence DESC
 GET_EXTERNAL_CONNECTIONS = """
 SELECT
     'incoming' as direction, ic.description, ic.technology_name, ic.snippet_lines,
-    cm.connection_type, cm.match_confidence,
+    cm.match_confidence,
     sf.file_path as connected_file_path, sp.name as connected_project_name,
     sp.id as connected_project_id
 FROM incoming_connections ic
@@ -224,7 +224,7 @@ WHERE ic.file_id = ?
 UNION ALL
 SELECT
     'outgoing' as direction, oc.description, oc.technology_name, oc.snippet_lines,
-    cm.connection_type, cm.match_confidence,
+    cm.match_confidence,
     tf.file_path as connected_file_path, tp.name as connected_project_name,
     tp.id as connected_project_id
 FROM outgoing_connections oc
@@ -253,7 +253,7 @@ LIMIT 25
 
 GET_CONNECTION_IMPACT = """
 SELECT
-    cm.connection_type, cm.description, cm.match_confidence,
+    COALESCE(oc.technology_name, ic.technology_name) as technology_name, cm.description, cm.match_confidence,
     CASE
         WHEN ic.file_id = ? THEN 'receives_from'
         WHEN oc.file_id = ? THEN 'sends_to'

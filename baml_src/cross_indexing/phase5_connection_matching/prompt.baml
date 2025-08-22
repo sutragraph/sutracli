@@ -173,8 +173,7 @@ template_string ConnectionMatchingSystemPrompt() #"
           "outgoing_id": "string",
           "incoming_id": "string",
           "match_confidence": "high|medium|low",
-          "match_reason": "info about the match",
-          "connection_type": "string"
+          "match_reason": "info about the match"
         }
       ]
     }

@@ -499,8 +499,8 @@ class GraphOperations:
             if connection_type == "incoming":
                 # For incoming connections, find outgoing connections that map to it
                 query = """
-                    SELECT cm.id as mapping_id, cm.connection_type, cm.description as mapping_description,
-                          cm.match_confidence, cm.created_at as mapping_created_at,
+                    SELECT cm.id as mapping_id, oc.technology_name, cm.description as mapping_description,
+                           cm.match_confidence, cm.created_at as mapping_created_at,
                           oc.id as outgoing_id, oc.description as outgoing_description,
                           oc.code_snippet as outgoing_code_snippet, oc.technology_name as outgoing_technology,
                           files.file_path as outgoing_file_path, files.language as outgoing_language
@@ -514,8 +514,8 @@ class GraphOperations:
             else:
                 # For outgoing connections, find incoming connections that it maps to
                 query = """
-                    SELECT cm.id as mapping_id, cm.connection_type, cm.description as mapping_description,
-                          cm.match_confidence, cm.created_at as mapping_created_at,
+                    SELECT cm.id as mapping_id, ic.technology_name, cm.description as mapping_description,
+                           cm.match_confidence, cm.created_at as mapping_created_at,
                           ic.id as incoming_id, ic.description as incoming_description,
                           ic.code_snippet as incoming_code_snippet, ic.technology_name as incoming_technology,
                           files.file_path as incoming_file_path, files.language as incoming_language
@@ -556,7 +556,7 @@ class GraphOperations:
             query = """
                 SELECT
                     cm.id as mapping_id,
-                    cm.connection_type,
+                    COALESCE(oc.technology_name, ic.technology_name) as technology_name,
                     cm.description as mapping_description,
                     cm.match_confidence,
 
@@ -1261,7 +1261,7 @@ class GraphOperations:
             )
             return [
                 {
-                    "connection_type": result["connection_type"],
+                    "technology_name": result["technology_name"],
                     "description": result["description"],
                     "match_confidence": result["match_confidence"],
                     "impact_type": result["impact_type"],
@@ -1572,7 +1572,6 @@ class GraphOperations:
         self,
         sender_id: int,
         receiver_id: int,
-        connection_type: str,
         description: str,
         match_confidence: float,
     ) -> int:
@@ -1582,7 +1581,6 @@ class GraphOperations:
         Args:
             sender_id: ID of the sender connection
             receiver_id: ID of the receiver connection
-            connection_type: Type of connection
             description: Description of the mapping
             match_confidence: Confidence level of the match
 
@@ -1596,7 +1594,6 @@ class GraphOperations:
                 (
                     sender_id,
                     receiver_id,
-                    connection_type,
                     description,
                     match_confidence,
                 ),
@@ -1732,7 +1729,6 @@ class GraphOperations:
                 mapping_id = self.insert_connection_mapping(
                     match.get("sender_id"),
                     match.get("receiver_id"),
-                    match.get("connection_type", "unknown"),
                     match.get("description", "Auto-detected connection"),
                     match.get("match_confidence", 0.0),
                 )

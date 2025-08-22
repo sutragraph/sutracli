@@ -198,9 +198,9 @@ def beautify_node_result(
                     else:
                         result_parts.append(f"      | {line}")
 
-            # Add single arrow with connection type for the group
-            connection_type = mappings[0].get("connection_type", "unknown")
-            result_parts.append(f"\n   ↓ [{connection_type}]")
+            # Add single arrow with technology name for the group
+            technology_name = mappings[0].get("technology_name", "unknown")
+            result_parts.append(f"   ↓ [{technology_name}]")
             result_parts.append("")
 
             # Add all targets for this sender
@@ -239,8 +239,6 @@ def beautify_node_result(
             group_num += 1
 
     return "\n".join(result_parts)
-
-
 
 
 def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
@@ -310,14 +308,13 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
             out.append(f"Connection Impact ({len(impacts)})")
             for i, imp in enumerate(impacts, 1):
                 other = imp.get("other_file", "?")
-                ctype = imp.get("connection_type", "?")
+                tech_name = imp.get("technology_name", "?")
                 itype = imp.get("impact_type", "?")
                 conf = imp.get("match_confidence")
-                tech = imp.get("technology", "?")
                 desc = imp.get("description", "")
                 conf_str = f"{int(conf)}%" if isinstance(conf, (int, float)) else str(conf)
                 out.append(
-                    f"{i}) {anchor} => {other} [type={ctype}; impact={itype}; conf={conf_str} ; tech={tech}]"
+                    f"{i}) {anchor} => {other} [tech={tech_name}; impact={itype}; conf={conf_str}]"
                 )
                 if desc:
                     out.append(f"   desc: {desc}")

@@ -179,7 +179,6 @@ def _store_phase5_results(matching_result: Dict[str, Any]) -> Dict[str, Any]:
             db_matches.append({
                 'sender_id': match.get('outgoing_id'),
                 'receiver_id': match.get('incoming_id'),
-                'connection_type': match.get('connection_type', 'api_call'),
                 'description': match.get('match_reason', 'Auto-detected connection'),
                 'match_confidence': _convert_confidence_to_float(match.get('match_confidence', 'medium'))
             })

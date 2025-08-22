@@ -92,7 +92,6 @@ CREATE TABLE IF NOT EXISTS connection_mappings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sender_id INTEGER NOT NULL,
     receiver_id INTEGER NOT NULL,
-    connection_type TEXT NOT NULL,
     description TEXT,
     match_confidence REAL DEFAULT 0.0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -142,6 +141,5 @@ CREATE_INDEXES = [
     # Connection mappings indexes
     "CREATE INDEX IF NOT EXISTS idx_connection_mappings_sender ON connection_mappings(sender_id)",
     "CREATE INDEX IF NOT EXISTS idx_connection_mappings_receiver ON connection_mappings(receiver_id)",
-    "CREATE INDEX IF NOT EXISTS idx_connection_mappings_type ON connection_mappings(connection_type)",
     "CREATE INDEX IF NOT EXISTS idx_connection_mappings_confidence ON connection_mappings(match_confidence)",
 ]

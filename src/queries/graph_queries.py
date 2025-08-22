@@ -61,8 +61,8 @@ VALUES (?, ?, ?, ?, ?)
 """
 
 INSERT_CONNECTION_MAPPING = """
-INSERT OR IGNORE INTO connection_mappings (sender_id, receiver_id, connection_type, description, match_confidence)
-VALUES (?, ?, ?, ?, ?)
+INSERT OR IGNORE INTO connection_mappings (sender_id, receiver_id, description, match_confidence)
+VALUES (?, ?, ?, ?)
 """
 
 # ============================================================================

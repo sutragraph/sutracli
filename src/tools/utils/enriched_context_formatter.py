@@ -419,7 +419,7 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
 
     # Get unique files and projects
     files_info = []
-    connection_types = set()
+    technology_names = set()
     confidences = []
     projects = set()
 
@@ -443,8 +443,8 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
         if project_name and project_name != 'unknown':
             projects.add(project_name)
 
-        if conn.get('connection_type'):
-            connection_types.add(conn.get('connection_type'))
+        if conn.get('technology_name'):
+            technology_names.add(conn.get('technology_name'))
 
         if conn.get('match_confidence'):
             confidences.append(conn.get('match_confidence'))
@@ -475,11 +475,11 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
     elif len(projects) > 1:
         parts.append(f"({len(projects)} projects)")
 
-    # Add connection type if unified
-    if len(connection_types) == 1:
-        parts.append(f"[{list(connection_types)[0]}]")
-    elif len(connection_types) > 1:
-        parts.append(f"[{len(connection_types)} types]")
+    # Add technology name if unified
+    if len(technology_names) == 1:
+        parts.append(f"[{list(technology_names)[0]}]")
+    elif len(technology_names) > 1:
+        parts.append(f"[{len(technology_names)} technologies]")
 
     # Add confidence range if available
     if confidences:

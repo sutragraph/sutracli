@@ -292,7 +292,6 @@ code_snippet:
                         "outgoing_id",
                         "match_confidence",
                         "match_reason",
-                        "connection_type",
                     ]
                 ):
                     logger.warning(f"Invalid match structure: {match}")
@@ -313,7 +312,6 @@ code_snippet:
                         "outgoing_id": str(match.outgoing_id),
                         "match_confidence": match.match_confidence,
                         "match_reason": match.match_reason,
-                        "connection_type": match.connection_type,
                     }
                 )
 

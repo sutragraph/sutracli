@@ -5,7 +5,6 @@ class ConnectionMatch {
   outgoing_id string
   match_confidence string
   match_reason string
-  connection_type string
 }
 
 class ConnectionMatchingResponse {
