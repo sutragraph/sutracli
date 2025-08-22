@@ -141,7 +141,7 @@ When import discovery found many files (6+) or wrapper functions:
 
 4. TASK CREATION EXAMPLES
 
-**CRITICAL THINKING PROCESS FOR TASK CREATION - ENHANCED WRAPPER FUNCTION DETECTION**
+**CRITICAL THINKING PROCESS FOR TASK CREATION - WRAPPER FUNCTION DETECTION**
 
 Before creating any task, ask yourself these specific questions:
 1. "Did I find connection code with VARIABLE NAMES instead of actual hardcoded values?"
@@ -160,7 +160,33 @@ Before creating any task, ask yourself these specific questions:
 - Socket Operations: `eventName`, `event`, `channel` → Search for wrapper calls
 - Database Operations: `tableName`, `collection`, `query` → Search for wrapper calls
 
-**WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - ENHANCED EXAMPLES**
+**WRAPPER FUNCTION DEFINITION CHECK EXAMPLES**
+
+Example: Python - Socket wrapper function pattern (similar to Socket.IO)
+```python
+# main.py - function call with connection object (found in one file)
+from flask_socketio import SocketIO
+from handlers import socket_handler
+
+socketio = SocketIO(app)
+socket_handler(socketio)  # ← Found this call in main.py
+
+# handlers.py - actual function definition (in different file)
+def socket_handler(socketio):
+    @socketio.on('connect')
+    def handle_connect():
+        emit('status', {'msg': 'Connected'})
+    
+    @socketio.on('user_message')
+    def handle_message(data):
+        emit('response', {'reply': f"Got: {data['message']}"})
+```
+
+THINKING: "Found `socket_handler(socketio)` call in main.py - this is in two different files. The call passes connection object to wrapper function. Must use search_keyword to find actual function definition where io is used."
+IMMEDIATE ACTION: CREATE TASK: "Use search_keyword to find socket_handler function definition: def socket_handler\\("
+EXPECTED RESULT: Find the actual function definition in handlers.py where socketio connection object is used for real socket operations.
+
+**WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - EXAMPLES**
 
 Example 1: Queue operation with variable parameter - CREATE TASK IMMEDIATELY
 When you find connection code like:
@@ -220,7 +246,7 @@ THINKING: "I found a custom service client class with dynamic parameters. I need
 CREATE TASK: <task><add id="24">Use search_keyword to find all serviceClient usage patterns: serviceClient\\.(send_request|subscribe_to_events)\\(</add></task>
 Reason: Need to find all method calls on this custom client across the project with real service communication parameters
 
-**WHEN NOT TO CREATE TASKS - ENHANCED DECISION MAKING**
+**WHEN NOT TO CREATE TASKS - DECISION MAKING**
 
 Example 1: Already found actual connection usage with hardcoded values - DON'T CREATE TASK
 When you find direct connection calls with real parameters:
