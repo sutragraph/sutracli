@@ -1,4 +1,4 @@
-template_string SystemPrompt() #"
+template_string ConnectionMatchingSystemPrompt() #"
     CONNECTION MATCHING ANALYSIS
 
     Identify ALL connection points between incoming and outgoing connections by comprehensively matching identifiers, parameters, values, and connection patterns.
@@ -193,7 +193,7 @@ template_string SystemPrompt() #"
     MANDATORY: ANALYZE ALL CONNECTIONS COMPREHENSIVELY AND RETURN ALL CONNECTION POINT MATCHES
 "#
 
-template_string UserPrompt(incoming_connections: string, outgoing_connections: string) #"
+template_string ConnectionMatchingUserPrompt(incoming_connections: string, outgoing_connections: string) #"
     {{ _.role("user") }}
     ### INCOMING CONNECTIONS
     {{ incoming_connections }}
@@ -208,9 +208,9 @@ function AwsConnectionMatching(incoming_connections: string, outgoing_connection
   client AwsClaudeSonnet4
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ SystemPrompt() }}
+    {{ ConnectionMatchingSystemPrompt() }}
 
-    {{ UserPrompt(incoming_connections, outgoing_connections) }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
   "#
 }
 
@@ -219,9 +219,9 @@ function AnthropicConnectionMatching(incoming_connections: string, outgoing_conn
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ SystemPrompt() }}
+    {{ ConnectionMatchingSystemPrompt() }}
 
-    {{ UserPrompt(incoming_connections, outgoing_connections) }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
   "#
 }
 
@@ -229,8 +229,8 @@ function ChatGPTConnectionMatching(incoming_connections: string, outgoing_connec
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
-    {{ SystemPrompt() }}
-    {{ UserPrompt(incoming_connections, outgoing_connections) }}
+    {{ ConnectionMatchingSystemPrompt() }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
   "#
 }
 

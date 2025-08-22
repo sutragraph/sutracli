@@ -10,61 +10,6 @@ class Phase5PromptManager:
     def __init__(self):
         self.db_client = SQLiteConnection()
 
-    def fetch_incoming_connections_from_db(self):
-        """
-        Fetch incoming connections directly from database.
-
-        Args:
-            project_id (int, optional): Project ID to filter connections
-
-        Returns:
-            list: List of incoming connection objects from database
-        """
-        if not self.db_client:
-            print("Error: No database client provided to ConnectionMatchingManager")
-            return []
-
-        try:
-            query = """
-            SELECT ic.id, ic.description, ic.technology_name as technology,
-                    ic.code_snippet, ic.snippet_lines, files.file_path, files.language
-            FROM incoming_connections ic
-            LEFT JOIN files ON ic.file_id = files.id
-            ORDER BY ic.id
-            """
-            results = self.db_client.execute_query(query)
-            return results or []
-        except Exception as e:
-            print(f"Error fetching incoming connections: {e}")
-            return []
-
-    def fetch_outgoing_connections_from_db(self):
-        """
-        Fetch outgoing connections directly from database.
-
-        Args:
-            project_id (int, optional): Project ID to filter connections
-
-        Returns:
-            list: List of outgoing connection objects from database
-        """
-        if not self.db_client:
-            print("Error: No database client provided to ConnectionMatchingManager")
-            return []
-
-        try:
-            query = """
-            SELECT oc.id, oc.description, oc.technology_name as technology,
-                    oc.code_snippet, oc.snippet_lines, files.file_path, files.language
-            FROM outgoing_connections oc
-            LEFT JOIN files ON oc.file_id = files.id
-            ORDER BY oc.id
-            """
-            results = self.db_client.execute_query(query)
-            return results or []
-        except Exception as e:
-            print(f"Error fetching outgoing connections: {e}")
-            return []
 
     def _format_connections(self, connections, connection_type):
         """
@@ -95,64 +40,217 @@ code_snippet:
 
         return "\n\n".join(formatted_list)
 
+    def get_all_technology_types(self) -> list:
+        """
+        Get all unique technology types from both incoming and outgoing connections.
+        Returns all distinct technology types including Unknown.
+        
+        Returns:
+            List of unique technology type names (including Unknown if exists)
+        """
+        if not self.db_client:
+            logger.error("No database client available")
+            return []
+            
+        try:
+            query = """
+            SELECT DISTINCT COALESCE(technology_name, 'Unknown') as technology
+            FROM (
+                SELECT technology_name
+                FROM incoming_connections
+                UNION ALL
+                SELECT technology_name
+                FROM outgoing_connections
+            ) combined_tech
+            ORDER BY technology
+            """
+            results = self.db_client.execute_query(query)
+            return [row['technology'] for row in (results or [])]
+        except Exception as e:
+            logger.error(f"Error fetching technology types: {e}")
+            return []
+
+    def get_available_technology_types(self) -> list:
+        """
+        Get all unique technology types excluding Unknown.
+        
+        Returns:
+            List of unique technology type names (excluding Unknown)
+        """
+        all_types = self.get_all_technology_types()
+        return [t for t in all_types if t != 'Unknown']
+    
+    def fetch_connections_by_technology(self, technology: str) -> Dict[str, list]:
+        """
+        Fetch both incoming and outgoing connections for a specific technology type.
+        
+        Args:
+            technology: Technology type to fetch
+            
+        Returns:
+            Dict with 'incoming' and 'outgoing' keys containing connection lists
+        """
+        if not self.db_client:
+            logger.error("No database client available")
+            return {'incoming': [], 'outgoing': []}
+            
+        try:
+            where_clause = "WHERE technology_name = ? OR (technology_name IS NULL AND ? = 'Unknown')"
+            params = (technology, technology)
+            
+            # Fetch incoming connections
+            incoming_query = f"""
+            SELECT ic.id, ic.description, COALESCE(ic.technology_name, 'Unknown') as technology,
+                   ic.code_snippet, ic.snippet_lines, files.file_path, files.language
+            FROM incoming_connections ic
+            LEFT JOIN files ON ic.file_id = files.id
+            {where_clause}
+            ORDER BY ic.id
+            """
+            
+            # Fetch outgoing connections
+            outgoing_query = f"""
+            SELECT oc.id, oc.description, COALESCE(oc.technology_name, 'Unknown') as technology,
+                   oc.code_snippet, oc.snippet_lines, files.file_path, files.language
+            FROM outgoing_connections oc
+            LEFT JOIN files ON oc.file_id = files.id
+            {where_clause}
+            ORDER BY oc.id
+            """
+            
+            incoming_results = self.db_client.execute_query(incoming_query, params) or []
+            outgoing_results = self.db_client.execute_query(outgoing_query, params) or []
+            
+            return {
+                'incoming': incoming_results,
+                'outgoing': outgoing_results
+            }
+            
+        except Exception as e:
+            logger.error(f"Error fetching connections for technology {technology}: {e}")
+            return {'incoming': [], 'outgoing': []}
+
     def run_connection_matching(self) -> Dict[str, Any]:
         """
-        Run connection matching analysis using BAML.
-
-        This is the main entry point that replaces the old prompt-based system.
+        Run connection matching analysis using BAML with optimized approach.
+        
+        OPTIMIZATION: Fetch unknown connections once, then for each technology type,
+        fetch its connections and add unknown connections to it.
 
         Returns:
             dict: Matching results ready for database storage
         """
         try:
-            # Fetch connections from database
-            incoming_connections = self.fetch_incoming_connections_from_db()
-            outgoing_connections = self.fetch_outgoing_connections_from_db()
-
-            logger.info(
-                f"🔗 BAML Phase 5: Attempting to match {len(incoming_connections)} incoming with {len(outgoing_connections)} outgoing connections"
-            )
-
-            # Format connections for BAML
-            incoming_formatted = self._format_connections(
-                incoming_connections, "INCOMING"
-            )
-            outgoing_formatted = self._format_connections(
-                outgoing_connections, "OUTGOING"
-            )
-
-            # Call BAML function using the utility function
-            baml_response = call_baml(
-                function_name="ConnectionMatching",
-                incoming_connections=incoming_formatted,
-                outgoing_connections=outgoing_formatted,
-            )
-
-            # Extract the actual response content from BAMLResponse
-            response = baml_response.content if hasattr(baml_response, 'content') else baml_response
-
-            # Process and validate results
-            is_valid, processed_results = self._validate_and_process_baml_results(
-                response, incoming_connections, outgoing_connections
-            )
-
-            if is_valid:
-                matches_count = len(processed_results.get("matches", []))
-                logger.info(
-                    f"✅ BAML Phase 5 validation successful: {matches_count} matches found"
-                )
-                return {
-                    "success": True,
-                    "results": processed_results,
-                    "message": f"Successfully matched {matches_count} connections using BAML",
-                }
+            # First, get all technology types to check if Unknown exists
+            all_types_including_unknown = self.get_all_technology_types()
+            has_unknown = 'Unknown' in all_types_including_unknown
+            
+            # Only fetch unknown connections if they exist
+            unknown_connections = {'incoming': [], 'outgoing': []}
+            if has_unknown:
+                logger.info("🔄 Fetching Unknown connections...")
+                unknown_connections = self.fetch_connections_by_technology('Unknown')
+                logger.info(f"   Found {len(unknown_connections['incoming'])} incoming and {len(unknown_connections['outgoing'])} outgoing Unknown connections")
             else:
-                logger.error(f"❌ BAML Phase 5 validation failed: {processed_results}")
-                return {
-                    "success": False,
-                    "error": processed_results,
-                    "message": "BAML connection matching failed due to invalid response",
+                logger.info("ℹ️ No Unknown connections found, skipping Unknown fetch")
+            
+            # Get all distinct technology types (excluding Unknown)
+            all_tech_types = self.get_available_technology_types()
+            
+            logger.info(
+                f"🔗 BAML Phase 5: Starting connection matching for {len(all_tech_types)} technology types"
+            )
+            logger.info(f"📊 Found technology types: {', '.join(sorted(all_tech_types))}")
+            
+            # Collect all matches from each technology type
+            all_matches = []
+            total_incoming_processed = 0
+            total_outgoing_processed = 0
+            
+            # Process each technology type one by one
+            for tech_type in sorted(all_tech_types):
+                logger.info(f"🔄 Processing {tech_type} connections...")
+                
+                # Fetch specific technology type connections
+                tech_connections = self.fetch_connections_by_technology(tech_type)
+                
+                # Add unknown connections to this technology type
+                connections = {
+                    'incoming': tech_connections['incoming'] + unknown_connections['incoming'],
+                    'outgoing': tech_connections['outgoing'] + unknown_connections['outgoing']
                 }
+                
+                logger.info(f"   Combined {len(tech_connections['incoming'])} + {len(unknown_connections['incoming'])} = {len(connections['incoming'])} incoming connections")
+                logger.info(f"   Combined {len(tech_connections['outgoing'])} + {len(unknown_connections['outgoing'])} = {len(connections['outgoing'])} outgoing connections")
+                
+                incoming_connections = connections['incoming']
+                outgoing_connections = connections['outgoing']
+                
+                # Skip if no connections for this technology type
+                if not incoming_connections and not outgoing_connections:
+                    logger.debug(f"   No connections found for {tech_type}, skipping...")
+                    continue
+                    
+                logger.info(
+                    f"   Matching {len(incoming_connections)} incoming with {len(outgoing_connections)} outgoing connections for {tech_type}"
+                )
+                
+                # Format connections for BAML
+                incoming_formatted = self._format_connections(
+                    incoming_connections, "INCOMING"
+                )
+                outgoing_formatted = self._format_connections(
+                    outgoing_connections, "OUTGOING"
+                )
+                
+                # Call BAML function for this technology type
+                try:
+                    baml_response = call_baml(
+                        function_name="ConnectionMatching",
+                        incoming_connections=incoming_formatted,
+                        outgoing_connections=outgoing_formatted,
+                    )
+                    
+                    # Extract the actual response content from BAMLResponse
+                    response = baml_response.content if hasattr(baml_response, 'content') else baml_response
+                    
+                    # Process and validate results for this technology type
+                    is_valid, tech_results = self._validate_and_process_baml_results(
+                        response, incoming_connections, outgoing_connections
+                    )
+                    
+                    if is_valid:
+                        matches = tech_results.get("matches", [])
+                        all_matches.extend(matches)
+                        logger.info(f"   ✅ Found {len(matches)} matches for {tech_type}")
+                        total_incoming_processed += len(incoming_connections)
+                        total_outgoing_processed += len(outgoing_connections)
+                    else:
+                        logger.warning(f"   ⚠️ Failed to process {tech_type}: {tech_results}")
+                        
+                except Exception as tech_error:
+                    logger.error(f"   ❌ Error processing {tech_type}: {tech_error}")
+                    continue
+            
+            # Return combined results
+            logger.info(
+                f"✅ BAML Phase 5 completed: {len(all_matches)} total matches found"
+            )
+            
+            return {
+                "success": True,
+                "results": {
+                    "matches": all_matches,
+                    "total_matches": len(all_matches),
+                    "technology_types_processed": all_tech_types,
+                    "stats": {
+                        "total_incoming_connections_processed": total_incoming_processed,
+                        "total_outgoing_connections_processed": total_outgoing_processed,
+                        "technology_types_found": len(all_tech_types)
+                    }
+                },
+                "message": f"Successfully matched {len(all_matches)} connections across {len(all_tech_types)} technology types",
+            }
 
         except Exception as e:
             logger.error(f"❌ BAML Phase 5 connection matching error: {e}")

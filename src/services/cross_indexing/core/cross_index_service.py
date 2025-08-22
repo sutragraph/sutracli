@@ -25,6 +25,8 @@ from graph.graph_operations import GraphOperations
 from services.cross_indexing.prompts.phase5_connection_matching.phase5_prompt_manager import (
     run_connection_matching,
 )
+from ..utils.technology_validator import TechnologyValidator
+from ..utils.technology_correction_service import TechnologyCorrectionService
 
 
 class CrossIndexService:
@@ -61,6 +63,9 @@ class CrossIndexService:
         )
         self.graph_ops = GraphOperations()
         self._memory_needs_update = False
+        # Technology validation and correction services
+        self.technology_validator = TechnologyValidator()
+        self.technology_correction_service = TechnologyCorrectionService()
 
     def analyze_project_connections(
         self, project_path: str, project_id: int
@@ -1129,13 +1134,13 @@ Tool Results:
 
     def _parse_connection_splitting_json(self, response_content: str) -> Dict[str, Any]:
         """
-        Parse connection splitting JSON response format.
+        Parse connection splitting JSON response format with technology name validation and correction.
 
         Args:
             response_content: Raw JSON response from connection splitting prompt
 
         Returns:
-            Parsed analysis data in the expected format
+            Parsed analysis data in the expected format with validated technology names
         """
         try:
             import re
@@ -1164,6 +1169,45 @@ Tool Results:
                     "potential_matches": [],
                     "error": f"Could not parse connection splitting response: {str(e)}",
                 }
+
+            # TECHNOLOGY NAME VALIDATION AND CORRECTION
+            logger.info("Validating technology names against predefined enums")
+            all_valid, unmatched_names = (
+                self.technology_validator.validate_json_technology_names(json_data)
+            )
+
+            if not all_valid:
+                logger.warning(
+                    f"Found {len(unmatched_names)} unmatched technology names: {unmatched_names}"
+                )
+
+                # Get corrections for unmatched names
+                corrections = (
+                    self.technology_correction_service.correct_technology_names(
+                        unmatched_names
+                    )
+                )
+
+                if corrections:
+                    logger.info(
+                        f"Applying {len(corrections)} technology name corrections"
+                    )
+                    # Apply corrections to the JSON data
+                    json_data = self.technology_validator.apply_corrected_names(
+                        json_data, corrections
+                    )
+
+                    # Log the corrections applied
+                    for original, corrected in corrections.items():
+                        logger.info(
+                            f"Technology name corrected: '{original}' -> '{corrected}'"
+                        )
+                else:
+                    logger.warning(
+                        "No corrections could be generated for unmatched technology names"
+                    )
+            else:
+                logger.info("All technology names are valid, no corrections needed")
 
             # Convert the JSON format to our expected format
             result = {

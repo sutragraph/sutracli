@@ -30,9 +30,38 @@ REQUIRED APPROACH:
 
 Process the collected connection data and categorize each connection as either incoming or outgoing, then return structured JSON with complete connection details. Each connection must be a separate entry with its own specific line numbers and description.
 
-## CONNECTION CLASSIFICATION
+## TECHNOLOGY TYPE CLASSIFICATION
 
-### INCOMING CONNECTIONS
+### MANDATORY TECHNOLOGY TYPES
+You MUST classify each connection using ONLY one of these exact technology type names:
+
+1. HTTP/HTTPS - HTTP/HTTPS REST API calls and endpoints
+   - Any HTTP/HTTPS client library or REST API framework should use this type
+   - Examples: axios, fetch, requests, superagent, got, node-fetch, Express routes, Flask routes, FastAPI endpoints
+   
+2. WebSockets - WebSocket connections for real-time bidirectional communication
+   - Any WebSocket library or real-time bidirectional connection should use this type
+   - Examples: socket.io, ws, websocket-client, Socket.IO-client, webrtc
+
+3. gRPC - Google RPC framework for high-performance RPC
+   - Any gRPC implementation or protobuf-based RPC should use this type
+   - Examples: @grpc/grpc-js, grpcio, grpc-web
+   
+4. GraphQL - Query language for APIs
+   - Any GraphQL client or server implementation should use this type
+   - Examples: apollo-client, graphql-request, urql, relay
+   
+5. MessageQueue - Message queuing systems
+   - Any message queue, job queue, or task queue system should use this type
+   - Examples: amqplib (RabbitMQ), kafkajs (Kafka), bull (Redis queues), sqs (AWS SQS), pub/sub
+
+6. Unknown - Use ONLY when technology type cannot be identified from code
+    - IMPORTANT: This is a last resort. Only use when absolutely no other type fits.
+    - Do NOT use for unclear code - make your best assessment based on context.
+
+### CONNECTION CLASSIFICATION
+
+#### INCOMING CONNECTIONS
 Connections where OTHER services connect TO this service:
 Examples:
 - API endpoints and route handlers (Express routes, Flask routes, etc.)
@@ -40,7 +69,7 @@ Examples:
 - Message queue consumers that receive messages
 - Server configurations that listen for connections
 
-### OUTGOING CONNECTIONS  
+#### OUTGOING CONNECTIONS  
 Connections where THIS service connects TO other services
 Examples:
 - HTTP client calls (axios, fetch, requests, etc.)
@@ -60,6 +89,34 @@ Examples:
    - File paths and line numbers
 6. Classify direction correctly based on data flow
 7. No duplicates - each data transmission operation must be unique
+8. CRITICAL: IGNORE REPEATING CONTENT - If you see the same file code with the same lines appearing multiple times in the input, include it only ONCE in your response. Same lines from same files are allowed only one time in splitting.
+9. ENVIRONMENT FILE CODE RESOLUTION - If environment file code is provided as a code block, look for env var/config values and include them in connection descriptions for better context (e.g., if code uses process.env.USER_ADD_QUEUE and env file shows USER_ADD_QUEUE="user-add", include this resolved value in the description).
+
+## ENVIRONMENT FILE CODE RESOLUTION
+
+When environment file code blocks are provided in the input (e.g., .env files, config files), use them to resolve environment variables in connection descriptions:
+
+1. IDENTIFY ENV FILES: Look for code blocks that contain environment variable definitions (KEY=value format)
+2. RESOLVE VARIABLES: When connection code uses environment variables (process.env.VAR_NAME, os.environ['VAR_NAME'], etc.), find the corresponding value from env file code blocks
+3. ENHANCE DESCRIPTIONS: Include resolved values in connection descriptions using format: ENV_VAR=actual_value
+4. PROVIDE CONTEXT: This gives better context for later users understanding the actual connection endpoints, queue names, etc.
+
+### EXAMPLE OF ENV RESOLUTION:
+If you find connection code:
+```
+src/queue/consumer.js:20: queue.consume(process.env.USER_ADD_QUEUE, handler)
+```
+
+And env file code block contains:
+```
+USER_ADD_QUEUE="user-add"
+NOTIFICATION_QUEUE="notifications"
+```
+
+Then description should be:
+```
+"Message queue consumer for USER_ADD_QUEUE=user-add queue"
+```
 
 ## GENERIC ANALYSIS INSTRUCTIONS
 
@@ -108,7 +165,7 @@ Return ONLY a valid JSON response with this exact structure:
 ```json
 {
   "incoming_connections": {
-    "technology_name": {
+    "<technology_type>": {
       "file/path.ext": [
         {
           "snippet_lines": "23-23",
@@ -122,7 +179,7 @@ Return ONLY a valid JSON response with this exact structure:
     }
   },
   "outgoing_connections": {
-    "technology_name": {
+    "<technology_type>": {
       "file/path.ext": [
         {
           "snippet_lines": "37-37",
@@ -138,6 +195,8 @@ Return ONLY a valid JSON response with this exact structure:
   "summary": "Brief summary of the project's purpose and main data flows based on observed connections"
 }
 ```
+
+Where `<technology_type>` MUST be one of: HTTP/HTTPS, WebSockets, gRPC, GraphQL, MessageQueue, or Unknown.
 
 ## MANDATORY SNIPPET SEPARATION RULES
 
@@ -164,7 +223,7 @@ For any code defining multiple endpoints/events/methods:
 ### EXAMPLE 1: HTTP API CALLS WITH LITERAL ENDPOINTS
 When you receive connection data with HTTP API calls:
 
-**Input Connection Data:**
+Input Connection Data:
 ```
 src/api/client.js:15: axios.post('/admin/users', userData)
 src/api/client.js:23: axios.get('/api/orders', params)
@@ -172,11 +231,11 @@ src/api/client.js:31: makeApiCall('/admin/users', 'POST', userData)
 src/api/client.js:45: makeApiCall('/api/orders', 'GET', params)
 ```
 
-**CORRECT Splitting:**
+CORRECT Splitting:
 ```json
 {
   "outgoing_connections": {
-    "http_client": {
+    "HTTP/HTTPS": {
       "src/api/client.js": [
         {
           "snippet_lines": "15-15",
@@ -203,24 +262,24 @@ src/api/client.js:45: makeApiCall('/api/orders', 'GET', params)
 ### EXAMPLE 2: ENVIRONMENT VARIABLE CONFIGURATIONS
 When you receive connection data with environment variables and their values:
 
-**Input Connection Data:**
+Input Connection Data:
 ```
 src/config/api.js:12: const response = await axios.get(`${process.env.API_BASE_URL}/update/data`)
 src/config/queue.js:8: const queueName = process.env.QUEUE_NAME || 'default-queue'
 src/config/api.js:20: const apiUrl = 'http://localhost:3000/api'
 ```
 
-**Environment Variables (if provided):**
+Environment Variables (if provided):
 ```
 API_BASE_URL=http://localhost:3001
 QUEUE_NAME=user-processing
 ```
 
-**CORRECT Splitting:**
+CORRECT Splitting:
 ```json
 {
   "outgoing_connections": {
-    "http_client": {
+    "HTTP/HTTPS": {
       "src/config/api.js": [
         {
           "snippet_lines": "12-12",
@@ -232,7 +291,7 @@ QUEUE_NAME=user-processing
         }
       ]
     },
-    "message_queue": {
+    "MessageQueue": {
       "src/config/queue.js": [
         {
           "snippet_lines": "8-8",
@@ -247,20 +306,24 @@ QUEUE_NAME=user-processing
 ### EXAMPLE 3: SOCKET EVENTS AND MESSAGE HANDLERS
 When you receive connection data with WebSocket and message queue operations:
 
-**Input Connection Data:**
+Input Connection Data:
 ```
-src/socket/handlers.js:15: socket.emit('user_status_update', data)
-src/socket/handlers.js:23: socket.emit('order_notification', orderData)
-src/socket/server.js:30: socket.on('user_login', handleUserLogin)
-src/socket/server.js:35: socket.on('user_logout', handleUserLogout)
-src/queue/consumer.js:42: queue.consume('order-processing', handler)
-```
+File: src/socket/handlers.js
+15 | socket.emit('user_status_update', data)
+23 | socket.emit('order_notification', orderData)
 
-**CORRECT Splitting:**
+File: src/socket/server.js
+30 | socket.on('user_login', handleUserLogin)
+35 | socket.on('user_logout', handleUserLogout)
+
+File: src/queue/consumer.js```
+42 | queue.consume('order-processing', handler)
+
+CORRECT Splitting:
 ```json
 {
   "outgoing_connections": {
-    "websocket": {
+    "WebSockets": {
       "src/socket/handlers.js": [
         {
           "snippet_lines": "15-15",
@@ -272,7 +335,7 @@ src/queue/consumer.js:42: queue.consume('order-processing', handler)
         }
       ]
     },
-    "message_queue": {
+    "MessageQueue": {
       "src/queue/consumer.js": [
         {
           "snippet_lines": "42-42",
@@ -282,7 +345,7 @@ src/queue/consumer.js:42: queue.consume('order-processing', handler)
     }
   },
   "incoming_connections": {
-    "websocket": {
+    "WebSockets": {
       "src/socket/server.js": [
         {
           "snippet_lines": "30-30",
@@ -301,7 +364,7 @@ src/queue/consumer.js:42: queue.consume('order-processing', handler)
 ### EXAMPLE 4: EXPRESS ROUTE HANDLERS
 When you receive connection data with API route definitions:
 
-**Input Connection Data:**
+Input Connection Data:
 ```
 src/routes/users.js:10: app.get('/api/users', getUsersHandler)
 src/routes/users.js:15: app.post('/api/users', createUserHandler)
@@ -309,11 +372,11 @@ src/routes/orders.js:8: router.get('/orders/:id', getOrderHandler)
 src/routes/orders.js:12: router.put('/orders/:id', updateOrderHandler)
 ```
 
-**CORRECT Splitting:**
+CORRECT Splitting:
 ```json
 {
   "incoming_connections": {
-    "express_routes": {
+    "HTTP/HTTPS": {
       "src/routes/users.js": [
         {
           "snippet_lines": "10-10",
@@ -342,19 +405,22 @@ src/routes/orders.js:12: router.put('/orders/:id', updateOrderHandler)
 ### EXAMPLE 5: WRAPPER FUNCTIONS WITH SPECIFIC IDENTIFIERS
 When you receive connection data with wrapper function calls:
 
-**Input Connection Data:**
+Input Connection Data:
 ```
-src/services/notification.js:25: publishMessage('user-notifications', data)
-src/services/notification.js:30: publishMessage('order-updates', orderData)
-src/services/api.js:18: makeApiCall('/admin/users', 'POST', userData)
-src/services/api.js:22: makeApiCall('/api/orders', 'GET', params)
+File: src/services/notification.js
+25 | publishMessage('user-notifications', data)
+30 | publishMessage('order-updates', orderData)
+
+File: src/services/api.js
+18 | makeApiCall('/admin/users', 'POST', userData)
+22 | makeApiCall('/api/orders', 'GET', params)
 ```
 
-**CORRECT Splitting:**
+CORRECT Splitting:
 ```json
 {
   "outgoing_connections": {
-    "message_queue": {
+    "MessageQueue": {
       "src/services/notification.js": [
         {
           "snippet_lines": "25-25",
@@ -366,7 +432,7 @@ src/services/api.js:22: makeApiCall('/api/orders', 'GET', params)
         }
       ]
     },
-    "http_client": {
+    "HTTP/HTTPS": {
       "src/services/api.js": [
         {
           "snippet_lines": "18-18",
@@ -382,13 +448,89 @@ src/services/api.js:22: makeApiCall('/api/orders', 'GET', params)
 }
 ```
 
+### EXAMPLE 6: SWITCH CASE CONNECTIONS
+When you receive connection data with switch statements handling different connection operations:
+
+Input Connection Data:
+```
+src/handlers/message.js:45: switch (messageType) {
+src/handlers/message.js:46:   case 'USER_CREATED':
+src/handlers/message.js:47:     await axios.post('http://user-service/notify', userData)
+src/handlers/message.js:48:     break;
+src/handlers/message.js:49:   case 'ORDER_PLACED':
+src/handlers/message.js:50:     await axios.post('http://order-service/process', orderData)
+src/handlers/message.js:51:     break;
+src/handlers/message.js:52:   case 'PAYMENT_RECEIVED':
+src/handlers/message.js:53:     await axios.put('http://payment-service/confirm', paymentData)
+src/handlers/message.js:54:     break;
+src/handlers/message.js:55: }
+src/handlers/event.js:20: switch (event.type) {
+src/handlers/event.js:21:   case 'sync':
+src/handlers/event.js:22:     socket.emit('data_sync', syncData)
+src/handlers/event.js:23:     break;
+src/handlers/event.js:24:   case 'update':
+src/handlers/event.js:25:     socket.emit('data_update', updateData)
+src/handlers/event.js:26:     break;
+src/handlers/event.js:27:   case 'delete':
+src/handlers/event.js:28:     socket.emit('data_delete', deleteData)
+src/handlers/event.js:29:     break;
+src/handlers/event.js:30: }
+```
+
+CORRECT Splitting:
+```json
+{
+  "outgoing_connections": {
+    "HTTP/HTTPS": {
+      "src/handlers/message.js": [
+        {
+          "snippet_lines": "47-47",
+          "description": "HTTP POST call to http://user-service/notify endpoint for USER_CREATED message type"
+        },
+        {
+          "snippet_lines": "50-50",
+          "description": "HTTP POST call to http://order-service/process endpoint for ORDER_PLACED message type"
+        },
+        {
+          "snippet_lines": "53-53",
+          "description": "HTTP PUT call to http://payment-service/confirm endpoint for PAYMENT_RECEIVED message type"
+        }
+      ]
+    },
+    "WebSockets": {
+      "src/handlers/event.js": [
+        {
+          "snippet_lines": "22-22",
+          "description": "WebSocket emit for data_sync event in sync case handler"
+        },
+        {
+          "snippet_lines": "25-25",
+          "description": "WebSocket emit for data_update event in update case handler"
+        },
+        {
+          "snippet_lines": "28-28",
+          "description": "WebSocket emit for data_delete event in delete case handler"
+        }
+      ]
+    }
+  }
+}
+```
+
+IMPORTANT NOTES FOR SWITCH CASE SPLITTING:
+- Each case branch with a connection operation gets its own separate entry
+- Use the exact line number of the connection operation (not the case statement line)
+- Include the case condition in the description to provide context
+- Never group all cases together as "switch statement handling multiple operations"
+- Ignore the switch statement structure lines (switch, case labels, breaks) - only capture the actual connection operations
+
 ## EXAMPLES OF FORBIDDEN GROUPING
 
 ### FORBIDDEN - Grouping Multiple Operations:
 ```json
 {
   "incoming_connections": {
-    "event_system": {
+    "WebSockets": {
       "src/handlers.js": [
         {
           "snippet_lines": "15-55",
@@ -404,7 +546,7 @@ src/services/api.js:22: makeApiCall('/api/orders', 'GET', params)
 ```json
 {
   "outgoing_connections": {
-    "http_client": {
+    "HTTP/HTTPS": {
       "src/client.js": [
         {
           "snippet_lines": "15-31",
@@ -420,7 +562,7 @@ src/services/api.js:22: makeApiCall('/api/orders', 'GET', params)
 ```json
 {
   "outgoing_connections": {
-    "http_client": {
+    "HTTP/HTTPS": {
       "src/services/api.js": [
         {
           "snippet_lines": "18-45",
@@ -437,46 +579,49 @@ src/services/api.js:22: makeApiCall('/api/orders', 'GET', params)
 The following types of connection data should NOT be included in splitting:
 
 ### EXCLUDE 1: Generic Library Calls Without Identifiers
-**Connection Data That Should Be Excluded:**
+Connection Data That Should Be Excluded:
 ```
 src/utils/http.js:25: await axios.get(url)
 src/utils/http.js:30: await axios.post(url, data)
 src/utils/socket.js:15: socket.emit(eventName, data)
 ```
-**Why Excluded:** These use variable identifiers, not specific connection endpoints.
+Why Excluded: These use variable identifiers, not specific connection endpoints.
 
 ### EXCLUDE 2: Function Definitions and Imports
-**Connection Data That Should Be Excluded:**
+Connection Data That Should Be Excluded:
 ```
 src/api/client.js:1: const axios = require('axios')
 src/utils/api.js:10: function apiCallFunction(endpoint, method, data) { ... }
 src/socket/handler.js:5: import { io } from 'socket.io-client'
 ```
-**Why Excluded:** Library imports and generic function definitions are not actual connections.
+Why Excluded: Library imports and generic function definitions are not actual connections.
 
 ### EXCLUDE 3: Configuration Without Actual Usage
-**Connection Data That Should Be Excluded:**
+Connection Data That Should Be Excluded:
 ```
 src/config/settings.js:8: const API_BASE_URL = process.env.API_BASE_URL
 src/config/settings.js:12: const QUEUE_CONFIG = { host: 'localhost', port: 5672 }
 ```
-**Why Excluded:** Configuration definitions without actual connection usage.
+Why Excluded: Configuration definitions without actual connection usage.
 
 ### INCLUDE: Only Actual Connection Usage
-**Connection Data That SHOULD Be Included:**
+Connection Data That SHOULD Be Included:
 ```
 src/api/client.js:25: const response = await axios.get(`${process.env.API_BASE_URL}/users`)
 src/services/queue.js:15: publishMessage('user-notifications', userData)
 src/routes/api.js:20: app.get('/api/users', handleGetUsers)
 ```
-**Why Included:** These show actual connection usage with specific identifiers or environment variables.
+Why Included: These show actual connection usage with specific identifiers or environment variables.
 
 ## STEP-BY-STEP ANALYSIS PROCESS
 
-1. Identify all connections: Scan through all code snippets and identify every individual connection
-2. Separate each connection: For each connection found, create a separate JSON entry
-3. Extract precise details: Get exact line numbers and specific details for each connection
-4. Write specific descriptions: Each description must be about ONE specific connection
+1. Check for duplicates: First scan all input for repeating content - same file paths with same line numbers appearing multiple times
+2. Identify env files: Look for environment file code blocks that contain variable definitions
+3. Identify all connections: Scan through all code snippets and identify every individual connection
+4. Resolve env variables: For each connection using environment variables, find corresponding values from env file blocks
+5. Separate each connection: For each connection found, create a separate JSON entry (excluding duplicates)
+6. Extract precise details: Get exact line numbers and specific details for each connection
+7. Write specific descriptions: Each description must be about ONE specific connection with resolved env values when available
 
 ## CRITICAL REQUIREMENTS
 

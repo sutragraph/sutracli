@@ -20,13 +20,17 @@ RULES
 5. CONNECTION CODE EXTRACTION CRITERIA - ONLY extract these:
    - REST API calls
    - WebSocket connections
-   - Message queue publishers/consumers 
+   - Message queue publishers/consumers
    - File-based data exchange
    - Custom wrapper functions on top of existing technologies like Axios, Socket.io, RabbitMQ, etc. that facilitate data communication
-   - Media streaming connections (WebRTC, RTMP) 
+   - Media streaming connections (WebRTC, RTMP)
+   - Environment variable configurations that define connection parameters (endpoints, queue names, service URLs)
+   - Environment files (.env, .config, config.json, etc.) that contain connection-related configurations
 
 6. ENDPOINT VALIDATION RULES:
-   - EXTRACT: Environment variables
+   - EXTRACT: Environment variables and their configurations
+   - EXTRACT: Environment file codes (.env, config files) that define connection parameters
+   - EXTRACT: Configuration files that contain connection endpoints, queue names, or service URLs
 
 7. All file paths must be relative to the project root directory. When returning connection code, always use relative paths for consistency.
 
@@ -40,6 +44,8 @@ RULES
 10. EXTRACTION FOCUS:
     - EXTRACT: Connection identifier (endpoint, queue name, event name) and request type
     - EXTRACT: Environment variables that affect connection identifiers
+    - EXTRACT: Environment file contents (.env, config files) that define connection parameters
+    - EXTRACT: Configuration objects that contain connection URLs, queue names, or service endpoints
     - DO NOT EXTRACT: Data content, payload details, or business logic
     - DO NOT EXTRACT: Wrapper function definitions without actual connection identifiers
     - DO NOT EXTRACT: Variable assignments unless they define connection identifiers
@@ -48,6 +54,8 @@ RULES
     - DESCRIBE: Connection identifier and its source (literal or resolved from variable)
     - DESCRIBE: Request type (GET, POST, consume, emit, etc.)
     - DESCRIBE: Environment variables that provide connection identifiers
+    - DESCRIBE: Environment file configurations that define connection parameters
+    - DESCRIBE: Configuration values from env files that affect connection behavior
     - DO NOT DESCRIBE: Data content, payload structure, or business context
 
 12. WRAPPER FUNCTION ANALYSIS: Focus on extracting where wrapper functions are CALLED with actual values, not where they are defined. Extract actual function call sites with real parameters.

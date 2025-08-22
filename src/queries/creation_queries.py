@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS incoming_connections (
     description TEXT NOT NULL,
     file_id INTEGER NOT NULL,
     snippet_lines TEXT,
-    technology_name TEXT,
+    technology_name TEXT CHECK (technology_name IN ('HTTP/HTTPS','WebSockets','gRPC','GraphQL','MessageQueue','Unknown')),
     code_snippet TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS outgoing_connections (
     description TEXT NOT NULL,
     file_id INTEGER NOT NULL,
     snippet_lines TEXT,
-    technology_name TEXT,
+    technology_name TEXT CHECK (technology_name IN ('HTTP/HTTPS','WebSockets','gRPC','GraphQL','MessageQueue','Unknown')),
     code_snippet TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
