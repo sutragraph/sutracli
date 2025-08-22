@@ -2,24 +2,29 @@
 Models module initialization.
 """
 
-from .schema import (
-    CodeNode,
-    CodeEdge,
-    ParsedCodebase,
+# All models now in schema.py
+from models.schema import (
+    File,
     Project,
-    SQLiteNode,
-    SQLiteRelationship,
-    GraphData,
-    FileHash,
+    CodeBlock,
+    Relationship,
+    FileData,
+    ExtractionData,
+    BlockType,
+)
+from models.agent import (
+    AgentAction,
+    AgentThought,
 )
 
 __all__ = [
-    "CodeNode",
-    "CodeEdge",
-    "ParsedCodebase",
     "Project",
-    "SQLiteNode",
-    "SQLiteRelationship",
-    "GraphData",
-    "FileHash",
+    "File",
+    "FileData",
+    "BlockType",
+    "CodeBlock",
+    "Relationship",
+    "ExtractionData",
+    "AgentAction",
+    "AgentThought",
 ]

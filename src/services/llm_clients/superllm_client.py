@@ -1,7 +1,7 @@
 import requests
 from loguru import logger
 from typing import List, Dict, Any, Union
-from .llm_client_base import LLMClientBase
+from .llm_client_base import LLMClientBase, TokenUsage, LLMResponse
 from config import config
 from ..auth.token_manager import get_token_manager
 
@@ -55,15 +55,17 @@ class SuperLLMClient(LLMClientBase):
                 "SuperLLM Firebase token not found. "
                 "Please run 'sutra auth login' to authenticate with SuperLLM."
             )
+
+        if not self.firebase_token:
             raise ValueError(
                 "SuperLLM Firebase token not found. "
                 "Please run 'sutra auth login' to authenticate with SuperLLM."
             )
 
-        logger.info("SuperLLM client initialized successfully")
+        logger.info("🚀 SuperLLM client initialized successfully")
 
-    def _get_headers(self) -> dict:
-        """Get headers for SuperLLM API requests."""
+    def _get_headers(self) -> Dict[str, str]:
+        """Get headers for API requests."""
         return {
             "Authorization": f"Bearer {self.firebase_token}",
             "Content-Type": "application/json",
@@ -88,15 +90,36 @@ class SuperLLMClient(LLMClientBase):
 
     def call_llm(self, system_prompt: str, user_message: str, return_raw: bool = False) -> Union[List[Dict[str, Any]], str]:
         """
-        Call SuperLLM with separate system prompt and user message.
+        Call the SuperLLM API to generate a response with separate system and user messages.
 
         Args:
-            system_prompt: The system prompt
-            user_message: The user message
+            system_prompt: The system prompt for the LLM
+            user_message: The user message for the LLM
             return_raw (bool): If True, return raw response text. If False, return parsed XML.
 
         Returns:
             Union[List[Dict[str, Any]], str]: Parsed XML elements or raw response text
+
+        Raises:
+            Exception: If the API call fails
+        """
+        # Use the new method with usage tracking and just return the content
+        response = self.call_llm_with_usage(system_prompt, user_message, return_raw)
+        return response.content
+
+    def call_llm_with_usage(
+        self, system_prompt: str, user_message: str, return_raw: bool = False
+    ) -> LLMResponse:
+        """
+        Call the SuperLLM API and return both content and token usage information.
+
+        Args:
+            system_prompt: The system prompt for the LLM
+            user_message: The user message for the LLM
+            return_raw (bool): If True, return raw response text. If False, return parsed XML.
+
+        Returns:
+            LLMResponse: Response containing both content and token usage information
 
         Raises:
             Exception: If the API call fails
@@ -113,13 +136,46 @@ class SuperLLMClient(LLMClientBase):
             "provider": self.default_provider,
         }
 
-        raw_response = self._make_api_call(payload, headers)
+        response_data = self._make_api_call(payload, headers)
 
-        # Return raw response or parse XML based on return_raw parameter
-        if return_raw:
-            return raw_response
+        # Extract content and token usage from response
+        if isinstance(response_data, dict):
+            raw_response = response_data.get("content", str(response_data))
+
+            # Check for token usage in response
+            token_usage = None
+            if "usage" in response_data:
+                usage = response_data["usage"]
+                token_usage = TokenUsage(
+                    input_tokens=usage.get("prompt_tokens", 0),
+                    output_tokens=usage.get("completion_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0)
+                )
+            elif "token_usage" in response_data:
+                usage = response_data["token_usage"]
+                token_usage = TokenUsage(
+                    input_tokens=usage.get("input_tokens", 0),
+                    output_tokens=usage.get("output_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0)
+                )
         else:
-            return self.parse_xml_response(raw_response)
+            raw_response = str(response_data)
+            token_usage = None
+
+        if token_usage:
+            logger.info(
+                f"🔢 Token usage - Input: {token_usage.input_tokens}, "
+                f"Output: {token_usage.output_tokens}, "
+                f"Total: {token_usage.total_tokens}"
+            )
+
+        # Return content based on return_raw parameter
+        if return_raw:
+            content = raw_response
+        else:
+            content = self.parse_xml_response(raw_response)
+
+        return LLMResponse(content=content, token_usage=token_usage)
 
     def call_llm_single(self, prompt: str, return_raw: bool = False) -> Union[List[Dict[str, Any]], str]:
         """
@@ -152,33 +208,50 @@ class SuperLLMClient(LLMClientBase):
         else:
             return self.parse_xml_response(raw_response)
 
-    def _make_api_call(self, payload: dict, headers: dict) -> str:
+    def _make_api_call(self, payload: Dict[str, Any], headers: Dict[str, str]) -> str:
         """
-        Make the actual API call to SuperLLM.
+        Make an API call to the SuperLLM server.
 
         Args:
             payload: The request payload
             headers: The request headers
 
         Returns:
-            Raw response text from the API
+            str: The response content
 
         Raises:
             Exception: If the API call fails
         """
         try:
             response = requests.post(
-                f"{self.api_endpoint}/api/v1/chat",
+                f"{self.api_endpoint}/chat/completions",
                 json=payload,
                 headers=headers,
                 timeout=300,  # 5 minute timeout
             )
-            response.raise_for_status()
 
-            result = response.json()
-            return result.get("content", "")
+            if response.status_code == 200:
+                response_data = response.json()
 
-        except requests.exceptions.HTTPError as e:
+                # Handle different response formats
+                if "choices" in response_data and response_data["choices"]:
+                    content = response_data["choices"][0]["message"]["content"]
+                elif "content" in response_data:
+                    content = response_data["content"]
+                else:
+                    content = str(response_data)
+
+                # Return the full response data for token tracking
+                if isinstance(response_data, dict):
+                    response_data["content"] = content
+                    return response_data
+                else:
+                    return content
+            else:
+                logger.error(f"SuperLLM API error: {response.status_code} - {response.text}")
+                response.raise_for_status()
+
+        except requests.exceptions.RequestException as e:
             if e.response.status_code == 401:
                 # Try to refresh token once
                 if self._refresh_token():
@@ -190,11 +263,8 @@ class SuperLLMClient(LLMClientBase):
                         "Please run 'sutra auth login' to re-authenticate."
                     )
             else:
-                logger.error(f"SuperLLM API HTTP error: {e}")
+                logger.error(f"SuperLLM API request failed: {e}")
                 raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"SuperLLM API request failed: {e}")
-            raise
         except Exception as e:
-            logger.error(f"SuperLLM API call failed: {e}")
+            logger.error(f"Unexpected error calling SuperLLM API: {e}")
             raise

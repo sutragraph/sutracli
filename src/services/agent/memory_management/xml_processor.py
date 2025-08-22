@@ -5,17 +5,17 @@ Handles XML parsing and processing for Sutra Memory data.
 """
 
 from typing import Dict, List, Optional, Any
-from loguru import logger
-
 from .models import TaskStatus
 from .memory_operations import MemoryOperations
-
 
 class XMLProcessor:
     """Handles XML processing for Sutra Memory data"""
 
-    def __init__(self, memory_ops: MemoryOperations):
+    def __init__(
+        self, memory_ops: MemoryOperations, memory_manager: Optional[Any] = None
+    ):
         self.memory_ops = memory_ops
+        self.memory_manager = memory_manager
 
     def process_sutra_memory_data(
         self, parsed_xml_data: Dict[str, Any]
@@ -85,6 +85,11 @@ class XMLProcessor:
             # Handle sutra_memory wrapper
             if "sutra_memory" in data:
                 sutra_data = data["sutra_memory"]
+            # Handle connection_code wrapper (from code manager)
+            elif "connection_code" in data:
+                sutra_data = data["connection_code"]
+                # For connection_code, we only process code snippets (no tasks or history)
+                return self._process_connection_code_data(sutra_data, results)
             else:
                 sutra_data = data
 
@@ -117,6 +122,29 @@ class XMLProcessor:
         except Exception as e:
             results["success"] = False
             results["errors"].append(f"Error processing dict data: {str(e)}")
+            return results
+
+    def _process_connection_code_data(
+        self, connection_data: Dict[str, Any], results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Process connection_code format (from code manager)"""
+        try:
+            # Process code snippets from connection_code format
+            if "code" in connection_data:
+                code_data = connection_data["code"]
+                self._process_code_dict(code_data, results)
+
+            # Add a default history entry for connection code processing
+            results["changes_applied"]["history"].append({
+                "action": "add_history",
+                "content": "Processed connection code from code manager - extracted connection snippets for storage"
+            })
+
+            return results
+
+        except Exception as e:
+            results["success"] = False
+            results["errors"].append(f"Error processing connection_code data: {str(e)}")
             return results
 
     def _process_task_dict(self, task_data: Any, results: Dict[str, Any]):
@@ -163,11 +191,16 @@ class XMLProcessor:
     def _process_add_task_dict(self, add_data: Dict[str, Any], results: Dict[str, Any]):
         """Process add task operation from dict"""
         try:
-            task_id = add_data.get("@id")
+            task_id = self.memory_ops.get_next_task_id()
+
             status = TaskStatus(add_data.get("@to"))
             description = add_data.get("#text", "").strip()
 
-            self.memory_ops.add_task(task_id, description, status)
+            # Use memory_manager if available (for inheritance), otherwise use memory_ops
+            if hasattr(self, "memory_manager") and self.memory_manager:
+                self.memory_manager.add_task(task_id, description, status)
+            else:
+                self.memory_ops.add_task(task_id, description, status)
             results["changes_applied"]["tasks"].append(
                 f"Added task {task_id} with status {status.value}"
             )
@@ -183,7 +216,11 @@ class XMLProcessor:
             from_status = move_data.get("@from")
             to_status = TaskStatus(move_data.get("@to"))
 
-            self.memory_ops.move_task(task_id, to_status)
+            # Use memory_manager if available (for inheritance), otherwise use memory_ops
+            if hasattr(self, "memory_manager") and self.memory_manager:
+                self.memory_manager.move_task(task_id, to_status)
+            else:
+                self.memory_ops.move_task(task_id, to_status)
             results["changes_applied"]["tasks"].append(
                 f"Moved task {task_id} from {from_status} to {to_status.value}"
             )
@@ -241,26 +278,26 @@ class XMLProcessor:
         """Process add code operation from dict"""
         try:
             code_id = add_data.get("@id")
-            
+
             # Handle both nested dict format and direct string format
             file_path_data = add_data.get("file", "")
             if isinstance(file_path_data, dict):
                 file_path = file_path_data.get("#text", "").strip()
             else:
                 file_path = str(file_path_data).strip()
-            
+
             start_line_data = add_data.get("start_line", "0")
             if isinstance(start_line_data, dict):
                 start_line = int(start_line_data.get("#text", "0"))
             else:
                 start_line = int(str(start_line_data))
-            
+
             end_line_data = add_data.get("end_line", "0")
             if isinstance(end_line_data, dict):
                 end_line = int(end_line_data.get("#text", "0"))
             else:
                 end_line = int(str(end_line_data))
-            
+
             description_data = add_data.get("description", "")
             if isinstance(description_data, dict):
                 description = description_data.get("#text", "").strip()
@@ -335,10 +372,10 @@ class XMLProcessor:
         self, xml_response: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
-        Extract and process sutra memory from parsed XML response (compatible with tool_action_executor).
+        Extract and process sutra memory from parsed XML response (compatible with ActionExecutor).
 
         This method is designed to work with the existing _extract_sutra_memory method
-        from tool_action_executor.py to process sutra memory updates.
+        from ActionExecutor to process sutra memory updates.
 
         Args:
             xml_response: List of parsed XML blocks from LLM response
@@ -347,7 +384,7 @@ class XMLProcessor:
             Dict containing processing results and any errors
         """
         try:
-            # Extract sutra memory data using the same logic as tool_action_executor
+            # Extract sutra memory data using the same logic as ActionExecutor
             sutra_memory_data = self._extract_sutra_memory_from_response(xml_response)
 
             if sutra_memory_data:
@@ -383,7 +420,7 @@ class XMLProcessor:
         self, xml_response: List[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         """
-        Extract sutra memory data from XML response (mirrors tool_action_executor logic).
+        Extract sutra memory data from XML response (mirrors ActionExecutor logic).
 
         Args:
             xml_response: List of parsed XML blocks from LLM response
@@ -396,6 +433,9 @@ class XMLProcessor:
                 # Check for sutra_memory tag
                 if "sutra_memory" in xml_block:
                     return xml_block["sutra_memory"]
+                # Check for connection_code tag (from code manager)
+                elif "connection_code" in xml_block:
+                    return xml_block["connection_code"]
         return None
 
     def _process_et_element(self, data: Any, results: Dict[str, Any]) -> Dict[str, Any]:

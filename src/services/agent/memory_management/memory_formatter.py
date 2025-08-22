@@ -66,36 +66,7 @@ class MemoryFormatter:
         # Code snippets
         if self.memory_ops.code_snippets:
             content.extend(["STORED CODE SNIPPETS:", ""])
-            for code in self.memory_ops.code_snippets.values():
-                content.extend(
-                    [
-                        f"Code {code.id}: {code.file_path} (lines {code.start_line}-{code.end_line})",
-                        f"  Description: {code.description}",
-                    ]
-                )
-
-                # Include actual code content if available with line numbers
-                if code.content:
-                    content.extend(
-                        [
-                            "  Code:",
-                            "  ```",
-                        ]
-                    )
-                    # Add each line of code with line numbers and proper indentation
-                    formatted_code = self._format_code_with_line_numbers(
-                        code.content, code.start_line
-                    )
-                    for line in formatted_code.split("\n"):
-                        content.append(f"  {line}")
-                    content.extend(
-                        [
-                            "  ```",
-                            "",
-                        ]
-                    )
-                else:
-                    content.append("")
+            content.extend(self._format_code_snippets_section())
 
         # Recent file changes
         if self.memory_ops.file_changes:
@@ -158,6 +129,61 @@ class MemoryFormatter:
             formatted_lines.append(formatted_line)
 
         return "\n".join(formatted_lines)
+
+    def _format_code_snippets_section(self) -> List[str]:
+        """
+        Format code snippets section using the same format as sutra memory.
+
+        Returns:
+            List of formatted lines
+        """
+        content = []
+        for code in self.memory_ops.code_snippets.values():
+            content.extend(
+                [
+                    f"Code {code.id}: {code.file_path} (lines {code.start_line}-{code.end_line})",
+                    f"  Description: {code.description}",
+                ]
+            )
+
+            # Include actual code content if available with line numbers
+            if code.content:
+                content.extend(
+                    [
+                        "  Code:",
+                        "  ```",
+                    ]
+                )
+                # Add each line of code with line numbers and proper indentation
+                formatted_code = self._format_code_with_line_numbers(
+                    code.content, code.start_line
+                )
+                for line in formatted_code.split("\n"):
+                    content.append(f"  {line}")
+                content.extend(
+                    [
+                        "  ```",
+                        "",
+                    ]
+                )
+            else:
+                content.append("")
+
+        return content
+
+    def get_code_snippets_for_llm(self) -> str:
+        """
+        Get only the code snippets formatted for LLM context using the same format as sutra memory.
+
+        Returns:
+            str: Formatted code snippets only
+        """
+        if not self.memory_ops.code_snippets:
+            return ""
+
+        # Use the same formatting as sutra memory
+        content = self._format_code_snippets_section()
+        return "\n".join(content)
 
 
 def clean_sutra_memory_content(content: str) -> str:

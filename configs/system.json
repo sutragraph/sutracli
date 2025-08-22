@@ -5,8 +5,6 @@
     "connection_timeout": 60,
     "max_retry_attempts": 5,
     "batch_size": 1000,
-    "enable_indexing": true,
-    "create_tables": true,
     "enable_wal_mode": true
   },
   "storage": {
@@ -20,7 +18,7 @@
   "embedding": {
     "model_name": "all-MiniLM-L12-v2",
     "model_path": "~/.sutra/models/all-MiniLM-L12-v2",
-    "max_tokens": 230,
+    "max_tokens": 240,
     "overlap_tokens": 30,
     "similarity_threshold": 0.2,
     "enable_optimization": false

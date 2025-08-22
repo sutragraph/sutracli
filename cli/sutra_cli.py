@@ -38,8 +38,63 @@ def setup_environment():
             os.environ["SUTRAKNOWLEDGE_CONFIG"] = str(local_config)
 
 
+def setup_baml_environment():
+    """Set up BAML environment variables from config at module level."""
+    try:
+        # Import here to avoid circular imports
+        from config.settings import get_config
+
+        # Use the config function to get loaded config
+        config = get_config()
+
+        # Environment variable mapping for each provider
+        ENV_VAR_MAPPING = {
+            "aws": {
+                "AWS_ACCESS_KEY_ID": "access_key_id",
+                "AWS_SECRET_ACCESS_KEY": "secret_access_key",
+                "AWS_MODEL_ID": "model_id",
+                "AWS_REGION": "region",
+            },
+            "openai": {"OPENAI_API_KEY": "api_key", "OPENAI_MODEL_ID": "model_id"},
+            "anthropic": {
+                "ANTHROPIC_API_KEY": "api_key",
+                "ANTHROPIC_MODEL_ID": "model_id",
+            },
+            "gcp": {"GOOGLE_API_KEY": "api_key", "GOOGLE_MODEL_ID": "model_id"},
+        }
+
+        # Check if config has llm attribute
+        if not hasattr(config, "llm") or not config.llm:
+            return
+
+        provider = config.llm.provider.lower()
+        if provider not in ENV_VAR_MAPPING:
+            return
+
+        # Get provider-specific config
+        provider_config = getattr(config.llm, provider, None)
+        if not provider_config:
+            return
+
+        # Set environment variables
+        env_mapping = ENV_VAR_MAPPING[provider]
+        for env_var, config_key in env_mapping.items():
+            # Only set if not already set and config value exists
+            if env_var not in os.environ:
+                value = getattr(provider_config, config_key, None)
+                if value:
+                    os.environ[env_var] = str(value)
+
+        os.environ["BAML_LOG"] = "WARN"
+
+    except Exception as e:
+        # Silent fail - don't break CLI if environment setup fails
+        pass
+
+
 # Set up environment before importing other modules
 setup_environment()
+setup_baml_environment()
 
 from cli.utils import setup_logging
 from loguru import logger
@@ -88,12 +143,7 @@ class SutraKnowledgeCLI:
         """Setup environment and configuration."""
         import os
 
-        # Set up logging with minimal output for CLI
-        config = get_config()
-        log_level = config.logging.level
-        setup_logging(log_level)
-
-        # Set up configuration
+        # Set up configuration first
         if not os.getenv("SUTRAKNOWLEDGE_CONFIG"):
             config_path = self._find_config_file()
 
@@ -104,6 +154,11 @@ class SutraKnowledgeCLI:
                 print("ERROR: No configuration file found")
                 print("   Looking for configs/system.json or configs/local.json")
                 raise SystemExit(1)
+
+        # Set up logging with minimal output for CLI
+        config = get_config()
+        log_level = config.logging.level
+        setup_logging(log_level)
 
     def _find_config_file(self) -> Optional[str]:
         """Find the appropriate configuration file."""
@@ -211,26 +266,25 @@ class SutraKnowledgeCLI:
 
         try:
             # Import graph converter
-            from graph import TreeSitterToSQLiteConverter
+            from graph import ASTToSqliteConverter
 
-            converter = TreeSitterToSQLiteConverter()
+            converter = ASTToSqliteConverter()
             result = converter.convert_json_to_graph(
                 parser_output_path,
                 project_name=self.repo_name,
                 clear_existing=False,  # Preserve existing data, add new project to database
-                create_indexes=True,
             )
 
-            if result and result.get("status") == "success":
-                stats = result.get("database_stats", {})
+            if result and result.status == "success":
+                stats = result.database_stats
                 print(f"SUCCESS: Knowledge graph generated successfully!")
-                print(
-                    f"Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships"
-                )
-                print(f"Embeddings: Generated for semantic search")
+                print(f"Project: {result.project_name} (ID: {result.project_id})")
+                print(f"Processed: {result.files_processed} files, {result.blocks_processed} code blocks, {result.relationships_processed} relationships")
+                print(f"Database totals: {stats.get('total_files', 0)} files, {stats.get('total_blocks', 0)} blocks, {stats.get('total_relationships', 0)} relationships")
                 return True
             else:
-                print("ERROR: Knowledge graph generation failed")
+                error_msg = result.error if hasattr(result, 'error') else "Unknown error"
+                print(f"ERROR: Knowledge graph generation failed: {error_msg}")
                 return False
 
         except Exception as e:

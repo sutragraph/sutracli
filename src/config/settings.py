@@ -24,8 +24,6 @@ class DatabaseConfig:
     connection_timeout: int
     max_retry_attempts: int
     batch_size: int
-    enable_indexing: bool
-    create_tables: bool
     enable_wal_mode: bool = True
 
 
@@ -55,6 +53,8 @@ class AnthropicConfig:
 
     api_key: str
     model_id: str
+
+
 @dataclass
 class SuperLLMConfig:
     """SuperLLM configuration."""
@@ -76,7 +76,6 @@ class AnthropicConfig:
 @dataclass
 class LLMConfig:
     """LLM provider configuration."""
-
 
     provider: str  # Options: "gemini", "llama", "claude", "claude_gcp", "anthropic", "superllm"
     llama_model_id: str
@@ -176,7 +175,7 @@ class Config:
     def __init__(self, config_file: Optional[str] = None):
         """Initialize configuration from JSON file."""
         self.config_file = config_file or os.getenv("SUTRAKNOWLEDGE_CONFIG")
-        
+
         # If no config file is specified, use default path
         if not self.config_file:
             default_config_path = os.path.expanduser("~/.sutra/config/system.json")
@@ -263,18 +262,24 @@ class Config:
                     ),
                     gemini_model=llm_config.get("gemini_model", "gemini-2.5-flash"),
                     aws=AWSConfig(**aws_config) if aws_config else None,
-                    gcp=GCPConfig(
-                        api_key=gcp_config.get("api_key", ""),
-                        project_id=gcp_config.get("project_id", ""),
-                        location=gcp_config.get("location", ""),
-                        llm_endpoint=gcp_config.get("llm_endpoint", "")
-                    ) if gcp_config else None,
+                    gcp=(
+                        GCPConfig(
+                            api_key=gcp_config.get("api_key", ""),
+                            project_id=gcp_config.get("project_id", ""),
+                            location=gcp_config.get("location", ""),
+                            llm_endpoint=gcp_config.get("llm_endpoint", ""),
+                        )
+                        if gcp_config
+                        else None
+                    ),
                     anthropic=(
                         AnthropicConfig(**anthropic_config)
                         if anthropic_config
                         else None
                     ),
-                    superllm=SuperLLMConfig(**superllm_config) if superllm_config else None,
+                    superllm=(
+                        SuperLLMConfig(**superllm_config) if superllm_config else None
+                    ),
                 )
             else:
                 self.llm = None

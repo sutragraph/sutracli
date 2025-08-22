@@ -1,5 +1,6 @@
 """Command handlers for the CLI application."""
 
+import uuid
 import sys
 import webbrowser
 from pathlib import Path
@@ -9,23 +10,23 @@ from prompt_toolkit import prompt
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
-
-from graph import TreeSitterToSQLiteConverter
+from services.project_manager import ProjectManager
+from services.cross_indexing.core.cross_index_system import CrossIndexSystem
+from graph import ASTToSqliteConverter
 from services.agent_service import AgentService
 from services.auth.token_manager import get_token_manager
 from config import config
-from embeddings.vector_db import VectorDatabase
-from services.agent.tool_action_executor.utils.code_processing_utils import (
+from embeddings import get_vector_store
+from tools.utils.code_processing_utils import (
     add_line_numbers_to_code,
 )
-from services.agent.tool_action_executor.tools.web_search_action import (
+from tools.tool_web_search.action import (
     WebSearch,
     TimeFilter,
     SafeSearch,
     SearchType,
 )
-from services.agent.tool_action_executor.tools.web_scrap_action import WebScraper
+from tools.tool_web_scrap.action import WebScraper
 
 
 def get_version_from_init():
@@ -33,13 +34,15 @@ def get_version_from_init():
     try:
         import re
         from pathlib import Path
-        
+
         # Try to read version from sutrakit/__init__.py directly to avoid circular imports
         init_file = Path(__file__).parent.parent / "sutrakit" / "__init__.py"
         if init_file.exists():
-            with open(init_file, 'r') as f:
+            with open(init_file, "r") as f:
                 content = f.read()
-                version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                version_match = re.search(
+                    r'__version__\s*=\s*["\']([^"\']+)["\']', content
+                )
                 if version_match:
                     return version_match.group(1)
     except Exception:
@@ -54,31 +57,28 @@ def handle_single_command(args) -> None:
         logger.error(f"Input file not found: {args.input_file}")
         sys.exit(1)
 
-    with TreeSitterToSQLiteConverter() as converter:
+    with ASTToSqliteConverter() as converter:
         print("Starting conversion to SQLite...")
         result = converter.convert_json_to_graph(
             args.input_file,
             project_name=args.project_name or None,
             clear_existing=args.clear,
-            create_indexes=not args.no_indexes,
         )
 
-        if result["status"] == "success":
+        if result.status == "success":
             print("✅ Conversion completed successfully!")
+            print(f"Project: {result.project_name} (ID: {result.project_id})")
             print(
-                f"Processed {result['nodes_processed']} nodes and {result['relationships_processed']} relationships"
-            )
-            print(
-                "🔍 Chunked embeddings generated automatically for all nodes (optimized for 95+ accuracy semantic search)"
+                f"Processed {result.files_processed} files, {result.blocks_processed} code blocks, and {result.relationships_processed} relationships"
             )
 
-            stats = result["database_stats"]
+            stats = result.database_stats
             print(
-                f"Database now contains {stats['total_nodes']} nodes and {stats['total_relationships']} relationships"
+                f"Database now contains {stats.get('total_files', 0)} files, {stats.get('total_blocks', 0)} code blocks and {stats.get('total_relationships', 0)} relationships"
             )
         else:
             logger.error("❌ Conversion failed")
-            logger.error(f"Error: {result['error']}")
+            logger.error(f"Error: {result.error}")
             sys.exit(1)
 
 
@@ -189,31 +189,66 @@ def _process_agent_updates(updates_generator) -> None:
                 results = update.get("result", "")
                 # Only show results if found, reduce verbosity
                 if "Found 0 nodes" not in results:
-                    print(f'🔍 Database search "{query}" | {results}')
+                    print(f'🔍 Database search "{query}"  {query_name} | {results}')
                     print("-" * 40)
 
             elif tool_name == "semantic_search":
                 query = update.get("query", "")
                 results = update.get("result", "")
-                print(f'🔍 Semantic search "{query}" | {results}')
-                print("-" * 40)
+                # Only print for the first result or results with batch info to avoid spam
+                batch_info = update.get("batch_info")
+                node_index = update.get("node_index", 1)
+                if node_index == 1 or batch_info is not None:
+                    print(f'🔍 Semantic search "{query}" | {results}')
+                    print("-" * 40)
 
             elif tool_name == "list_files":
                 directory = update.get("directory", "")
                 files_count = update.get("count", 0)
-                print(f"📁 Listed {files_count} files in {directory}")
+                project_name = update.get("project_name")
+                data = update.get("data", "")
+
+                if project_name:
+                    print(f"📁 [{project_name}] Listed {files_count} files in {directory}")
+                else:
+                    print(f"📁 Listed {files_count} files in {directory}")
+
+                # Display the actual file list content
+                if data:
+                    print(data)
+
                 print("-" * 40)
 
             elif tool_name == "search_keyword":
                 keyword = update.get("keyword", "")
                 matches_found = update.get("matches_found")
-                print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
+                project_name = update.get("project_name")
+                data = update.get("data", "")
+
+                if project_name:
+                    print(f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}')
+                else:
+                    print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
+
+                # Display the actual search results content
+                if data:
+                    print(data)
+
                 print("-" * 40)
 
         elif update_type == "too_error":
             error = update.get("error", "")
             print(f"❌ {error}")
             print("-" * 40)
+
+        elif update_type == "user_cancelled":
+            message = update.get("message", "User cancelled the operation")
+            iteration = update.get("iteration", "unknown")
+            print(f"❌ Operation cancelled by user in iteration {iteration}")
+            print(f"   {message}")
+            print("-" * 40)
+            # Break out of the update processing loop when user cancels
+            break
 
         else:
             pass
@@ -230,7 +265,7 @@ def handle_agent_command(args) -> None:
         project_directory = getattr(args, "directory", None)
         if project_directory:
             print(f"📁 Working directory: {project_directory}")
-        
+
         agent = AgentService(project_path=project_directory)
 
         if args.problem_query:
@@ -256,18 +291,18 @@ def handle_agent_command(args) -> None:
 
         while True:
             try:
-# Create history and completer for enhanced input
+                # Create history and completer for enhanced input
                 history = InMemoryHistory()
-                completer = WordCompleter(['exit', 'quit', 'bye', 'goodbye', 'help'])
-                
+                completer = WordCompleter(["exit", "quit", "bye", "goodbye", "help"])
+
                 # Create key bindings
                 bindings = KeyBindings()
-                
-                @bindings.add('c-c')
+
+                @bindings.add("c-c")
                 def _(event):
                     """Handle Ctrl+C"""
                     raise KeyboardInterrupt
-                
+
                 # Enhanced prompt with multiline support and navigation
                 user_input = prompt(
                     "\n👤 You: ",
@@ -287,7 +322,7 @@ def handle_agent_command(args) -> None:
                 if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
                     print("\n👋 Goodbye! Session ended.")
                     break
-                
+
                 if user_input.lower() in ["version", "--version", "-v"]:
                     print("\n📦 Sutra Agent Version Information:")
                     print("   Sutra Knowledge CLI v1.0")
@@ -346,7 +381,7 @@ def handle_parse_command(args) -> str:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        # Create analyzer instance - no need for start_node_id with deterministic IDs
+        # Create analyzer instance - no need for start_block_id with deterministic IDs
         analyzer = Analyzer(repo_id)
 
         # Generate output filename with timestamp
@@ -374,36 +409,36 @@ def handle_index_command(args) -> None:
     from pathlib import Path
     from services.project_manager import ProjectManager
     from graph.sqlite_client import SQLiteConnection
-    from embeddings.vector_db import VectorDatabase
-    
+
     try:
         # Validate project path
         project_path = Path(args.project_path).absolute()
         if not project_path.exists():
             print(f"❌ Project path does not exist: {project_path}")
             return
-        
+
         if not project_path.is_dir():
             print(f"❌ Project path is not a directory: {project_path}")
             return
-        
+
         # Initialize required components
         db_connection = SQLiteConnection()
-        vector_db = VectorDatabase(config.sqlite.embeddings_db)
-        project_manager = ProjectManager(db_connection, vector_db)
-        
+        project_manager = ProjectManager(db_connection)
+
         # Determine project name
         project_name = args.project_name
         if not project_name:
             project_name = project_manager.determine_project_name(str(project_path))
-        
+
         print(f"📁 Indexing project '{project_name}' at: {project_path}")
-        
+
         # Check if project already exists and handle force flag
         if db_connection.project_exists(project_name):
             if not args.force:
                 print(f"⚠️  Project '{project_name}' already exists in database.")
-                print("   Use --force to re-index or choose a different --project-name.")
+                print(
+                    "   Use --force to re-index or choose a different --project-name."
+                )
                 return
             else:
                 print(f"🔄 Force re-indexing existing project '{project_name}'")
@@ -413,18 +448,20 @@ def handle_index_command(args) -> None:
                     if delete_result["success"]:
                         print(f"   ✅ Cleared existing project data")
                     else:
-                        print(f"   ⚠️  Warning: Could not clear existing data: {delete_result['error']}")
+                        print(
+                            f"   ⚠️  Warning: Could not clear existing data: {delete_result['error']}"
+                        )
                 except Exception as e:
                     print(f"   ⚠️  Warning: Could not clear existing data: {e}")
-        
+
         # Perform the indexing
         result = project_manager.index_project_at_path(str(project_path), project_name)
-        
+
         if result["success"]:
             print(f"✅ {result['message']}")
         else:
             print(f"❌ Failed to index project: {result['error']}")
-            
+
     except Exception as e:
         logger.error(f"Error during project indexing: {e}")
         print(f"❌ Unexpected error: {e}")
@@ -438,15 +475,14 @@ def handle_search_command(args) -> None:
         print("📁 Searching through file nodes with embeddings...")
         print("-" * 40)
 
-        # Initialize vector database
-        vector_db = VectorDatabase()
+        # Initialize vector store
+        vector_store = get_vector_store()
 
         # Perform search
-        chunks = vector_db.search_chunks_with_code(
+        chunks = vector_store.search_similar_chunks(
             query_text=args.query,
             limit=args.limit,
             threshold=args.threshold,
-            max_display_lines=None,  # Show full chunks without truncation
         )
 
         if not chunks:
@@ -517,6 +553,7 @@ def handle_incremental_parse_command(args) -> str:
 
     # Call the regular parse command with the incremental flag set
     return handle_parse_command(args)
+
 
 def handle_auth_command(args) -> None:
     """Handle authentication commands."""
@@ -819,33 +856,206 @@ def handle_web_scrap_command(args) -> None:
         WebScraper.close_session()
 
 
+def handle_cross_indexing_command(args) -> None:
+    """Handle cross-indexing command for analyzing inter-service connections."""
+    try:
+        print("🔗 SUTRA CROSS-INDEX - Inter-Service Connection Analysis")
+        print("   Analyzing project for incoming/outgoing connections")
+        print("=" * 80)
+
+        # Validate project path
+        project_path = Path(args.directory).absolute()
+        if not project_path.exists():
+            print(f"❌ Project path does not exist: {project_path}")
+            return
+
+        if not project_path.is_dir():
+            print(f"❌ Project path is not a directory: {project_path}")
+            return
+
+        print(f"📁 Analyzing project at: {project_path}")
+
+        # Initialize required components
+        project_manager = ProjectManager()
+
+        # Get or create project first to determine project name
+        project_name = (
+            args.project_name
+            if args.project_name
+            else project_manager.determine_project_name(project_path)
+        )
+
+        # Initialize cross-index system with project name for incremental indexing
+        print(
+            f"🔄 Initializing cross-indexing system with incremental indexing for project: {project_name}"
+        )
+        cross_index_system = CrossIndexSystem(
+            project_manager, project_name=project_name
+        )
+        print(f"✅ Cross-indexing system initialized with up-to-date database")
+        project_id = project_manager.get_or_create_project_id(
+            project_name, project_path
+        )
+
+        print(f"✅ Project: {project_name} (ID: {project_id})")
+        print("-" * 40)
+
+        session_id = str(uuid.uuid4())[:8]
+        print(f"📝 Started analysis session: {session_id}")
+
+        print("🤖 Starting Cross-Index Analysis...")
+        print("-" * 40)
+
+        # Use cross-indexing service for analysis with streaming updates
+        cross_index_service = cross_index_system.cross_index_service
+
+        analysis_result = None
+
+        for update in cross_index_service.analyze_project_connections(
+            str(project_path), project_id
+        ):
+            update_type = update.get("type", "unknown")
+
+            if update_type == "cross_index_start":
+                print(f"📁 Analyzing project: {update.get('project_path')}")
+
+            elif update_type == "iteration_start":
+                iteration = update.get("iteration", 0)
+                max_iterations = update.get("max_iterations", 50)
+                print(f"🔄 Iteration {iteration}/{max_iterations}")
+
+            elif update_type == "thinking":
+                print("🤔 Analyzing connections...")
+
+            elif update_type == "tool_use":
+                tool_name = update.get("tool_name", "unknown")
+
+                if tool_name == "database":
+                    query = update.get("query", "")
+                    query_name = update.get("query_name", "")
+                    results = update.get("result", "")
+                    # Only show results if found, reduce verbosity
+                    if "Found 0 nodes" not in results:
+                        print(f'🔍 Database search "{query}" {query_name} | {results}')
+                        print("-" * 40)
+
+                elif tool_name == "semantic_search":
+                    query = update.get("query", "")
+                    results = update.get("result", "")
+                    # Only print for the first result or results with batch info to avoid spam
+                    batch_info = update.get("batch_info")
+                    node_index = update.get("node_index", 1)
+                    if node_index == 1 or batch_info is not None:
+                        print(f'🔍 Semantic search "{query}" | {results}')
+                        print("-" * 40)
+
+                elif tool_name == "list_files":
+                    directory = update.get("directory", "")
+                    files_count = update.get("count", 0)
+                    print(f"📁 Listed {files_count} files in {directory}")
+                    print("-" * 40)
+
+                elif tool_name == "search_keyword":
+                    keyword = update.get("keyword", "")
+                    matches_found = update.get("matches_found")
+                    print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
+                    print("-" * 40)
+
+                elif tool_name == "attempt_completion":
+                    result = update.get("result", "")
+                    print(f"🎉 Analysis Completed")
+                    if result:
+                        print(f"   Result: {result}")
+                    print("-" * 40)
+
+            elif update_type == "analysis_complete":
+                print("✅ Analysis Complete")
+
+            elif update_type == "cross_index_success":
+                analysis_result = update.get("analysis_result")
+                matching_result = update.get("matching_result", {})
+                iteration = update.get("iteration", 0)
+                print(
+                    f"🎉 Cross-indexing completed successfully in {iteration} iterations"
+                )
+
+                # Display results
+                incoming_count = len(analysis_result.get("incoming_connections", []))
+                outgoing_count = len(analysis_result.get("outgoing_connections", []))
+
+                print(f"📊 Analysis Results:")
+                print(f"   ⬇️  Incoming connections: {incoming_count}")
+                print(f"   ⬆️  Outgoing connections: {outgoing_count}")
+                break
+
+            elif update_type == "tool_error":
+                error = update.get("error", "Unknown error")
+                print(f"⚠️  Tool error: {error}")
+
+            elif update_type == "iteration_error":
+                error = update.get("error", "Unknown error")
+                iteration = update.get("iteration", 0)
+                print(f"⚠️  Error in iteration {iteration}: {error}")
+
+            elif update_type == "analysis_error":
+                error = update.get("error", "Unknown error")
+                print(f"⚠️  Analysis error: {error}, retrying...")
+
+            elif update_type == "cross_index_failure":
+                error = update.get("error", "Analysis failed")
+                print(f"❌ Cross-indexing failed: {error}")
+                analysis_result = None
+                break
+
+            elif update_type == "user_cancelled":
+                print(f"❌ User cancelled the operation")
+                analysis_result = None
+                break
+
+            elif update_type == "cross_index_error":
+                error = update.get("error", "Critical error")
+                print(f"❌ Critical error: {error}")
+                analysis_result = None
+                break
+
+        print("\n🎉 Cross-Index Analysis Completed!")
+        print("=" * 80)
+
+    except Exception as e:
+        logger.error(f"Error during cross-indexing: {e}")
+        print(f"❌ Unexpected error: {e}")
+
+
 def handle_version_command(args) -> None:
     """Handle version command to show version information."""
     try:
         # Get version from __init__.py
         version = get_version_from_init()
-        
+
         print(f"\n📦 Sutra Knowledge CLI Version: {version}")
         print("🔧 AI-Powered Repository Assistant")
         print("📚 Intelligent code analysis, indexing, and assistance")
-        
+
         # Show Python version
         import sys
+
         print(f"🐍 Python Version: {sys.version.split()[0]}")
-        
+
         # Show current directory
         from pathlib import Path
+
         print(f"📁 Current Directory: {Path.cwd()}")
-        
+
         # Show configuration info
         import os
+
         config_file = os.getenv("SUTRAKNOWLEDGE_CONFIG", "Not set")
         if config_file != "Not set":
             config_name = Path(config_file).name
             print(f"⚙️  Configuration: {config_name}")
-        
+
         print()
-        
+
     except Exception as e:
         print(f"❌ Error getting version information: {str(e)}")
         sys.exit(1)

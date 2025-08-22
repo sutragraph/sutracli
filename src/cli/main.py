@@ -1,8 +1,86 @@
 #!/usr/bin/env python3
 """Main entry point for the Sutra Knowledge application."""
 
+import os
 import sys
 from pathlib import Path
+
+# Set tokenizers parallelism before any imports to avoid warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+root_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(root_dir))
+
+# Set up environment configuration
+def setup_environment():
+    """Set up environment configuration based on installation type."""
+    # Check if we're in an installed environment
+    sutra_home = Path.home() / ".sutra"
+    if sutra_home.exists() and (sutra_home / "config" / "system.json").exists():
+        # We're in an installed environment - use system config
+        os.environ["SUTRAKNOWLEDGE_CONFIG"] = str(sutra_home / "config" / "system.json")
+    elif "SUTRAKNOWLEDGE_CONFIG" not in os.environ:
+        # We're in development - use local config if available
+        local_config = root_dir / "configs" / "local.json"
+        if local_config.exists():
+            os.environ["SUTRAKNOWLEDGE_CONFIG"] = str(local_config)
+
+def setup_baml_environment():
+    """Set up BAML environment variables from config at module level."""
+    try:
+        # Import here to avoid circular imports
+        from config.settings import get_config
+
+        # Use the config function to get loaded config
+        config = get_config()
+
+        # Environment variable mapping for each provider
+        ENV_VAR_MAPPING = {
+            "aws": {
+                "AWS_ACCESS_KEY_ID": "access_key_id",
+                "AWS_SECRET_ACCESS_KEY": "secret_access_key",
+                "AWS_MODEL_ID": "model_id",
+                "AWS_REGION": "region",
+            },
+            "openai": {"OPENAI_API_KEY": "api_key", "OPENAI_MODEL_ID": "model_id"},
+            "anthropic": {
+                "ANTHROPIC_API_KEY": "api_key",
+                "ANTHROPIC_MODEL_ID": "model_id",
+            },
+            "gcp": {"GOOGLE_API_KEY": "api_key", "GOOGLE_MODEL_ID": "model_id"},
+        }
+
+        # Check if config has llm attribute
+        if not hasattr(config, "llm") or not config.llm:
+            return
+
+        provider = config.llm.provider.lower()
+        if provider not in ENV_VAR_MAPPING:
+            return
+
+        # Get provider-specific config
+        provider_config = getattr(config.llm, provider, None)
+        if not provider_config:
+            return
+
+        # Set environment variables
+        env_mapping = ENV_VAR_MAPPING[provider]
+        for env_var, config_key in env_mapping.items():
+            # Only set if not already set and config value exists
+            if env_var not in os.environ:
+                value = getattr(provider_config, config_key, None)
+                if value:
+                    os.environ[env_var] = str(value)
+
+        os.environ["BAML_LOG"] = "WARN"
+
+    except Exception as e:
+        # Silent fail - don't break CLI if environment setup fails
+        pass
+
+# Set up environment before importing other modules
+setup_environment()
+setup_baml_environment()
 
 from cli.parser import setup_argument_parser
 from cli.utils import setup_logging
@@ -20,7 +98,9 @@ from cli.commands import (
     handle_web_search_command,
     handle_web_scrap_command,
     handle_version_command,
+    handle_cross_indexing_command,
 )
+from cli.phase5_command import handle_run_phase5_command
 from cli.utils import (
     process_multiple_projects,
     load_project_config,
@@ -46,6 +126,15 @@ def main():
 
     if hasattr(args, "log_level"):
         setup_logging(args.log_level)
+        # Set debug mode flag if DEBUG level is specified
+        if args.log_level == "DEBUG":
+            from utils.debug_utils import set_debug_mode, set_auto_mode
+
+            set_debug_mode(True)
+
+            # Set auto mode flag if --auto is specified with DEBUG level
+            if hasattr(args, "auto") and args.auto:
+                set_auto_mode(True)
 
     try:
         if args.command == "single":
@@ -83,6 +172,12 @@ def main():
 
         elif args.command == "version":
             handle_version_command(args)
+
+        elif args.command == "cross-indexing":
+            handle_cross_indexing_command(args)
+
+        elif args.command == "run-phase5":
+            handle_run_phase5_command()
 
         else:
             logger.error(f"Unknown command: {args.command}")

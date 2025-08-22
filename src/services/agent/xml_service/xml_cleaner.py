@@ -15,9 +15,14 @@ class XMLCleaner:
         (re.compile(r"(<diff>)(.*?)(</diff>)", re.DOTALL), "diff"),
         (re.compile(r"(<content>)(.*?)(</content>)", re.DOTALL), "content"),
         (re.compile(r"(<command>)(.*?)(</command>)", re.DOTALL), "command"),
+        (re.compile(r"(<result>)(.*?)(</result>)", re.DOTALL), "result"),
+        (re.compile(r"(<keyword>)(.*?)(</keyword>)", re.DOTALL), "keyword"),
+        (re.compile(r"(<thinking>)(.*?)(</thinking>)", re.DOTALL), "thinking"),
     ]
 
-    PROBLEMATIC_CHARS = ["<<<<<<<", ">>>>>>>", "=======", "-------", "<", ">", "%"]
+    PROBLEMATIC_CHARS = ["<<<<<<<", ">>>>>>>", "=======", "-------", "<", ">", "%", "&", "'", '"', "\\"]
+
+
 
     def clean_xml_spacing(self, text: str) -> str:
         """Clean and fix common XML spacing issues."""
@@ -31,6 +36,9 @@ class XMLCleaner:
 
         # Remove trailing spaces before >
         text = self.TRAILING_SPACE_PATTERN.sub(">", text)
+
+        # Simple XML escaping for ampersands that aren't already escaped
+        text = re.sub(r'&(?!(?:amp|lt|gt|quot|apos);)', '&amp;', text)
 
         # Wrap problematic content in CDATA
         return self.wrap_diff_content_in_cdata(text)

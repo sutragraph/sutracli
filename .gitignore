@@ -138,3 +138,6 @@ certs/
 
 # models
 models/all-MiniLM-L12-v2
+
+# BAML - because it is generated
+baml_client/

@@ -26,6 +26,7 @@ from cli.commands import (
     handle_web_search_command,
     handle_web_scrap_command,
     handle_version_command,
+    handle_cross_indexing_command,
 )
 from cli.utils import (
     process_multiple_projects,
@@ -52,6 +53,15 @@ def main():
 
     if hasattr(args, "log_level"):
         setup_logging(args.log_level)
+        # Set debug mode flag if DEBUG level is specified
+        if args.log_level == "DEBUG":
+            from utils.debug_utils import set_debug_mode, set_auto_mode
+
+            set_debug_mode(True)
+
+            # Set auto mode flag if --auto is specified with DEBUG level
+            if hasattr(args, "auto") and args.auto:
+                set_auto_mode(True)
 
     try:
         if args.command == "single":
@@ -86,6 +96,9 @@ def main():
 
         elif args.command == "version":
             handle_version_command(args)
+
+        elif args.command == "cross-indexing":
+            handle_cross_indexing_command(args)
 
         else:
             logger.error(f"Unknown command: {args.command}")

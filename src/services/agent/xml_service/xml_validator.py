@@ -9,7 +9,7 @@ class XMLValidator:
 
     OPENING_TAG_PATTERN = re.compile(r"<(\w+)(?:\s[^>]*?)?>")
     CLOSING_TAG_PATTERN = re.compile(r"</(\w+)>")
-    SPECIAL_CHARS_PATTERN = re.compile(r"[<>&](?![#\w]+;)")
+    SPECIAL_CHARS_PATTERN = re.compile(r"[<>&](?![#\w]+;|!\[CDATA\[)")
     MALFORMED_ATTRS_PATTERN = re.compile(r'\w+\s*=\s*[^"\'][^>\s]*(?!["\'])')
 
     def validate_xml_structure(self, xml_text: str) -> bool:

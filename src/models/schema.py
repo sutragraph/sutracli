@@ -1,122 +1,84 @@
 """
-Pydantic models for tree-sitter JSON parsing and SQLite graph representation.
+Pydantic models for database and application-level operations.
+Contains all core data models for the indexer and application.
 """
 
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
+from enum import Enum
+from pathlib import Path
 
+class BlockType(Enum):
+    """Types of code blocks that can be extracted."""
 
-class CodeNode(BaseModel):
-    """Represents a node in the parsed tree-sitter JSON."""
+    ENUM = "enum"
+    VARIABLE = "variable"
+    FUNCTION = "function"
+    CLASS = "class"
+    INTERFACE = "interface"
+    TYPE = "type"
+    IMPORT = "import"
+    EXPORT = "export"
+
+class CodeBlock(BaseModel):
+    """Represents a code block extracted from AST."""
+
+    type: BlockType
+    name: str
+    content: str
+    start_line: int
+    end_line: int
+    start_col: int
+    end_col: int
+    id: int = 0  # Will be set by extractor
+    children: List["CodeBlock"] = Field(default_factory=list)
+
+    # Database operation fields - used during insertion to maintain relationships
+    file_id: Optional[int] = None  # ID of the file this block belongs to
+    parent_block_id: Optional[int] = None  # ID of the parent block for nested blocks
+
+class Relationship(BaseModel):
+    """Represents a relationship between two files."""
+
+    source_id: int  # ID of the source file
+    target_id: int  # ID of the target file
+    import_content: str  # The original import statement
+    symbols: List[str] = []  # Symbols imported (optional, default empty list)
+    type: str = "import"  # Type of relationship (default: import)
+
+class FileData(BaseModel):
+    """Represents file data from code extraction."""
     id: int
-    type: str
-    name: Optional[str] = None
-    file: Optional[str] = None
-    path: Optional[str] = None
-    lines: Optional[List[int]] = None  # Will store [start_line, end_line]
-    content: Optional[str] = None  # Changed from code_snippet to content
-    content_hash: Optional[str] = None  # Added content_hash field from tree-sitter
+    file_path: str
+    language: str
+    content: str
+    content_hash: str
+    blocks: List[CodeBlock]
+    relationships: List[Relationship]
+    unsupported: bool = False  # True if file type is not supported by any extractor
 
-    # Project identification fields
-    project_name: Optional[str] = None
-    project_version: Optional[str] = None
+class ExtractionData(BaseModel):
+    """Container for complete code extraction data from JSON export."""
+    metadata: Dict[str, Any]  # Export metadata (timestamp, version, etc.)
+    files: Dict[str, FileData]  # file_path -> file data
 
-    # Allow additional fields from tree-sitter
-    model_config = {"extra": "allow"}
+class File(BaseModel):
+    """Represents a file in the database with project association."""
 
-
-class CodeEdge(BaseModel):
-    """Represents an edge/relationship in the parsed tree-sitter JSON."""
-    from_id: int
-    to_id: Optional[int] = None  # Made optional to handle external references
-    type: str
-
-    # Project identification fields
-    project_name: Optional[str] = None
-
-    # Allow additional fields from tree-sitter
-    model_config = {"extra": "allow"}
-
+    id: int  # CRC32 hash ID
+    project_id: int  # Database foreign key
+    file_path: str
+    language: str
+    content: str
+    content_hash: str
 
 class Project(BaseModel):
-    """Represents a project/codebase being analyzed."""
+    """Represents a project/codebase in the database."""
 
+    id: int  # Database ID
     name: str
-    version: Optional[str] = "1.0.0"
-    description: Optional[str] = None
-    language: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    source_file: Optional[str] = None  # Path to the JSON file
+    path: str
+    created_at: str
+    updated_at: str
 
-
-class ParsedCodebase(BaseModel):
-    """Container for parsed tree-sitter data."""
-    nodes: List[CodeNode]
-    edges: List[CodeEdge]
-    statistics: Optional[Dict[str, Any]] = None
-    project: Optional[Project] = None
-
-
-class SQLiteNode(BaseModel):
-    """Represents a node ready for SQLite insertion."""
-
-    node_id: int  # Original tree-sitter node ID
-    project_id: int  # Reference to project table
-    node_type: str
-    name: Optional[str] = None
-    file_hash_id: Optional[int] = None
-    lines: Optional[List[int]] = None  # [start_line, end_line]
-    code_snippet: Optional[str] = None
-    properties: Optional[Dict[str, Any]] = None
-
-
-class SQLiteRelationship(BaseModel):
-    """Represents a relationship ready for SQLite insertion."""
-
-    from_node_id: int
-    to_node_id: Optional[int]
-    project_id: int  # Reference to project table
-    relationship_type: str
-    properties: Optional[Dict[str, Any]] = Field(default_factory=dict)
-
-
-class GraphData(BaseModel):
-    """Container for processed graph data ready for database insertion."""
-    nodes: List[SQLiteNode]
-    relationships: List[SQLiteRelationship]
-
-
-class FileHash(BaseModel):
-    """Represents a file hash entry for tracking file content changes."""
-
-    file_hash_id: Optional[int] = None 
-    project_id: int  
-    file_path: str
-    content_hash: str  
-    file_size: Optional[int] = None
-    language: Optional[str] = None  # Added language field
-    name: Optional[str] = None  # Added name field (filename)
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-
-class ProjectInfo(BaseModel):
-    """Information about a project in the multi-project system."""
-    name: str
-    description: Optional[str] = None
-    source_files: List[str] = Field(default_factory=list)
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    version: Optional[str] = None
-    language: Optional[str] = None
-    repository_url: Optional[str] = None
-
-    # Additional metadata
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
-
-class MultiProjectData(BaseModel):
-    """Container for multiple projects data."""
-    projects: Dict[str, ProjectInfo]
-    graph_data: Dict[str, GraphData]  # project_name -> GraphData
+CodeBlock.model_rebuild()
