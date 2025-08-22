@@ -205,13 +205,35 @@ def _process_agent_updates(updates_generator) -> None:
             elif tool_name == "list_files":
                 directory = update.get("directory", "")
                 files_count = update.get("count", 0)
-                print(f"📁 Listed {files_count} files in {directory}")
+                project_name = update.get("project_name")
+                data = update.get("data", "")
+
+                if project_name:
+                    print(f"📁 [{project_name}] Listed {files_count} files in {directory}")
+                else:
+                    print(f"📁 Listed {files_count} files in {directory}")
+
+                # Display the actual file list content
+                if data:
+                    print(data)
+
                 print("-" * 40)
 
             elif tool_name == "search_keyword":
                 keyword = update.get("keyword", "")
                 matches_found = update.get("matches_found")
-                print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
+                project_name = update.get("project_name")
+                data = update.get("data", "")
+
+                if project_name:
+                    print(f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}')
+                else:
+                    print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
+
+                # Display the actual search results content
+                if data:
+                    print(data)
+
                 print("-" * 40)
 
         elif update_type == "too_error":

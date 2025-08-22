@@ -651,7 +651,7 @@ class VectorStore:
                     ORDER BY distance
                     LIMIT ?
                 """
-                query_params: Tuple[Any, ...] = (query_vector, project_id, limit)
+                query_params: Tuple[Any, ...] = (project_id, query_vector, limit)
             else:
                 query_sql = """
                     SELECT rowid, node_id, project_id, chunk_index, chunk_start_line, chunk_end_line, distance

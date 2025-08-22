@@ -121,6 +121,13 @@ IGNORE_FILE_PATTERNS: List[str] = [
     "ehthumbs.db",
     "Desktop.ini",
     "$RECYCLE.BIN",
+    ".editorconfig",
+    ".eslintrc*",
+    ".prettierrc*",
+    ".stylelintrc*",
+    ".babelrc*",
+    ".npmrc",
+    ".yarnrc",
 ]
 
 

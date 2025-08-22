@@ -568,7 +568,8 @@ class GraphOperations:
                     oc.snippet_lines as sender_snippet_lines,
                     sender_file.file_path as sender_file_path,
                     sender_file.language as sender_language,
-
+                    sender_project.name as sender_project,
+    
                     -- Receiver (incoming) details
                     ic.id as receiver_id,
                     ic.description as receiver_description,
@@ -576,14 +577,17 @@ class GraphOperations:
                     ic.technology_name as receiver_technology,
                     ic.snippet_lines as receiver_snippet_lines,
                     receiver_file.file_path as receiver_file_path,
-                    receiver_file.language as receiver_language
-
+                    receiver_file.language as receiver_language,
+                    receiver_project.name as receiver_project
+    
                 FROM connection_mappings cm
                 JOIN outgoing_connections oc ON cm.sender_id = oc.id
                 JOIN incoming_connections ic ON cm.receiver_id = ic.id
                 LEFT JOIN files sender_file ON oc.file_id = sender_file.id
                 LEFT JOIN files receiver_file ON ic.file_id = receiver_file.id
-
+                LEFT JOIN projects sender_project ON sender_file.project_id = sender_project.id
+                LEFT JOIN projects receiver_project ON receiver_file.project_id = receiver_project.id
+    
                 WHERE (oc.file_id = ? OR ic.file_id = ?)
                 ORDER BY cm.match_confidence DESC, cm.created_at DESC
             """
@@ -969,6 +973,8 @@ class GraphOperations:
                         "end_line": result["end_line"],
                         "parent_block_id": result["parent_block_id"],
                         "file_path": result["file_path"],
+                        "project_name": result["project_name"],
+                        "project_id": result["project_id"],
                         "hierarchy_path": hierarchy_path,
                     }
                 )

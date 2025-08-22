@@ -398,6 +398,15 @@ def execute_structured_database_query(
                 # Process metadata-only results for this batch
                 processed_batch = process_metadata_only_results(batch, len(batch))
 
+                # Extract project information from first item in batch
+                project_name = None
+                if batch:
+                    first_item = batch[0]
+                    if hasattr(first_item, "get"):
+                        project_name = first_item.get("project_name")
+                    elif isinstance(first_item, dict) and "project_name" in first_item:
+                        project_name = first_item["project_name"]
+
                 # Ensure processed_batch is a string
                 if isinstance(processed_batch, list):
                     processed_batch = "\n".join(str(item) for item in processed_batch)
@@ -415,7 +424,7 @@ def execute_structured_database_query(
                     "current_batch": batch_num,
                     "total_batches": len(batches),
                     "has_more_batches": batch_num < len(batches),
-                }
+                    "project_name": project_name,}
             return
 
         elif len(results) == 1:
@@ -597,7 +606,7 @@ def execute_structured_database_query(
                         "data": result_data,
                         "include_code": include_code,
                         "total_nodes": 1,
-                    }
+                        "project_name": result_dict.get("project_name"),}
                     return
             else:
                 # No code content available
@@ -617,7 +626,7 @@ def execute_structured_database_query(
                     "data": result_data,
                     "include_code": include_code,
                     "total_nodes": 1,
-                }
+                        "project_name": result_dict.get("project_name"),}
                 return
 
         else:

@@ -168,7 +168,8 @@ def beautify_node_result(
             sender_key = (
                 mapping.get("sender_file_path", "unknown"),
                 mapping.get("sender_code_snippet", ""),
-                mapping.get("sender_snippet_lines", "")
+                mapping.get("sender_snippet_lines", ""),
+                mapping.get("sender_project", "unknown project")
             )
             if sender_key not in sender_groups:
                 sender_groups[sender_key] = []
@@ -176,9 +177,10 @@ def beautify_node_result(
 
         group_num = 1
         for sender_key, mappings in sender_groups.items():
-            sender_file_path, sender_code_snippet, sender_snippet_lines = sender_key
+            sender_file_path, sender_code_snippet, sender_snippet_lines, sender_project = sender_key
 
-            result_parts.append(f"{group_num}. {sender_file_path}")
+            sender_project = mappings[0].get("sender_project", "unknown project")
+            result_parts.append(f"{group_num}. {sender_file_path} [project: {sender_project}]")
 
             # Add sender code snippet with line numbers (only once per group)
             if sender_code_snippet and sender_code_snippet.strip():
@@ -198,7 +200,7 @@ def beautify_node_result(
 
             # Add single arrow with connection type for the group
             connection_type = mappings[0].get("connection_type", "unknown")
-            result_parts.append(f"   ↓ [{connection_type}]")
+            result_parts.append(f"\n   ↓ [{connection_type}]")
             result_parts.append("")
 
             # Add all targets for this sender
@@ -207,7 +209,8 @@ def beautify_node_result(
                 receiver_code_snippet = mapping.get("receiver_code_snippet", "")
                 receiver_snippet_lines = mapping.get("receiver_snippet_lines", "")
 
-                result_parts.append(f"   {receiver_file_path}")
+                receiver_project = mapping.get("receiver_project", "unknown project")
+                result_parts.append(f"   {receiver_file_path} [project: {receiver_project}]")
 
                 # Add receiver code snippet with line numbers
                 if receiver_code_snippet and receiver_code_snippet.strip():

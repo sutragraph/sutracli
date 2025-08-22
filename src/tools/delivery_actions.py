@@ -118,6 +118,16 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
             # Combine data from all items
             final_data = "\n\n".join(str(item.get("data", "")) for item in batch_items)
 
+            # Add project header if project_name is available in any of the batch items
+            project_name = None
+            for item in batch_items:
+                if item.get("project_name"):
+                    project_name = item.get("project_name")
+                    break
+
+            if project_name:
+                final_data = f"PROJECT: {project_name}\n{final_data}"
+
             event = {
                 "tool_name": "semantic_search",
                 "type": "tool_use",
@@ -126,6 +136,7 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
                 "data": final_data,
                 "code_snippet": True,
                 "total_nodes": total_nodes,
+                "project_name": project_name,
                 "batch_info": {
                     "delivered_count": delivered_count,
                     "remaining_count": remaining_count,
@@ -183,6 +194,16 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
         # Combine data from all items
         combined_data = "\n\n".join(str(item.get("data", "")) for item in batch_items)
 
+        # Add project header if project_name is available in any of the batch items
+        project_name = None
+        for item in batch_items:
+            if item.get("project_name"):
+                project_name = item.get("project_name")
+                break
+
+        if project_name:
+            combined_data = f"PROJECT: {project_name}\n{combined_data}"
+
         event = {
             "type": "tool_use",
             "tool_name": "semantic_search",
@@ -191,6 +212,7 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
             "data": combined_data,
             "code_snippet": True,
             "total_nodes": total_nodes,
+            "project_name": project_name,
             "batch_info": {
                 "delivered_count": delivered_count,
                 "remaining_count": remaining_count,
@@ -619,9 +641,15 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         if next_item:
             # Update the content item with delivery metadata
             content_item.update(next_item)
-            return content_item
-        else:
-            return content_item
+
+        # Add project header if project information is available
+        project_name = content_item.get("project_name")
+        if project_name:
+            data = content_item.get("data", "")
+            if data:
+                content_item["data"] = f"PROJECT: {project_name}\n{data}"
+
+        return content_item
 
     def check_pending_delivery(
         self, action_type: str, action_parameters: Dict[str, Any]
@@ -656,6 +684,64 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         }
 
 
+class ListFilesDeliveryAction(BaseDeliveryAction):
+    """Delivery action for list_files tool."""
+
+    def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
+        """List files doesn't support fetch_next - return None."""
+        return None
+
+    def register_and_deliver_first_batch(
+        self,
+        action_type: str,
+        action_parameters: Dict[str, Any],
+        delivery_items: List[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """Handle single result delivery for list_files."""
+        if not delivery_items:
+            return None
+
+        # List files should only have one result item
+        result_item = delivery_items[0]
+
+        # Add project header if project_name is available
+        project_name = result_item.get("project_name")
+        if project_name:
+            data = result_item.get("data", "")
+            result_item["data"] = f"PROJECT: {project_name}\n{data}"
+
+        return result_item
+
+
+class SearchKeywordDeliveryAction(BaseDeliveryAction):
+    """Delivery action for search_keyword tool."""
+
+    def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
+        """Search keyword doesn't support fetch_next - return None."""
+        return None
+
+    def register_and_deliver_first_batch(
+        self,
+        action_type: str,
+        action_parameters: Dict[str, Any],
+        delivery_items: List[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """Handle single result delivery for search_keyword."""
+        if not delivery_items:
+            return None
+
+        # Search keyword should only have one result item
+        result_item = delivery_items[0]
+
+        # Add project header if project_name is available
+        project_name = result_item.get("project_name")
+        if project_name:
+            data = result_item.get("data", "")
+            result_item["data"] = f"PROJECT: {project_name}\n{data}"
+
+        return result_item
+
+
 class DefaultDeliveryAction(BaseDeliveryAction):
     """Default delivery action for tools that don't need special delivery handling."""
 
@@ -668,11 +754,11 @@ class DefaultDeliveryAction(BaseDeliveryAction):
 _DELIVERY_REGISTRY = {
     ToolName.SEMANTIC_SEARCH: SemanticSearchDeliveryAction,
     ToolName.DATABASE_SEARCH: DatabaseSearchDeliveryAction,
+    ToolName.SEARCH_KEYWORD: SearchKeywordDeliveryAction,
+    ToolName.LIST_FILES: ListFilesDeliveryAction,
     # Other tools use default (no-op) delivery
-    ToolName.SEARCH_KEYWORD: DefaultDeliveryAction,
     ToolName.APPLY_DIFF: DefaultDeliveryAction,
     ToolName.COMPLETION: DefaultDeliveryAction,
-    ToolName.LIST_FILES: DefaultDeliveryAction,
     ToolName.TERMINAL_COMMANDS: DefaultDeliveryAction,
     ToolName.WEB_SCRAP: DefaultDeliveryAction,
     ToolName.WEB_SEARCH: DefaultDeliveryAction,

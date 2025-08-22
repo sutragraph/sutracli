@@ -3,6 +3,7 @@ from loguru import logger
 from typing import Iterator, Dict, Any, List, Optional
 from embeddings import get_vector_store
 from graph.graph_operations import GraphOperations
+from graph.sqlite_client import SQLiteConnection
 from models.agent import AgentAction
 from tools.utils.constants import (
     SEMANTIC_SEARCH_CONFIG,
@@ -13,6 +14,7 @@ from tools.utils.enriched_context_formatter import (
     beautify_enriched_context_auto,
     format_chunk_with_enriched_context,
 )
+
 
 def _perform_vector_search(
     vector_store: VectorStore, query: str, project_id: Optional[int] = None
@@ -141,6 +143,7 @@ def _process_sequential_chunk_results(
     vector_results: List[Dict[str, Any]],
     query: str,
     action_parameters: Dict[str, Any],
+    project_name: Optional[str] = None,
 ) -> Iterator[Dict[str, Any]]:
     """Process chunk-specific results for sequential sending."""
 
@@ -166,7 +169,11 @@ def _process_sequential_chunk_results(
                 # For code blocks: Always show full block for better context
                 # Even if the block was chunked for embedding efficiency
                 beautified_result = beautify_enriched_context_auto(
-                    enriched_context, i, include_code=True, total_nodes=total_nodes, node_id=result["node_id"]
+                    enriched_context,
+                    i,
+                    include_code=True,
+                    total_nodes=total_nodes,
+                    node_id=result["node_id"],
                 )
             elif (
                 result["node_id"].startswith("file_")
@@ -187,17 +194,25 @@ def _process_sequential_chunk_results(
                         chunk_code,
                         i,
                         total_nodes,
-                        node_id=result["node_id"]
+                        node_id=result["node_id"],
                     )
                 else:
                     # No chunk code available, use full context
                     beautified_result = beautify_enriched_context_auto(
-                        enriched_context, i, include_code=True, total_nodes=total_nodes, node_id=result["node_id"]
+                        enriched_context,
+                        i,
+                        include_code=True,
+                        total_nodes=total_nodes,
+                        node_id=result["node_id"],
                     )
             else:
                 # No chunk boundaries or unknown type, use full context
                 beautified_result = beautify_enriched_context_auto(
-                    enriched_context, i, include_code=True, total_nodes=total_nodes, node_id=result["node_id"]
+                    enriched_context,
+                    i,
+                    include_code=True,
+                    total_nodes=total_nodes,
+                    node_id=result["node_id"],
                 )
 
             # Yield processed result for delivery system to handle batching
@@ -211,6 +226,7 @@ def _process_sequential_chunk_results(
                 "data": beautified_result,
                 "code_snippet": True,
                 "node_id": result["node_id"],
+                "project_name": project_name,
                 "chunk_info": {
                     "start_line": chunk_start_line,
                     "end_line": chunk_end_line,
@@ -228,29 +244,47 @@ def _process_sequential_chunk_results(
                 "data": f"❌ Node {i}/{total_nodes}: Could not retrieve enriched context for {result['node_id']}.",
                 "code_snippet": True,
                 "node_id": result["node_id"],
+                "project_name": project_name,
             }
 
     if not deduplicated_results:
         # No results to return - send completion signal
+        no_results_msg = "No deliverable items found."
+
         yield {
             "tool_name": "semantic_search",
             "type": "tool_use",
             "query": query,
             "result": f"Found {len(deduplicated_results)} nodes",
-            "data": "No deliverable items found.",
+            "data": no_results_msg,
             "code_snippet": True,
             "total_nodes": total_nodes,
+            "project_name": project_name,
         }
 
 
 def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
     logger.debug(f"Executing semantic search action: {action}")
 
-    # Extract project_id from action parameters if provided
-    project_id = action.parameters.get("project_id")
-
     try:
+        project_name = action.parameters.get("project_name")
         query = action.parameters.get("query", "")
+
+        # Convert project_name to project_id if provided
+        project_id = None
+        if project_name:
+            db_connection = SQLiteConnection()
+            project = db_connection.get_project(project_name)
+            if project:
+                project_id = project.id
+                yield {
+                    "type": "info",
+                    "message": f"Searching in project: {project_name}",
+                    "tool_name": "semantic_search",
+                    "project_name": project_name,
+                }
+            else:
+                raise Exception(f"Project '{project_name}' not found")
 
         # Initialize vector store
         vector_store = get_vector_store()
@@ -261,6 +295,8 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
 
         # Handle empty results
         if total_nodes == 0:
+            no_results_msg = "No results found for the query."
+
             yield {
                 "tool_name": "semantic_search",
                 "type": "tool_use",
@@ -268,7 +304,8 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
                 "result": f"Found {total_nodes} nodes",
                 "code_snippet": True,
                 "total_nodes": total_nodes,
-                "data": "No results found for the query.",
+                "data": no_results_msg,
+                "project_name": project_name,
             }
             return
 
@@ -278,11 +315,13 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
             vector_results,
             query,
             action.parameters,
+            project_name,
         )
     except Exception as e:
         logger.error(f"Semantic search error: {e}")
         yield {
             "tool_name": "semantic_search",
-            "type": "semantic_search_error",
+            "type": "tool_error",
             "error": str(e),
+            "project_name": action.parameters.get("project_name"),
         }

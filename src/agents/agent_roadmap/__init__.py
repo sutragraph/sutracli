@@ -9,6 +9,7 @@ without providing implementation details.
 from typing import List
 
 from agents.agent_roadmap.prompts.agent_config import AGENT_CONFIG
+from agents.agent_roadmap.prompts.project_context import PROJECT_CONTEXT
 from agents.agent_roadmap.prompts.workflow import WORKFLOW
 from agents.agent_roadmap.prompts.constraints import CONSTRAINTS
 from agents.agent_roadmap.tool_list import TOOL_LIST
@@ -17,7 +18,6 @@ from agents.agent_roadmap.tool_list import TOOL_LIST
 def get_base_system_prompt() -> str:
     """Get the complete system prompt for the Roadmap Agent."""
     from agents.shared.sutra_memory import SUTRA_MEMORY
-    from agents.shared.workspace_structure import WORKSPACE_STRUCTURE
     from agents.shared.system_info import SYSTEM_INFO
     from tools import get_tool_prompt, ToolName
 
@@ -30,6 +30,8 @@ def get_base_system_prompt() -> str:
 
     # Combine all sections in logical order
     complete_prompt = f"""{AGENT_CONFIG}
+    
+{PROJECT_CONTEXT}
 
 {tools_section}
 
@@ -40,8 +42,6 @@ def get_base_system_prompt() -> str:
 {CONSTRAINTS}
 
 {SYSTEM_INFO}
-
-{WORKSPACE_STRUCTURE}
 
 ===="""
 

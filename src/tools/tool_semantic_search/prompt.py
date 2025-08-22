@@ -5,16 +5,19 @@ Description: Find similar implementations and patterns in codebase using semanti
 
 Parameters:
 - query: (required) The search terms to find similar implementations - describe what you're looking for in natural language
+- project_name: (optional) Name of the project to search within. If not provided, searches across all projects
 - fetch_next_code: (optional) Set to true to fetch next chunks of results when more are available
 
 Usage:
 <semantic_search>
 <query>search terms here</query>
+<project_name>project_name_here</project_name>
 <fetch_next_code>true|false</fetch_next_code>
 </semantic_search>
 
 Parameter Details:
 - query: Use descriptive terms that capture the concept you're looking for (e.g., "user authentication", "file upload handler", "database connection setup")
+- project_name: Specify a project name to limit search scope to that project only. Useful when you want to find patterns within a specific codebase
 - fetch_next_code: Only use when the system explicitly tells you there are more results available - do not use preemptively
 
 Notes:
@@ -44,7 +47,13 @@ Examples:
 <query>database connection setup mongodb</query>
 </semantic_search>
 
-5. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
+5. Finding patterns in a specific project:
+<semantic_search>
+<query>user authentication login</query>
+<project_name>my_web_app</project_name>
+</semantic_search>
+
+6. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
 <semantic_search>
 <query>database connection setup mongodb</query>
 <fetch_next_code>true</fetch_next_code>

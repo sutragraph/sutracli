@@ -20,7 +20,7 @@ Optional: fetch_next_code
 
 
 Notes:
-- All file paths should be relative to the current workspace directory ({current_dir})
+- Use complete file paths for all file operations
 - When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_code command - if the user does not tell you to use it, do not use it
 - Most queries now use file_path directly - the system handles internal ID conversion automatically
 - For block-specific operations, you may need block_id (obtained from GET_FILE_BLOCK_SUMMARY)
@@ -44,13 +44,13 @@ Examples:
 1. Get file information by path:
 <database>
 <query_name>GET_FILE_BY_PATH</query_name>
-<file_path>src/utils/helpers.py</file_path>
+<file_path>/home/user/project/src/utils/helpers.py</file_path>
 </database>
 
 2. Get specific section of a file:
 <database>
 <query_name>GET_FILE_BY_PATH</query_name>
-<file_path>src/utils/helpers.py</file_path>
+<file_path>/home/user/project/src/utils/helpers.py</file_path>
 <start_line>20</start_line>
 <end_line>50</end_line>
 </database>
@@ -58,7 +58,7 @@ Examples:
 3. Get all code blocks in a file:
 <database>
 <query_name>GET_FILE_BLOCK_SUMMARY</query_name>
-<file_path>src/utils/helpers.py</file_path>
+<file_path>/home/user/project/src/utils/helpers.py</file_path>
 </database>
 
 4. Get block details:
@@ -72,7 +72,7 @@ Examples:
 6. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
 <database>
 <query_name>GET_FILE_BLOCK_SUMMARY</query_name>
-<file_path>src/utils/helpers.py</file_path>
+<file_path>/home/user/project/src/utils/helpers.py</file_path>
 <fetch_next_code>true</fetch_next_code>
 </database>
 """

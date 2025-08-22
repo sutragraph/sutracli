@@ -35,7 +35,6 @@ class ActionExecutor:
         self.db_connection = SQLiteConnection()
 
         self.sutra_memory_manager = sutra_memory_manager or SutraMemoryManager()
-        self.project_id = None  # Will be set when needed
         self.context = context  # Store context for database operations
 
         # Use shared project indexer if provided, otherwise create new one
@@ -165,7 +164,6 @@ class ActionExecutor:
         try:
             # Create AgentAction from tool data
             action = self._create_agent_action(tool_name, tool_data, user_query)
-            action.parameters["project_id"] = self.project_id
 
             # Use tool name mapping from tools module
             if tool_name in TOOL_NAME_MAPPING:
@@ -195,7 +193,8 @@ class ActionExecutor:
                     if event:  # Only yield if guidance didn't filter it out
                         events.append(event)
                         # Only collect items for delivery if they don't have internal_delivery_handled flag
-                        if not event.get("internal_delivery_handled"):
+                        # and are actual tool results (not info messages)
+                        if not event.get("internal_delivery_handled") and event.get("type") == "tool_use":
                             delivery_items.append(event)
                         yield event
 
@@ -204,7 +203,7 @@ class ActionExecutor:
                 )
 
                 # Skip delivery queue registration for tools that don't need it
-                tools_without_delivery = [ToolName.LIST_FILES, ToolName.SEARCH_KEYWORD, ToolName.APPLY_DIFF,
+                tools_without_delivery = [ToolName.APPLY_DIFF,
                                         ToolName.COMPLETION, ToolName.TERMINAL_COMMANDS, ToolName.WEB_SCRAP,
                                         ToolName.WEB_SEARCH, ToolName.WRITE_TO_FILE]
 
