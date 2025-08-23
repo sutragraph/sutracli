@@ -1,5 +1,5 @@
 from loguru import logger
-from typing import Iterator, Dict, Any, List, Optional
+from typing import Iterator, Dict, Any, List
 from graph.graph_operations import GraphOperations
 import subprocess
 from tools.utils import (
@@ -18,13 +18,10 @@ from pathlib import Path
 import os
 import json
 from models.agent import AgentAction
-
 from tools.utils.constants import (
     DATABASE_QUERY_CONFIG,
     SEARCH_CONFIG,
 )
-
-# Import delivery manager functionality
 from tools.delivery_actions import (
     check_pending_delivery,
     register_delivery_queue_and_get_first_batch_with_line_limit,
