@@ -7,7 +7,7 @@ incoming and outgoing connections with detailed JSON format for database storage
 
 CONNECTION_SPLITTING_PROMPT = """CONNECTION SPLITTING ANALYSIS
 
-You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format. Additionally, include a concise top-level "summary" describing what the project does based on the collected connections.
+You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format. Additionally, include a comprehensive top-level "summary" that thoroughly describes the project's purpose, functionality, and architecture based on the collected connections.
 
 ## ABSOLUTE CRITICAL RULE - ONE CONNECTION PER SNIPPET
 
@@ -158,6 +158,16 @@ register('/pathC', handlerC);
 
 You MUST create separate entries for each registration.
 
+## PROJECT SUMMARY GUIDELINES
+
+Create a detailed summary that describes what the project does and all its connection types. Include:
+- Main business purpose and functionality
+- All connection types found (HTTP APIs, message queues, WebSockets, etc.)
+- Key workflows and data processing logic
+- Integration points with external systems
+
+Write in plain text. Example: "This is an order processing service that handles customer orders through REST APIs, processes failed orders via retry queues, sends notifications through WebSocket connections, and integrates with payment gateways for transaction validation."
+
 ## OUTPUT FORMAT
 
 Return ONLY a valid JSON response with this exact structure:
@@ -192,7 +202,7 @@ Return ONLY a valid JSON response with this exact structure:
       ]
     }
   },
-  "summary": "Brief summary of the project's purpose and main data flows based on observed connections"
+  "summary": "Comprehensive description of the project including its core purpose, main functionality, architectural patterns, key services it provides, data processing workflows, integration points with external systems, and overall business domain based on observed connections and code patterns"
 }
 ```
 
@@ -622,6 +632,8 @@ Why Included: These show actual connection usage with specific identifiers or en
 5. Separate each connection: For each connection found, create a separate JSON entry (excluding duplicates)
 6. Extract precise details: Get exact line numbers and specific details for each connection
 7. Write specific descriptions: Each description must be about ONE specific connection with resolved env values when available
+8. Analyze project comprehensively: Review all connections, patterns, and code structure to understand the complete project functionality
+9. Generate detailed summary: Create a comprehensive project description covering purpose, architecture, integrations, and business domain
 
 ## CRITICAL REQUIREMENTS
 
@@ -629,8 +641,9 @@ Why Included: These show actual connection usage with specific identifiers or en
 2. Separate all connections - never group multiple connections into one entry
 3. Use exact line numbers - be precise about where each connection is located
 4. Write specific descriptions - each description must be about one connection only
-5. Return valid JSON only - no additional text or explanations
-6. No phrases like: "including", "multiple", "various", "several", "operations for"
+5. Generate comprehensive summary - analyze all connections to create detailed project description covering purpose, functionality, architecture, and integrations
+6. Return valid JSON only - no additional text or explanations
+7. No phrases like: "including", "multiple", "various", "several", "operations for"
 
 ## RESPONSE REQUIREMENTS
 
@@ -640,6 +653,7 @@ Why Included: These show actual connection usage with specific identifiers or en
 - Use precise line numbers for each connection
 - Write specific descriptions for each connection
 - Include environment variable information in descriptions using format ENV_VAR=actual_value when values are provided
+- Generate comprehensive project summary that thoroughly describes purpose, functionality, architecture, and integration patterns
 - Group by technology and file path as shown in format
 
 Remember: If you find 26 different connections, you must create 26 separate JSON entries. No exceptions.
