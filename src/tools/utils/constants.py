@@ -4,8 +4,8 @@ Constants for search executors including query mappings and configuration.
 
 # Chunking and search configuration
 SEARCH_CONFIG = {
-    "chunking_threshold": 100,  # Lines threshold for chunking (also determines "large" code)
-    "chunk_size": 50,  # Max lines per chunk
+    "chunking_threshold": 700,  # Lines threshold for chunking (also determines "large" code)
+    "chunk_size": 600,  # Max lines per chunk
 }
 
 # Semantic search specific configuration
