@@ -86,7 +86,7 @@ def beautify_enriched_block_context(
     if start_line and end_line:
         line_count = end_line - start_line + 1
         result_parts.append(
-            f"Chunk Lines: {start_line}-{end_line} ({line_count} lines)"
+            f"Block Lines: {start_line}-{end_line} ({line_count} lines)"
         )
 
     # Hierarchy information

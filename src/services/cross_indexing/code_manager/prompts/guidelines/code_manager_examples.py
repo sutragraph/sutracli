@@ -78,5 +78,63 @@ Template for direct API calls:
 Template for wrapper function calls:
 "[Connection type] using [wrapper_function] with endpoint [actual_endpoint], method [actual_method], environment variable [env_var] configured as [actual_value] for [purpose]"
 
+5. INCOMPLETE CODE SNIPPET HANDLING - JAVA EXAMPLES
+
+CRITICAL SCENARIO: When search_keyword finds incomplete connection code that appears truncated, you must intelligently expand the line range to capture the complete connection context.
+
+Example 1: Incomplete HTTP Client Call (Java Spring)
+Search Result (Lines 15-17):
+```java
+15 |   ResponseEntity<String> response = restTemplate.exchange(
+16 |     UriComponentsBuilder.fromHttpUrl(
+17 |       configService.getBaseUrl()
+```
+
+PROBLEM: Missing complete endpoint path, HTTP method, and request configuration
+SOLUTION: Extend to lines 15-22 to capture complete connection:
+```java
+15 |   ResponseEntity<String> response = restTemplate.exchange(
+16 |     UriComponentsBuilder.fromHttpUrl(
+17 |       configService.getBaseUrl()
+18 |     ).path("/api/user/profile/{userId}")
+19 |     .buildAndExpand(userId).toUri(),
+20 |     HttpMethod.GET,
+21 |     httpEntity,
+22 |     String.class);
+```
+
+Example 2: Incomplete Message Queue Producer (Java RabbitMQ)
+Search Result (Lines 42-44):
+```java
+42 |   rabbitTemplate.convertAndSend(
+43 |     exchangeConfig.getUserExchange(),
+44 |     routingKeyBuilder.buildKey(
+```
+
+PROBLEM: Missing routing key completion and message payload
+SOLUTION: Extend to lines 42-47 to capture complete message publishing:
+```java
+42 |   rabbitTemplate.convertAndSend(
+43 |     exchangeConfig.getUserExchange(),
+44 |     routingKeyBuilder.buildKey(
+45 |       "user.profile.updated", userId
+46 |     ),
+47 |     userUpdateMessage);
+```
+
+EXTRACTION STRATEGY FOR INCOMPLETE SNIPPETS:
+- For HTTP calls: Extend until you capture method, complete URL/endpoint, and request configuration
+- For message queues: Extend until you capture exchange/queue name, routing key, and message payload structure
+- For WebSocket: Extend until you capture event type, recipient identification, and message content
+- For database calls: Extend until you capture complete query, parameters, and connection details
+- General rule: Add 3-8 additional lines based on code complexity and nesting level
+
+INTELLIGENT LINE EXTENSION GUIDELINES:
+- Simple method calls: +2-3 lines
+- Complex builder patterns: +4-6 lines
+- Nested configuration objects: +5-8 lines
+- Multi-parameter method calls: +3-5 lines
+- Always prefer capturing complete context over partial information
+
 **EXTRACT ALL connections found - no selective sampling allowed.**
 """

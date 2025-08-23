@@ -54,12 +54,25 @@ def _get_enriched_context(
         return None
 
 
+def _get_block_total_lines(enriched_context: Dict[str, Any]) -> int:
+    """Get total number of lines in a block from enriched context."""
+    if "block" not in enriched_context:
+        return 0
+
+    block_data = enriched_context["block"]
+    content = block_data.get("content", "")
+    if not content:
+        return 0
+
+    return len(content.split("\n"))
+
+
 def _extract_chunk_specific_code(
     enriched_context: Dict[str, Any],
     chunk_start_line: Optional[int],
     chunk_end_line: Optional[int],
 ) -> str:
-    """Extract chunk-specific code from enriched file context (used only for unsupported files)."""
+    """Extract chunk-specific code from enriched file context."""
     # Get content from file (blocks now use full context display)
     if "file" not in enriched_context:
         return ""
@@ -76,7 +89,9 @@ def _extract_chunk_specific_code(
 
     try:
         # Calculate relative line positions within the content
-        relative_start = max(0, (chunk_start_line or 1) - (node_start_line or 1))
+        relative_start = max(
+            0, (chunk_start_line or 1) - (node_start_line or 1)
+        )
         relative_end = (chunk_end_line or 1) - (node_start_line or 1) + 1
 
         code_lines = content.split("\n")
@@ -102,8 +117,9 @@ def _deduplicate_block_results(
     vector_results: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    Deduplicate multiple chunks from the same block, keeping the highest similarity result.
-    Files are not deduplicated since they represent different content chunks.
+    Deduplicate multiple chunks from the same block, keeping the highest
+    similarity result. Files are not deduplicated since they represent
+    different content chunks.
     """
     # Separate blocks and files
     block_results = {}
@@ -131,7 +147,9 @@ def _deduplicate_block_results(
             other_results.append(result)
 
     # Combine deduplicated results
-    deduplicated = list(block_results.values()) + file_results + other_results
+    deduplicated = (
+        list(block_results.values()) + file_results + other_results
+    )
 
     # Sort by similarity to maintain quality order
     deduplicated.sort(key=lambda x: x.get("similarity", 0.0), reverse=True)
@@ -163,22 +181,87 @@ def _process_sequential_chunk_results(
             # Extract chunk information
             chunk_start_line = result.get("chunk_start_line")
             chunk_end_line = result.get("chunk_end_line")
+            use_chunk = False  # Initialize for all branches
 
             # Check if this is a code block vs unsupported file based on node_id
             if result["node_id"].startswith("block_"):
-                # For code blocks: Always show full block for better context
-                # Even if the block was chunked for embedding efficiency
-                beautified_result = beautify_enriched_context_auto(
-                    enriched_context,
-                    i,
-                    include_code=True,
-                    total_nodes=total_nodes,
-                    node_id=result["node_id"],
+                # For code blocks: Check block size against threshold
+                block_total_lines = _get_block_total_lines(enriched_context)
+                block_chunk_threshold = SEMANTIC_SEARCH_CONFIG[
+                    "block_chunk_threshold"
+                ]
+
+                logger.debug(
+                    f"Block {result['node_id']}: {block_total_lines} lines "
+                    f"(threshold: {block_chunk_threshold})"
                 )
+
+                # Initialize the default to using full block
+                reason = "small block or chunking not possible"
+                chunk_data = ""  # Initialize chunk_data
+
+                # Check if we should try to use chunk
+                if (
+                    block_total_lines > block_chunk_threshold
+                    and chunk_start_line and chunk_end_line
+                    and "block" in enriched_context
+                    and enriched_context["block"].get("content")
+                ):
+
+                    # Extract the chunk from the block content
+                    block_content = enriched_context["block"]["content"]
+                    block_start_line = enriched_context["block"].get(
+                        "start_line", 1
+                    )
+
+                    # Calculate relative position within the block
+                    relative_start = max(0, (chunk_start_line - block_start_line))
+                    relative_end = (chunk_end_line - block_start_line) + 1
+
+                    # Extract the chunk from the block content
+                    content_lines = block_content.split("\n")
+
+                    # Only use chunk if boundaries are valid
+                    if (
+                        relative_start < len(content_lines)
+                        and relative_end <= len(content_lines)
+                    ):
+                        chunk_lines = content_lines[relative_start:relative_end]
+                        chunk_data = "\n".join(chunk_lines)
+                        use_chunk = True
+                    else:
+                        reason = "chunk extraction failed"
+
+                # Format the result based on whether we're using chunk or full block
+                if use_chunk and chunk_start_line is not None and chunk_end_line is not None:
+                    logger.debug(
+                        f"Using chunk for large block {result['node_id']} "
+                        f"(lines {chunk_start_line}-{chunk_end_line})"
+                    )
+                    beautified_result = format_chunk_with_enriched_context(
+                        enriched_context,
+                        chunk_start_line,
+                        chunk_end_line,
+                        chunk_data,
+                        i,
+                        total_nodes,
+                        node_id=result["node_id"],
+                    )
+                else:
+                    logger.debug(
+                        f"Using full block for {result['node_id']} ({reason})"
+                    )
+                    beautified_result = beautify_enriched_context_auto(
+                        enriched_context,
+                        i,
+                        include_code=True,
+                        total_nodes=total_nodes,
+                        node_id=result["node_id"],
+                    )
             elif (
                 result["node_id"].startswith("file_")
-                and chunk_start_line
-                and chunk_end_line
+                and chunk_start_line is not None
+                and chunk_end_line is not None
             ):
                 # For unsupported files: Use chunking since we have no logical structure
                 chunk_code = _extract_chunk_specific_code(
@@ -231,6 +314,14 @@ def _process_sequential_chunk_results(
                     "start_line": chunk_start_line,
                     "end_line": chunk_end_line,
                     "similarity": result.get("similarity", 0.0),
+                    "block_total_lines": (
+                        _get_block_total_lines(enriched_context)
+                        if result["node_id"].startswith("block_")
+                        else None
+                    ),
+                    "used_chunking": (
+                        use_chunk if result["node_id"].startswith("block_") else False
+                    ),
                 },
             }
         else:
@@ -241,7 +332,10 @@ def _process_sequential_chunk_results(
                 "query": query,
                 "node_index": i,
                 "total_nodes": total_nodes,
-                "data": f"❌ Node {i}/{total_nodes}: Could not retrieve enriched context for {result['node_id']}.",
+                "data": (
+                    f"❌ Node {i}/{total_nodes}: "
+                    f"Could not retrieve enriched context for {result['node_id']}."
+                ),
                 "code_snippet": True,
                 "node_id": result["node_id"],
                 "project_name": project_name,

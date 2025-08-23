@@ -13,11 +13,9 @@ Required: query_name, file_path
 Optional: start_line, end_line, fetch_next_code
 
 3. GET_BLOCK_DETAILS:
-Gets detailed information about a specific code block (function, class, method) including its content and all incoming and outgoing connections with other repository nodes.
+Gets detailed information about a specific code block (function, class, method) including its content and all connections with other project nodes.
 Required: query_name, block_id
 Optional: fetch_next_code
-
-
 
 Notes:
 - Use complete file paths for all file operations

@@ -3,7 +3,7 @@ Code block embedding engine for generating strategic embeddings for FileData and
 Moved from processors/ to embeddings/ for better organization.
 """
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pathlib import Path
 
 from loguru import logger
@@ -65,10 +65,12 @@ class EmbeddingEngine:
 
         return "\n".join(metadata_parts)
 
-    def _generate_block_embedding_text(
+
+
+    def _generate_block_metadata_template(
         self, block: CodeBlock, file_data: FileData
     ) -> str:
-        """Generate embedding text for a specific code block with context."""
+        """Generate metadata template for a code block (without the code content)."""
         text_parts = []
 
         # Add file context
@@ -93,10 +95,6 @@ class EmbeddingEngine:
             text_parts.append(f"Line: {block.start_line}")
         else:
             text_parts.append(f"Lines: {block.start_line}-{block.end_line}")
-
-        # Add block content
-        if block.content:
-            text_parts.append(f"Code:\n{block.content}")
 
         return "\n".join(text_parts)
 
@@ -125,24 +123,33 @@ class EmbeddingEngine:
         block_chunk_mapping = []  # Track which chunks belong to which block
 
         for block in blocks:
-            # Generate embedding text with hierarchical context
-            block_embedding_text = self._generate_block_embedding_text(block, file_data)
-
-            # Get text chunks for this block (without embeddings)
-            text_chunks = self.vector_store.chunk_text(
-                block_embedding_text,
+            # First, chunk the raw block content to get proper 20-line boundaries
+            content_chunks = self.vector_store.chunk_text(
+                block.content or "",
                 max_tokens=self.max_tokens,
                 overlap_tokens=self.overlap_tokens,
             )
 
+            # Generate metadata template for this block
+            metadata_template = self._generate_block_metadata_template(block, file_data)
+
             # Track which chunks belong to this block
-            for chunk_idx, chunk_metadata in enumerate(text_chunks):
-                all_chunk_texts.append(chunk_metadata["text"])
+            for chunk_idx, chunk_metadata in enumerate(content_chunks):
+                # Create embedding text by adding metadata to this specific chunk
+                chunk_embedding_text = f"{metadata_template}\nCode:\n{chunk_metadata['text']}"
+                all_chunk_texts.append(chunk_embedding_text)
+
+                # Calculate actual source line numbers using chunk boundaries
+                chunk_start_line = chunk_metadata["start_line"] + block.start_line - 1
+                chunk_end_line = chunk_metadata["end_line"] + block.start_line - 1
+
                 block_chunk_mapping.append(
                     {
                         "block": block,
                         "chunk_index": chunk_idx,
-                        "embedding_text": block_embedding_text,
+                        "embedding_text": chunk_embedding_text,
+                        "chunk_start_line": chunk_start_line,
+                        "chunk_end_line": chunk_end_line,
                     }
                 )
 
@@ -168,9 +175,8 @@ class EmbeddingEngine:
             mapping = block_chunk_mapping[i]
             block = mapping["block"]
             chunk_index = mapping["chunk_index"]
-
-            chunk_start_line = block.start_line
-            chunk_end_line = block.end_line
+            chunk_start_line = mapping["chunk_start_line"]
+            chunk_end_line = mapping["chunk_end_line"]
 
             batch_embedding_data.append(
                 {
@@ -240,6 +246,8 @@ class EmbeddingEngine:
         content: str,
         metadata: str,
         is_file: bool = False,
+        source_content: Optional[str] = None,
+        source_start_line: int = 1,
     ) -> List[int]:
         """
         Generate and store chunked embeddings with metadata added only to first chunk.
@@ -277,9 +285,11 @@ class EmbeddingEngine:
                 logger.warning(f"No embeddings generated for entity {entity_id}")
                 return []
 
-            # Also chunk the content directly to get accurate line numbers
+            # For line number calculation, use source content if provided (for blocks),
+            # otherwise use the full content (for files)
+            line_calc_content = source_content if source_content is not None else content
             content_chunks = self.vector_store.chunk_text(
-                content,
+                line_calc_content,
                 max_tokens=self.max_tokens,
                 overlap_tokens=self.overlap_tokens,
             )
@@ -293,16 +303,17 @@ class EmbeddingEngine:
                     # Calculate line numbers
                     if chunk_index < len(content_chunks):
                         content_chunk = content_chunks[chunk_index]
-                        chunk_start_line = content_chunk["start_line"]
-                        chunk_end_line = content_chunk["end_line"]
+                        # Add source start line offset for blocks
+                        chunk_start_line = content_chunk["start_line"] + source_start_line - 1
+                        chunk_end_line = content_chunk["end_line"] + source_start_line - 1
                     else:
-                        # Fallback calculation
+                        # Fallback calculation using source content for line numbers
                         char_start = chunk_metadata.get("start", 0)
-                        text_up_to_start = content[:char_start]
+                        text_up_to_start = line_calc_content[:char_start]
                         lines_before_chunk = text_up_to_start.count("\n")
                         chunk_text = chunk_metadata.get("text", "")
                         chunk_line_count = len(chunk_text.split("\n"))
-                        chunk_start_line = lines_before_chunk + 1
+                        chunk_start_line = lines_before_chunk + 1 + source_start_line - 1
                         chunk_end_line = chunk_start_line + chunk_line_count - 1
 
                     # Store embedding in vector database
