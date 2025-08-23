@@ -4,8 +4,8 @@ Constants for search executors including query mappings and configuration.
 
 # Chunking and search configuration
 SEARCH_CONFIG = {
-    "chunking_threshold": 700,  # Lines threshold for chunking (also determines "large" code)
-    "chunk_size": 600,  # Max lines per chunk
+    "chunking_threshold": 100,  # Lines threshold for chunking (also determines "large" code)
+    "chunk_size": 50,  # Max lines per chunk
 }
 
 # Semantic search specific configuration
@@ -13,6 +13,7 @@ SEMANTIC_SEARCH_CONFIG = {
     "total_nodes_limit": 30,  # Always fetch 30 nodes with code snippets
     "similarity_threshold": 0.1,
     "delivery_batch_size": 15,  # Serve 15 nodes at a time via delivery queue
+    "block_chunk_threshold":40,
     **SEARCH_CONFIG,
 }
 
@@ -42,7 +43,7 @@ DATABASE_QUERY_CONFIG = {
     },
 }
 
-# Error guidance messages for database queries 
+# Error guidance messages for database queries
 DATABASE_ERROR_GUIDANCE = {
     "GET_FILE_BY_PATH": "Try using semantic_search to find the correct file path first.",
     "GET_FILE_BLOCK_SUMMARY": "Ensure the file_path exists. Use semantic_search to find the correct file path first.",
