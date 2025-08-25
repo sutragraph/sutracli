@@ -234,17 +234,20 @@ def setup_configuration():
             "log_file": f"{INSTALL_DIR}/logs/sutraknowledge.log",
         },
         "llm": {
-            "provider": "anthropic",
+            "provider": "",
             "llama_model_id": "meta/llama-3.1-8b-instruct",
-            "claude_model": "claude-3-5-sonnet-20241022",
+            "claude_model": "us.anthropic.claude-sonnet-4-20250514-v1:0",
             "gemini_model": "gemini-1.5-flash",
             "aws": {
-                "model_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
                 "access_key_id": "",
                 "secret_access_key": "",
                 "region": "us-east-1",
             },
-            "anthropic": {"api_key": "", "model_id": "claude-3-5-sonnet-20241022"},
+            "anthropic": {
+                "api_key": "",
+                "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+            },
             "gcp": {
                 "api_key": "",
                 "project_id": "",

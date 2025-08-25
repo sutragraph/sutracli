@@ -63,7 +63,7 @@
       "region": "YOUR_AWS_REGION"
     },
     "anthropic": {
-      "model_id": "claude-sonnet-4-20250514",
+      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
       "api_key": "YOUR_ANTHROPIC_API_KEY"
     },
     "gcp": {
