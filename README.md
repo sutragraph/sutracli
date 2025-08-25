@@ -58,7 +58,7 @@ pip install git+https://github.com/sutragraph/sutracli.git
 sutrakit-setup
 
 # Analyze your first project
-sutrakit --directory /path/to/your/project
+sutrakit
 ```
 
 ### Option 2: Binary Installation
