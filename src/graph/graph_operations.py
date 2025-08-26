@@ -62,10 +62,10 @@ class GraphOperations:
         self, extraction_data: ExtractionData, project_id: int
     ) -> None:
         """Insert complete extraction data (files, blocks, relationships) from JSON export."""
-        logger.info(f"🏗️ Inserting extraction data for project ID: {project_id}")
+        logger.debug(f"🏗️ Inserting extraction data for project ID: {project_id}")
 
         files_data = extraction_data.files
-        logger.info(f"📁 Processing {len(files_data)} files...")
+        print(f"📁 Processing {len(files_data)} files...")
 
         for file_path, file_data in files_data.items():
             # Create File object for database
@@ -93,8 +93,6 @@ class GraphOperations:
             for rel in relationships:
                 # Relationship is already the correct type from indexer models
                 self.connection.insert_relationship(rel)
-
-        logger.info("✅ Extraction data insertion completed")
 
     def _insert_blocks_recursively(
         self, blocks: List[CodeBlock], file_id: int, parent_block_id: Optional[int]
@@ -1464,17 +1462,13 @@ class GraphOperations:
             description: New description for the project
         """
         try:
-            logger.info(
-                f"Updating project {project_id} description: {description[:100]}..."
-            )
+            print(f"Updating project {project_id} description: {description[:100]}...")
 
             self.connection.connection.execute(
                 UPDATE_PROJECT_DESCRIPTION,
                 (description, project_id),
             )
-            logger.info(
-                f"Project description updated successfully for project {project_id}"
-            )
+            print(f"Project description updated successfully for project {project_id}")
 
         except Exception as e:
             logger.error(f"Error updating project description: {e}")
@@ -1628,7 +1622,7 @@ class GraphOperations:
             if isinstance(connections_data, dict):
                 project_summary = connections_data.get("summary", "").strip()
                 if project_summary:
-                    logger.info(
+                    print(
                         f"Found project summary to store: {len(project_summary)} characters"
                     )
                     self.update_project_description(project_id, project_summary)
@@ -1686,7 +1680,7 @@ class GraphOperations:
             # Commit all changes
             self.connection.connection.commit()
 
-            logger.info(
+            print(
                 f"Stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
             )
 
@@ -1818,3 +1812,38 @@ class GraphOperations:
                 f"Error fetching code snippet from database for {file_path}: {e}"
             )
             return ""
+
+    def is_cross_indexing_done(self, project_name: str) -> bool:
+        """Check if cross-indexing is completed for a project."""
+        try:
+            result = self.connection.execute_query(
+                "SELECT cross_indexing_done FROM projects WHERE name = ?",
+                (project_name,),
+            )
+            if result:
+                return bool(result[0].get("cross_indexing_done", 0))
+            return False
+
+        except Exception as e:
+            logger.error(f"Failed to check cross-indexing status: {e}")
+            return False
+
+    def mark_cross_indexing_done_by_id(self, project_id: int) -> None:
+        """Mark cross-indexing as completed for a project by project ID."""
+        try:
+            cursor = self.connection.connection.cursor()
+            cursor.execute(
+                """UPDATE projects 
+                   SET cross_indexing_done = 1, updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (project_id,),
+            )
+            self.connection.connection.commit()
+            logger.debug(f"Marked cross-indexing as done for project ID {project_id}")
+
+        except Exception as e:
+            self.connection.connection.rollback()
+            logger.error(
+                f"Failed to mark cross-indexing as done for project ID {project_id}: {e}"
+            )
+            raise

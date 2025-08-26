@@ -421,8 +421,6 @@ class ProjectManager:
             if project_name is None:
                 project_name = self.determine_project_name(target_path)
 
-            logger.info(f"Indexing project '{project_name}' at path: {target_path}")
-
             # Check if project already exists
             if self.db_connection.project_exists(project_name):
                 return {

@@ -78,8 +78,7 @@ def export_to_json(
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(export_data, f, indent=indent, ensure_ascii=False)
 
-        print(f"Successfully exported extraction results to: {output_path}")
-        print(f"Total files exported: {len(extraction_results)}")
+        print(f"📊 Total files exported: {len(extraction_results)}")
         return True
 
     except (OSError, IOError, PermissionError, ValueError, TypeError) as e:
@@ -179,7 +178,9 @@ def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
                     absolute_path = file_path.resolve()
                     file_hashes[absolute_path] = file_hash
 
-        print(f"Computed hashes for {len(file_hashes)} files in directory: {dir_path}")
+        print(
+            f"📊 Computed hashes for {len(file_hashes)} files in directory: {dir_path}"
+        )
         return file_hashes
 
     except Exception as e:

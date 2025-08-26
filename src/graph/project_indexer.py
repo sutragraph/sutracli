@@ -77,15 +77,8 @@ class ProjectIndexer:
             )
             print("   Please wait while the project is being indexed...\n")
 
-            # Phase 1: Parse repository
             parser_output_path = self._parse_repository(project_name, project_path)
 
-            # Phase 2: Store to database and generate embeddings
-            print("\nPHASE 2: Generating Knowledge Graph & Embeddings")
-            print("-" * 40)
-
-            # Step 1: Store parsed data to SQL tables
-            print("   Step 1: Storing parsed data to SQL tables...")
             self._store_to_database(parser_output_path, project_name, project_path)
 
             # Step 2: Generate embeddings for the stored data
@@ -641,7 +634,7 @@ class ProjectIndexer:
             stats = self.embedding_engine.process_multiple_files(
                 changed_file_data, project_id
             )
-            logger.info(
+            logger.debug(
                 f"Generated embeddings for {len(changed_file_data)} changed files: "
                 f"{stats['total_chunks']} total chunks, "
                 f"{stats['blocks_processed']} blocks processed"
@@ -652,11 +645,8 @@ class ProjectIndexer:
 
     def _parse_repository(self, project_name: str, project_path: Path) -> Path:
         """Parse the entire repository and return path to extraction file."""
-        print("PHASE 1: Parsing Repository")
-        print("-" * 40)
-
         try:
-            print(f"   Parsing directory: {project_path}")
+            print(f"🔄 Parsing directory: {project_path}")
 
             from config import config
 
@@ -681,8 +671,8 @@ class ProjectIndexer:
                 raise Exception(f"Failed to parse repository: {project_name}")
 
             print(f"✅ Repository parsed successfully")
-            print(f"   Generated analysis for project: {project_name}")
-            print(f"   Output file: {parser_output_path}")
+            logger.debug(f"   Generated analysis for project: {project_name}")
+            logger.debug(f"   Output file: {parser_output_path}")
 
             return parser_output_path
 
@@ -707,10 +697,6 @@ class ProjectIndexer:
             clear_existing=False,
         )
 
-        print(f"   ✅ SQL storage completed!")
-        print(
-            f"      Processed: {stats.get('total_nodes', 0)} nodes, {stats.get('total_relationships', 0)} relationships"
-        )
         return stats
 
     def _generate_embeddings_for_project(

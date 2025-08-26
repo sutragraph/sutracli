@@ -117,7 +117,7 @@ def call_baml(function_name: str, **kwargs) -> Any:
             successful_attempt = attempt + 1
 
             # Log token usage for this call
-            logger.info(
+            print(
                 f"🔢 BAML {full_function_name} Token Usage - "
                 f"Input: {actual_input_tokens}, Output: {actual_output_tokens}, "
                 f"Total: {actual_input_tokens + actual_output_tokens}"

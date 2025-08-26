@@ -41,7 +41,6 @@ dependencies = [
     "google-cloud-aiplatform==1.98.0",
     "anthropic==0.55.0",
     "google-genai==1.21.1",
-    "tqdm==4.66.4",
     "cryptography==44.0.0",
     "requests==2.32.3",
     "xmltodict==0.14.2",
@@ -53,6 +52,7 @@ dependencies = [
     "PyYAML==6.0.1",
     "setuptools==80.9.0",
     "prompt_toolkit==3.0.48",
+    "rich==14.1.0",
     "baml-py==0.205.0",
     "baml-cli==0.1.0",
 ]

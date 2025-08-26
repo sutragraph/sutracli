@@ -242,7 +242,7 @@ def setup_configuration():
                 "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
                 "access_key_id": "",
                 "secret_access_key": "",
-                "region": "us-east-1",
+                "region": "us-east-2",
             },
             "anthropic": {
                 "api_key": "",

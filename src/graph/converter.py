@@ -43,16 +43,16 @@ class ASTToSqliteConverter:
         Raises:
             Exception: If conversion fails
         """
-        logger.info(f"🚀 Starting conversion of: {json_file_path}")
+        logger.debug(f"🚀 Starting conversion of: {json_file_path}")
 
         try:
             # Auto-derive project name if not provided
             if project_name is None:
                 project_name = Path(json_file_path).stem
-                logger.info(f"📁 Project name: {project_name}")
+                print(f"📁 Project name: {project_name}")
 
             # Load and parse JSON data
-            logger.info("📦 Loading JSON data...")
+            print("📦 Loading JSON data...")
             json_data = load_json_file(json_file_path)
 
             # Convert to ExtractionData model
@@ -60,7 +60,7 @@ class ASTToSqliteConverter:
 
             # Clear database if requested
             if clear_existing:
-                logger.info("🧹 Clearing existing database...")
+                print("🧹 Clearing existing database...")
                 self.connection.clear_database()
 
             # Create project with all required fields
@@ -80,17 +80,17 @@ class ASTToSqliteConverter:
 
             # Insert project and get its ID
             project_id = self.connection.insert_project(project)
-            logger.info(f"📁 Created project '{project_name}' with ID: {project_id}")
+            logger.debug(f"📁 Created project '{project_name}' with ID: {project_id}")
 
             # Insert extraction data into SQLite
-            logger.info("🗃️ Inserting extraction data into SQLite...")
+            logger.debug("🗃️ Inserting extraction data into SQLite...")
             self.graph_ops.insert_extraction_data(extraction_data, project_id)
 
             # Get final statistics
             stats = self.graph_ops.get_extraction_stats()
 
-            logger.info("✅ Conversion completed successfully!")
-            logger.info(f"📊 Final statistics: {stats}")
+            print("✅ Conversion completed successfully!")
+            print(f"📊 Final statistics: {stats}")
 
             # Count total items processed
             total_files = len(extraction_data.files)

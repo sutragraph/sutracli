@@ -206,16 +206,11 @@ def _process_agent_updates(updates_generator) -> None:
                 directory = update.get("directory", "")
                 files_count = update.get("count", 0)
                 project_name = update.get("project_name")
-                data = update.get("data", "")
 
                 if project_name:
                     print(f"📁 [{project_name}] Listed {files_count} files in {directory}")
                 else:
                     print(f"📁 Listed {files_count} files in {directory}")
-
-                # Display the actual file list content
-                if data:
-                    print(data)
 
                 print("-" * 40)
 
@@ -223,16 +218,11 @@ def _process_agent_updates(updates_generator) -> None:
                 keyword = update.get("keyword", "")
                 matches_found = update.get("matches_found")
                 project_name = update.get("project_name")
-                data = update.get("data", "")
 
                 if project_name:
                     print(f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}')
                 else:
                     print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
-
-                # Display the actual search results content
-                if data:
-                    print(data)
 
                 print("-" * 40)
 
@@ -409,6 +399,11 @@ def handle_index_command(args) -> None:
     from pathlib import Path
     from services.project_manager import ProjectManager
     from graph.sqlite_client import SQLiteConnection
+    from cli.utils import setup_logging
+
+    # Setup logging with the specified level
+    if hasattr(args, "log_level"):
+        setup_logging(args.log_level)
 
     try:
         # Validate project path
@@ -428,7 +423,7 @@ def handle_index_command(args) -> None:
         # Determine project name
         project_name = args.project_name
         if not project_name:
-            project_name = project_manager.determine_project_name(str(project_path))
+            project_name = project_manager.determine_project_name(project_path)
 
         print(f"📁 Indexing project '{project_name}' at: {project_path}")
 
@@ -436,9 +431,6 @@ def handle_index_command(args) -> None:
         if db_connection.project_exists(project_name):
             if not args.force:
                 print(f"⚠️  Project '{project_name}' already exists in database.")
-                print(
-                    "   Use --force to re-index or choose a different --project-name."
-                )
                 return
             else:
                 print(f"🔄 Force re-indexing existing project '{project_name}'")
@@ -860,7 +852,6 @@ def handle_cross_indexing_command(args) -> None:
     """Handle cross-indexing command for analyzing inter-service connections."""
     try:
         print("🔗 SUTRA CROSS-INDEX - Inter-Service Connection Analysis")
-        print("   Analyzing project for incoming/outgoing connections")
         print("=" * 80)
 
         # Validate project path
@@ -877,13 +868,20 @@ def handle_cross_indexing_command(args) -> None:
 
         # Initialize required components
         project_manager = ProjectManager()
+        from src.graph.graph_operations import GraphOperations
 
+        graph_ops = GraphOperations()
         # Get or create project first to determine project name
         project_name = (
             args.project_name
             if args.project_name
             else project_manager.determine_project_name(project_path)
         )
+
+        if graph_ops.is_cross_indexing_done(project_name):
+            print(f"✅ Cross-indexing already completed for project '{project_name}'")
+            print("📊 Skipping analysis - project already fully analyzed")
+            return
 
         # Initialize cross-index system with project name for incremental indexing
         print(
@@ -892,6 +890,14 @@ def handle_cross_indexing_command(args) -> None:
         cross_index_system = CrossIndexSystem(
             project_manager, project_name=project_name
         )
+
+        # Check if we should skip cross-indexing (if already completed)
+        if (
+            hasattr(cross_index_system, "_skip_cross_indexing")
+            and cross_index_system._skip_cross_indexing
+        ):
+            return
+
         print(f"✅ Cross-indexing system initialized with up-to-date database")
         project_id = project_manager.get_or_create_project_id(
             project_name, project_path

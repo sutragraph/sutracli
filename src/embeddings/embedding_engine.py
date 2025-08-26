@@ -7,7 +7,14 @@ from typing import List, Dict, Optional
 from pathlib import Path
 
 from loguru import logger
-from tqdm import tqdm
+from rich.progress import (
+    Progress,
+    BarColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    MofNCompleteColumn,
+)
 
 from models.schema import CodeBlock, FileData
 from embeddings.vector_store import get_vector_store
@@ -64,8 +71,6 @@ class EmbeddingEngine:
             metadata_parts.append(f"Language: {file_data.language}")
 
         return "\n".join(metadata_parts)
-
-
 
     def _generate_block_metadata_template(
         self, block: CodeBlock, file_data: FileData
@@ -527,13 +532,6 @@ class EmbeddingEngine:
                 stats["total_chunks"] += block_embedding_stats["total_embeddings"]
                 stats["blocks_processed"] += len(blocks_to_embed)
 
-            logger.info(
-                f"Processed {file_data.file_path}: "
-                f"{stats['file_embeddings']} file chunks, "
-                f"{stats['block_embeddings']} block chunks, "
-                f"{stats['blocks_processed']} blocks"
-            )
-
             return stats
 
         except Exception as e:
@@ -562,11 +560,20 @@ class EmbeddingEngine:
             "blocks_processed": 0,
         }
 
-        logger.info(f"Processing {len(file_data_list)} files for embeddings")
-
-        with tqdm(
-            total=len(file_data_list), desc="Embedding files", unit="file"
-        ) as pbar:
+        with Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TextColumn("•"),
+            TimeElapsedColumn(),
+            TextColumn("•"),
+            TimeRemainingColumn(),
+            TextColumn("{task.fields[stats]}"),
+            refresh_per_second=4,
+        ) as progress:
+            task_id = progress.add_task(
+                "Embedding files", total=len(file_data_list), stats=""
+            )
             for i in range(0, len(file_data_list), batch_size):
                 batch_files = file_data_list[i : i + batch_size]
 
@@ -580,13 +587,9 @@ class EmbeddingEngine:
                     total_stats["total_chunks"] += file_stats["total_chunks"]
                     total_stats["blocks_processed"] += file_stats["blocks_processed"]
 
-                    pbar.update(1)
-
-        logger.info(
-            f"Completed embedding {total_stats['files_processed']} files: "
-            f"{total_stats['total_chunks']} total chunks, "
-            f"{total_stats['blocks_processed']} blocks processed"
-        )
+                    # Update progress bar with detailed stats
+                    stats_text = f"chunks={total_stats['total_chunks']}, blocks={total_stats['blocks_processed']}, embeddings={total_stats['file_embeddings'] + total_stats['block_embeddings']}"
+                    progress.update(task_id, advance=1, stats=stats_text)
 
         return total_stats
 

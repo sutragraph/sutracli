@@ -115,7 +115,7 @@ class AnthropicClient(LLMClientBase):
                 )
 
                 if token_usage:
-                    logger.info(
+                    print(
                         f"🔢 Token usage - Input: {token_usage.input_tokens}, "
                         f"Output: {token_usage.output_tokens}, "
                         f"Total: {token_usage.total_tokens}"
