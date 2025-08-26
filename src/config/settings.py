@@ -327,6 +327,14 @@ def get_config() -> Config:
     return _config_instance
 
 
+def reload_config() -> None:
+    """Reload the configuration by resetting the global instance."""
+    global _config_instance
+    _config_instance = None
+    # Force immediate reload
+    get_config()
+
+
 # Create a lazy config object
 class _ConfigProxy:
     def __getattr__(self, name):

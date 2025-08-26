@@ -114,6 +114,20 @@ from loguru import logger
 
 def main():
     """Main entry point for the CLI application."""
+    # Check if only --log-level is passed (for modern CLI)
+    if len(sys.argv) == 1 or (len(sys.argv) == 3 and sys.argv[1] == "--log-level"):
+        # Extract log level if provided
+        log_level = "INFO"  # default
+        if len(sys.argv) == 3 and sys.argv[1] == "--log-level":
+            log_level = sys.argv[2].upper()
+
+        # Run modern interactive CLI
+        from cli.modern_cli import ModernSutraKit
+        cli = ModernSutraKit(log_level=log_level)
+        cli.run()
+        return
+
+    # Original command-line interface
     parser = setup_argument_parser()
     args = parser.parse_args()
 

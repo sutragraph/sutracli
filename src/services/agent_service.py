@@ -612,8 +612,8 @@ class AgentService:
 
                     call_msg = f"Token LLM Call #{self.llm_call_count} - Input: {llm_response.token_usage.input_tokens}, Output: {llm_response.token_usage.output_tokens}, Total: {llm_response.token_usage.total_tokens}"
                     session_msg = f"Stats Session Total - Input: {self.total_input_tokens}, Output: {self.total_output_tokens}, Total: {self.total_tokens_used} (across {self.llm_call_count} calls)"
-                    logger.info(call_msg)
-                    logger.info(session_msg)
+                    print(call_msg)
+                    print(session_msg)
                 else:
                     logger.warning(f"Token LLM Call #{self.llm_call_count} - No token usage information available")
 

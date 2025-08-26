@@ -366,6 +366,14 @@ class CrossIndexService:
                                     analysis_result = phase4_result.get(
                                         "analysis_result", {}
                                     )
+
+                                    # Mark cross-indexing as done after completion
+                                    self.graph_ops.mark_cross_indexing_done_by_id(
+                                        project_id
+                                    )
+                                    logger.info(
+                                        f"✅ Cross-indexing completed for project ID {project_id}"
+                                    )
                                 else:
                                     # Phase 4 failed; surface warning and end
                                     yield {
@@ -523,6 +531,14 @@ class CrossIndexService:
                                                     "mappings_result": mapping_result,
                                                     "message": f"🎉 Cross-indexing analysis completed successfully in {current_iteration} iterations",
                                                 }
+
+                                                # Mark cross-indexing as completely done
+                                                self.graph_ops.mark_cross_indexing_done_by_id(
+                                                    project_id
+                                                )
+                                                logger.info(
+                                                    f"✅ Cross-indexing fully completed for project ID {project_id}"
+                                                )
                                             else:
                                                 yield {
                                                     "type": "cross_index_partial_success",

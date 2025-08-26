@@ -108,8 +108,8 @@ class LlamaClient(LLMClientBase):
                     output_tokens=output_tokens,
                     total_tokens=total_tokens
                 )
-                logger.info(
-                    f"Token usage - Input: {input_tokens}, "
+                print(
+                    f"🔢 Token usage - Input: {input_tokens}, "
                     f"Output: {output_tokens}, "
                     f"Total: {total_tokens}"
                 )

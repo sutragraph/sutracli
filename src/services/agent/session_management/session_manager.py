@@ -47,9 +47,9 @@ class SessionManager:
                     "task_progress_history", []
                 )
 
-                logger.info(f"🧠 Loaded session {self.session_id} with Sutra memory")
+                print(f"🧠 Loaded session {self.session_id} with Sutra memory")
             else:
-                logger.info(f"🆕 Created new session {self.session_id}")
+                print(f"🆕 Created new session {self.session_id}")
         except Exception as e:
             logger.warning(f"Failed to load session {self.session_id}: {e}")
             # Continue with empty session data

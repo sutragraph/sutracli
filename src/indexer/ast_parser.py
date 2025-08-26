@@ -8,6 +8,7 @@ relationships between files based on import statements.
 import os
 import hashlib
 import zlib
+from loguru import logger
 from pathlib import Path
 from typing import Dict, Optional, Union, Any, cast
 from tree_sitter import Parser
@@ -72,45 +73,45 @@ class ASTParser:
 
         # Check if file exists
         if not file_path.exists() or not file_path.is_file():
-            print(f"File not found: {file_path}")
+            logger.debug(f"File not found: {file_path}")
             return None
 
         # Check if file should be ignored
         if should_ignore_file(file_path):
-            print(f"Ignoring file: {file_path}")
+            logger.debug(f"Ignoring file: {file_path}")
             return None
 
         # Check if file is text
         if not is_text_file(file_path):
-            print(f"Skipping binary file: {file_path}")
+            logger.debug(f"Skipping binary file: {file_path}")
             return None
 
         # Get language from extension
         language = get_language_from_extension(file_path)
         if not language:
-            print(f"Unsupported file type: {file_path}")
+            logger.debug(f"Unsupported file type: {file_path}")
             return None
 
         # Get parser for the language
         parser = self._get_parser(language)
         if not parser:
-            print(f"No parser available for language '{language}': {file_path}")
+            logger.debug(f"No parser available for language '{language}': {file_path}")
             return None
 
         try:
             # Read file content
             content = read_file_content(file_path)
             if content is None:
-                print(f"Failed to read file: {file_path}")
+                logger.debug(f"Failed to read file: {file_path}")
                 return None
 
             # Parse the content
             tree = parser.parse(content.encode("utf-8"))
-            print(f"Successfully parsed: {file_path}")
+            logger.debug(f"Successfully parsed: {file_path}")
             return tree
 
         except (UnicodeEncodeError, AttributeError, RuntimeError) as e:
-            print(f"Error parsing file {file_path}: {e}")
+            logger.debug(f"Error parsing file {file_path}: {e}")
             return None
 
     def parse_and_extract(self, file_path: Union[str, Path]) -> Dict[str, Any]:
@@ -207,7 +208,7 @@ class ASTParser:
         if not results:
             return
 
-        print("Extracting relationships between files...")
+        logger.debug("Extracting relationships between files...")
         relationships = self._relationship_extractor.extract_relationships(results)
 
         # Remove AST trees after relationship extraction to save memory
@@ -256,10 +257,10 @@ class ASTParser:
         results = {}
 
         if not dir_path.exists() or not dir_path.is_dir():
-            print(f"Directory not found: {dir_path}")
+            logger.debug(f"Directory not found: {dir_path}")
             return results
 
-        print(f"Parsing and extracting from directory: {dir_path}")
+        logger.debug(f"Parsing and extracting from directory: {dir_path}")
 
         # Create ID to path mapping for efficient relationship lookup
         id_to_path = {}
@@ -273,7 +274,7 @@ class ASTParser:
 
             ignored_dirs = set(original_dirs) - set(dirs)
             for ignored_dir in ignored_dirs:
-                print(f"Ignoring directory: {root_path / ignored_dir}")
+                logger.debug(f"Ignoring directory: {root_path / ignored_dir}")
 
             # Parse and extract from files in current directory
             for file in files:
@@ -296,7 +297,7 @@ class ASTParser:
         # Process relationships between files
         self.process_relationships(results, id_to_path)
 
-        print(
+        logger.debug(
             f"Parsed and extracted from {len(results)} files in directory: {dir_path}"
         )
         return results

@@ -23,7 +23,8 @@ class AWSClient(LLMClientBase):
                 aws_access_key_id=config.llm.aws.access_key_id,
                 aws_secret_access_key=config.llm.aws.secret_access_key,
             )
-            logger.info("🤖 Bedrock client initialized successfully")
+            # Only log once per client instance, and be more specific about which model
+            logger.debug(f"🤖 Bedrock client initialized successfully for model: {self.model_id} in region: {self.region}")
         except Exception as e:
             logger.error(f"❌ Failed to initialize Bedrock client: {e}")
             raise
@@ -139,8 +140,8 @@ class AWSClient(LLMClientBase):
                         output_tokens=output_tokens,
                         total_tokens=total_tokens
                     )
-                    logger.info(
-                        f"Token usage - Input: {input_tokens}, "
+                    print(
+                        f"🔢 Token usage - Input: {input_tokens}, "
                         f"Output: {output_tokens}, "
                         f"Total: {total_tokens}"
                     )

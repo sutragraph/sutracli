@@ -80,5 +80,6 @@ class Project(BaseModel):
     path: str
     created_at: str
     updated_at: str
+    cross_indexing_done: bool = False  # Whether cross-indexing is completed
 
 CodeBlock.model_rebuild()

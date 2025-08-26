@@ -93,17 +93,8 @@ After installation, configure your API keys in `~/.sutra/config/system.json`:
 Once installed and configured:
 
 ```bash
-# Show help
-sutrakit --help
-
 # Analyze current directory
 sutrakit
-
-# Analyze specific directory
-sutrakit --directory /path/to/project
-
-# Use agent mode
-sutrakit agent
 ```
 
 ## Troubleshooting

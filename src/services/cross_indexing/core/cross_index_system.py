@@ -4,7 +4,7 @@ Cross-Index System for coordinating analysis using existing agent tools
 Enhanced version that integrates with Sutra memory and uses the new folder structure.
 """
 
-from typing import Dict, Any, Optional
+from typing import Optional
 from loguru import logger
 from services.project_manager import ProjectManager
 from services.agent.xml_service.xml_parser import XMLParser
@@ -12,6 +12,7 @@ from ...agent.session_management import SessionManager
 from ...agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from ..prompts.cross_index_prompt_manager_5phase import CrossIndex5PhasePromptManager
 from .cross_index_service import CrossIndexService
+from src.graph.graph_operations import GraphOperations
 
 class CrossIndexSystem:
     """
@@ -35,30 +36,42 @@ class CrossIndexSystem:
 
         # Initialize shared memory manager for cross-indexing (like agent service)
         self.memory_manager = SutraMemoryManager()
-
+        self.graph_ops = GraphOperations()
         # Set reasoning context for cross-indexing
         self.memory_manager.set_reasoning_context(
             "Cross-indexing analysis for incoming/outgoing connections"
         )
 
-        # Perform incremental indexing once during initialization if project name is provided
+        # Check if cross-indexing is already completed for this project
         if self.project_name:
-            logger.info(
-                f"Performing incremental indexing for project '{self.project_name}' before cross-indexing initialization"
-            )
-            try:
-                # Run incremental indexing synchronously during initialization
-                self._perform_initialization_incremental_indexing()
+            if self.graph_ops.is_cross_indexing_done(self.project_name):
                 logger.info(
-                    f"Incremental indexing completed for project '{self.project_name}'"
+                    f"✅ Cross-indexing already completed for project '{self.project_name}'"
                 )
-            except Exception as e:
-                logger.error(f"Error during initialization incremental indexing: {e}")
-                # Continue with initialization even if incremental indexing fails
+                logger.info(
+                    "📊 Skipping cross-indexing analysis - project already analyzed"
+                )
+                self._skip_cross_indexing = True
+            else:
+                print(f"🔄 Starting cross-indexing for project '{self.project_name}'")
+                self._skip_cross_indexing = False
+
+                try:
+                    # Run incremental indexing synchronously during initialization
+                    self._perform_initialization_incremental_indexing()
+                    print(
+                        f"✅ Incremental indexing completed for project '{self.project_name}'"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error during initialization incremental indexing: {e}"
+                    )
+                    # Continue with initialization even if incremental indexing fails
         else:
             logger.debug(
                 "No project name provided, skipping incremental indexing during initialization"
             )
+            self._skip_cross_indexing = False
 
         self.cross_index_service = CrossIndexService(
             project_manager, self.memory_manager, self.session_manager
@@ -94,10 +107,6 @@ class CrossIndexSystem:
                     )
 
             if indexing_success:
-                logger.info(
-                    f"Incremental indexing completed successfully for project: {self.project_name}"
-                )
-                # Add to memory that incremental indexing was performed
                 self.memory_manager.add_history(
                     f"Performed incremental indexing for project '{self.project_name}' before cross-indexing analysis"
                 )
@@ -132,3 +141,27 @@ class CrossIndexSystem:
     def clear_session(self) -> None:
         """Clear the current cross-indexing session."""
         self.session_manager.clear_session()
+
+    def mark_cross_indexing_phase_completed(self, phase: str) -> None:
+        """Mark a specific phase of cross-indexing as completed."""
+        if not self.project_name:
+            return
+
+        db_connection = self.project_manager.connection
+
+        if phase == "phase4":
+            db_connection.update_cross_indexing_status(
+                self.project_name, "phase4_completed"
+            )
+            logger.info(
+                f"✅ Phase 4 completed for project '{self.project_name}' - basic cross-indexing done"
+            )
+        elif phase == "phase5" or phase == "completed":
+            db_connection.update_cross_indexing_status(self.project_name, "completed")
+            logger.info(
+                f"✅ Cross-indexing fully completed for project '{self.project_name}'"
+            )
+
+    def should_skip_cross_indexing(self) -> bool:
+        """Check if cross-indexing should be skipped for this project."""
+        return getattr(self, "_skip_cross_indexing", False)

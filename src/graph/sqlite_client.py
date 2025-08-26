@@ -133,7 +133,7 @@ class SQLiteConnection:
         """Get project details by name."""
         try:
             result = self.execute_query(
-                "SELECT id, name, path, created_at, updated_at FROM projects WHERE name = ?",
+                "SELECT id, name, path, created_at, updated_at, cross_indexing_done FROM projects WHERE name = ?",
                 (project_name,),
             )
             if result:
@@ -144,6 +144,7 @@ class SQLiteConnection:
                     path=row["path"],
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
+                    cross_indexing_done=bool(row.get("cross_indexing_done", 0)),
                 )
             return None
         except Exception as e:
@@ -168,8 +169,16 @@ class SQLiteConnection:
         try:
             cursor = self.connection.cursor()
             cursor.execute(
-                "INSERT OR REPLACE INTO projects (name, path, created_at, updated_at) VALUES (?, ?, ?, ?)",
-                (project.name, project.path, project.created_at, project.updated_at),
+                """INSERT OR REPLACE INTO projects 
+                   (name, path, created_at, updated_at, cross_indexing_done) 
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    project.name,
+                    project.path,
+                    project.created_at,
+                    project.updated_at,
+                    project.cross_indexing_done,
+                ),
             )
 
             # Get the project ID
@@ -340,7 +349,7 @@ class SQLiteConnection:
         """List all projects in the database."""
         try:
             rows = self.execute_query(
-                "SELECT id, name, path, created_at, updated_at FROM projects ORDER BY name"
+                "SELECT id, name, path, created_at, updated_at, cross_indexing_done FROM projects ORDER BY name"
             )
             return [
                 Project(
@@ -349,6 +358,7 @@ class SQLiteConnection:
                     path=row["path"],
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
+                    cross_indexing_done=bool(row.get("cross_indexing_done", 0)),
                 )
                 for row in rows
             ]
