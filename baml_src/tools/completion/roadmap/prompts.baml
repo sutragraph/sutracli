@@ -1,6 +1,6 @@
 // Roadmap Completion Tool Prompts
 
-template_string RoadmapCompletionSystemPrompt() #"
+template_string RoadmapCompletionToolTemplate() #"
     ## roadmap_completion
     Description: Complete strategic roadmap analysis with comprehensive multi-project implementation guidance. Use when you have gathered sufficient information and can provide complete strategic guidance with exact file paths, line numbers, and implementation contracts.
 

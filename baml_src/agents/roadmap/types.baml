@@ -7,16 +7,20 @@ enum RoadmapToolName {
   Completion
 }
 
-type RoadmapToolParameters = DatabaseParams | SearchKeywordParams | SemanticSearchParams | ListFilesParams | RoadmapCompletionParams
+class RoadmapCompletionToolCall {
+  tool_name "Completion"
+  parameters RoadmapCompletionParams
+}
 
-class RoadmapToolCall {
-  tool_name RoadmapToolName
-  parameters RoadmapToolParameters
+type RoadmapToolCall = BaseToolCall | RoadmapCompletionToolCall
+
+class RoadmapAgentParams {
+  context string
+  project_context ProjectContext
 }
 
 class RoadmapResponse {
   thinking string?
   tool_call RoadmapToolCall?
   sutra_memory SutraMemoryParams
-  completion RoadmapCompletionParams?
 }

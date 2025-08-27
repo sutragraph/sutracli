@@ -28,6 +28,16 @@ Document for EACH project:
 3. Document cross-project coordination requirements
 4. Provide deployment sequence
 
+## TOOL USAGE STRATEGY
+
+### Recommended Sequence
+1. **Start Broad**: Use semantic_search without project_name for ecosystem-wide pattern discovery
+2. **Focus Projects**: Use search_keyword or semantic_search WITH project_name for targeted analysis
+3. **Get Structure**: Use database GET_FILE_BLOCK_SUMMARY to understand code organization
+4. **Drill Down**: Use database GET_FILE_BY_PATH with line ranges for specific implementation details
+5. **Cross-Reference**: Use search_keyword across projects to find integration points
+6. **Complete**: Use completion with comprehensive roadmap
+
 ## SCOPE CONSTRAINTS
 
 **MANDATORY SIMPLICITY CHECKS**:

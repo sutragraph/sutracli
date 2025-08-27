@@ -1,18 +1,29 @@
 // Sutra Memory System Types
 // Persistent working memory across conversation iterations
 
+enum TaskOperationAction  {
+  Add
+  Remove
+  Move
+}
+
 // Task Management Types
 class TaskOperation {
-  action string // "add" | "move" | "remove"
+  action TaskOperationAction // "add" | "move" | "remove"
   id string
   from_status string? // for "move" operations: "pending" | "current" | "completed"
   to_status string? // for "add" and "move" operations: "pending" | "current" | "completed"
   description string
 }
 
+enum CodeStorageAction{
+  Add
+  Remove
+}
+
 // Code Storage Types
 class CodeStorage {
-  action string // "add" | "remove"
+  action CodeStorageAction
   id string
   file string
   start_line int

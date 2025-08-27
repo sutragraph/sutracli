@@ -1,23 +1,28 @@
-// Base Tool Types
-// Comprehensive definitions for all available tools in the system
-
-// All available tools in the system
 enum ToolName {
   Database
   SearchKeyword
   SemanticSearch
   ListFiles
-  Completion
-  // Future tools can be added here
 }
 
-
-type ToolParameters = DatabaseParams | SearchKeywordParams | SemanticSearchParams | ListFilesParams | RoadmapCompletionParams
-
-// Base Tool Call Structure
-class BaseToolCall {
-  tool_name ToolName
-  parameters ToolParameters
+class DatabaseToolCall {
+  tool_name "Database"
+  parameters DatabaseParams
 }
 
+class SearchKeywordToolCall {
+  tool_name "SearchKeyword"
+  parameters SearchKeywordParams
+}
 
+class SemanticSearchToolCall {
+  tool_name "SemanticSearch"
+  parameters SemanticSearchParams
+}
+
+class ListFilesToolCall {
+  tool_name "ListFiles"
+  parameters ListFilesParams
+}
+ 
+type BaseToolCall = DatabaseToolCall | SearchKeywordToolCall | SemanticSearchToolCall | ListFilesToolCall
