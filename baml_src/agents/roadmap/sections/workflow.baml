@@ -1,8 +1,7 @@
-"""
-Multi-Project Analysis Workflow - Systematic approach to ecosystem-wide roadmap generation
-"""
+// Workflow Section for Roadmap Agent
 
-WORKFLOW = """## MULTI-PROJECT ANALYSIS WORKFLOW
+template_string RoadmapWorkflow() #"
+## MULTI-PROJECT ANALYSIS WORKFLOW
 
 **SCOPE CONSTRAINT**: Default to MINIMAL solutions. One endpoint not three. Extend existing files before creating new ones. Simple over complex.
 
@@ -72,4 +71,4 @@ Document for EACH project:
 
 **Integration**: [cross-project data contracts]
 **Deploy**: [sequence requirements]
-"""
+"#
