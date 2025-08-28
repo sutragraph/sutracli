@@ -1,11 +1,5 @@
 
-enum RoadmapToolName {
-  Database
-  SearchKeyword
-  SemanticSearch
-  ListFiles
-  Completion
-}
+
 
 class RoadmapCompletionToolCall {
   tool_name "attempt_completion"
@@ -14,9 +8,13 @@ class RoadmapCompletionToolCall {
 
 type RoadmapToolCall = BaseToolCall | RoadmapCompletionToolCall
 
+class RoadmapPromptParams {
+  base_params BasePromptParams
+}
+
 class RoadmapAgentParams {
   context string
-  project_context ProjectContext
+  prompt_params RoadmapPromptParams
 }
 
 class RoadmapResponse {

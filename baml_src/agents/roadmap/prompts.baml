@@ -11,8 +11,8 @@ template_string RoadmapUserPrompt(context: string) #"
     {{ context }}
 "#
 
-template_string RoadmapSystemPrompt(project_context: ProjectContext, tools: ToolName[]) #"
-{{ BaseSystemPrompt("ROADMAP", project_context, tools) }}
+template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
+{{ BaseSystemPrompt(AgentName.ROADMAP, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles], params.base_params) }}
 
 ## ADDITIONAL ROADMAP RULES
 7. **Multi-Project Focus**: Always analyze ecosystem impact, never single-project tunnel vision
@@ -26,10 +26,7 @@ function AwsRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
 
-    {{ RoadmapSystemPrompt(
-      params.project_context,
-      __baml_info__.enums['RoadmapToolName'].values
-    ) }}
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
 
     {{RoadmapUserPrompt(params.context)}}
   "#
@@ -39,10 +36,8 @@ function AnthropicRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ RoadmapSystemPrompt(
-      params.project_context,
-      __baml_info__.enums['RoadmapToolName'].values
-    ) }}
+
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
 
     {{RoadmapUserPrompt(params.context)}}
   "#
@@ -53,10 +48,8 @@ function ChatGPTRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
-    {{ RoadmapSystemPrompt(
-      params.project_context,
-      __baml_info__.enums['RoadmapToolName'].values
-    ) }}
+
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
 
     {{RoadmapUserPrompt(params.context)}}
   "#

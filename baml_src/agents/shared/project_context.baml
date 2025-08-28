@@ -15,10 +15,9 @@ template_string ProjectEntry(project: Project) #"
 
 "#
 
-template_string ProjectContextTemplate(projectContext: ProjectContext) #"
+template_string ProjectContextTemplate(project_context: ProjectContext) #"
 ## PROJECTS CONTEXT:
-{% for project in projectContext.projects %}
+{% for project in project_context.projects %}
 {{ ProjectEntry(project) }}
 {% endfor %}
 "#
-
