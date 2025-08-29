@@ -76,13 +76,8 @@ class EcosystemCoordination {
   risk_assessment RiskAssessment
 }
 
-class RoadmapCompletionParams {
-  result string
-}
 
-class RoadmapCompletionResponse {
-  type string // "completion"
-  tool_name string // "attempt_completion"
+class RoadmapCompletionParams {
   executive_summary ExecutiveSummary
   project_roadmaps ProjectRoadmap[]
   ecosystem_coordination EcosystemCoordination

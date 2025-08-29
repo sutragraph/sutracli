@@ -24,7 +24,7 @@ class BAMLTokenUsage(NamedTuple):
 class BAMLResponse(NamedTuple):
     """Response from BAML call including content and token usage."""
     content: Any
-    token_usage: Optional[BAMLTokenUsage]
+    token_usage: BAMLTokenUsage
 
 
 class BAMLService:

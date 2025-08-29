@@ -6,7 +6,7 @@ class RoadmapCompletionToolCall {
   parameters RoadmapCompletionParams
 }
 
-type RoadmapToolCall = BaseToolCall | RoadmapCompletionToolCall
+type RoadmapToolCall = DatabaseToolCall | SearchKeywordToolCall  | SemanticSearchToolCall | ListFilesToolCall  | RoadmapCompletionToolCall
 
 class RoadmapPromptParams {
   base_params BasePromptParams

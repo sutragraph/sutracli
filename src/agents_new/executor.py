@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, NamedTuple
+from typing import Dict, Optional, NamedTuple, Union, cast
 from loguru import logger
 
 from baml_client.types import (
@@ -7,17 +7,23 @@ from baml_client.types import (
     RoadmapAgentParams,
     RoadmapPromptParams,
     BasePromptParams,
+    RoadmapResponse,
+
 )
-from services.baml_service import BAMLService
+from services.baml_service import BAMLService, BAMLTokenUsage
 from .utils import get_project_context_for_agent, get_system_info
 
 
+AgentContentType = Union[RoadmapResponse]
+
+
 class AgentResponse(NamedTuple):
-    """Structured response from agent execution including agent type."""
+    """Structured response from agent execution including agent type.
+    """
 
     agent_type: Agent
-    content: Any
-    token_usage: Optional[Dict[str, int]] = None
+    content: AgentContentType
+    token_usage: BAMLTokenUsage
 
 
 def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
@@ -29,7 +35,7 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
         context: The context/query for the agent
 
     Returns:
-        The response from the executed agent
+        The response from the executed agent with properly typed content
 
     Raises:
         ValueError: If agent_name is not supported
@@ -78,20 +84,10 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
 
         logger.info("Agent execution completed successfully")
 
-        # Prepare token usage info
-        token_usage = None
-        if baml_response.token_usage:
-            usage = baml_response.token_usage
-            token_usage = {
-                "input_tokens": usage.input_tokens,
-                "output_tokens": usage.output_tokens,
-                "total_tokens": usage.total_tokens,
-            }
-
         return AgentResponse(
             agent_type=agent_name,
             content=baml_response.content,
-            token_usage=token_usage,
+            token_usage=baml_response.token_usage,
         )
 
     except Exception as e:

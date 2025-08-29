@@ -14,6 +14,7 @@ from typing import Optional
 # from .cross_index_service import CrossIndexService
 # from src.graph.graph_operations import GraphOperations
 
+
 class CrossIndexSystem:
     """
     Enhanced system for cross-index analysis using existing agent tools and Sutra memory.
@@ -39,10 +40,6 @@ class CrossIndexSystem:
     #     # Initialize shared memory manager for cross-indexing (like agent service)
     #     self.memory_manager = SutraMemoryManager()
     #     self.graph_ops = GraphOperations()
-    #     # Set reasoning context for cross-indexing
-    #     self.memory_manager.set_reasoning_context(
-    #         "Cross-indexing analysis for incoming/outgoing connections"
-    #     )
 
     #     # Check if cross-indexing is already completed for this project
     #     if self.project_name:

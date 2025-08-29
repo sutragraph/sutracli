@@ -37,9 +37,6 @@ class SutraMemoryManager:
         self.memory_ops = MemoryOperations()
         self._init_components()
 
-        # Initialize reasoning context
-        self.reasoning_context = None
-
     def _init_components(self):
         """Initialize components - can be overridden by subclasses"""
         self.xml_processor = XMLProcessor(self.memory_ops, self)
@@ -182,58 +179,6 @@ class SutraMemoryManager:
         return self.memory_updater.update_memory_for_file_changes(
             changed_files, deleted_files, project_id
         )
-
-    # Reasoning Integration Methods
-    def set_reasoning_context(self, user_query: str) -> None:
-        """Set the current reasoning context for tool execution"""
-        self.reasoning_context = ReasoningContext(
-            user_query=user_query, tool_history=[], validation_results=[]
-        )
-
-    def validate_tool_result(
-        self, tool_name: str, tool_result: dict, user_query: str
-    ) -> dict:
-        """Validate tool result using integrated reasoning logic"""
-
-        # Perform validation directly in memory manager
-        validation_result = self._perform_tool_validation(
-            tool_name, tool_result, user_query
-        )
-
-        # Store validation result in reasoning context
-        if self.reasoning_context:
-            self.reasoning_context.validation_results.append(validation_result)
-
-        return validation_result
-
-    def analyze_task_completion(self, user_query: str) -> dict:
-        """Analyze if the user's task has been completed based on tool history"""
-        tool_history = self.get_tool_history()
-
-        analysis = {"likely_complete": False, "reason": "", "missing_actions": []}
-
-        if not tool_history:
-            return analysis
-
-        return analysis
-
-    def should_continue_execution(
-        self, validation_result: dict, consecutive_failures: int
-    ) -> bool:
-        """Determine if execution should continue based on validation results"""
-        # Stop on critical failures
-        if not validation_result.get("valid", True):
-            return False
-
-        # Stop if too many consecutive failures
-        if consecutive_failures >= 3:
-            return False
-
-        return True
-
-    def clear_reasoning_context(self) -> None:
-        """Clear reasoning context for new session"""
-        self.reasoning_context = None
 
     def _perform_tool_validation(
         self, tool_name: str, tool_result: dict, user_query: str
