@@ -48,145 +48,145 @@ Examples:
 Example 1: Executing previous analysis task
 ```json
 {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "move",
-          "id": "2",
-          "from_status": "pending",
-          "to_status": "current",
-          "description": "task description"
-        },
-        {
-          "action": "move",
-          "id": "3",
-          "from_status": "current",
-          "to_status": "completed",
-          "description": "task description"
-        },
-        {
-          "action": "add",
-          "id": "10",
-          "to_status": "pending",
-          "description": "Use database tool to analyze axios usage in src/api/client.js"
-        },
-        {
-          "action": "add",
-          "id": "11",
-          "to_status": "pending",
-          "description": "Use database tool to analyze axios usage in src/services/http.js"
-        },
-        {
-          "action": "add",
-          "id": "12",
-          "to_status": "pending",
-          "description": "Use database tool to analyze axios usage in src/utils/request.js"
-        }
-      ],
-      "add_history": "Used search_keyword with pattern 'require\\('axios'\\)|import.*from.*'axios'' - found axios imports in 3 files: src/api/client.js, src/services/http.js, src/utils/request.js. Created 3 individual database tasks for subsequent implementation analysis."
-    }
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "move",
+        "id": "2",
+        "from_status": "pending",
+        "to_status": "current",
+        "description": "task description"
+      },
+      {
+        "action": "move",
+        "id": "3",
+        "from_status": "current",
+        "to_status": "completed",
+        "description": "task description"
+      },
+      {
+        "action": "add",
+        "id": "10",
+        "to_status": "pending",
+        "description": "Use database tool to analyze axios usage in src/api/client.js"
+      },
+      {
+        "action": "add",
+        "id": "11",
+        "to_status": "pending",
+        "description": "Use database tool to analyze axios usage in src/services/http.js"
+      },
+      {
+        "action": "add",
+        "id": "12",
+        "to_status": "pending",
+        "description": "Use database tool to analyze axios usage in src/utils/request.js"
+      }
+    ],
+    "add_history": "Used search_keyword with pattern 'require\\('axios'\\)|import.*from.*'axios'' - found axios imports in 3 files: src/api/client.js, src/services/http.js, src/utils/request.js. Created 3 individual database tasks for subsequent implementation analysis."
+  }
 }
 ```
 
 Example 2: Multiple import patterns found
 ```json
 {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "move",
-          "id": "3",
-          "from_status": "pending",
-          "to_status": "current",
-          "description": "task description"
-        },
-        {
-          "action": "move",
-          "id": "3",
-          "from_status": "current",
-          "to_status": "completed",
-          "description": "task description"
-        },
-        {
-          "action": "add",
-          "id": "11",
-          "to_status": "pending",
-          "description": "Use search_keyword to find express usage patterns across 8 files: app\\.(get|post|put|delete)\\(|router\\."
-        }
-      ],
-      "add_history": "Used search_keyword to find express imports - discovered in 8 files including routes and middleware files. Created search_keyword task for subsequent implementation analysis due to many files found."
-    }
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "move",
+        "id": "3",
+        "from_status": "pending",
+        "to_status": "current",
+        "description": "task description"
+      },
+      {
+        "action": "move",
+        "id": "3",
+        "from_status": "current",
+        "to_status": "completed",
+        "description": "task description"
+      },
+      {
+        "action": "add",
+        "id": "11",
+        "to_status": "pending",
+        "description": "Use search_keyword to find express usage patterns across 8 files: app\\.(get|post|put|delete)\\(|router\\."
+      }
+    ],
+    "add_history": "Used search_keyword to find express imports - discovered in 8 files including routes and middleware files. Created search_keyword task for subsequent implementation analysis due to many files found."
+  }
 }
 ```
 
 Example 3: Built-in pattern task creation (always required)
 ```json
 {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "add",
-          "id": "12",
-          "to_status": "pending",
-          "description": "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\(|XMLHttpRequest|new WebSocket\\(' to find native JavaScript connection patterns"
-        },
-        {
-          "action": "add",
-          "id": "13",
-          "to_status": "pending",
-          "description": "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\.|http\\.client|socket\\.' to find Python built-in connection patterns"
-        }
-      ],
-      "add_history": "implementation discovery covering JavaScript and Python native connection patterns. These tasks will be executed regardless of package findings."
-    }
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "add",
+        "id": "12",
+        "to_status": "pending",
+        "description": "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\(|XMLHttpRequest|new WebSocket\\(' to find native JavaScript connection patterns"
+      },
+      {
+        "action": "add",
+        "id": "13",
+        "to_status": "pending",
+        "description": "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\.|http\\.client|socket\\.' to find Python built-in connection patterns"
+      }
+    ],
+    "add_history": "implementation discovery covering JavaScript and Python native connection patterns. These tasks will be executed regardless of package findings."
+  }
 }
 ```
 
 Example 4: Task completion with new task creation based on findings
 ```json
 {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "move",
-          "id": "5",
-          "from_status": "current",
-          "to_status": "completed",
-          "description": "task description"
-        },
-        {
-          "action": "add",
-          "id": "14",
-          "to_status": "pending",
-          "description": "Found axios imports in src/api/client.js. Use database tool to read this file and analyze axios.get(), axios.post() usage patterns"
-        },
-        {
-          "action": "add",
-          "id": "15",
-          "to_status": "pending",
-          "description": "Found axios imports in src/services/http.js. Use database tool to read this file and analyze axios.get(), axios.post() usage patterns"
-        }
-      ],
-      "add_history": "Used search_keyword to find axios imports - found meaningful results in 2 files. Created 2 individual database tasks for implementation analysis based on tool results."
-    }
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "move",
+        "id": "5",
+        "from_status": "current",
+        "to_status": "completed",
+        "description": "task description"
+      },
+      {
+        "action": "add",
+        "id": "14",
+        "to_status": "pending",
+        "description": "Found axios imports in src/api/client.js. Use database tool to read this file and analyze axios.get(), axios.post() usage patterns"
+      },
+      {
+        "action": "add",
+        "id": "15",
+        "to_status": "pending",
+        "description": "Found axios imports in src/services/http.js. Use database tool to read this file and analyze axios.get(), axios.post() usage patterns"
+      }
+    ],
+    "add_history": "Used search_keyword to find axios imports - found meaningful results in 2 files. Created 2 individual database tasks for implementation analysis based on tool results."
+  }
 }
 ```
 
 Example 5: Task completion scenario
 ```json
 {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "move",
-          "id": "3",
-          "from_status": "current",
-          "to_status": "completed",
-          "description": "task description"
-        }
-      ],
-      "add_history": "Used attempt_completion - provided summary of discovered imports"
-    }
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "move",
+        "id": "3",
+        "from_status": "current",
+        "to_status": "completed",
+        "description": "task description"
+      }
+    ],
+    "add_history": "Used attempt_completion - provided summary of discovered imports"
+  }
 }
 ```
 
