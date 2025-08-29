@@ -1937,3 +1937,13 @@ class GraphOperations:
         except Exception as e:
             logger.error(f"Error fetching connections for technology {technology}: {e}")
             return {"incoming": [], "outgoing": []}
+
+    def get_available_technology_types(self) -> list:
+        """
+        Get all unique technology types excluding Unknown.
+
+        Returns:
+            List of unique technology type names (excluding Unknown)
+        """
+        all_types = self.get_all_technology_types()
+        return [t for t in all_types if t != "Unknown"]

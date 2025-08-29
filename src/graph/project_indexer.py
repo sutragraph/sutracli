@@ -712,7 +712,7 @@ class ProjectIndexer:
         project_id = project.id
 
         # Load the parsed data for embedding generation
-        from utils import load_json_file
+        from src.utils import load_json_file
 
         json_data = load_json_file(parser_output_path)
         # ExtractionData already imported at top
