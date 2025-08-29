@@ -16,31 +16,29 @@ Usage Format
 ```json
 {
   "sutra_memory": {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "add",
-          "id": "unique_id",
-          "to_status": "pending",
-          "description": "specific task description"
-        },
-        {
-          "action": "move",
-          "id": "task_id",
-          "from_status": "current",
-          "to_status": "completed",
-          "description": "task description"
-        },
-        {
-          "action": "move",
-          "id": "task_id",
-          "from_status": "pending",
-          "to_status": "current",
-          "description": "task description"
-        }
-      ],
-      "add_history": "Brief summary of current iteration actions and findings"
-    }
+    "tasks": [
+      {
+        "action": "add",
+        "id": "unique_id",
+        "to_status": "pending",
+        "description": "specific task description"
+      },
+      {
+        "action": "move",
+        "id": "task_id",
+        "from_status": "current",
+        "to_status": "completed",
+        "description": "task description"
+      },
+      {
+        "action": "move",
+        "id": "task_id",
+        "from_status": "pending",
+        "to_status": "current",
+        "description": "task description"
+      }
+    ],
+    "add_history": "Brief summary of current iteration actions and findings"
   }
 }
 ```
@@ -51,9 +49,7 @@ Example 1: Starting package discovery
 ```json
 {
   "sutra_memory": {
-    "sutra_memory": {
-      "add_history": "Used list_files to explore project structure. Found Server/pom.xml and Frontend/package.json files in current project"
-    }
+    "add_history": "Used list_files to explore project structure. Found Server/pom.xml and Frontend/package.json files in current project"
   }
 }
 ```
@@ -62,17 +58,15 @@ Example 2: Package file analysis
 ```json
 {
   "sutra_memory": {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "add",
-          "id": "2",
-          "to_status": "pending",
-          "description": "Use search_keyword tool with pattern 'require\\('axios'\\)|import.*from.*'axios'|import.*axios|axios' and regex=true to find axios import statements. Look for HTTP client library imports enabling requests to other services."
-        }
-      ],
-      "add_history": "Found package.json file and it contains axios package which is an HTTP client library."
-    }
+    "tasks": [
+      {
+        "action": "add",
+        "id": "2",
+        "to_status": "pending",
+        "description": "Use search_keyword tool with pattern 'require\\('axios'\\)|import.*from.*'axios'|import.*axios|axios' and regex=true to find axios import statements. Look for HTTP client library imports enabling requests to other services."
+      }
+    ],
+    "add_history": "Found package.json file and it contains axios package which is an HTTP client library."
   }
 }
 ```
@@ -81,18 +75,16 @@ Example 3: Task completion scenario (only mark as completed when it is fully exe
 ```json
 {
   "sutra_memory": {
-    "sutra_memory": {
-      "tasks": [
-        {
-          "action": "move",
-          "id": "1",
-          "from_status": "current",
-          "to_status": "completed",
-          "description": "task description"
-        }
-      ],
-      "add_history": "Used attempt_completion - provided summary of discovered packages and created tasks for subsequent import analysis"
-    }
+    "tasks": [
+      {
+        "action": "move",
+        "id": "1",
+        "from_status": "current",
+        "to_status": "completed",
+        "description": "task description"
+      }
+    ],
+    "add_history": "Used attempt_completion - provided summary of discovered packages and created tasks for subsequent import analysis"
   }
 }
 ```

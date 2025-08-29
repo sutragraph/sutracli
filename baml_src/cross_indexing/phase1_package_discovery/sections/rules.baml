@@ -85,18 +85,16 @@ RULES
         }
       },
       "sutra_memory": {
-        "sutra_memory": {
-          "tasks": [
-            {
-              "action": "move|add|remove",
-              "id": "task_id_string",
-              "from_status": "pending|current|completed",
-              "to_status": "pending|current|completed", 
-              "description": "task description"
-            }
-          ],
-          "add_history": "Brief summary of current iteration actions and findings"
-        }
+        "tasks": [
+          {
+            "action": "move|add|remove",
+            "id": "task_id_string",
+            "from_status": "pending|current|completed",
+            "to_status": "pending|current|completed", 
+            "description": "task description"
+          }
+        ],
+        "add_history": "Brief summary of current iteration actions and findings"
       }
     }
     ```
