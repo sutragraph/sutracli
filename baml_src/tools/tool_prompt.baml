@@ -11,14 +11,13 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 {% elif tool == ToolName.SearchKeywordWithoutProjectName %}
 {{ SearchKeywordToolWithoutProjectNameTemplate() }}
 
-
 {% elif tool == ToolName.SemanticSearch %}
 {{ SemanticSearchToolTemplate() }}
 
 {% elif tool == ToolName.ListFiles %}
 {{ ListFilesToolTemplate() }}
 
-{% elif tool == "ListFilesToolWithoutProjectName" %}
+{% elif tool == ToolName.ListFilesToolWithoutProjectName %}
 {{ ListFilesToolWithoutProjectNameTemplate() }}
 
 {% endif %}

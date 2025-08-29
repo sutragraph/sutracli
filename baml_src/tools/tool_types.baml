@@ -1,8 +1,10 @@
 enum ToolName {
   Database
   SearchKeyword
+  SearchKeywordWithoutProjectName
   SemanticSearch
   ListFiles
+  ListFilesWithoutProjectName
 }
 
 class DatabaseToolCall {
@@ -29,5 +31,10 @@ class ListFilesToolCall {
   tool_name "list_files"
   parameters ListFilesParams
 }
+
+class ListFilesToolCallParamsWithoutProjectName {
+  tool_name "list_files"
+  parameters ListFilesParamsWithoutProjectName
+}
  
-type BaseToolCall = DatabaseToolCall | SearchKeywordToolCall | SearchKeywordToolCallWithoutProjectName | SemanticSearchToolCall | ListFilesToolCall
+type BaseToolCall = DatabaseToolCall | SearchKeywordToolCall | SearchKeywordToolCallWithoutProjectName | SemanticSearchToolCall | ListFilesToolCall | ListFilesToolCallParamsWithoutProjectName
