@@ -1,3 +1,3 @@
-enum AgentName {
+enum Agent {
   ROADMAP
 }

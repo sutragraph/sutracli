@@ -12,7 +12,7 @@ template_string RoadmapUserPrompt(context: string) #"
 "#
 
 template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
-{{ BaseSystemPrompt(AgentName.ROADMAP, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles], params.base_params) }}
+{{ BaseSystemPrompt(Agent.ROADMAP, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles], params.base_params) }}
 
 ## ADDITIONAL ROADMAP RULES
 7. **Multi-Project Focus**: Always analyze ecosystem impact, never single-project tunnel vision

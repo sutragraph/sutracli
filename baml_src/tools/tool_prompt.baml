@@ -25,8 +25,8 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 {% endfor %}
 "#
 
-template_string CompletionToolPrompt(agent_name: AgentName) #"
-{% if agent_name == AgentName.ROADMAP %}
+template_string CompletionToolPrompt(agent_name: Agent) #"
+{% if agent_name == Agent.ROADMAP %}
 {{ RoadmapCompletionToolTemplate() }}
 
 {% elif agent_name == "CrossIndexing" %}
@@ -35,7 +35,7 @@ template_string CompletionToolPrompt(agent_name: AgentName) #"
 {% endif %}
 "#
 
-template_string ToolsPrompt(agent_name: AgentName, tools: ToolName[]) #"
+template_string ToolsPrompt(agent_name: Agent, tools: ToolName[]) #"
 {% if tools|length > 0 %}
 {{ GlobalToolsPrompt(tools) }}
 {% endif %}
