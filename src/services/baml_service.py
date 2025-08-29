@@ -7,24 +7,17 @@ provider management, and proper error handling.
 
 from loguru import logger
 import time
-from typing import Any, Optional, NamedTuple
 from config import config
 from baml_py import Collector
 
 
-class BAMLTokenUsage(NamedTuple):
-    """Token usage information from BAML calls."""
-    input_tokens: int
-    output_tokens: int
-    total_tokens: int
-    retry_count: int
-    total_attempts: int
-
-
-class BAMLResponse(NamedTuple):
-    """Response from BAML call including content and token usage."""
-    content: Any
-    token_usage: BAMLTokenUsage
+# Global token usage tracking across all calls
+_global_token_usage = {
+    "total_input_tokens": 0,
+    "total_output_tokens": 0,
+    "total_calls": 0,
+    "call_history": [],  # List of (call_number, function_name, input_tokens, output_tokens)
+}
 
 
 class BAMLService:
@@ -75,7 +68,7 @@ class BAMLService:
         max_retries: int = 9,
         retry_delay: int = 30,
         **kwargs
-    ) -> BAMLResponse:
+    ) :
         """
         Call a BAML function with retry mechanism and token tracking.
 
@@ -85,9 +78,6 @@ class BAMLService:
             retry_delay: Delay between retries in seconds (default: 30)
             **kwargs: Arguments to pass to the BAML function
 
-        Returns:
-            BAMLResponse with content and token usage
-
         Raises:
             AttributeError: If the function doesn't exist
             Exception: If all retry attempts fail
@@ -95,7 +85,7 @@ class BAMLService:
         # Get full function name with provider prefix
         full_function_name = self._get_full_function_name(function_name)
 
-        # Log the function call
+        # Log the function call with provider info
         logger.info(f"🤖 Calling BAML {full_function_name} (provider: {self.provider})")
 
         # Get BAML function
@@ -104,7 +94,6 @@ class BAMLService:
         # Token usage tracking
         total_input_tokens = 0
         total_output_tokens = 0
-        successful_attempt = 0
 
         for attempt in range(max_retries + 1):
             try:
@@ -114,27 +103,53 @@ class BAMLService:
                 # Call BAML function with collector
                 response = baml_function(**kwargs, baml_options={"collector": collector})
 
-                # Extract token usage from BAML collector
-                actual_input_tokens = (
-                    getattr(collector.last.usage, "input_tokens", 0) or
-                    getattr(collector.last.usage, "prompt_tokens", 0)
-                ) if collector.last and hasattr(collector.last, 'usage') else 0
-
-                actual_output_tokens = (
-                    getattr(collector.last.usage, "output_tokens", 0) or
-                    getattr(collector.last.usage, "completion_tokens", 0)
-                ) if collector.last and hasattr(collector.last, 'usage') else 0
+                # Extract actual token usage from BAML collector
+                actual_input_tokens = getattr(
+                    collector.last.usage, "input_tokens", 0
+                ) or getattr(collector.last.usage, "prompt_tokens", 0)
+                actual_output_tokens = getattr(
+                    collector.last.usage, "output_tokens", 0
+                ) or getattr(collector.last.usage, "completion_tokens", 0)
 
                 # Track token usage
                 total_input_tokens += actual_input_tokens
                 total_output_tokens += actual_output_tokens
-                successful_attempt = attempt + 1
 
-                # Log token usage
+                # Update global token usage tracking
+                _global_token_usage["total_input_tokens"] += actual_input_tokens
+                _global_token_usage["total_output_tokens"] += actual_output_tokens
+                _global_token_usage["total_calls"] += 1
+
+                # Get current call number
+                call_number = _global_token_usage["total_calls"]
+
+                # Add to call history
+                _global_token_usage["call_history"].append(
+                    (
+                        call_number,
+                        full_function_name,
+                        actual_input_tokens,
+                        actual_output_tokens,
+                    )
+                )
+
+                # Log token usage for this call with call counter
                 print(
-                    f"🔢 BAML {full_function_name} Token Usage - "
+                    f"🔢 {full_function_name} Token Usage #{call_number} - "
                     f"Input: {actual_input_tokens}, Output: {actual_output_tokens}, "
                     f"Total: {actual_input_tokens + actual_output_tokens}"
+                )
+
+                # Log cumulative token usage across all calls
+                cumulative_total = (
+                    _global_token_usage["total_input_tokens"]
+                    + _global_token_usage["total_output_tokens"]
+                )
+                print(
+                    f"📊 Cumulative Token Usage (All {call_number} calls) - "
+                    f"Input: {_global_token_usage['total_input_tokens']}, "
+                    f"Output: {_global_token_usage['total_output_tokens']}, "
+                    f"Total: {cumulative_total}"
                 )
 
                 # Log additional collector information
@@ -148,23 +163,17 @@ class BAMLService:
                             f"🔍 BAML {full_function_name} HTTP Calls: {len(collector.last.calls)}"
                         )
 
-                # Log success on retry
+                # If we get here, the call was successful
                 if attempt > 0:
-                    logger.info(f"✅ BAML {full_function_name} succeeded on attempt {attempt + 1}")
+                    logger.info(
+                        f"✅ BAML {full_function_name} succeeded on attempt {attempt + 1}"
+                    )
 
-                # Create token usage summary
-                token_usage = BAMLTokenUsage(
-                    input_tokens=total_input_tokens,
-                    output_tokens=total_output_tokens,
-                    total_tokens=total_input_tokens + total_output_tokens,
-                    retry_count=attempt,
-                    total_attempts=successful_attempt,
-                )
-
-                return BAMLResponse(content=response, token_usage=token_usage)
+                return response
 
             except Exception as e:
                 error_msg = f"Error calling BAML {full_function_name}: {str(e)}"
+
                 print(f"❌ {error_msg}")
                 logger.error(error_msg)
 
@@ -173,7 +182,9 @@ class BAMLService:
                         f"⚠️  BAML call failed (attempt {attempt + 1}/{max_retries + 1}). "
                         f"Retrying in {retry_delay} seconds..."
                     )
-                    print(f"⚠️  Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries + 1})")
+                    print(
+                        f"⚠️  Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries + 1})"
+                    )
                     time.sleep(retry_delay)
                     continue
                 else:
@@ -183,7 +194,7 @@ class BAMLService:
                     print(f"❌ {final_error_msg}")
                     raise Exception(f"{final_error_msg}. Last error: {str(e)}") from e
 
-        # This should never be reached
+        # This should never be reached, but just in case
         raise Exception(f"Unexpected error in retry logic for BAML {full_function_name}")
 
     def function_exists(self, function_name: str) -> bool:
