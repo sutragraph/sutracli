@@ -4,7 +4,7 @@ class SystemInfo_CrossIndexing {
 }
 
 enum Tools_CrossIndexing {
-  ListFilesToolWithoutProjectName
+  ListFilesWithoutProjectName
   SearchKeywordWithoutProjectName
   Database
 }
@@ -14,7 +14,7 @@ class CompletionToolCall_CrossIndexing {
   parameters CompletionResponse_CrossIndexing
 }
 
-type ToolCall_CrossIndexing = BaseToolCall | CompletionToolCall_CrossIndexing
+type ToolCall_CrossIndexing = ListFilesParamsWithoutProjectName | DatabaseParams | SearchKeywordParamsWithoutProjectName | CompletionToolCall_CrossIndexing
 
 class CrossIndexingResponse {
   thinking string?

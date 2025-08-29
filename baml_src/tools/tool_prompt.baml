@@ -17,7 +17,7 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 {% elif tool == ToolName.ListFiles %}
 {{ ListFilesToolTemplate() }}
 
-{% elif tool == ToolName.ListFilesToolWithoutProjectName %}
+{% elif tool == ToolName.ListFilesWithoutProjectName %}
 {{ ListFilesToolWithoutProjectNameTemplate() }}
 
 {% endif %}
