@@ -2,9 +2,9 @@
 // Persistent working memory across conversation iterations
 
 enum TaskOperationAction  {
-  Add
-  Remove
-  Move
+  Add @alias("add")
+  Remove @alias("remove")
+  Move @alias("move")
 }
 
 // Task Management Types
@@ -17,8 +17,8 @@ class TaskOperation {
 }
 
 enum CodeStorageAction{
-  Add
-  Remove
+  Add @alias("add")
+  Remove @alias("remove")
 }
 
 // Code Storage Types

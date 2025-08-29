@@ -597,16 +597,24 @@ class GraphOperations:
                 filtered_results = []
                 for result in results:
                     # Check if either sender or receiver overlaps with the line range
-                    sender_lines = self._parse_snippet_lines(result.get("sender_snippet_lines") or "")
-                    receiver_lines = self._parse_snippet_lines(result.get("receiver_snippet_lines") or "")
+                    sender_lines = self._parse_snippet_lines(
+                        result.get("sender_snippet_lines") or ""
+                    )
+                    receiver_lines = self._parse_snippet_lines(
+                        result.get("receiver_snippet_lines") or ""
+                    )
 
                     # Include if either sender or receiver overlaps with the requested range
-                    sender_overlaps = (result.get("sender_file_path") and
-                                     sender_lines and
-                                     self._lines_overlap(sender_lines, start_line, end_line))
-                    receiver_overlaps = (result.get("receiver_file_path") and
-                                       receiver_lines and
-                                       self._lines_overlap(receiver_lines, start_line, end_line))
+                    sender_overlaps = (
+                        result.get("sender_file_path")
+                        and sender_lines
+                        and self._lines_overlap(sender_lines, start_line, end_line)
+                    )
+                    receiver_overlaps = (
+                        result.get("receiver_file_path")
+                        and receiver_lines
+                        and self._lines_overlap(receiver_lines, start_line, end_line)
+                    )
 
                     if sender_overlaps or receiver_overlaps:
                         filtered_results.append(result)
@@ -624,6 +632,7 @@ class GraphOperations:
         try:
             if snippet_lines_json:
                 import json
+
                 return json.loads(snippet_lines_json)
             return []
         except:
@@ -1847,3 +1856,84 @@ class GraphOperations:
                 f"Failed to mark cross-indexing as done for project ID {project_id}: {e}"
             )
             raise
+
+    def get_all_technology_types(self) -> list:
+        """
+        Get all unique technology types from both incoming and outgoing connections.
+        Returns all distinct technology types including Unknown.
+
+        Returns:
+            List of unique technology type names (including Unknown if exists)
+        """
+        if not self.db_client:
+            logger.error("No database client available")
+            return []
+
+        try:
+            query = """
+                SELECT DISTINCT COALESCE(technology_name, 'Unknown') as technology
+                FROM (
+                    SELECT technology_name
+                    FROM incoming_connections
+                    UNION ALL
+                    SELECT technology_name
+                    FROM outgoing_connections
+                ) combined_tech
+                ORDER BY technology
+                """
+            results = self.connection.execute_query(query)
+            return [row["technology"] for row in (results or [])]
+        except Exception as e:
+            logger.error(f"Error fetching technology types: {e}")
+            return []
+
+    def fetch_connections_by_technology(self, technology: str) -> Dict[str, list]:
+        """
+        Fetch both incoming and outgoing connections for a specific technology type.
+
+        Args:
+            technology: Technology type to fetch
+
+        Returns:
+            Dict with 'incoming' and 'outgoing' keys containing connection lists
+        """
+        if not self.db_client:
+            logger.error("No database client available")
+            return {"incoming": [], "outgoing": []}
+
+        try:
+            where_clause = "WHERE technology_name = ? OR (technology_name IS NULL AND ? = 'Unknown')"
+            params = (technology, technology)
+
+            # Fetch incoming connections
+            incoming_query = f"""
+            SELECT ic.id, ic.description, COALESCE(ic.technology_name, 'Unknown') as technology,
+                   ic.code_snippet, ic.snippet_lines, files.file_path, files.language
+            FROM incoming_connections ic
+            LEFT JOIN files ON ic.file_id = files.id
+            {where_clause}
+            ORDER BY ic.id
+            """
+
+            # Fetch outgoing connections
+            outgoing_query = f"""
+            SELECT oc.id, oc.description, COALESCE(oc.technology_name, 'Unknown') as technology,
+                   oc.code_snippet, oc.snippet_lines, files.file_path, files.language
+            FROM outgoing_connections oc
+            LEFT JOIN files ON oc.file_id = files.id
+            {where_clause}
+            ORDER BY oc.id
+            """
+
+            incoming_results = (
+                self.connection.execute_query(incoming_query, params) or []
+            )
+            outgoing_results = (
+                self.connection.execute_query(outgoing_query, params) or []
+            )
+
+            return {"incoming": incoming_results, "outgoing": outgoing_results}
+
+        except Exception as e:
+            logger.error(f"Error fetching connections for technology {technology}: {e}")
+            return {"incoming": [], "outgoing": []}

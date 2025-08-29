@@ -544,8 +544,6 @@ class AgentService:
                 # Get complete system prompt with dynamic context
                 system_prompt = get_agent_system_prompt(AgentName.ROADMAP, user_query)
 
-                print("System Prompt:", system_prompt)
-
                 # Build tool status from last tool result -
                 tool_status = self._build_tool_status(self.last_tool_result)
 

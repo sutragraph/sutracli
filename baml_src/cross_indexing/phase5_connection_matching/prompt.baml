@@ -213,7 +213,6 @@ function AwsConnectionMatching(incoming_connections: string, outgoing_connection
   "#
 }
 
-
 function AnthropicConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client AnthropicClaude
   prompt #"

@@ -5,5 +5,9 @@ class ListFilesParams {
   path string?
   project_name string?
   recursive bool?
-  ignore_patterns bool?
+}
+
+class ListFilesParamsWithoutProjectName {
+  path string
+  recursive bool?
 }

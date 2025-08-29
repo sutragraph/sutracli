@@ -84,9 +84,6 @@ def get_agent_tools(agent_name: AgentName) -> List[str]:
     except ImportError as e:
         raise ImportError(f"Failed to import agent '{agent_name.value}': {e}")
 
-
-
-
 def get_base_system_prompt(agent_name: AgentName) -> str:
     """Get the base system prompt for the agent (alias for get_agent_system_prompt)."""
     return get_agent_system_prompt(agent_name)

@@ -8,7 +8,7 @@ enum RoadmapToolName {
 }
 
 class RoadmapCompletionToolCall {
-  tool_name "Completion"
+  tool_name "attempt_completion"
   parameters RoadmapCompletionParams
 }
 

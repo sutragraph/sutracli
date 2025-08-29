@@ -4,7 +4,7 @@ Cross-Index 5-Phase Prompt Manager
 Main orchestrator for all 5-phase cross-indexing prompts and workflow.
 """
 from loguru import logger
-from ..task_manager.cross_indexing_task_manager import CrossIndexingTaskManager
+from services.cross_indexing.core.cross_indexing_task_manager import CrossIndexingTaskManager
 from .phase1_package_discovery.phase1_prompt_manager import Phase1PromptManager
 from .phase2_import_discovery.phase2_prompt_manager import Phase2PromptManager
 from .phase3_implementation_discovery.phase3_prompt_manager import Phase3PromptManager

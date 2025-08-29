@@ -82,21 +82,21 @@ def _run_phase5_diagnostics() -> Dict[str, Any]:
     """Run Phase 5 diagnostics to check system readiness."""
     try:
         from graph.sqlite_client import SQLiteConnection
-        
+
         # Check database connection
         db_client = SQLiteConnection()
-        
+
         # Check connection data
         incoming_query = "SELECT COUNT(*) as count FROM incoming_connections"
         incoming_result = db_client.execute_query(incoming_query)
         incoming_count = incoming_result[0]['count'] if incoming_result else 0
-        
+
         outgoing_query = "SELECT COUNT(*) as count FROM outgoing_connections"
         outgoing_result = db_client.execute_query(outgoing_query)
         outgoing_count = outgoing_result[0]['count'] if outgoing_result else 0
-        
+
         print(f"📊 Database status: {incoming_count} incoming, {outgoing_count} outgoing connections")
-        
+
         if incoming_count == 0 and outgoing_count == 0:
             return {
                 "success": False,
@@ -112,19 +112,9 @@ def _run_phase5_diagnostics() -> Dict[str, Any]:
                 "success": False,
                 "error": "No outgoing connections found in database"
             }
-        
-        # Check BAML integration
-        try:
-            from services.cross_indexing.utils.baml_utils import call_baml
-            print("✅ BAML integration available")
-        except ImportError as e:
-            return {
-                "success": False,
-                "error": f"BAML integration not available: {e}"
-            }
-        
+
         return {"success": True}
-        
+
     except Exception as e:
         return {
             "success": False,

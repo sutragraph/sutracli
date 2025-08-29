@@ -11,8 +11,8 @@ template_string RoadmapWorkflow() #"
 3. Identify integration points between projects
 
 ### Phase 2: Analysis
-1. Use SEMANTIC_SEARCH with `project_name` for targeted project analysis
-2. Use SEARCH_KEYWORD with `project_name` for specific symbols
+1. Use semantic_search with `project_name` for targeted project analysis
+2. Use search_keyword with `project_name` for specific symbols
 3. Use ecosystem-wide searches (no project_name) for cross-project patterns
 4. Store complete context with project disambiguation
 

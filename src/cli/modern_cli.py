@@ -22,7 +22,9 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 
-from cli.agent_config import get_agent_registry, get_agent_checker
+from src.agent_management.prerequisites.agent_config import (
+    get_agent_registry,
+)
 from cli.utils import setup_logging
 from config.settings import reload_config
 
@@ -41,7 +43,6 @@ class ModernSutraKit:
         self.console = Console()
         self.config_path = Path.home() / ".sutra" / "config" / "system.json"
         self.agent_registry = get_agent_registry()
-        self.agent_checker = get_agent_checker()
         self.log_level = log_level
 
         # Setup logging with the specified level (default: INFO)
@@ -461,15 +462,6 @@ class ModernSutraKit:
             self.console.print(f"[yellow]🚧 Agent '{agent_config.name}' is not yet implemented.[/yellow]")
             return
 
-        if agent_key == "roadmap":
-            self._run_roadmap_agent(current_dir, agent_config)
-        else:
-            self.console.print(f"[red]❌ Agent '{agent_key}' not implemented yet.[/red]")
-
-    def _run_roadmap_agent(self, current_dir: Path, agent_config):
-        """Run the roadmap agent workflow."""
-        self.console.print("[bold blue]🚀 Starting Roadmap Agent Workflow[/bold blue]\n")
-
         try:
             # Check if indexing is required
             if agent_config.requires_indexing:
@@ -480,7 +472,12 @@ class ModernSutraKit:
                 self._run_cross_indexing(current_dir)
 
             # Run the actual agent
-            self._execute_agent(current_dir, agent_config)
+            if agent_key == "roadmap":
+                self._run_roadmap_agent(current_dir, agent_config)
+            else:
+                self.console.print(
+                    f"[red]❌ Agent '{agent_key}' not implemented yet.[/red]"
+                )
 
         except UserCancelledError:
             self.console.print("[yellow]👋 Workflow stopped by user choice.[/yellow]")
@@ -488,6 +485,15 @@ class ModernSutraKit:
                 "[dim]You can restart the workflow anytime when ready.[/dim]"
             )
             return
+
+    def _run_roadmap_agent(self, current_dir: Path, agent_config):
+        """Run the roadmap agent workflow."""
+        self.console.print(
+            "[bold blue]🚀 Starting Roadmap Agent Workflow[/bold blue]\n"
+        )
+
+        # Run the actual agent (prerequisites are now handled in run_agent_workflow)
+        self._execute_agent(current_dir, agent_config)
 
     def _run_indexing(self, project_dir: Path):
         """Run normal indexing for the project."""
@@ -613,6 +619,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
 
         try:
             from cli.commands import handle_agent_command
+            from src.agent_management.post_requisites.handlers import get_agent_handler
 
             # Get query from user
             user_query = Prompt.ask(
@@ -633,9 +640,48 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
                     self.log_level = "INFO"
 
             args = Args()
-            handle_agent_command(args)
+
+            # Execute the agent and capture result
+            agent_result = handle_agent_command(args)
 
             self.console.print(f"[green]✅ {agent_config.name} completed successfully![/green]")
+
+            # Handle post-requisites if agent returned results
+            if agent_result:
+                self.console.print(
+                    f"[blue]🔄 Processing {agent_config.name} results...[/blue]"
+                )
+
+                # Get appropriate handler for this agent and process results directly
+                handler = get_agent_handler(agent_config.key)
+
+                # Process the agent result directly - no wrapper needed
+                post_result = handler.process_agent_result_direct(agent_result)
+
+                if post_result.get("success"):
+                    self.console.print(
+                        "[green]✅ Post-processing completed successfully![/green]"
+                    )
+
+                    # Show details if available
+                    processed_actions = post_result.get("processed_actions", [])
+                    if processed_actions:
+                        self.console.print(
+                            f"[dim]Processed {len(processed_actions)} post-requisite actions[/dim]"
+                        )
+                        for action in processed_actions:
+                            if action.get("success"):
+                                self.console.print(
+                                    f"[green]  ✓ {action['action']}: {action.get('message', 'Success')}[/green]"
+                                )
+                            else:
+                                self.console.print(
+                                    f"[red]  ✗ {action['action']}: {action.get('error', 'Failed')}[/red]"
+                                )
+                else:
+                    self.console.print(
+                        f"[yellow]⚠️ Post-processing completed with issues: {post_result.get('message', 'Unknown error')}[/yellow]"
+                    )
 
         except Exception as e:
             self.console.print(f"[red]❌ Agent execution failed: {e}[/red]")

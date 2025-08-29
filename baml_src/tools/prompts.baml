@@ -8,11 +8,17 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 {% elif tool == "SearchKeyword" %}
 {{ SearchKeywordToolTemplate() }}
 
+{% elif tool == "SearchKeywordWithoutProjectName" %}
+{{ SearchKeywordToolWithoutProjectNameTemplate() }}
+
 {% elif tool == "SemanticSearch" %}
 {{ SemanticSearchToolTemplate() }}
 
 {% elif tool == "ListFiles" %}
 {{ ListFilesToolTemplate() }}
+
+{% elif tool == "ListFilesToolWithoutProjectName" %}
+{{ ListFilesToolWithoutProjectNameTemplate() }}
 
 {% endif %}
 {% endfor %}
@@ -22,6 +28,10 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 template_string CompletionToolPrompt(agent_name: AgentName) #"
 {% if agent_name == "ROADMAP" %}
 {{ RoadmapCompletionToolTemplate() }}
+
+{% elif agent_name == "CrossIndexing" %}
+{{ CrossIndexingCompletion() }}
+
 {% endif %}
 "#
 

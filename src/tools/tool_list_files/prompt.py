@@ -10,8 +10,6 @@ Parameters:
 
 Note: Either path or project_name must be provided.
 
-
-
 Usage with explicit path:
 <list_files>
 <path>Directory path here</path>

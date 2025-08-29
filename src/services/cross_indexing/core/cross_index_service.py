@@ -16,8 +16,8 @@ from services.agent.memory_management.code_fetcher import CodeFetcher
 from services.agent.memory_management.models import TaskStatus
 from ..prompts.cross_index_prompt_manager_5phase import CrossIndex5PhasePromptManager
 from tools import ActionExecutor
-from ..utils import infer_technology_type
-from utils.debug_utils import get_user_confirmation_for_llm_call
+from src.utils import infer_technology_type
+from src.utils.debug_utils import get_user_confirmation_for_llm_call
 from services.cross_indexing.code_manager.prompts.code_manager_prompt_manager import (
     CodeManagerPromptManager,
 )
@@ -25,8 +25,8 @@ from graph.graph_operations import GraphOperations
 from services.cross_indexing.prompts.phase5_connection_matching.phase5_prompt_manager import (
     run_connection_matching,
 )
-from ..utils.technology_validator import TechnologyValidator
-from ..utils.technology_correction_service import TechnologyCorrectionService
+from .technology_validator import TechnologyValidator
+from .technology_correction_service import TechnologyCorrectionService
 
 
 class CrossIndexService:

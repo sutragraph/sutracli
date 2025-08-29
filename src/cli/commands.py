@@ -146,10 +146,14 @@ def handle_stats_command(args, show_database_stats_func) -> None:
     show_database_stats_func()
 
 
-def _process_agent_updates(updates_generator) -> None:
-    """Process agent updates and print them in formatted output."""
+def _process_agent_updates_with_result(updates_generator):
+    """Process agent updates and capture the final result for post-processing."""
+    agent_result = None
+
     for update in updates_generator:
         update_type = update.get("type", "unknown")
+
+        # Process updates normally for display
         if update_type == "thinking":
             content = update.get("content", "Thinking...")
             print(f"🤔 Thinking...")
@@ -163,6 +167,9 @@ def _process_agent_updates(updates_generator) -> None:
             print(f"🎉 Task Completed 🎉 ")
             print(f"   Result: {result_text}")
             print("-" * 40)
+
+            # Capture the completion result for post-processing
+            agent_result = completion.get("result")
 
         if update_type == "tool_use":
             tool_name = update.get("tool_name", "unknown")
@@ -208,7 +215,9 @@ def _process_agent_updates(updates_generator) -> None:
                 project_name = update.get("project_name")
 
                 if project_name:
-                    print(f"📁 [{project_name}] Listed {files_count} files in {directory}")
+                    print(
+                        f"📁 [{project_name}] Listed {files_count} files in {directory}"
+                    )
                 else:
                     print(f"📁 Listed {files_count} files in {directory}")
 
@@ -220,7 +229,9 @@ def _process_agent_updates(updates_generator) -> None:
                 project_name = update.get("project_name")
 
                 if project_name:
-                    print(f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}')
+                    print(
+                        f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}'
+                    )
                 else:
                     print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
 
@@ -243,12 +254,16 @@ def _process_agent_updates(updates_generator) -> None:
         else:
             pass
 
+    return agent_result
 
-def handle_agent_command(args) -> None:
+
+def handle_agent_command(args):
     """Handle agent command for autonomous problem solving."""
     print(f"\n🤖 SUTRA AGENT - AI-Powered Repository Assistant")
     print("   Your intelligent companion for coding, debugging, and knowledge sharing")
     print("=" * 80)
+
+    agent_result = None  # Store the final agent result for post-processing
 
     try:
         # Get project directory from args if provided
@@ -262,13 +277,18 @@ def handle_agent_command(args) -> None:
             print(f"📝 Initial Problem: {args.problem_query}")
             print("🚀 Starting analysis...")
             print("-" * 40)
-            _process_agent_updates(
+
+            # Capture the agent result for post-processing
+            agent_result = _process_agent_updates_with_result(
                 agent.solve_problem(
                     problem_query=args.problem_query,
                     project_id=getattr(args, "project_id", None),
                 ),
             )
             print("\n✅ INITIAL REQUEST COMPLETED")
+
+            # Return the result for post-processing by modern CLI
+            return agent_result
         else:
             print("🚀 Welcome to Sutra Agent!")
             print(
@@ -321,14 +341,14 @@ def handle_agent_command(args) -> None:
                     continue
 
                 if args.problem_query:
-                    _process_agent_updates(
+                    agent_result = _process_agent_updates_with_result(
                         agent.continue_conversation(
                             query=user_input,
                             project_id=getattr(args, "project_id", None),
                         ),
                     )
                 else:
-                    _process_agent_updates(
+                    agent_result = _process_agent_updates_with_result(
                         agent.solve_problem(
                             problem_query=user_input,
                             project_id=getattr(args, "project_id", None),
@@ -351,6 +371,8 @@ def handle_agent_command(args) -> None:
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
         sys.exit(1)
+
+    return agent_result
 
 
 def handle_parse_command(args) -> str:
