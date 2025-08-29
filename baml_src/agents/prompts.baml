@@ -3,7 +3,7 @@ class BasePromptParams {
   project_context ProjectContext
 }
 
-template_string BaseSystemPrompt(agent_name: Agent,tools: ToolName[], params:BasePromptParams) #"
+template_string BaseSystemPrompt(agent_name: Agent, tools: ToolName[], params:BasePromptParams) #"
 {{ AgentSystemPromptBase(agent_name) }}
 
 {% if params.project_context.projects|length > 0 %}

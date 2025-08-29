@@ -28,7 +28,7 @@ template_string CompletionToolPrompt(agent_name: Agent) #"
 {% if agent_name == Agent.ROADMAP %}
 {{ RoadmapCompletionToolTemplate() }}
 
-{% elif agent_name == "CrossIndexing" %}
+{% elif agent_name == Agent.CrossIndexing %}
 {{ CrossIndexingCompletion() }}
 
 {% endif %}
