@@ -1,48 +1,59 @@
 // Sutra Memory System Types
 // Persistent working memory across conversation iterations
+// Only includes classes used by SutraMemoryParams
 
-enum TaskOperationAction  {
+// Task status enum
+enum TaskStatus {
+  PENDING @alias("pending")
+  CURRENT @alias("current")
+  COMPLETED @alias("completed")
+}
+
+// Task operation actions
+enum TaskOperationAction {
   Add @alias("add")
   Remove @alias("remove")
   Move @alias("move")
+}
+
+// Code storage actions
+enum CodeStorageAction {
+  Add @alias("add")
+  Remove @alias("remove")
 }
 
 // Task Management Types
 class TaskOperation {
   action TaskOperationAction // "add" | "move" | "remove"
   id string
-  from_status string? // for "move" operations: "pending" | "current" | "completed"
-  to_status string? // for "add" and "move" operations: "pending" | "current" | "completed"
-  description string
-}
-
-enum CodeStorageAction{
-  Add @alias("add")
-  Remove @alias("remove")
+  from_status TaskStatus? // for "move" operations
+  to_status TaskStatus? // for "add" and "move" operations
+  description string // required for "add" operations
 }
 
 // Code Storage Types
 class CodeStorage {
   action CodeStorageAction
   id string
-  file string
+  file string // file path for the code snippet
   start_line int
   end_line int
   description string
-  project string?
+  content string? // optional content field
 }
 
 // File Change Tracking Types
 class FileChanges {
-  modified string[]?
-  added string[]?
-  deleted string[]?
+  modified string[]? // file paths that were modified
+  added string[]?    // file paths that were added
+  deleted string[]?  // file paths that were deleted
 }
 
 // Main Sutra Memory Structure
+// This is the main class that agents must return
 class SutraMemoryParams {
-  add_history string // mandatory field - required in every response
-  tasks TaskOperation[]?
-  code CodeStorage[]?
-  files FileChanges?
+  add_history string       // mandatory field - required in every response
+  tasks TaskOperation[]?   // optional task operations
+  code CodeStorage[]?      // optional code snippet operations
+  files FileChanges?       // optional file change tracking
 }

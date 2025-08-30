@@ -5,9 +5,7 @@ A refactored version of the original SutraMemoryManager that uses separated comp
 for better maintainability and modularity.
 
 This is the main interface that combines all the modular components:
-- Models (Task, CodeSnippet, etc.)
 - Memory Operations (task/code management)
-- XML Processing (parsing and processing XML data)
 - State Persistence (import/export)
 - Memory Formatting (LLM context formatting)
 """
@@ -15,9 +13,13 @@ This is the main interface that combines all the modular components:
 from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
 
-from .models import Task, TaskStatus, CodeSnippet, HistoryEntry, ReasoningContext
+from .models import Task, TaskStatus, CodeSnippet, HistoryEntry
+from baml_client.types import (
+    SutraMemoryParams, TaskOperation, TaskOperationAction,
+    CodeStorage, CodeStorageAction, FileChanges
+)
+
 from .memory_operations import MemoryOperations
-from .xml_processor import XMLProcessor
 from .state_persistence import StatePersistence
 from .memory_formatter import MemoryFormatter
 from .memory_updater import MemoryUpdater
@@ -33,13 +35,11 @@ class SutraMemoryManager:
 
     def __init__(self):
         # Initialize core components
-
         self.memory_ops = MemoryOperations()
         self._init_components()
 
     def _init_components(self):
         """Initialize components - can be overridden by subclasses"""
-        self.xml_processor = XMLProcessor(self.memory_ops, self)
         self.state_persistence = StatePersistence(self.memory_ops)
         self.memory_formatter = MemoryFormatter(self.memory_ops)
         self.memory_updater = MemoryUpdater(self.memory_ops)
@@ -127,18 +127,100 @@ class SutraMemoryManager:
         history = self.get_recent_history(count)
         return [h for h in history if h.tool_name is not None]
 
-    # XML Processing Methods
-    def process_sutra_memory_data(
-        self, parsed_xml_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Process already parsed Sutra Memory XML data from xmltodict"""
-        return self.xml_processor.process_sutra_memory_data(parsed_xml_data)
+    # Structured Object Processing Methods
+    def process_sutra_memory_params(self, sutra_memory: SutraMemoryParams) -> Dict[str, Any]:
+        """
+        Process sutra memory changes from SutraMemoryParams object directly.
 
-    def extract_and_process_sutra_memory(
-        self, xml_response: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Extract and process sutra memory from parsed XML response"""
-        return self.xml_processor.extract_and_process_sutra_memory(xml_response)
+        Args:
+            sutra_memory: SutraMemoryParams object from agent response
+
+        Returns:
+            Dict containing processing results and any errors
+        """
+        results = {
+            "success": True,
+            "errors": [],
+            "warnings": [],
+            "changes_applied": {"tasks": [], "code": [], "files": [], "history": []},
+        }
+
+        try:
+            # Process mandatory history (required in every response)
+            if sutra_memory.add_history:
+                if self.add_history(sutra_memory.add_history):
+                    results["changes_applied"]["history"].append(f"Added: {sutra_memory.add_history}")
+                else:
+                    results["errors"].append("Failed to add history entry")
+            else:
+                results["warnings"].append("No history entry found - history is mandatory in every response")
+
+            # Process task operations
+            if sutra_memory.tasks:
+                for task_op in sutra_memory.tasks:
+                    if task_op.action == TaskOperationAction.Add:
+                        status = task_op.to_status or TaskStatus.PENDING
+                        if self.add_task(task_op.id, task_op.description, status):
+                            results["changes_applied"]["tasks"].append(f"Added task {task_op.id}: {task_op.description}")
+                        else:
+                            results["errors"].append(f"Failed to add task {task_op.id}")
+
+                    elif task_op.action == TaskOperationAction.Move:
+                        if self.move_task(task_op.id, task_op.to_status):
+                            results["changes_applied"]["tasks"].append(f"Moved task {task_op.id} to {task_op.to_status}")
+                        else:
+                            results["errors"].append(f"Failed to move task {task_op.id}")
+
+                    elif task_op.action == TaskOperationAction.Remove:
+                        if self.remove_task(task_op.id):
+                            results["changes_applied"]["tasks"].append(f"Removed task {task_op.id}")
+                        else:
+                            results["errors"].append(f"Failed to remove task {task_op.id}")
+
+            # Process code operations
+            if sutra_memory.code:
+                for code_op in sutra_memory.code:
+                    if code_op.action == CodeStorageAction.Add:
+                        if self.add_code_snippet(code_op.id, code_op.file, code_op.start_line, code_op.end_line, code_op.description):
+                            results["changes_applied"]["code"].append(f"Added code {code_op.id}: {code_op.description}")
+                        else:
+                            results["errors"].append(f"Failed to add code snippet {code_op.id}")
+
+                    elif code_op.action == CodeStorageAction.Remove:
+                        if self.remove_code_snippet(code_op.id):
+                            results["changes_applied"]["code"].append(f"Removed code {code_op.id}")
+                        else:
+                            results["errors"].append(f"Failed to remove code snippet {code_op.id}")
+
+            # Process file changes
+            if sutra_memory.files:
+                if sutra_memory.files.modified:
+                    for file_path in sutra_memory.files.modified:
+                        if self.track_file_change(file_path, "modified"):
+                            results["changes_applied"]["files"].append(f"Tracked modification: {file_path}")
+                        else:
+                            results["errors"].append(f"Failed to track file modification: {file_path}")
+
+                if sutra_memory.files.added:
+                    for file_path in sutra_memory.files.added:
+                        if self.track_file_change(file_path, "added"):
+                            results["changes_applied"]["files"].append(f"Tracked addition: {file_path}")
+                        else:
+                            results["errors"].append(f"Failed to track file addition: {file_path}")
+
+                if sutra_memory.files.deleted:
+                    for file_path in sutra_memory.files.deleted:
+                        if self.track_file_change(file_path, "deleted"):
+                            results["changes_applied"]["files"].append(f"Tracked deletion: {file_path}")
+                        else:
+                            results["errors"].append(f"Failed to track file deletion: {file_path}")
+
+            return results
+
+        except Exception as e:
+            results["success"] = False
+            results["errors"].append(f"Error processing sutra memory: {str(e)}")
+            return results
 
     # State Management Methods
     def get_memory_summary(self) -> Dict[str, Any]:
@@ -179,157 +261,3 @@ class SutraMemoryManager:
         return self.memory_updater.update_memory_for_file_changes(
             changed_files, deleted_files, project_id
         )
-
-    def _perform_tool_validation(
-        self, tool_name: str, tool_result: dict, user_query: str
-    ) -> dict:
-        """Perform tool validation directly in memory manager"""
-        validation_result = {"valid": True, "issues": [], "suggestions": []}
-
-        # Check for basic tool result structure
-        if not tool_result or not isinstance(tool_result, dict):
-            validation_result["valid"] = False
-            validation_result["issues"].append(
-                "Tool result is empty or invalid structure"
-            )
-            return validation_result
-
-        # Tool-specific validation
-        if tool_name == "semantic_search":
-            validation_result = self._validate_semantic_search(
-                tool_result, user_query, validation_result
-            )
-        elif tool_name == "database":
-            validation_result = self._validate_database_query(
-                tool_result, user_query, validation_result
-            )
-        elif tool_name == "write_to_file":
-            validation_result = self._validate_file_write(
-                tool_result, user_query, validation_result
-            )
-        elif tool_name == "execute_command":
-            validation_result = self._validate_command_execution(
-                tool_result, user_query, validation_result
-            )
-        elif tool_name == "apply_diff":
-            validation_result = self._validate_diff_application(
-                tool_result, user_query, validation_result
-            )
-        else:
-            validation_result = self._validate_generic_tool(
-                tool_result, user_query, validation_result
-            )
-
-        return validation_result
-
-    def _validate_semantic_search(
-        self, result: dict, query: str, validation: dict
-    ) -> dict:
-        """Validate semantic search results"""
-        # Check for error conditions
-        if result.get("error"):
-            validation["valid"] = False
-            validation["issues"].append(f"Search error: {result['error']}")
-            return validation
-        return validation
-
-    def _validate_database_query(
-        self, result: dict, query: str, validation: dict
-    ) -> dict:
-        """Validate database query results"""
-        # Check for error conditions
-        if result.get("error"):
-            validation["valid"] = False
-            validation["issues"].append(f"Database error: {result['error']}")
-            return validation
-
-        # Check if results are present
-        data = result.get("data", "")
-        if not data or data.strip() == "":
-            validation["issues"].append("No database results returned")
-            validation["suggestions"].append("Try semantic search for broader context")
-
-        return validation
-
-    def _validate_file_write(self, result: dict, query: str, validation: dict) -> dict:
-        """Validate file write operations"""
-        # Check for successful files
-        successful_files = result.get("successful_files", [])
-        failed_files = result.get("failed_files", [])
-
-        if failed_files:
-            validation["valid"] = False
-            validation["issues"].append(f"File write failed: {failed_files}")
-            return validation
-
-        if not successful_files:
-            validation["valid"] = False
-            validation["issues"].append("No files were written successfully")
-            return validation
-
-        return validation
-
-    def _validate_command_execution(
-        self, result: dict, query: str, validation: dict
-    ) -> dict:
-        """Validate command execution results"""
-        # Check exit code
-        exit_code = result.get("exit_code")
-        if exit_code is not None and exit_code != 0:
-            validation["valid"] = False
-            validation["issues"].append(f"Command failed with exit code: {exit_code}")
-
-            # Check for common error patterns
-            error_output = result.get("error", "")
-            if "permission denied" in error_output.lower():
-                validation["suggestions"].append(
-                    "Check file permissions or use sudo if appropriate"
-                )
-            elif "command not found" in error_output.lower():
-                validation["suggestions"].append(
-                    "Verify the command exists and is in PATH"
-                )
-            elif "no such file or directory" in error_output.lower():
-                validation["suggestions"].append(
-                    "Check file paths and ensure files exist"
-                )
-
-        return validation
-
-    def _validate_diff_application(
-        self, result: dict, query: str, validation: dict
-    ) -> dict:
-        """Validate diff application results"""
-        # Check for successful applications
-        successful_files = result.get("successful_files", [])
-        failed_files = result.get("failed_files", [])
-        failed_diffs = result.get("failed_diffs", [])
-
-        if failed_files or failed_diffs:
-            validation["valid"] = False
-            validation["issues"].append(
-                f"Diff application failed: files={failed_files}, diffs={failed_diffs}"
-            )
-            return validation
-
-        if not successful_files:
-            validation["valid"] = False
-            validation["issues"].append("No diffs were applied successfully")
-            return validation
-
-        return validation
-
-    def _validate_generic_tool(
-        self, result: dict, query: str, validation: dict
-    ) -> dict:
-        """Validate generic tool results"""
-        # Check for basic success indicators
-        if result.get("success") is False:
-            validation["valid"] = False
-            validation["issues"].append("Tool reported failure")
-
-        if result.get("error"):
-            validation["valid"] = False
-            validation["issues"].append(f"Tool error: {result['error']}")
-
-        return validation
