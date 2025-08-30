@@ -25,18 +25,21 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
 
     Usage with explicit file paths:
     {
-      "keyword": "search term",
-      "before_lines": "number",
-      "after_lines": "number",
-      "case_sensitive": "boolean",
-      "regex": "boolean",
-      "file_paths": "path/to/file1.js, path/to/file2.ts"
+      tool_name: "search_keyword",
+      parameters: {
+        "keyword": "search term",
+        "before_lines": "number",
+        "after_lines": "number",
+        "case_sensitive": "boolean",
+        "regex": "boolean",
+        "file_paths": "path/to/file1.js, path/to/file2.ts"
+      }
     }
 
     Examples:
 
     1. Searching for a function across multiple specific files:
-    {
+    parameters: {
       "keyword": "getUserById",
       "before_lines": 5,
       "after_lines": 5,
@@ -46,7 +49,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     }
 
     2. Searching for a pattern with regex in single file:
-    {
+    parameters: {
       "keyword": "function\\s+\\w+\\s*\\(.*\\)",
       "case_sensitive": false,
       "regex": true,
@@ -54,7 +57,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     }
 
     3. Searching for import statements in multiple files:
-    {
+    parameters: {
       "keyword": "import.*redis",
       "case_sensitive": false,
       "regex": true,
@@ -62,7 +65,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     }
 
     4. Searching for multiple patterns (API endpoints):
-    {
+    parameters: {
       "keyword": "\\b(app|router)\\.(put|PUT)\\s*\\([^)]*apiFunction\\b|\\bapiFunction\\b.*\\b(put|PUT)\\b",
       "case_sensitive": false,
       "file_paths": "src/api",
@@ -72,7 +75,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     }
 
     5. Searching for multiple function names:
-    {
+    parameters: {
       "keyword": "getUserData|setUserData|deleteUserData",
       "case_sensitive": false,
       "file_paths": "src/config",
@@ -80,7 +83,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     }
 
     6. Searching within specific directories using file paths:
-    {
+    parameters: {
       "keyword": "config|Config",
       "file_paths": "src/config, src/utils",
       "case_sensitive": false,

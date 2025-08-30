@@ -1,6 +1,3 @@
-
-
-
 class RoadmapCompletionToolCall {
   tool_name "attempt_completion"
   parameters RoadmapCompletionParams

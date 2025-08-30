@@ -183,9 +183,6 @@ class AgentService:
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
 
-        # Set reasoning context in memory manager
-        self.memory_manager.set_reasoning_context(problem_query)
-
         # Add user query to sutra memory at the start
         # Get rich memory from memory manager
         current_memory_rich = self.memory_manager.get_memory_for_llm()
@@ -226,9 +223,6 @@ class AgentService:
         # Clear error handler and result verifier history
         self.error_handler.clear_history()
         self.result_verifier.clear_history()
-
-        # Set new reasoning context for continuation
-        self.memory_manager.set_reasoning_context(query)
 
         # Add user query to sutra memory for continuation
         # Get rich memory from memory manager

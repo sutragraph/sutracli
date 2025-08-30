@@ -11,9 +11,12 @@ template_string SemanticSearchToolTemplate() #"
 
     Usage:
     {
-      "query": "search terms here",
-      "project_name": "project_name_here",
-      "fetch_next_code": "true|false"
+      tool_name: "semantic_search",
+      parameters: {
+        "query": "search terms here",
+        "project_name": "project_name_here",
+        "fetch_next_code": "true|false"
+      }
     }
 
     Parameter Details:
@@ -29,36 +32,38 @@ template_string SemanticSearchToolTemplate() #"
     Examples:
 
     1. Finding authentication patterns:
-    {
+    parameters: {
       "query": "user authentication login"
     }
 
     2. Finding API routing patterns:
-    {
+    parameters: {
       "query": "API routing router express"
     }
 
     3. Finding file upload implementations:
-    {
+    parameters: {
       "query": "file upload multer storage"
     }
 
     4. Finding database patterns in a specific project:
-    {
+    parameters: {
       "query": "database connection setup",
       "project_name": "my-backend-project"
     }
 
     5. Finding error handling patterns:
-    {
+    parameters: {
       "query": "error handling try catch exception"
     }
 
     6. Finding specific implementation patterns:
-    {
+    parameters: {
       "query": "payment processing stripe integration"
+    }
+    
     7. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
-    {
+    parameters: {
       "query": "database connection setup mongodb",
       "fetch_next_code": true
     }

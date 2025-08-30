@@ -10,20 +10,23 @@ template_string ListFilesToolWithoutProjectNameTemplate() #"
 
     Usage with explicit path:
     {
-      "path": "Directory path here",
-      "recursive": "true|false"
+      tool_name: "list_files",
+      parameters: {
+        "path": "Directory path here",
+        "recursive": "true|false"
+      }
     }
 
     Examples:
 
     Example 1: List files in a specific directory
-    {
+    parameters: {
       "path": "/home/user/project",
       "recursive": true
     }
 
     Example 2: List files in a specific subdirectory
-    {
+    parameters: {
       "path": "src/components",
       "recursive": false
     }

@@ -40,6 +40,117 @@ class ActionExecutor:
         # Use shared project indexer if provided, otherwise create new one
         self.project_indexer = ProjectIndexer(self.sutra_memory_manager)
 
+    def process_json_response(
+        self, json_response: Dict[str, Any], user_query: str
+    ) -> Iterator[Dict[str, Any]]:
+        """
+        Process JSON response from BAML containing thinking, tool, and sutra memory.
+
+        Args:
+            json_response: JSON response from BAML (already parsed)
+            user_query: Original user query
+
+        Yields:
+            Processing updates including thinking, tool execution, and memory updates
+        """
+        try:
+            # Direct access to JSON components (no extraction needed)
+            thinking_content = json_response.get("thinking")
+            completion_data = json_response.get("attempt_completion")
+            sutra_memory_update = json_response.get("sutra_memory")
+
+            # Debug logging for tool detection (matching XML processor)
+            logger.debug(f"JSON Response keys: {list(json_response.keys())}")
+            logger.debug(f"Thinking content found: {thinking_content is not None}")
+            logger.debug(f"Completion data found: {completion_data is not None}")
+            logger.debug(
+                f"Sutra memory update found: {sutra_memory_update is not None}"
+            )
+
+            # Yield thinking information
+            if thinking_content:
+                yield {
+                    "type": "thinking",
+                    "content": thinking_content,
+                    "timestamp": time.time(),
+                }
+
+            # Update sutra memory if present
+            if sutra_memory_update:
+                # Process sutra memory using the manager
+                # Create compatible format for the XML processor
+                json_as_xml_format = [{"sutra_memory": sutra_memory_update}]
+                memory_result = (
+                    self.sutra_memory_manager.extract_and_process_sutra_memory(
+                        json_as_xml_format
+                    )
+                )
+                yield {
+                    "type": "sutra_memory_update",
+                    "result": memory_result,
+                    "timestamp": time.time(),
+                }
+
+            # Handle attempt_completion specially - it's both a tool and completion
+            if completion_data:
+                tool_data = {
+                    "_tool_name": "attempt_completion",
+                    "result": completion_data,
+                }
+                yield {
+                    "type": "tool",
+                    "tool_result": tool_data,
+                    "timestamp": time.time(),
+                }
+                # Execute the completion tool
+                action = self._create_agent_action(
+                    "attempt_completion", tool_data, user_query
+                )
+                tool_action = get_tool_action(ToolName.COMPLETION)
+                yield from tool_action(action)
+                # Then mark as task complete
+                yield {
+                    "type": "task_complete",
+                    "completion": tool_data,
+                    "timestamp": time.time(),
+                }
+                return
+
+            # Check for other tools in the JSON response
+            tool_found = False
+            for tool_tag in TOOL_NAME_MAPPING.keys():
+                if tool_tag in json_response and tool_tag != "attempt_completion":
+                    tool_data = json_response[tool_tag]
+                    if isinstance(tool_data, dict):
+                        tool_data["_tool_name"] = tool_tag
+                    else:
+                        tool_data = {"_tool_name": tool_tag, "content": tool_data}
+
+                    yield from self._execute_tool(tool_tag, tool_data, user_query)
+                    tool_found = True
+                    break
+
+            # If no tool is present but we have thinking or sutra_memory,
+            # we still need to ensure one tool is executed per iteration
+            if not tool_found and not completion_data:
+                if thinking_content:
+                    yield {
+                        "type": "tool_use",
+                        "used_tool": "none",
+                        "status": "failed",
+                        "message": "You didn't provide a tool call. You must use at least one tool in every response. Please use a tool like semantic_search, database, execute_command, apply_diff, write_to_file, list_files, search_keyword, or attempt_completion.",
+                        "summary": "No tool was used - violates one-tool-per-iteration rule",
+                        "timestamp": time.time(),
+                    }
+
+        except Exception as e:
+            logger.error(f"Error processing JSON response: {e}")
+            yield {
+                "type": "error",
+                "error": f"Failed to process JSON response: {str(e)}",
+                "timestamp": time.time(),
+            }
+
     def process_xml_response(
         self, xml_response: List[Dict[str, Any]], user_query: str
     ) -> Iterator[Dict[str, Any]]:

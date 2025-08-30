@@ -85,9 +85,6 @@ class BAMLService:
         # Get full function name with provider prefix
         full_function_name = self._get_full_function_name(function_name)
 
-        # Log the function call with provider info
-        logger.info(f"🤖 Calling BAML {full_function_name} (provider: {self.provider})")
-
         # Get BAML function
         baml_function = self._get_baml_function(full_function_name)
 
@@ -102,6 +99,49 @@ class BAMLService:
 
                 # Call BAML function with collector
                 response = baml_function(**kwargs, baml_options={"collector": collector})
+
+                # Debug log raw response and user prompts if collector has the data
+                try:
+                    if collector.last and collector.last.calls:
+                        # Add visual separator for debug section
+                        logger.debug("=" * 80)
+
+                        # Get the HTTP request body which contains the prompt
+                        request_body = collector.last.calls[-1].http_request.body.json()
+
+                        # The messages array in the request body contains all prompts including user prompts
+                        if "messages" in request_body:
+                            logger.debug("-" * 50)
+                            logger.debug("📝 USER PROMPTS:")
+                            logger.debug("-" * 50)
+                            messages = request_body["messages"]
+                            # Filter for just user messages
+                            user_messages = [
+                                msg for msg in messages if msg["role"] == "user"
+                            ]
+                            for i, msg in enumerate(user_messages):
+                                logger.debug(f"🔹 User prompt {i+1}:")
+                                logger.debug(f"   {msg['content'][0]['text']}")
+                                logger.debug("")
+
+                        # Log raw LLM response
+                        if (
+                            hasattr(collector.last, "raw_llm_response")
+                            and collector.last.raw_llm_response
+                        ):
+                            logger.debug("-" * 50)
+                            logger.debug("🤖 RAW LLM RESPONSE:")
+                            logger.debug("-" * 50)
+                            logger.debug(f"{collector.last.raw_llm_response}")
+                            logger.debug("")
+                        logger.debug("=" * 80)
+
+                except Exception as e:
+                    logger.debug("=" * 80)
+                    logger.debug(
+                        f"❌ Could not extract raw response/prompts for {full_function_name}: {e}"
+                    )
+                    logger.debug("=" * 80)
 
                 # Extract actual token usage from BAML collector
                 actual_input_tokens = getattr(
@@ -135,7 +175,7 @@ class BAMLService:
 
                 # Log token usage for this call with call counter
                 print(
-                    f"🔢 {full_function_name} Token Usage #{call_number} - "
+                    f"🔢 Token Usage #{call_number} - "
                     f"Input: {actual_input_tokens}, Output: {actual_output_tokens}, "
                     f"Total: {actual_input_tokens + actual_output_tokens}"
                 )
@@ -146,28 +186,11 @@ class BAMLService:
                     + _global_token_usage["total_output_tokens"]
                 )
                 print(
-                    f"📊 Cumulative Token Usage (All {call_number} calls) - "
+                    f"📊 Cumulative Token Usage (Total {call_number} calls) - "
                     f"Input: {_global_token_usage['total_input_tokens']}, "
                     f"Output: {_global_token_usage['total_output_tokens']}, "
                     f"Total: {cumulative_total}"
                 )
-
-                # Log additional collector information
-                if collector.last:
-                    if hasattr(collector.last, "raw_llm_response"):
-                        logger.debug(
-                            f"🔍 BAML {full_function_name} Raw Response Length: {len(str(collector.last.raw_llm_response))}"
-                        )
-                    if hasattr(collector.last, "calls") and collector.last.calls:
-                        logger.debug(
-                            f"🔍 BAML {full_function_name} HTTP Calls: {len(collector.last.calls)}"
-                        )
-
-                # If we get here, the call was successful
-                if attempt > 0:
-                    logger.info(
-                        f"✅ BAML {full_function_name} succeeded on attempt {attempt + 1}"
-                    )
 
                 return response
 

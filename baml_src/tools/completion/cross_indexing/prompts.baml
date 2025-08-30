@@ -7,7 +7,10 @@ Usage: attempt_completion(result="Brief summary of what you accomplished")
 
 Expected Format:
 {
-  "result": "Brief summary of what was accomplished and key findings in 3-4 lines."
+  tool_name: "attempt_completion",
+  parameters: {
+    "result": "Brief summary of what was accomplished and key findings in 3-4 lines."
+  }
 }
 
 Summary Requirements:

@@ -1,6 +1,6 @@
 template_string SystemPrompt_Phase2(home: string, current_dir: string) #"
 {{ Base_Phase2() }}
-{{ CrossIndexingToolCalls(__baml_info__.enums['Tools_CrossIndexing'].values) }}
+{{ CrossIndexingToolCalls([ToolName.Database, ToolName.SearchKeywordWithoutProjectName, ToolName.ListFilesWithoutProjectName]) }}
 {{ SutraMemory_Phase2() }}
 {{ ToolGuidelines_Phase2() }}
 {{ ToolUsageExamples_Phase2() }}

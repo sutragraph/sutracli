@@ -15,39 +15,48 @@ template_string ListFilesToolTemplate() #"
 
     Usage with explicit path:
     {
-      "path": "Directory path here",
-      "recursive": "true|false"
+      tool_name: "list_files",
+      parameters: {
+        "path": "Directory path here",
+        "recursive": "true|false"
+      }
     }
 
     Usage with project name (auto-resolves to project base path):
     {
-      "project_name": "Project name here",
-      "recursive": "true|false"
+      tool_name: "list_files",
+      parameters: {
+        "project_name": "Project name here",
+        "recursive": "true|false"
+      }
     }
 
     Usage with both (path takes precedence, project_name included in response):
     {
-      "path": "Directory path here",
-      "project_name": "Project name here",
-      "recursive": "true|false"
+      tool_name: "list_files",
+      parameters: {
+        "path": "Directory path here",
+        "project_name": "Project name here",
+        "recursive": "true|false"
+      }
     }
 
     Examples:
 
     Example 1: List files in a specific directory
-    {
+    parameters: {
       "path": "/home/user/project",
       "recursive": true
     }
 
     Example 2: List files in a project using project name (auto-resolves base path)
-    {
+    parameters: {
       "project_name": "my-awesome-project",
       "recursive": true
     }
 
     Example 3: List files with both path and project name
-    {
+    parameters: {
       "path": "src/components",
       "project_name": "my-awesome-project",
       "recursive": false

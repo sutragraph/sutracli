@@ -30,22 +30,28 @@ template_string SearchKeywordToolTemplate() #"
 
     Usage with explicit file paths:
     {
-      "keyword": "search term",
-      "before_lines": "number",
-      "after_lines": "number",
-      "case_sensitive": "boolean",
-      "regex": "boolean",
-      "file_paths": "path/to/file1.js, path/to/file2.ts"
+      tool_name: "search_keyword",
+      parameters: {
+        "keyword": "search term",
+        "before_lines": "number",
+        "after_lines": "number",
+        "case_sensitive": "boolean",
+        "regex": "boolean",
+        "file_paths": "path/to/file1.js, path/to/file2.ts"
+      }
     }
 
     Usage with project name (auto-resolves to project base path):
     {
-      "keyword": "search term",
-      "project_name": "Project name here",
-      "before_lines": "number",
-      "after_lines": "number",
-      "case_sensitive": "boolean",
-      "regex": "boolean"
+      tool_name: "search_keyword",
+      parameters: {
+        "keyword": "search term",
+        "project_name": "Project name here",
+        "before_lines": "number",
+        "after_lines": "number",
+        "case_sensitive": "boolean",
+        "regex": "boolean"
+      }
     }
 
     **DO NOT use both file_paths and project_name together - choose one approach:**
@@ -53,7 +59,7 @@ template_string SearchKeywordToolTemplate() #"
     Examples:
 
     1. Searching for a function across multiple specific files:
-    {
+    parameters: {
       "keyword": "getUserById",
       "before_lines": 5,
       "after_lines": 5,
@@ -63,7 +69,7 @@ template_string SearchKeywordToolTemplate() #"
     }
 
     2. Searching for a pattern with regex in single file:
-    {
+    parameters: {
       "keyword": "function\\s+\\w+\\s*\\(.*\\)",
       "case_sensitive": false,
       "regex": true,
@@ -71,7 +77,7 @@ template_string SearchKeywordToolTemplate() #"
     }
 
     3. Searching across entire project using project name:
-    {
+    parameters: {
       "keyword": "FirebaseRealtimeDB",
       "project_name": "my-awesome-project",
       "before_lines": 0,
@@ -81,7 +87,7 @@ template_string SearchKeywordToolTemplate() #"
     }
 
     4. Searching for import statements in multiple files:
-    {
+    parameters: {
       "keyword": "import.*redis",
       "case_sensitive": false,
       "regex": true,
@@ -89,7 +95,7 @@ template_string SearchKeywordToolTemplate() #"
     }
 
     5. Searching for multiple patterns (API endpoints) using project name:
-    {
+    parameters: {
       "keyword": "\\b(app|router)\\.(put|PUT)\\s*\\([^)]*apiFunction\\b|\\bapiFunction\\b.*\\b(put|PUT)\\b",
       "project_name": "api-server",
       "case_sensitive": false,
@@ -99,7 +105,7 @@ template_string SearchKeywordToolTemplate() #"
     }
 
     6. Searching for multiple function names using project name:
-    {
+    parameters: {
       "keyword": "getUserData|setUserData|deleteUserData",
       "project_name": "user-management-service",
       "case_sensitive": false,
@@ -107,7 +113,7 @@ template_string SearchKeywordToolTemplate() #"
     }
 
     7. Searching within specific directories using file paths:
-    {
+    parameters: {
       "keyword": "config|Config",
       "file_paths": "src/config, src/utils",
       "case_sensitive": false,
@@ -115,7 +121,7 @@ template_string SearchKeywordToolTemplate() #"
     }
 
     8. Searching within a project using project name (auto-resolves base path):
-    {
+    parameters: {
       "keyword": "getUserById",
       "project_name": "my-awesome-project",
       "before_lines": 2,

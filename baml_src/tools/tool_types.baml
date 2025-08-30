@@ -4,7 +4,7 @@ enum ToolName {
   SearchKeywordWithoutProjectName
   SemanticSearch
   ListFiles
-  ListFilesToolWithoutProjectName
+  ListFilesWithoutProjectName
   Completion
 }
 

@@ -3,18 +3,12 @@ class SystemInfo_CrossIndexing {
   current_dir string
 }
 
-enum Tools_CrossIndexing {
-  ListFilesWithoutProjectName
-  SearchKeywordWithoutProjectName
-  Database
-}
-
 class CompletionToolCall_CrossIndexing {
   tool_name "attempt_completion"
   parameters CompletionResponse_CrossIndexing
 }
 
-type ToolCall_CrossIndexing = ListFilesParamsWithoutProjectName | DatabaseParams | SearchKeywordParamsWithoutProjectName | CompletionToolCall_CrossIndexing
+type ToolCall_CrossIndexing = ListFilesToolCallWithoutProjectName | DatabaseToolCall | SearchKeywordToolCallWithoutProjectName | CompletionToolCall_CrossIndexing
 
 class CrossIndexingResponse {
   thinking string?

@@ -31,24 +31,27 @@ template_string DatabaseToolTemplate() #"
 
     Usage:
     {
-      "query_name": "query_type",
-      "file_path": "path/to/file",
-      "start_line": "start_line_number",
-      "end_line": "end_line_number",
-      "block_id": "block_identifier",
-      "fetch_next_code": "true|false"
+      tool_name: "database",
+      parameters: {
+        "query_name": "query_type",
+        "file_path": "path/to/file",
+        "start_line": "start_line_number",
+        "end_line": "end_line_number",
+        "block_id": "block_identifier",
+        "fetch_next_code": "true|false"
+      }
     }
 
     Examples:
 
     1. Get file information by path:
-    {
+    parameters: {
       "query_name": "GET_FILE_BY_PATH",
       "file_path": "path/to/your/file.py"
     }
 
     2. Get specific section of a file:
-    {
+    parameters: {
       "query_name": "GET_FILE_BY_PATH",
       "file_path": "path/to/your/file.py",
       "start_line": 10,
@@ -56,19 +59,19 @@ template_string DatabaseToolTemplate() #"
     }
 
     3. Get all code blocks in a file:
-    {
+    parameters: {
       "query_name": "GET_FILE_BLOCK_SUMMARY",
       "file_path": "path/to/your/file.py"
     }
 
     4. Get block details:
-    {
+    parameters: {
       "query_name": "GET_BLOCK_DETAILS",
       "block_id": "123"
     }
 
     5. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
-    {
+    parameters: {
       "query_name": "GET_FILE_BLOCK_SUMMARY",
       "file_path": "path/to/your/file.py",
       "fetch_next_code": true

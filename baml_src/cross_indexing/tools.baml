@@ -1,5 +1,5 @@
-template_string CrossIndexingToolCalls(tools: Tools_CrossIndexing[]) #"
+template_string CrossIndexingToolCalls(tools: ToolName[]) #"
 {% if tools|length > 0 %}
-{{ ToolsPrompt(AgentName.CrossIndexing, tools) }}
+{{ ToolsPrompt(Agent.CrossIndexing, tools) }}
 {% endif %}
 "#

@@ -126,7 +126,10 @@ template_string RoadmapCompletionToolTemplate() #"
 
     Usage:
     {
-      "result": "Request for comprehensive strategic roadmap completion"
+      tool_name: "attempt_completion",
+      parameters: {
+        "result": "Request for comprehensive strategic roadmap completion"
+      }
     }
 
     The result parameter should trigger generation of the complete roadmap structure with all components listed above, populated with your specific analysis findings and strategic decisions.
