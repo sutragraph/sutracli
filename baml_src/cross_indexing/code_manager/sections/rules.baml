@@ -84,16 +84,14 @@ RULES
     - NO SAMPLING: Never extract "representative examples" - extract every single connection discovered
     - COMPLETE ANALYSIS: If search results return 100 results and if it is any connection type, you must extract all 100 by providing their file paths and line numbers rather than extracting just a few representative ones
 
-20. If no connection code is found in the tool results, return nothing - no XML output is needed.
+20. When you find connection code, return it with proper file paths, line ranges, technology names, and connection direction. This ensures all necessary context is provided.
 
-21. When you find connection code, return it with proper file paths, line ranges, technology names, and connection direction. This ensures all necessary context is provided.
-
-22. INCOMPLETE CODE SNIPPET HANDLING: When you encounter incomplete code snippets from search_keyword results where API calls or connection code appears truncated (missing closing parentheses, incomplete parameters, etc.), expand the line range to capture the complete code block. Use intelligent estimation to include additional lines:
+21. INCOMPLETE CODE SNIPPET HANDLING: When you encounter incomplete code snippets from search_keyword results where API calls or connection code appears truncated (missing closing parentheses, incomplete parameters, etc.), expand the line range to capture the complete code block. Use intelligent estimation to include additional lines:
     - For API calls like `axios.get(` that appear incomplete, extend by 2-4 lines to capture complete call
     - For function calls with multiple parameters, extend until logical completion (closing parenthesis, semicolon)
     - Example: If search shows lines 10-12 but code appears incomplete, extend to lines 10-14 or 10-16 based on context
     - Better to include extra lines than miss essential connection parameters or configuration
     - This ensures complete connection code context is captured for analysis
 
-23. Return Each and every single code which is related to incoming/outgoing connections in the XML format without missing any connection code. Don't endup returning only few representative examples. If you find 100 connections, return all 100 in the XML format.
+22. Return Each and every single code which is related to incoming/outgoing connections in the JSON format without missing any connection code. Don't endup returning only few representative examples. If you find 100 connections, return all 100 in the JSON format.
 "#

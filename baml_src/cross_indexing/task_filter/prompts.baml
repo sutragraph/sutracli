@@ -7,6 +7,7 @@ template_string SystemPrompt_TaskFilter() #"
 "#
 
 template_string UserPrompt_TaskFilter(task_list: string) #"
+{{ _.role("user") }}
 ## Tasks to Filter
 
 The following tasks were created by the previous phase and need to be filtered for duplicates and optimized:
@@ -29,7 +30,6 @@ function AwsTaskFilter(task_list: string) -> TaskFilterResponse {
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_TaskFilter() }}
-
     {{ UserPrompt_TaskFilter(task_list) }}
   "#
 }
@@ -39,7 +39,6 @@ function AnthropicTaskFilter(task_list: string) -> TaskFilterResponse {
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_TaskFilter() }}
-
     {{ UserPrompt_TaskFilter(task_list) }}
   "#
 }

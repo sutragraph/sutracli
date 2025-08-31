@@ -23,7 +23,6 @@ function AwsImplementationDiscovery(analysis_query: string, memory_context: stri
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Phase3(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Phase3(analysis_query, memory_context) }}
   "#
 }
@@ -33,7 +32,6 @@ function AnthropicImplementationDiscovery(analysis_query: string, memory_context
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Phase3(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Phase3(analysis_query, memory_context) }}
   "#
 }

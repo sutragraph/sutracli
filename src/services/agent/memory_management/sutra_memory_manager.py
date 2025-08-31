@@ -159,17 +159,44 @@ class SutraMemoryManager:
             if sutra_memory.tasks:
                 for task_op in sutra_memory.tasks:
                     if task_op.action == TaskOperationAction.Add:
-                        status = task_op.to_status or TaskStatus.PENDING
-                        if self.add_task(task_op.id, task_op.description, status):
-                            results["changes_applied"]["tasks"].append(f"Added task {task_op.id}: {task_op.description}")
-                        else:
-                            results["errors"].append(f"Failed to add task {task_op.id}")
+                        # Use counter+1 for task ID instead of LLM provided ID
+                        actual_task_id = self.get_next_task_id()
+                        
+                        # Convert BAML status to TaskStatus enum
+                        try:
+                            if task_op.to_status:
+                                if isinstance(task_op.to_status, str):
+                                    # BAML sends uppercase (CURRENT), convert to lowercase for our enum
+                                    status = TaskStatus(task_op.to_status.lower())
+                                else:
+                                    # Handle TaskStatus enum directly
+                                    status = task_op.to_status
+                            else:
+                                status = TaskStatus.PENDING
+                                
+                            if self.add_task(actual_task_id, task_op.description, status):
+                                results["changes_applied"]["tasks"].append(f"Added task {actual_task_id}: {task_op.description} (LLM ID {task_op.id} ignored)")
+                            else:
+                                results["errors"].append(f"Failed to add task {actual_task_id} (LLM ID {task_op.id})")
+                        except ValueError as e:
+                            results["errors"].append(f"Invalid status '{task_op.to_status}' for new task {actual_task_id}: {e}")
 
                     elif task_op.action == TaskOperationAction.Move:
-                        if self.move_task(task_op.id, task_op.to_status):
-                            results["changes_applied"]["tasks"].append(f"Moved task {task_op.id} to {task_op.to_status}")
-                        else:
-                            results["errors"].append(f"Failed to move task {task_op.id}")
+                        # Convert BAML status to TaskStatus enum
+                        try:
+                            if isinstance(task_op.to_status, str):
+                                # BAML sends uppercase (CURRENT), convert to lowercase for our enum
+                                target_status = TaskStatus(task_op.to_status.lower())
+                            else:
+                                # Handle TaskStatus enum directly
+                                target_status = task_op.to_status
+                            
+                            if self.move_task(task_op.id, target_status):
+                                results["changes_applied"]["tasks"].append(f"Moved task {task_op.id} to {target_status.value}")
+                            else:
+                                results["errors"].append(f"Failed to move task {task_op.id}")
+                        except ValueError as e:
+                            results["errors"].append(f"Invalid status '{task_op.to_status}' for task {task_op.id}: {e}")
 
                     elif task_op.action == TaskOperationAction.Remove:
                         if self.remove_task(task_op.id):

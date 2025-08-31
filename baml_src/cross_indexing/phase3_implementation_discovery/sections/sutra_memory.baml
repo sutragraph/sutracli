@@ -20,14 +20,12 @@ Usage Format
         "id": "task_id",
         "from_status": "pending",
         "to_status": "current",
-        "description": ""
       },
       {
         "action": "move", 
         "id": "task_id",
         "from_status": "current",
         "to_status": "completed",
-        "description": ""
       },
       {
         "action": "add",
@@ -51,14 +49,12 @@ Example 1: Wrapper function analysis
         "id": "13",
         "from_status": "pending",
         "to_status": "current",
-        "description": ""
       },
       {
         "action": "move",
         "id": "3", 
         "from_status": "current",
         "to_status": "completed",
-        "description": ""
       }
     ],
     "add_history": "Used search_keyword to find apiClient wrapper function usage - discovered 18 calls across 6 files with real endpoints and parameters. All wrapper function calls with actual usage analyzed."
@@ -74,7 +70,6 @@ Example 2: Wrapper function discovery with task creation
         "id": "3",
         "from_status": "current", 
         "to_status": "completed",
-        "description": ""
       },
       {
         "action": "add",
@@ -96,7 +91,6 @@ Example 3: Custom API client pattern discovery with task creation
         "id": "3",
         "from_status": "current",
         "to_status": "completed", 
-        "description": ""
       },
       {
         "action": "add",
@@ -118,7 +112,6 @@ Example 4: Wrapper function analysis with dynamic parameters
         "id": "15",
         "from_status": "current",
         "to_status": "completed",
-        "description": ""
       },
       {
         "action": "add", 
@@ -140,7 +133,6 @@ Example 5: Wrapper function usage discovery
         "id": "23",
         "from_status": "current",
         "to_status": "completed",
-        "description": ""
       },
       {
         "action": "add",
@@ -162,7 +154,6 @@ Example 6: Environment variable analysis with config file discovery
         "id": "25",
         "from_status": "current",
         "to_status": "completed",
-        "description": ""
       },
       {
         "action": "add",
@@ -184,7 +175,6 @@ Example 7: Task completion scenario
         "id": "3",
         "from_status": "current",
         "to_status": "completed",
-        "description": ""
       }
     ],
     "add_history": "Used attempt_completion - provided summary of discovered connection implementations across multiple languages"

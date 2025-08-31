@@ -111,43 +111,6 @@ class AgentService:
         except Exception as e:
             logger.error(f"Error updating session memory: {e}")
 
-    def _is_critical_tool_failure(self, event: Dict[str, Any]) -> bool:
-        """Determine if a tool failure is critical enough to stop execution."""
-        tool_name = event.get("tool_name", "")
-        error_msg = event.get("error", event.get("message", "")).lower()
-
-        # Critical tool failures that should stop execution
-        critical_tools = ["write_to_file", "apply_diff", "execute_command"]
-        critical_errors = [
-            "permission denied",
-            "file not found",
-            "directory not found",
-            "invalid path",
-            "access denied",
-            "command not found",
-            "syntax error",
-            "compilation error",
-        ]
-
-        # Stop if critical tool fails
-        if tool_name in critical_tools:
-            return True
-
-        # Stop if error message indicates critical failure
-        for critical_error in critical_errors:
-            if critical_error in error_msg:
-                return True
-
-        # Stop if multiple consecutive failures (indicates systemic issue)
-        if hasattr(self, "_consecutive_failures"):
-            self._consecutive_failures += 1
-            if self._consecutive_failures >= 3:
-                return True
-        else:
-            self._consecutive_failures = 1
-
-        return False
-
     def _detect_simple_completion(self, event: Dict[str, Any], user_query: str) -> bool:
         """Detect if a simple task has been completed successfully."""
         tool_name = event.get("tool_name", "")
@@ -373,17 +336,6 @@ class AgentService:
                                     f"📝 Recommendations: {verification_result['recommendations']}"
                                 )
 
-                        # # Show data preview for successful tool use
-                        # if event_type == "tool_use" and "data" in event:
-                        #     data_preview = str(event["data"])[:200]
-                        #     print(f"   Result: {data_preview}...")
-                        # elif "results" in event:
-                        #     results_preview = str(event["results"])[:200]
-                        #     print(f"   Result: {results_preview}...")
-                        # elif "output" in event:
-                        #     output_preview = str(event["output"])[:200]
-                        #     print(f"   Output: {output_preview}...")
-
                         # Check for tool failures and stop if critical
                         if (
                             event.get("type") == "error"
@@ -396,16 +348,6 @@ class AgentService:
                             logger.error(f"Tool {tool_name} failed: {error_msg}")
                             print(f"Error: Tool {tool_name} failed: {error_msg}")
 
-                            # Stop on critical tool failures
-                            if self._is_critical_tool_failure(event):
-                                tool_failed = True
-                                yield {
-                                    "type": "critical_error",
-                                    "message": f"Critical tool failure: {error_msg}",
-                                    "tool": tool_name,
-                                    "iteration": current_iteration,
-                                }
-                                break
                         else:
                             # Reset consecutive failures on success
                             self._consecutive_failures = 0

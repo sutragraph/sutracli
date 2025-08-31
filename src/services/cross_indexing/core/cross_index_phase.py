@@ -284,7 +284,7 @@ class CrossIndexing:
                     f"   Matching {len(incoming_connections)} incoming with {len(outgoing_connections)} outgoing connections for {tech_type}"
                 )
 
-                # Format connections for
+                # Format connections for BAML
                 incoming_formatted = format_connections(
                     incoming_connections, "INCOMING"
                 )
@@ -292,7 +292,7 @@ class CrossIndexing:
                     outgoing_connections, "OUTGOING"
                 )
 
-                # Call function for this technology type
+                # Call BAML function for this technology type
                 try:
                     response: ConnectionMatchingResponse = self.baml_service.call(
                         function_name="ConnectionMatching",
@@ -372,48 +372,59 @@ class CrossIndexing:
                 "message": "task filtering failed due to unexpected error",
             }
 
-    def run_technology_correction(self, unmatched_names: list) -> Dict[str, str]:
+    def run_technology_correction(
+        self, unmatched_names: str, acceptable_enums: str
+    ) -> Dict[str, Any]:
         """
-        Run technology name correction using.
+        Run technology name correction using BAML.
 
         Args:
-            unmatched_names: List of unmatched technology names
+            unmatched_names: JSON string of unmatched technology names
+            acceptable_enums: JSON string of acceptable enum values
 
         Returns:
-            dict: Mapping of original_name -> corrected_name
+            dict: BAML response with corrections
         """
         try:
-            if not unmatched_names:
+            # Parse JSON strings
+            try:
+                unmatched_list = json.loads(unmatched_names) if unmatched_names else []
+                acceptable_list = (
+                    json.loads(acceptable_enums) if acceptable_enums else []
+                )
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON input: {e}")
+                return {"success": False, "error": f"Invalid JSON input: {e}"}
+
+            if not unmatched_list:
                 logger.debug("No unmatched names to correct")
-                return {}
+                return {"success": True, "results": {"corrections": []}}
 
-            print(
-                f"🔧 Technology Correction: Processing {len(unmatched_names)} unmatched names: {unmatched_names}"
+            logger.debug(
+                f"🔧 Technology Correction: Processing {len(unmatched_list)} unmatched names: {unmatched_list}"
             )
 
-            # Format input for
-            unmatched_names_str = json.dumps(unmatched_names, indent=2)
-            acceptable_enums_str = json.dumps(
-                self.technology_validator.get_valid_enums_list(), indent=2
-            )
-
-            # Call function for technology correction
+            # Call BAML function for technology correction
             logger.debug("Calling TechnologyCorrection function")
             response: TechnologyCorrectionResponse = self.baml_service.call(
                 function_name="TechnologyCorrection",
-                unmatched_names=unmatched_names_str,
-                acceptable_enums=acceptable_enums_str,
+                unmatched_names=unmatched_names,
+                acceptable_enums=acceptable_enums,
             )
 
-            if not response:
-                logger.error("Empty response from technology correction")
-                return {}
-
-            return response
+            return {
+                "success": True,
+                "results": response,
+                "message": "Technology correction completed successfully using BAML",
+            }
 
         except Exception as e:
             logger.error(f"❌ Technology Correction error: {e}")
-            return {}
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "technology correction failed due to unexpected error",
+            }
 
     def advance_phase(self) -> bool:
         """
@@ -450,48 +461,6 @@ class CrossIndexing:
             self.current_phase = phase
         else:
             raise ValueError(f"Invalid phase number: {phase}. Must be 1-5.")
-
-    def correct_technology_names(self, unmatched_names: list) -> dict:
-        """
-        Correct unmatched technology names using technology correction.
-
-        Args:
-            unmatched_names: List of technology names that don't match valid enums
-
-        Returns:
-            Dictionary mapping original_name -> corrected_name
-        """
-        try:
-            if not unmatched_names:
-                logger.debug("No unmatched names to correct")
-                return {}
-
-            print(
-                f"🔧 Technology Correction: Processing {len(unmatched_names)} unmatched names: {unmatched_names}"
-            )
-
-            # Call function for technology correction
-            logger.debug("Calling TechnologyCorrection function")
-            response = self.run_technology_correction(unmatched_names)
-
-            if not response:
-                logger.error("Empty response from technology correction")
-                return {}
-
-            # Process response
-            corrections = self._process_technology_correction_response(
-                response, unmatched_names
-            )
-
-            if not corrections:
-                logger.warning("Failed to process corrections")
-                return {}
-
-            return corrections
-
-        except Exception as e:
-            logger.error(f"❌ Technology Correction error: {e}")
-            return {}
 
     def _process_technology_correction_response(
         self, response: dict, original_names: list
@@ -547,66 +516,91 @@ class CrossIndexing:
 
     def filter_tasks(self, tasks: list) -> list:
         """
-        Filter and deduplicate a list of tasks using-based analysis.
+        Filter and deduplicate a list of tasks using BAML-based analysis.
 
         Args:
             tasks: List of tasks to filter
-            phase_info: Context information about the current phase
 
         Returns:
             List of filtered and deduplicated tasks
         """
         if not tasks:
-            print("No tasks to filter")
+            logger.info("No tasks to filter")
             return []
 
-        # Use to perform intelligent filtering
+        logger.info(f"Starting task filtering for {len(tasks)} tasks")
+        for i, task in enumerate(tasks):
+            logger.debug(
+                f"Task {i+1}: ID={task.id}, Description={task.description[:50]}..."
+            )
+
+        # Use BAML to perform intelligent filtering
         filtered_tasks = self._baml_filter_tasks(tasks)
 
+        logger.info(
+            f"Task filtering completed: {len(tasks)} → {len(filtered_tasks)} tasks"
+        )
         return filtered_tasks
 
     def _baml_filter_tasks(self, tasks: list) -> list:
         """
-        Use to intelligently filter and deduplicate tasks.
+        Use BAML to intelligently filter and deduplicate tasks.
 
         Args:
             tasks: List of tasks to filter
-            phase_info: Context information about the current phase
 
         Returns:
             List of filtered tasks
         """
         try:
-            logger.debug(f"Sending task filtering request to")
+            logger.debug(f"Sending {len(tasks)} tasks to BAML task filtering")
 
-            filtered_tasks = self._format_tasks_for_prompt(tasks)
+            # Format tasks for BAML prompt
+            formatted_tasks = self._format_tasks_for_prompt(tasks)
+            logger.debug(f"Formatted tasks for BAML:\n{formatted_tasks}")
 
-            # Call task filtering
-            result = self.run_task_filtering(filtered_tasks)
+            # Call BAML task filtering
+            result = self.run_task_filtering(formatted_tasks)
 
             if not result.get("success"):
                 error_msg = result.get("error", "task filtering failed")
-                logger.error(f"task filtering error: {error_msg}")
-                # Return original tasks if filtering fails
+                logger.error(f"BAML task filtering error: {error_msg}")
+                logger.warning("Returning original tasks due to filtering failure")
                 return tasks
 
-            # Extract filtered tasks from response
+            # Extract filtered tasks from BAML response
             baml_response = result.get("results")
+            logger.debug(f"BAML task filtering response received")
+
+            if not baml_response or not hasattr(baml_response, "tasks"):
+                logger.error("Invalid BAML response: missing tasks attribute")
+                logger.warning("Returning original tasks due to invalid response")
+                return tasks
 
             filtered_tasks = []
-            for task_data in baml_response.tasks:
-                task = Task(
-                    id=task_data.id,
-                    description=task_data.description,
-                    status=TaskStatus.PENDING,
-                )
-                filtered_tasks.append(task)
+            for i, task_data in enumerate(baml_response.tasks):
+                try:
+                    task = Task(
+                        id=task_data.id,
+                        description=task_data.description,
+                        status=TaskStatus.PENDING,
+                    )
+                    filtered_tasks.append(task)
+                    logger.debug(
+                        f"Filtered task {i+1}: ID={task.id}, Description={task.description[:50]}..."
+                    )
+                except Exception as task_error:
+                    logger.error(f"Error processing filtered task {i+1}: {task_error}")
+                    continue
 
+            logger.info(
+                f"BAML task filtering successful: {len(tasks)} → {len(filtered_tasks)} tasks"
+            )
             return filtered_tasks
 
         except Exception as e:
-            logger.error(f"Error during task filtering: {e}")
-            # Return original tasks if filtering fails completely
+            logger.error(f"Exception during BAML task filtering: {e}")
+            logger.warning("Returning original tasks due to exception")
             return tasks
 
     def _format_tasks_for_prompt(self, tasks: List[Task]) -> str:

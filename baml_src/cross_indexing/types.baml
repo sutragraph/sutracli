@@ -38,7 +38,7 @@ class TaskOperation_CrossIndexing {
   id string
   from_status Status_CrossIndexing? // for "move" operations: "pending" | "current" | "completed"
   to_status Status_CrossIndexing? // for "add" and "move" operations: "pending" | "current" | "completed"
-  description string
+  description string?
 }
 
 enum CodeStorageAction_CrossIndexing{

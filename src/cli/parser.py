@@ -366,17 +366,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Skip confirmation prompts when used with --log-level DEBUG",
     )
 
-    # Run Phase 5 command
-    phase5_parser = subparsers.add_parser(
-        "run-phase5", help="Run Phase 5 connection matching from database data"
-    )
-    phase5_parser.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
-        help="Set the logging level"
-    )
-
     # Version command
     version_parser = subparsers.add_parser("version", help="Show version information")
 

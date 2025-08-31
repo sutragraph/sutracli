@@ -23,7 +23,6 @@ function AwsPackageDiscovery(analysis_query: string, memory_context: string, sys
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Phase1(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Phase1(analysis_query, memory_context) }}
   "#
 }
@@ -33,7 +32,6 @@ function AnthropicPackageDiscovery(analysis_query: string, memory_context: strin
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Phase1(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Phase1(analysis_query, memory_context) }}
   "#
 }

@@ -1,5 +1,6 @@
 class CodeManagerResponse {
-  connection_code CodeConnection[]
+  thinking string?
+  connection_code CodeConnection[]?
 }
 
 class CodeConnection {

@@ -112,7 +112,7 @@ class BAMLService:
                         # The messages array in the request body contains all prompts including user prompts
                         if "messages" in request_body:
                             logger.debug("-" * 50)
-                            logger.debug("📝 USER PROMPTS:")
+                            logger.debug(f"📝 USER PROMPTS ({full_function_name}):")
                             logger.debug("-" * 50)
                             messages = request_body["messages"]
                             # Filter for just user messages
@@ -197,8 +197,7 @@ class BAMLService:
             except Exception as e:
                 error_msg = f"Error calling BAML {full_function_name}: {str(e)}"
 
-                print(f"❌ {error_msg}")
-                logger.error(error_msg)
+                logger.debug(error_msg)
 
                 if attempt < max_retries:
                     logger.warning(

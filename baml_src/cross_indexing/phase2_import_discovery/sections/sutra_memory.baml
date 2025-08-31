@@ -22,14 +22,12 @@ Usage Format
         "id": "task_id",
         "from_status": "pending",
         "to_status": "current",
-        "description": "task description"
       },
       {
         "action": "move",
         "id": "task_id",
         "from_status": "current",
         "to_status": "completed",
-        "description": "task description"
       },
       {
         "action": "add",
@@ -55,14 +53,12 @@ Example 1: Executing previous analysis task
         "id": "2",
         "from_status": "pending",
         "to_status": "current",
-        "description": "task description"
       },
       {
         "action": "move",
         "id": "3",
         "from_status": "current",
         "to_status": "completed",
-        "description": "task description"
       },
       {
         "action": "add",
@@ -98,14 +94,12 @@ Example 2: Multiple import patterns found
         "id": "3",
         "from_status": "pending",
         "to_status": "current",
-        "description": "task description"
       },
       {
         "action": "move",
         "id": "3",
         "from_status": "current",
         "to_status": "completed",
-        "description": "task description"
       },
       {
         "action": "add",
@@ -152,7 +146,6 @@ Example 4: Task completion with new task creation based on findings
         "id": "5",
         "from_status": "current",
         "to_status": "completed",
-        "description": "task description"
       },
       {
         "action": "add",
@@ -182,7 +175,6 @@ Example 5: Task completion scenario
         "id": "3",
         "from_status": "current",
         "to_status": "completed",
-        "description": "task description"
       }
     ],
     "add_history": "Used attempt_completion - provided summary of discovered imports"

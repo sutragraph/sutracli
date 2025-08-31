@@ -28,14 +28,12 @@ Usage Format
         "id": "task_id",
         "from_status": "current",
         "to_status": "completed",
-        "description": "task description"
       },
       {
         "action": "move",
         "id": "task_id",
         "from_status": "pending",
         "to_status": "current",
-        "description": "task description"
       }
     ],
     "add_history": "Brief summary of current iteration actions and findings"
@@ -81,7 +79,6 @@ Example 3: Task completion scenario (only mark as completed when it is fully exe
         "id": "1",
         "from_status": "current",
         "to_status": "completed",
-        "description": "task description"
       }
     ],
     "add_history": "Used attempt_completion - provided summary of discovered packages and created tasks for subsequent import analysis"

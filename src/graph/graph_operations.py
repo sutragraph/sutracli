@@ -1865,10 +1865,6 @@ class GraphOperations:
         Returns:
             List of unique technology type names (including Unknown if exists)
         """
-        if not self.db_client:
-            logger.error("No database client available")
-            return []
-
         try:
             query = """
                 SELECT DISTINCT COALESCE(technology_name, 'Unknown') as technology
@@ -1897,10 +1893,6 @@ class GraphOperations:
         Returns:
             Dict with 'incoming' and 'outgoing' keys containing connection lists
         """
-        if not self.db_client:
-            logger.error("No database client available")
-            return {"incoming": [], "outgoing": []}
-
         try:
             where_clause = "WHERE technology_name = ? OR (technology_name IS NULL AND ? = 'Unknown')"
             params = (technology, technology)

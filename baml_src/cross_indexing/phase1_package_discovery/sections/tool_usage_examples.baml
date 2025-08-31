@@ -43,10 +43,10 @@ Example 3: Java package analysis
 **COMPREHENSIVE TASK CREATION**
 
 Example 1: After finding axios package in package.json
-Create task: "Use search_keyword tool with pattern 'require\\('axios'\\)|import.*from.*'axios'|import.*axios|axios' and regex=true to find all axios import statements. This HTTP client library is used for making requests to other services. Search across all JavaScript/TypeScript files."
+Create task(Add): "Use search_keyword tool with pattern 'require\\('axios'\\)|import.*from.*'axios'|import.*axios|axios' and regex=true to find all axios import statements. This HTTP client library is used for making requests to other services. Search across all JavaScript/TypeScript files."
 
 Example 2: After finding express package in package.json
-Create task: "Use search_keyword tool with pattern 'require\\('express'\\)|import.*from.*'express'|import.*express' and regex=true to find all express import statements. This server framework is used for receiving requests from other services. Search across all JavaScript/TypeScript files."
+Create task(Add): "Use search_keyword tool with pattern 'require\\('express'\\)|import.*from.*'express'|import.*express' and regex=true to find all express import statements. This server framework is used for receiving requests from other services. Search across all JavaScript/TypeScript files."
 
 4. COMPLETION EXAMPLES
 

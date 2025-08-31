@@ -4,6 +4,7 @@ template_string SystemPrompt_Manager(home: string, current_dir: string) #"
 {{ Capabilities_Manager() }}
 {{ Rules_Manager() }}
 {{ Examples_Manager() }}
+{{ Completion_Manager() }}
 {{ CrossIndexingSystemInfoTemplate(home, current_dir) }}
 "#
 
@@ -20,7 +21,6 @@ function AwsCodeManager(tool_results: string, system_info: SystemInfo_CrossIndex
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Manager(tool_results) }}
   "#
 }
@@ -30,7 +30,6 @@ function AnthropicCodeManager(tool_results: string, system_info: SystemInfo_Cros
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Manager(tool_results) }}
   "#
 }

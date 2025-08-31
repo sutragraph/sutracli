@@ -83,18 +83,35 @@ class MemoryOperations:
             bool: True if task was moved successfully
 
         Raises:
-            ValueError: If task doesn't exist or if trying to create multiple current tasks
+            ValueError: If task doesn't exist or no status change needed
         """
         if task_id not in self.tasks:
             raise ValueError(f"Task ID {task_id} does not exist")
 
-        if new_status == TaskStatus.CURRENT and self.get_current_task() is not None:
+        current_status = self.tasks[task_id].status
+
+        # Check if task is already in the target status
+        if current_status == new_status:
+            logger.debug(
+                f"Task {task_id} is already in status {new_status.value}, no change needed"
+            )
+            return False  # Return False to indicate no change was made
+
+        # If moving to CURRENT and there's already a current task, move it to PENDING first
+        if new_status == TaskStatus.CURRENT:
             current_task = self.get_current_task()
-            if current_task.id != task_id:
-                raise ValueError("Only one current task is allowed at a time")
+            if current_task is not None and current_task.id != task_id:
+                current_task.status = TaskStatus.PENDING
+                current_task.updated_at = datetime.now()
+                logger.debug(
+                    f"Moved existing current task {current_task.id} to PENDING"
+                )
 
         self.tasks[task_id].status = new_status
         self.tasks[task_id].updated_at = datetime.now()
+        logger.debug(
+            f"Task {task_id} moved from {current_status.value} to {new_status.value}"
+        )
         return True
 
     def remove_task(self, task_id: str) -> bool:
@@ -114,14 +131,21 @@ class MemoryOperations:
 
     def get_current_task(self) -> Optional[Task]:
         """Get the current task if any"""
+        current_tasks = []
         for task in self.tasks.values():
             if task.status == TaskStatus.CURRENT:
-                return task
-        return None
+                current_tasks.append(task)
+        
+        return current_tasks[0] if current_tasks else None
 
     def get_tasks_by_status(self, status: TaskStatus) -> List[Task]:
         """Get all tasks with specific status"""
-        return [task for task in self.tasks.values() if task.status == status]
+        matching_tasks = []
+        for task in self.tasks.values():
+            if task.status == status:
+                matching_tasks.append(task)
+        
+        return matching_tasks
 
     def clear_completed_tasks(self) -> int:
         """Remove all completed tasks and return count of removed tasks"""
@@ -149,7 +173,7 @@ class MemoryOperations:
         Add code snippet to memory.
 
         Args:
-            code_id: Unique code identifier
+            code_id: Unique code identifier (ignored, counter+1 used instead)
             file_path: Path to the file
             start_line: Starting line number
             end_line: Ending line number
@@ -159,29 +183,18 @@ class MemoryOperations:
             bool: True if code snippet was added successfully
         """
         try:
-            # Check if code_id already exists and use next available integer ID
-            if code_id in self.code_snippets:
-                code_id = str(self.code_id_counter + 1)
-                while code_id in self.code_snippets:
-                    self.code_id_counter += 1
-                    code_id = str(self.code_id_counter + 1)
+            # Always use counter + 1 instead of LLM provided ID
+            self.code_id_counter += 1
+            actual_code_id = str(self.code_id_counter)
 
             # Fetch code content using the code fetcher
             code_content = self.code_fetcher.fetch_code_from_file(
                 file_path, start_line, end_line
             )
 
-            # Update counter if code_id is numeric and higher than current counter
-            try:
-                code_num = int(code_id)
-                if code_num > self.code_id_counter:
-                    self.code_id_counter = code_num
-            except ValueError:
-                pass
-
-            # Create and store the code snippet
-            self.code_snippets[code_id] = CodeSnippet(
-                id=code_id,
+            # Create and store the code snippet with counter ID
+            self.code_snippets[actual_code_id] = CodeSnippet(
+                id=actual_code_id,
                 file_path=file_path,
                 start_line=start_line,
                 end_line=end_line,
@@ -189,11 +202,13 @@ class MemoryOperations:
                 content=code_content,
             )
 
-            logger.debug(f"Code snippet {code_id} added successfully")
+            logger.debug(
+                f"Code snippet {actual_code_id} added successfully (LLM ID {code_id} ignored)"
+            )
             return True
 
         except Exception as e:
-            logger.error(f"Error adding code snippet {code_id}: {str(e)}")
+            logger.error(f"Error adding code snippet: {str(e)}")
             return False
 
     def remove_code_snippet(self, code_id: str) -> bool:

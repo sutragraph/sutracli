@@ -46,23 +46,23 @@ Create 3 separate implementation tasks (database tool - individual tasks per fil
 - Task 3: "Found axios imports in src/utils/request.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
 
 Example 2: After finding express imports in 8 files
-Create implementation task: "Found express imports in 8 files. Use search_keyword tool with pattern 'app\\.(get|post|put|delete)\\(|router\\.(get|post|put|delete)\\(' and regex=true, after_lines=2 to find express route definitions across all files. Look for actual route handlers with real endpoint paths. This server framework receives requests from other services."
+Create implementation task(Add): "Found express imports in 8 files. Use search_keyword tool with pattern 'app\\.(get|post|put|delete)\\(|router\\.(get|post|put|delete)\\(' and regex=true, after_lines=2 to find express route definitions across all files. Look for actual route handlers with real endpoint paths. This server framework receives requests from other services."
 
 Example 3: After finding Spring imports in 6 files
-Create implementation task: "Found Spring framework imports in 6 files. Use search_keyword tool with pattern '@RequestMapping|@GetMapping|@PostMapping' and regex=true, after_lines=2 to find Spring controller endpoints across all files. Look for actual REST endpoints with real paths."
+Create implementation task(Add): "Found Spring framework imports in 6 files. Use search_keyword tool with pattern '@RequestMapping|@GetMapping|@PostMapping' and regex=true, after_lines=2 to find Spring controller endpoints across all files. Look for actual REST endpoints with real paths."
 
 3. BUILT-IN PATTERN TASK CREATION (ALWAYS REQUIRED)
 
 **MULTI-LANGUAGE BUILT-IN PATTERN EXAMPLES**
 
 Example 1: JavaScript built-in pattern task creation
-Create implementation task: "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\(|XMLHttpRequest|new WebSocket\\(' and regex=true, after_lines=2 to find native JavaScript connection patterns across all files."
+Create implementation task(Add): "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\(|XMLHttpRequest|new WebSocket\\(' and regex=true, after_lines=2 to find native JavaScript connection patterns across all files."
 
 Example 2: Python built-in pattern task creation
-Create implementation task: "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\.|http\\.client|socket\\.' and regex=true, after_lines=2 to find Python built-in connection patterns across all files."
+Create implementation task(Add): "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\.|http\\.client|socket\\.' and regex=true, after_lines=2 to find Python built-in connection patterns across all files."
 
 Example 3: Java built-in pattern task creation
-Create implementation task: "Create built-in pattern task for Java: Use search_keyword with pattern 'HttpURLConnection|new Socket\\(' and regex=true, after_lines=2 to find Java built-in connection patterns across all files."
+Create implementation task(Add): "Create built-in pattern task for Java: Use search_keyword with pattern 'HttpURLConnection|new Socket\\(' and regex=true, after_lines=2 to find Java built-in connection patterns across all files."
 
 4. TOOL SELECTION STRATEGY FOR IMPLEMENTATION TASKS
 

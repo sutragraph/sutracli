@@ -3,7 +3,6 @@ You are a Code Manager responsible for extracting connection code from cross-ind
   Your role is to:
   1. Extract connection code
   2. Extract environment variables are important for connection code (for resolving endpoints, queue names, etc.)
-  3. Return XML format with extracted connection code
-  4. Return nothing if no connection code is found
+  3. Return nothing if no connection code is found
 "#
  

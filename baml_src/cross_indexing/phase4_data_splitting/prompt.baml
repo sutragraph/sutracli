@@ -259,7 +259,8 @@ CORRECT Splitting:
         }
       ]
     }
-  }
+  },
+  "summary": "This is an administrative and order management system that provides HTTP REST API functionality for user administration and order processing. The system includes user creation capabilities through admin endpoints and order retrieval functionality, using both direct HTTP client calls and wrapper functions for API communication."
 }
 ```
 
@@ -303,7 +304,8 @@ CORRECT Splitting:
         }
       ]
     }
-  }
+  },
+  "summary": "This is a data processing service that integrates external APIs for data updates and uses message queues for asynchronous user processing. The system supports environment-based configuration for flexible deployment across different environments, combining HTTP-based data synchronization with queue-based user processing workflows."
 }
 ```
 
@@ -361,7 +363,8 @@ CORRECT Splitting:
         }
       ]
     }
-  }
+  },
+  "summary": "This is a real-time user and order management system that provides WebSocket-based live communication for user status updates and order notifications. The system handles user authentication events through WebSocket connections and processes orders asynchronously through message queues, enabling real-time user experience with scalable order processing capabilities."
 }
 ```
 
@@ -402,7 +405,8 @@ CORRECT Splitting:
         }
       ]
     }
-  }
+  },
+  "summary": "This is a REST API service for user and order management providing CRUD operations. The system exposes HTTP endpoints for user management including user retrieval and creation, along with order management capabilities for retrieving and updating individual orders by ID, following RESTful architectural patterns for resource management."
 }
 ```
 
@@ -448,7 +452,8 @@ CORRECT Splitting:
         }
       ]
     }
-  }
+  },
+  "summary": "This is a notification and API integration service that combines asynchronous message publishing with HTTP-based API communication. The system publishes user notifications and order updates through message queues for scalable event-driven processing, while also providing HTTP API integration for user administration and order management through standardized wrapper functions."
 }
 ```
 
@@ -517,7 +522,8 @@ CORRECT Splitting:
         }
       ]
     }
-  }
+  },
+  "summary": "This is a microservices orchestration system that handles business events through HTTP service communication and real-time data synchronization via WebSockets. The system processes user lifecycle events, order workflows, and payment confirmations by routing messages to specialized microservices, while maintaining real-time data consistency through WebSocket-based synchronization events for create, update, and delete operations."
 }
 ```
 
@@ -542,7 +548,8 @@ IMPORTANT NOTES FOR SWITCH CASE SPLITTING:
         }
       ]
     }
-  }
+  },
+  "summary": "Comprehensive description of the project including its core purpose, main functionality, architectural patterns, key services it provides, data processing workflows, integration points with external systems, and overall business domain based on observed connections and code patterns"
 }
 ```
 
@@ -558,7 +565,8 @@ IMPORTANT NOTES FOR SWITCH CASE SPLITTING:
         }
       ]
     }
-  }
+  },
+  "summary": "Comprehensive description of the project including its core purpose, main functionality, architectural patterns, key services it provides, data processing workflows, integration points with external systems, and overall business domain based on observed connections and code patterns"
 }
 ```
 
@@ -574,7 +582,8 @@ IMPORTANT NOTES FOR SWITCH CASE SPLITTING:
         }
       ]
     }
-  }
+  },
+  "summary": "Comprehensive description of the project including its core purpose, main functionality, architectural patterns, key services it provides, data processing workflows, integration points with external systems, and overall business domain based on observed connections and code patterns"
 }
 ```
 
@@ -657,15 +666,14 @@ template_string ConnectionSplittingUserPrompt(memory_context: string) #"
     {{ _.role("user") }}
     {{ memory_context }}
 
-Process the above connection code snippets and transform them into structured JSON format. Classify each connection as incoming or outgoing, extract complete parameter details, and return the properly formatted JSON for database storage and subsequent connection matching analysis.
+Process the above connection code snippets and transform them into structured JSON format. Classify each connection as incoming or outgoing, extract complete parameter details, and return the properly formatted JSON.
 "#
 
 function AwsConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client AwsClaudeSonnet4
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ ConnectionMatchingSystemPrompt() }}
-
+    {{ ConnectionSplittingPrompt() }}
     {{ ConnectionSplittingUserPrompt(memory_context) }}
   "#
 }
@@ -674,8 +682,7 @@ function AnthropicConnectionSplitting(memory_context: string) -> ConnectionSplit
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ ConnectionMatchingSystemPrompt() }}
-
+    {{ ConnectionSplittingPrompt() }}
     {{ ConnectionSplittingUserPrompt(memory_context) }}
   "#
 }
@@ -684,7 +691,7 @@ function ChatGPTConnectionSplitting(memory_context: string) -> ConnectionSplitti
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
-    {{ ConnectionMatchingSystemPrompt() }}
+    {{ ConnectionSplittingPrompt() }}
     {{ ConnectionSplittingUserPrompt(memory_context) }}
   "#
 }

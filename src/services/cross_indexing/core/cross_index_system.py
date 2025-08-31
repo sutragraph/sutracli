@@ -6,12 +6,13 @@ Enhanced version that integrates with Sutra memory and uses the new folder struc
 
 from typing import Optional
 from loguru import logger
-from services.project_manager import ProjectManager
 from ...agent.session_management import SessionManager
 from ...agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from .cross_indexing_task_manager import CrossIndexingTaskManager
 from .cross_index_service import CrossIndexService
+from .cross_index_phase import CrossIndexing
 from src.graph.graph_operations import GraphOperations
+from tools import ActionExecutor
 
 
 class CrossIndexSystem:
@@ -69,10 +70,20 @@ class CrossIndexSystem:
             )
             self._skip_cross_indexing = False
 
-        self.cross_index_service = CrossIndexService(
-            project_manager, self.memory_manager, self.session_manager
-        )
         self.task_manager = CrossIndexingTaskManager()
+        self.cross_indexing = CrossIndexing()
+        self.action_executor = ActionExecutor(
+            self.task_manager,
+            context="cross_index",
+        )
+
+        self.cross_index_service = CrossIndexService(
+            cross_indexing=self.cross_indexing,
+            task_manager=self.task_manager,
+            action_executor=self.action_executor,
+            session_manager=self.session_manager,
+            graph_ops=self.graph_ops,
+        )
 
     def _perform_initialization_incremental_indexing(self):
         """

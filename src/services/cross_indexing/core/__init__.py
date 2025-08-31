@@ -14,5 +14,4 @@ __all__ = [
     "CrossIndexSystem",
     "CrossIndexing",
     "TechnologyValidator",
-    "TechnologyCorrectionService",
 ]

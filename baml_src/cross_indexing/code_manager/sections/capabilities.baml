@@ -3,7 +3,7 @@ template_string Capabilities_Manager() #"
 
 CAPABILITIES
 
-1. You have access to tool results from cross-indexing analysis that contain connection patterns, code snippets, and file information. Your role is to analyze these results and determine what code should be extracted and returned in proper XML output format.
+1. You have access to tool results from cross-indexing analysis that contain connection patterns, code snippets, and file information. Your role is to analyze these results and determine what code should be extracted and returned in proper JSON output format.
 
 2. You can analyze structured codebase metadata and code content from tool results. This includes complete file content, specific file lines, function implementations, and connection patterns discovered through various analysis tools.
 
@@ -44,5 +44,5 @@ CAPABILITIES
     - VARIABLE CONNECTION IDENTIFIERS: Store wrapper function calls that contain actual connection identifiers
     - ENVIRONMENT VARIABLES: Store code that uses environment variables for connection configuration
 
-10. You can generate proper XML output format with complete file paths, line ranges, and descriptive context for each connection code snippet that needs to be extracted.
+10. You can generate proper JSON output format with complete file paths, line ranges, and descriptive context for each connection code snippet that needs to be extracted.
 "#

@@ -23,7 +23,6 @@ function AwsImportDiscovery(analysis_query: string, memory_context: string, syst
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Phase2(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Phase2(analysis_query, memory_context) }}
   "#
 }
@@ -33,7 +32,6 @@ function AnthropicImportDiscovery(analysis_query: string, memory_context: string
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Phase2(system_info.home, system_info.current_dir) }}
-
     {{ UserPrompt_Phase2(analysis_query, memory_context) }}
   "#
 }

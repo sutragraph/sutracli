@@ -16,5 +16,5 @@ class ConnectionDetail {
 class ConnectionSplittingResponse {
   incoming_connections map<TechnologyType, map<string, ConnectionDetail[]>>?
   outgoing_connections map<TechnologyType, map<string, ConnectionDetail[]>>?
-  summary string
+  summary string?
 }

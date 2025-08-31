@@ -19,14 +19,14 @@ def format_connections(connections, connection_type):
     formatted_list = []
     for conn in connections:
         formatted_conn = f"""ID: {conn.get('id', 'N/A')}
-        description: "{conn.get('description', 'N/A')}"
-        technology: {conn.get('technology', 'N/A')}"""
+description: "{conn.get('description', 'N/A')}"
+technology: {conn.get('technology', 'N/A')}"""
 
         code_snippet = conn.get("code_snippet", "")
         if code_snippet and code_snippet.strip():
             formatted_conn += f"""
-            code_snippet:
-            {code_snippet}"""
+code_snippet:
+{code_snippet}"""
         formatted_list.append(formatted_conn)
 
     return "\n\n".join(formatted_list)

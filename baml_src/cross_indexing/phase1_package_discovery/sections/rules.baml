@@ -49,7 +49,7 @@ RULES
 
 9. MANDATORY EXCLUSIONS - NEVER include these:
     - Database persistence libraries (e.g., ORMs, database drivers for data storage)
-    - Local file system and storage libraries that don't enable inter-service communication
+    - Local file system and storage libraries
     - NON-EXISTENT PACKAGES: Never search for patterns from packages that don't exist in the project
 
 10. FILE PATH RULE: All file paths must be relative to the project root directory. When storing package findings in Sutra Memory, always use relative paths for consistency.

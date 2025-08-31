@@ -208,7 +208,6 @@ function AwsConnectionMatching(incoming_connections: string, outgoing_connection
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ ConnectionMatchingSystemPrompt() }}
-
     {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
   "#
 }
@@ -218,7 +217,6 @@ function AnthropicConnectionMatching(incoming_connections: string, outgoing_conn
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ ConnectionMatchingSystemPrompt() }}
-
     {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
   "#
 }

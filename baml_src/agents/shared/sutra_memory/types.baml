@@ -28,7 +28,7 @@ class TaskOperation {
   id string
   from_status TaskStatus? // for "move" operations
   to_status TaskStatus? // for "add" and "move" operations
-  description string // required for "add" operations
+  description string? // optional - required for "add" operations, not needed for "move"
 }
 
 // Code Storage Types
