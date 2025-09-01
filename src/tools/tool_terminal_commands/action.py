@@ -795,24 +795,37 @@ class TerminalSession:
     def is_alive(self) -> bool:
         """Check if the terminal session is still alive."""
         try:
-            if self.terminal_process:
-                return self.terminal_process.poll() is None
-            elif self.terminal_window_id:
+            platform_name = platform.system()
+
+            if platform_name == "Darwin":
                 # For macOS, check if window still exists
-                applescript = f"""
-                tell application "Terminal"
-                    return exists window id {self.terminal_window_id}
-                end tell
-                """
+                if self.terminal_window_id:
+                    applescript = f"""
+                    tell application "Terminal"
+                        return exists window id {self.terminal_window_id}
+                    end tell
+                    """
+                    result = subprocess.run(
+                        ["osascript", "-e", applescript],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                    )
+                    return result.returncode == 0 and "true" in result.stdout.lower()
+                return False
+            else:
+                # For Linux, check if tmux session exists
+                tmux_session = f"agent_session_{self.session_id}"
                 result = subprocess.run(
-                    ["osascript", "-e", applescript],
+                    ["tmux", "has-session", "-t", tmux_session],
                     capture_output=True,
                     text=True,
-                    timeout=5,
+                    timeout=3,
                 )
-                return result.returncode == 0 and "true" in result.stdout.lower()
-            return False
-        except Exception:
+                return result.returncode == 0
+
+        except Exception as e:
+            logger.debug(f"Error checking if session {self.session_id} is alive: {e}")
             return False
 
     def is_compatible_for_reuse(self, cwd: str) -> bool:
@@ -854,8 +867,6 @@ class TerminalSession:
 
         logger.debug(f"Session {self.session_id} is compatible for reuse")
         return True
-
-
 
     def _handle_long_running_command(
         self, command: str, timeout: int
@@ -937,6 +948,8 @@ class TerminalSessionManager:
 
         if session.start():
             logger.info(f"Created foreground terminal session {session_id}")
+            # Give the terminal and tmux session time to fully initialize
+            time.sleep(2.0)
             return session_id
         else:
             logger.error(f"Failed to start foreground terminal session {session_id}")

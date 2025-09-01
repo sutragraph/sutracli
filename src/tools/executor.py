@@ -6,8 +6,6 @@ Handles thinking, tool execution, and sutra memory updates.
 import time
 from typing import Iterator, Dict, Any, Optional
 from loguru import logger
-
-
 from graph.sqlite_client import SQLiteConnection
 from models.agent import AgentAction
 from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager

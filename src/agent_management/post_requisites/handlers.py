@@ -20,12 +20,12 @@ class RoadmapAgentHandler:
 
     def process_agent_result_direct(self, agent_result: Any) -> Dict[str, Any]:
         """Process roadmap agent result directly and trigger post-requisites.
-        
-        Expected agent_result format: [{"project_id": "123", "prompt": "some prompt"}, ...]
-        
+
+        Expected agent_result format: {"data": {"projects": [ProjectRoadmap], "summary": "..."}}
+
         Args:
             agent_result: The direct result from roadmap agent
-            
+
         Returns:
             Dict containing the processing results
         """
@@ -36,36 +36,135 @@ class RoadmapAgentHandler:
                 "processed_actions": []
             }
 
-        # Validate the result format
-        if not self.validate_roadmap_result(agent_result):
+        # Extract data from the result
+        data = agent_result.get("data") if isinstance(agent_result, dict) else None
+        if not data:
             return {
                 "success": False,
-                "error": "Invalid roadmap result format. Expected: [{'project_id': 'id', 'prompt': 'text'}, ...]",
-                "processed_actions": []
+                "error": "No data field found in agent result",
+                "processed_actions": [],
             }
 
+        # Convert roadmap data to project prompts format
+        project_prompts = self._convert_roadmap_to_prompts(data)
+
         # Process the roadmap results - spawn external agents
-        return self._spawn_external_agents(agent_result)
+        return self._spawn_external_agents(project_prompts)
 
-    def validate_roadmap_result(self, result_data: Any) -> bool:
-        """Validate that the roadmap result has the expected format.
-        
-        Expected format: [{"project_id": "123", "prompt": "some prompt"}, ...]
+    def _convert_roadmap_to_prompts(self, data: Dict[str, Any]) -> list:
+        """Convert roadmap data to project prompts format.
+
+        Args:
+            data: The roadmap data containing projects and summary
+
+        Returns:
+            List of project prompts in the format expected by _spawn_external_agents
         """
-        if not isinstance(result_data, list):
-            return False
+        projects = data.get("projects", [])
 
-        for item in result_data:
-            if not isinstance(item, dict):
-                return False
+        project_prompts = []
 
-            if "project_id" not in item or "prompt" not in item:
-                return False
+        for project in projects:
+            project_name = project.get("project_name", "")
+            project_path = project.get("project_path", "")
+            impact_level = project.get("impact_level", "Medium")
+            reasoning = project.get("reasoning", "")
+            changes = project.get("changes", [])
+            implementation_notes = project.get("implementation_notes", "")
 
-            if not isinstance(item["project_id"], (str, int)) or not isinstance(item["prompt"], str):
-                return False
+            # Build the prompt string
+            prompt_parts = []
 
-        return True
+            # Add header
+            prompt_parts.append(f"# Project Modification Request: {project_name}")
+            prompt_parts.append(f"**Project Path:** {project_path}")
+            prompt_parts.append(f"**Impact Level:** {impact_level}")
+            prompt_parts.append("")
+
+            # Add reasoning
+            if reasoning:
+                prompt_parts.append("## Reasoning")
+                prompt_parts.append(reasoning)
+                prompt_parts.append("")
+
+            # Add file changes
+            if changes:
+                prompt_parts.append("## File Changes Required")
+                prompt_parts.append("")
+
+                for i, file_change in enumerate(changes, 1):
+                    file_path = file_change.get("file_path", "")
+                    operation = file_change.get("operation", "modify")
+                    instructions = file_change.get("instructions", [])
+
+                    prompt_parts.append(f"### {i}. File: {file_path}")
+                    prompt_parts.append(f"**Operation:** {operation}")
+                    prompt_parts.append("")
+
+                    if instructions:
+                        prompt_parts.append("**Instructions:**")
+                        for j, instruction in enumerate(instructions, 1):
+                            description = instruction.get("description", "")
+                            current_state = instruction.get("current_state", "")
+                            target_state = instruction.get("target_state", "")
+                            start_line = instruction.get("start_line")
+                            end_line = instruction.get("end_line")
+                            additional_notes = instruction.get("additional_notes", "")
+
+                            prompt_parts.append(f"{j}. **Change:** {description}")
+
+                            if current_state:
+                                prompt_parts.append(
+                                    f"   **Current State:** {current_state}"
+                                )
+
+                            if target_state:
+                                prompt_parts.append(
+                                    f"   **Target State:** {target_state}"
+                                )
+
+                            if start_line is not None:
+                                if end_line is not None:
+                                    prompt_parts.append(
+                                        f"   **Lines:** {start_line}-{end_line}"
+                                    )
+                                else:
+                                    prompt_parts.append(f"   **Line:** {start_line}")
+
+                            if additional_notes:
+                                prompt_parts.append(f"   **Notes:** {additional_notes}")
+
+                            prompt_parts.append("")
+
+                    prompt_parts.append("")
+
+            # Add implementation notes
+            if implementation_notes:
+                prompt_parts.append("## Implementation Notes")
+                prompt_parts.append(implementation_notes)
+                prompt_parts.append("")
+
+            # Add final instructions
+            prompt_parts.append("## Instructions")
+            prompt_parts.append(
+                "Please implement the changes described above according to the specifications."
+            )
+            prompt_parts.append(
+                "Ensure that all modifications maintain code quality and follow best practices."
+            )
+
+            # Join all parts into a single prompt
+            full_prompt = "\n".join(prompt_parts)
+
+            # Create project prompt entry
+            project_prompts.append(
+                {
+                    "prompt": full_prompt,
+                    "project_path": project_path,
+                }
+            )
+
+        return project_prompts
 
     def _spawn_external_agents(self, project_prompts: list) -> Dict[str, Any]:
         """Spawn external agents for each project with prompts."""
@@ -110,43 +209,14 @@ class RoadmapAgentHandler:
                 }
             selected_provider = new_provider
 
-        # Process each project prompt
-        spawn_results = []
-        for project_prompt in project_prompts:
-            project_id = project_prompt.get("project_id")
-            prompt = project_prompt.get("prompt")
+        # Process each project prompt in parallel
+        print(f"\n🚀 Spawning {len(project_prompts)} external agents in parallel...")
+        print("⚡ All terminals will be created simultaneously")
 
-            if not project_id or not prompt:
-                spawn_results.append({
-                    "project_id": project_id,
-                    "success": False,
-                    "error": "Missing project_id or prompt"
-                })
-                continue
-
-            # Get project path from database
-            project_path = self._get_project_path(project_id)
-            if not project_path:
-                spawn_results.append({
-                    "project_id": project_id,
-                    "success": False,
-                    "error": f"Project not found in database: {project_id}"
-                })
-                continue
-
-            # Execute prompt with selected provider
-            execution_result = self.provider_manager.execute_prompt_with_selected_provider(
-                project_path, prompt
-            )
-
-            spawn_results.append({
-                "project_id": project_id,
-                "project_path": project_path,
-                "prompt": prompt,
-                "success": execution_result.get("success", False),
-                "output": execution_result.get("output", ""),
-                "error": execution_result.get("error", "")
-            })
+        # Execute all prompts in parallel
+        spawn_results = self.provider_manager.execute_multiple_prompts_parallel(
+            project_prompts
+        )
 
         # Determine overall success
         successful_spawns = sum(1 for result in spawn_results if result["success"])
@@ -168,34 +238,11 @@ class RoadmapAgentHandler:
             }]
         }
 
-    def _get_project_path(self, project_id: str) -> Optional[str]:
-        """Get project path from database by project ID."""
-        try:
-            from src.graph.sqlite_client import SQLiteConnection
-
-            # Convert project_id to int if it's a string
-            if isinstance(project_id, str):
-                project_id = int(project_id)
-
-            # Query database for project
-            db_client = SQLiteConnection()
-            query = "SELECT path FROM projects WHERE id = ?"
-            result = db_client.execute_query(query, (project_id,))
-
-            if result and len(result) > 0:
-                return result[0][0]  # Return the path
-
-            return None
-
-        except (ValueError, Exception) as e:
-            print(f"Error getting project path for ID {project_id}: {e}")
-            return None
-
     def _display_prompts_and_get_confirmation(self, project_prompts: list) -> bool:
         """Display all generated prompts to the user and get confirmation to proceed.
 
         Args:
-            project_prompts: List of project prompts with project_id and prompt
+            project_prompts: List of project prompts with prompt
 
         Returns:
             bool: True if user wants to continue, False otherwise
@@ -217,23 +264,18 @@ class RoadmapAgentHandler:
 
         # Display each prompt in a beautiful panel
         for i, project_prompt in enumerate(project_prompts, 1):
-            project_id = project_prompt.get("project_id", "Unknown")
             prompt_content = project_prompt.get("prompt", "No prompt available")
 
             # Get project path for display
-            project_path = self._get_project_path(project_id)
-            project_display = (
-                f"{project_path} (ID: {project_id})"
-                if project_path
-                else f"Project ID: {project_id}"
-            )
+            project_path = project_prompt.get("project_path")
+            project_display = f"📁 {project_path}"
 
             # Create prompt header
             prompt_header = Text()
             prompt_header.append(
                 f"📋 PROMPT {i}/{len(project_prompts)}", style="bold cyan"
             )
-            prompt_header.append(f"\n📁 Project: ", style="dim")
+            prompt_header.append(f"\nProject: ", style="dim")
             prompt_header.append(project_display, style="green")
 
             # Create prompt content with syntax highlighting if it looks like code
