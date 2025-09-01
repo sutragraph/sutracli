@@ -62,16 +62,16 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         old_phase = getattr(self, "current_phase", None)
 
         if old_phase is not None and old_phase != phase:
-            logger.info(f"Phase transition: {old_phase} → {phase}")
+            logger.debug(f"Phase transition: {old_phase} → {phase}")
 
             # Clear memory for Phase 1→2 and Phase 2→3 transitions only
             if old_phase in [1, 2] and phase == old_phase + 1:
                 self._clear_phase_memory()
-                logger.info(
+                logger.debug(
                     f"Memory cleared for phase transition: {old_phase} → {phase}"
                 )
             else:
-                logger.info(
+                logger.debug(
                     f"Memory preserved for phase transition: {old_phase} → {phase}"
                 )
 

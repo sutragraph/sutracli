@@ -91,7 +91,6 @@ class GraphOperations:
             )
 
             for rel in relationships:
-                # Relationship is already the correct type from indexer models
                 self.connection.insert_relationship(rel)
 
     def _insert_blocks_recursively(

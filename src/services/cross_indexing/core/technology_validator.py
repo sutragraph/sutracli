@@ -186,7 +186,7 @@ class TechnologyValidator:
                         new_outgoing[new_tech_name] = files_data
                     corrected_data["outgoing_connections"] = new_outgoing
 
-            logger.info(f"Applied {len(corrections)} technology name corrections")
+            print(f"Applied {len(corrections)} technology name corrections")
             return corrected_data
 
         except Exception as e:

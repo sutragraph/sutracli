@@ -42,12 +42,10 @@ class CrossIndexSystem:
         # Check if cross-indexing is already completed for this project
         if self.project_name:
             if self.graph_ops.is_cross_indexing_done(self.project_name):
-                logger.info(
+                print(
                     f"✅ Cross-indexing already completed for project '{self.project_name}'"
                 )
-                logger.info(
-                    "📊 Skipping cross-indexing analysis - project already analyzed"
-                )
+                print("📊 Skipping cross-indexing analysis - project already analyzed")
                 self._skip_cross_indexing = True
             else:
                 print(f"🔄 Starting cross-indexing for project '{self.project_name}'")
@@ -157,12 +155,12 @@ class CrossIndexSystem:
             db_connection.update_cross_indexing_status(
                 self.project_name, "phase4_completed"
             )
-            logger.info(
+            print(
                 f"✅ Phase 4 completed for project '{self.project_name}' - basic cross-indexing done"
             )
         elif phase == "phase5" or phase == "completed":
             db_connection.update_cross_indexing_status(self.project_name, "completed")
-            logger.info(
+            print(
                 f"✅ Cross-indexing fully completed for project '{self.project_name}'"
             )
 

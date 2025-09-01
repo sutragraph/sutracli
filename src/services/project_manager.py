@@ -376,7 +376,7 @@ class ProjectManager:
             # Clear cache for this project
             self._project_dir_cache.pop(project_name, None)
 
-            logger.info(f"Deleted project '{project_name}'")
+            print(f"Deleted project '{project_name}'")
 
             return {"success": True, "project_name": project_name}
 
@@ -472,7 +472,7 @@ class ProjectManager:
             )
 
             project_id = self.db_connection.insert_project(project_data)
-            logger.info(f"Created new project '{project_name}' with ID {project_id}")
+            print(f"Created new project '{project_name}' with ID {project_id}")
 
             return project_id
 

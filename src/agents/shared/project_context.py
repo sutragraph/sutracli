@@ -168,7 +168,9 @@ RELEVANT PROJECTS:"""
                   for selected_name in selected_names):
                 relevant_projects.append(project)
 
-        logger.info(f"Selected {len(relevant_projects)} relevant projects out of {len(projects)} total")
+        logger.debug(
+            f"Selected {len(relevant_projects)} relevant projects out of {len(projects)} total"
+        )
         return relevant_projects
 
     except Exception as e:

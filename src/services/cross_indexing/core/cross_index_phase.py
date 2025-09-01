@@ -525,10 +525,10 @@ class CrossIndexing:
             List of filtered and deduplicated tasks
         """
         if not tasks:
-            logger.info("No tasks to filter")
+            logger.debug("No tasks to filter")
             return []
 
-        logger.info(f"Starting task filtering for {len(tasks)} tasks")
+        logger.debug(f"Starting task filtering for {len(tasks)} tasks")
         for i, task in enumerate(tasks):
             logger.debug(
                 f"Task {i+1}: ID={task.id}, Description={task.description[:50]}..."
@@ -537,7 +537,7 @@ class CrossIndexing:
         # Use BAML to perform intelligent filtering
         filtered_tasks = self._baml_filter_tasks(tasks)
 
-        logger.info(
+        logger.debug(
             f"Task filtering completed: {len(tasks)} → {len(filtered_tasks)} tasks"
         )
         return filtered_tasks
@@ -593,7 +593,7 @@ class CrossIndexing:
                     logger.error(f"Error processing filtered task {i+1}: {task_error}")
                     continue
 
-            logger.info(
+            logger.debug(
                 f"BAML task filtering successful: {len(tasks)} → {len(filtered_tasks)} tasks"
             )
             return filtered_tasks

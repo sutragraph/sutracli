@@ -74,15 +74,14 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
             raise ValueError(
                 f"Agent type {agent_name} not implemented yet")
 
-        logger.info(
-            f"Executing {agent_name.value} agent using BAMLService")
+        logger.debug(f"Executing {agent_name.value} agent using BAMLService")
 
         # Initialize BAMLService and execute
         baml_service = BAMLService()
         baml_response = baml_service.call(
             function_name=function_name, params=params)
 
-        logger.info("Agent execution completed successfully")
+        logger.debug("Agent execution completed successfully")
 
         return AgentResponse(
             agent_type=agent_name,

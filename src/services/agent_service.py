@@ -430,9 +430,7 @@ class AgentService:
                     break
 
             except UserCancelledException as e:
-                logger.info(
-                    f"User cancelled operation in iteration {current_iteration}"
-                )
+                print(f"User cancelled operation in iteration {current_iteration}")
                 yield {
                     "type": "user_cancelled",
                     "message": str(e),
@@ -469,7 +467,7 @@ class AgentService:
     ) -> Union[List[Dict[str, Any]], str, Dict[str, Any]]:
         """Get XML response from LLM using the new prompt system with retry on XML parsing failures."""
         if not get_user_confirmation_for_llm_call():
-            logger.info("User cancelled Agent LLM call in debug mode")
+            print("User cancelled Agent LLM call in debug mode")
             raise UserCancelledException("User cancelled the operation in debug mode")
 
         max_retries = 5
@@ -582,7 +580,7 @@ class AgentService:
                         f"XML parsing failed after {max_retries} attempts: {xml_error.message}"
                     )
                 else:
-                    logger.info(
+                    print(
                         f"Retrying LLM call due to XML parsing failure (attempt {retry_count + 1}/{max_retries})"
                     )
                     continue
@@ -1016,7 +1014,7 @@ class AgentService:
     def log_token_usage_summary(self) -> None:
         """Log a summary of token usage for the current session."""
         summary = self.get_token_usage_summary()
-        logger.info(
+        print(
             f"Stats Token Usage Summary - "
             f"Calls: {summary['llm_call_count']}, "
             f"Total: {summary['total_tokens_used']} tokens "

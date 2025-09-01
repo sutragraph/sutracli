@@ -124,7 +124,7 @@ class SessionManager:
         try:
             if self.session_file.exists():
                 self.session_file.unlink()
-            logger.info(f"🗑️  Cleared session {self.session_id}")
+            logger.debug(f"🗑️  Cleared session {self.session_id}")
         except Exception as e:
             logger.error(f"Failed to clear session file: {e}")
 

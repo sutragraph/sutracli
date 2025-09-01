@@ -106,7 +106,7 @@ def main():
             sys.exit(1)
 
     except KeyboardInterrupt:
-        logger.info("Operation interrupted by user")
+        print("Operation interrupted by user")
         sys.exit(1)
     except Exception as e:
         logger.error(f"Unexpected error: {e}")

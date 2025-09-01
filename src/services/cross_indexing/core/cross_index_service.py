@@ -598,7 +598,7 @@ class CrossIndexService:
                 )
                 return
 
-            logger.info(
+            logger.debug(
                 f"Processing tool results with code manager for tool: {tool_name}"
             )
 
@@ -620,7 +620,7 @@ class CrossIndexService:
                 # Process code manager response to extract connection code
                 baml_response = baml_result.get("results")
                 self._add_code_snippets_to_memory(baml_response)
-                logger.info("BAML code manager processing completed")
+                logger.debug("BAML code manager processing completed")
             else:
                 error_msg = baml_result.get("error", "BAML code manager failed")
                 logger.warning(f"BAML code manager error: {error_msg}")
@@ -724,11 +724,11 @@ Tool Results:
                         logger.warning(f"Failed to add code snippet: {snippet_error}")
 
                 if code_snippets_added > 0:
-                    logger.info(
+                    logger.debug(
                         f"Successfully processed BAML code manager: {code_snippets_added} code snippets added, {code_snippets_skipped} duplicates skipped"
                     )
                 elif code_snippets_skipped > 0:
-                    logger.info(
+                    logger.debug(
                         f"BAML code manager processing: {code_snippets_skipped} duplicate code snippets skipped (already in memory)"
                     )
                 else:
@@ -808,7 +808,7 @@ Tool Results:
     def _handle_phase_12_completion(self, phase: int) -> bool:
         """Handle completion of Phase 1 or 2 with task filtering."""
         try:
-            logger.info(f"Phase {phase} completed - running task filtering")
+            logger.debug(f"Phase {phase} completed - running task filtering")
 
             # Get tasks created for the next phase
             next_phase = phase + 1
@@ -824,12 +824,12 @@ Tool Results:
                     if created_in_phase == phase and target_phase == next_phase:
                         tasks_to_filter.append(task)
 
-            logger.info(
+            logger.debug(
                 f"Found {len(tasks_to_filter)} tasks to filter from Phase {phase} to Phase {next_phase}"
             )
 
             if tasks_to_filter:
-                logger.info(f"Running task filtering on {len(tasks_to_filter)} tasks")
+                logger.debug(f"Running task filtering on {len(tasks_to_filter)} tasks")
 
                 # Run task filtering
                 filtered_tasks = self.cross_indexing.filter_tasks(tasks_to_filter)
@@ -840,7 +840,7 @@ Tool Results:
                     )
                     filtered_tasks = tasks_to_filter  # Keep original if filtering fails
 
-                logger.info(
+                logger.debug(
                     f"Task filtering result: {len(tasks_to_filter)} → {len(filtered_tasks)} tasks"
                 )
 
@@ -864,16 +864,18 @@ Tool Results:
                     else:
                         logger.error(f"Failed to add filtered task {new_task_id}")
 
-                logger.info(
+                logger.debug(
                     f"Task filtering completed: {len(filtered_tasks)} tasks ready for Phase {next_phase}"
                 )
             else:
-                logger.info(f"No tasks to filter from Phase {phase}")
+                logger.debug(f"No tasks to filter from Phase {phase}")
                 # Still clear tasks and reset for clean transition
                 self.task_manager.clear_all_tasks_for_filtering()
 
             # Clear memory for phase transition (history and code snippets)
-            logger.info(f"Clearing memory for phase transition: {phase} → {next_phase}")
+            logger.debug(
+                f"Clearing memory for phase transition: {phase} → {next_phase}"
+            )
             self.task_manager.clear_phase_memory()
 
             return True
@@ -976,7 +978,7 @@ Tool Results:
     def _execute_phase_4(self) -> Dict[str, Any]:
         """Execute Phase 4 - Data Splitting."""
         try:
-            logger.info("Executing Phase 4 - Data Splitting")
+            logger.debug("Executing Phase 4 - Data Splitting")
 
             # Get only code snippets from task manager (not full memory context)
             code_snippets_context = self._get_code_snippets_only_context()
@@ -1003,7 +1005,7 @@ Tool Results:
             unmatched_technologies = self._get_unmatched_technologies(analysis_result)
 
             if unmatched_technologies:
-                logger.info(
+                logger.debug(
                     f"🔧 Technology Correction: Processing {len(unmatched_technologies)} unmatched names: {unmatched_technologies}"
                 )
 
@@ -1029,13 +1031,13 @@ Tool Results:
                     )
                     if corrected_analysis:
                         analysis_result = corrected_analysis
-                        logger.info("Technology correction completed successfully")
+                        logger.debug("Technology correction completed successfully")
                 else:
                     logger.warning(
                         f"Technology correction failed: {correction_result.get('error')}"
                     )
             else:
-                logger.info(
+                logger.debug(
                     "✅ All technologies already match valid enums - skipping technology correction"
                 )
 
@@ -1179,7 +1181,7 @@ Tool Results:
     ) -> Dict[str, Any]:
         """Execute Phase 5 - Connection Matching."""
         try:
-            logger.info("Executing Phase 5 - Connection Matching")
+            logger.debug("Executing Phase 5 - Connection Matching")
 
             # Store connections and summary in database first
             storage_result = self.graph_ops.store_connections_with_commit(
@@ -1192,11 +1194,11 @@ Tool Results:
                     "error": f"Connection storage failed: {storage_result.get('error')}",
                 }
 
-            logger.info("✅ Connections and summary stored in database successfully")
+            print("✅ Connections and summary stored in database successfully")
 
             # Run comprehensive connection matching for all technology types
             # The method handles fetching and processing all connections internally
-            logger.info(
+            print(
                 "🔍 Starting comprehensive connection matching for all technology types"
             )
 
@@ -1225,12 +1227,12 @@ Tool Results:
                     mapping_result = self.graph_ops.create_connection_mappings(
                         db_matches
                     )
-                    logger.info(
+                    print(
                         f"✅ Stored {len(db_matches)} connection mappings in database"
                     )
                 else:
                     mapping_result = {"success": True, "mapping_ids": []}
-                    logger.info("ℹ️  No connection matches found")
+                    print("ℹ️  No connection matches found")
 
                 # Mark cross-indexing as complete
                 self.graph_ops.mark_cross_indexing_done_by_id(project_id)
@@ -1309,7 +1311,7 @@ Tool Results:
                 corrections_list = baml_corrections.get("corrections", [])
 
             if not corrections_list:
-                logger.info("No corrections provided by technology correction")
+                logger.debug("No corrections provided by technology correction")
                 return analysis_result
 
             # Build correction mapping
@@ -1324,7 +1326,7 @@ Tool Results:
                         "corrected_name"
                     )
 
-            logger.info(f"Applying technology corrections: {correction_map}")
+            logger.debug(f"Applying technology corrections: {correction_map}")
 
             # Apply corrections to incoming connections
             for connection in analysis_result.get("incoming_connections", []):

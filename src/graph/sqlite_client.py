@@ -90,7 +90,7 @@ class SQLiteConnection:
         """Close the database connection."""
         if hasattr(self, "connection") and self.connection:
             self.connection.close()
-            logger.info("Database connection closed")
+            logger.debug("Database connection closed")
 
     def execute_query(
         self, query: str, parameters: tuple | None = None
@@ -158,7 +158,7 @@ class SQLiteConnection:
                 "DELETE FROM projects WHERE name = ?", (project_name,)
             )
             self.connection.commit()
-            logger.info(f"Deleted project '{project_name}' and associated data")
+            logger.debug(f"Deleted project '{project_name}' and associated data")
         except Exception as e:
             self.connection.rollback()
             logger.error(f"Failed to delete project '{project_name}': {e}")
@@ -388,7 +388,7 @@ class SQLiteConnection:
             # Recreate tables
             self._create_tables()
 
-            logger.info("Database cleared and tables recreated")
+            logger.debug("Database cleared and tables recreated")
 
         except Exception as e:
             self.connection.rollback()
@@ -422,7 +422,7 @@ class SQLiteConnection:
 
             self.connection.commit()
 
-            logger.info(
+            logger.debug(
                 f"Deleted {block_count} code blocks for project '{project_name}'"
             )
             return block_count

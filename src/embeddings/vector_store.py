@@ -95,7 +95,7 @@ class EmbeddingModel:
                 "Tokenizer not available - cannot count tokens accurately"
             )
 
-        logger.info(f"🔍 TOKENIZING: {len(text)} characters")
+        logger.debug(f"🔍 TOKENIZING: {len(text)} characters")
         try:
             # Align counting with the embedding model's tokenization and max length
             inputs = self._tokenize(text, max_length=256)
@@ -106,7 +106,7 @@ class EmbeddingModel:
             else:
                 token_count = int(sum(attention_mask))
 
-            logger.info(f"🎯 FINAL RESULT: {len(text)} chars → {token_count} tokens")
+            logger.debug(f"🎯 FINAL RESULT: {len(text)} chars → {token_count} tokens")
             return token_count
         except Exception as e:
             logger.error(f"❌ TOKENIZER FAILED: {e}")
@@ -762,7 +762,7 @@ class VectorStore:
         if self.connection:
             self.connection.close()
             self.connection = None
-            logger.info("Vector store connection closed")
+            logger.debug("Vector store connection closed")
 
 
 def get_vector_store() -> VectorStore:
