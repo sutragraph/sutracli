@@ -6,6 +6,7 @@ Tool Delivery Actions Factory
 - Centralizes all fetch_next_code and batch delivery logic
 """
 
+from tools import ToolName
 from typing import Optional, Dict, Any, List
 from loguru import logger
 from services.agent.delivery_management import delivery_manager
@@ -20,7 +21,6 @@ DELIVERY_QUEUE_CONFIG = {
     "database_metadata_only": 30,  # Nodes per batch for all other database queries without code
     "semantic_search": 15,  # Nodes per batch for semantic search (always with code)
 }
-from tools import ToolName
 
 
 class BaseDeliveryAction:
@@ -465,7 +465,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 "delivered_lines": delivered_lines,
                 "total_lines": total_lines,
             },
-            "internal_delivery_handled": True,  # Flag to prevent duplicate delivery in executor
         }
 
         # Enhance with dynamic guidance
@@ -749,44 +748,58 @@ class DefaultDeliveryAction(BaseDeliveryAction):
         """Default fetch_next_code handler - just return None (no-op)."""
         return None
 
+    def register_and_deliver_first_batch(
+        self,
+        action_type: str,
+        action_parameters: Dict[str, Any],
+        delivery_items: List[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """Handle delivery for default tools that return single results."""
+        if not delivery_items:
+            return None
+
+        # For default tools, just return the first item as-is
+        # These tools typically don't need batching or special processing
+        return delivery_items[0]
+
 
 # Registry mapping tool names to delivery action classes
 _DELIVERY_REGISTRY = {
-    ToolName.SEMANTIC_SEARCH: SemanticSearchDeliveryAction,
-    ToolName.DATABASE_SEARCH: DatabaseSearchDeliveryAction,
-    ToolName.SEARCH_KEYWORD: SearchKeywordDeliveryAction,
-    ToolName.LIST_FILES: ListFilesDeliveryAction,
+    "semantic_search": SemanticSearchDeliveryAction,
+    "database_search": DatabaseSearchDeliveryAction,
+    "search_keyword": SearchKeywordDeliveryAction,
+    "list_files": ListFilesDeliveryAction,
     # Other tools use default (no-op) delivery
-    ToolName.APPLY_DIFF: DefaultDeliveryAction,
-    ToolName.COMPLETION: DefaultDeliveryAction,
-    ToolName.TERMINAL_COMMANDS: DefaultDeliveryAction,
-    ToolName.WEB_SCRAP: DefaultDeliveryAction,
-    ToolName.WEB_SEARCH: DefaultDeliveryAction,
-    ToolName.WRITE_TO_FILE: DefaultDeliveryAction,
+    "apply_diff": DefaultDeliveryAction,
+    "completion": DefaultDeliveryAction,
+    "terminal_commands": DefaultDeliveryAction,
+    "web_scrap": DefaultDeliveryAction,
+    "web_search": DefaultDeliveryAction,
+    "write_to_file": DefaultDeliveryAction,
 }
 
 
-def get_delivery_action(tool_enum: ToolName) -> BaseDeliveryAction:
+def get_delivery_action(tool_name: str) -> BaseDeliveryAction:
     """
     Get delivery action handler for a tool.
 
     Args:
-        tool_enum: The tool enum to get delivery handler for
+        tool_name: The tool name to get delivery handler for
 
     Returns:
         Delivery action instance for the tool
     """
-    cls = _DELIVERY_REGISTRY.get(tool_enum, DefaultDeliveryAction)
+    cls = _DELIVERY_REGISTRY.get(tool_name, DefaultDeliveryAction)
     return cls()
 
 
-def handle_fetch_next_request(action, tool_enum: ToolName) -> Optional[Dict[str, Any]]:
+def handle_fetch_next_request(action, tool_name: str) -> Optional[Dict[str, Any]]:
     """
     Centralized fetch_next_code handling for all tools.
 
     Args:
         action: AgentAction with parameters
-        tool_enum: Tool enum to get appropriate delivery handler
+        tool_name: Tool name to get appropriate delivery handler
 
     Returns:
         Response dict if this is a fetch_next request, None otherwise
@@ -794,7 +807,7 @@ def handle_fetch_next_request(action, tool_enum: ToolName) -> Optional[Dict[str,
     if not action.parameters.get("fetch_next_code", False):
         return None
 
-    delivery_action = get_delivery_action(tool_enum)
+    delivery_action = get_delivery_action(tool_name)
     return delivery_action.handle_fetch_next(action)
 
 
@@ -802,7 +815,7 @@ def register_delivery_queue_and_get_first_batch(
     action_type: str,
     action_parameters: Dict[str, Any],
     delivery_items: List[Dict[str, Any]],
-    tool_enum: ToolName,
+    tool_name: str,
 ) -> Optional[Dict[str, Any]]:
     """
     Centralized delivery queue registration and first batch delivery.
@@ -811,7 +824,7 @@ def register_delivery_queue_and_get_first_batch(
         action_type: String identifier for the action type
         action_parameters: Parameters for the action
         delivery_items: List of items to deliver
-        tool_enum: Tool enum to get appropriate delivery handler
+        tool_name: Tool name to get appropriate delivery handler
 
     Returns:
         First batch response or None if no items
@@ -819,7 +832,7 @@ def register_delivery_queue_and_get_first_batch(
     if not delivery_items:
         return None
 
-    delivery_action = get_delivery_action(tool_enum)
+    delivery_action = get_delivery_action(tool_name)
     return delivery_action.register_and_deliver_first_batch(
         action_type, action_parameters, delivery_items
     )
@@ -829,7 +842,7 @@ def register_delivery_queue_and_get_first_batch_with_line_limit(
     action_type: str,
     action_parameters: Dict[str, Any],
     delivery_items: List[Dict[str, Any]],
-    tool_enum: ToolName,
+    tool_name: str,
     line_limit: int = 500,
 ) -> Optional[Dict[str, Any]]:
     """
@@ -842,8 +855,8 @@ def register_delivery_queue_and_get_first_batch_with_line_limit(
         action_type: String identifier for the action type
         action_parameters: Parameters for the action
         delivery_items: List of items to deliver
-        tool_enum: Tool enum to get appropriate delivery handler
-        line_limit: Maximum total lines allowed in batch
+        tool_name: str,
+        line_limit: int = 500
 
     Returns:
         First batch response or None if no items
@@ -851,10 +864,10 @@ def register_delivery_queue_and_get_first_batch_with_line_limit(
     if not delivery_items:
         return None
 
-    delivery_action = get_delivery_action(tool_enum)
+    delivery_action = get_delivery_action(tool_name)
 
     # Use line-based delivery for database search
-    if tool_enum == ToolName.DATABASE_SEARCH and hasattr(
+    if tool_name == "database" and hasattr(
         delivery_action, "register_and_deliver_first_batch_with_line_limit"
     ):
         return delivery_action.register_and_deliver_first_batch_with_line_limit(
@@ -868,7 +881,7 @@ def register_delivery_queue_and_get_first_batch_with_line_limit(
 
 
 def check_pending_delivery(
-    action_type: str, action_parameters: Dict[str, Any], tool_enum: ToolName
+    action_type: str, action_parameters: Dict[str, Any], tool_name: str
 ) -> Optional[Dict[str, Any]]:
     """
     Check if there's a pending delivery for a query.
@@ -876,12 +889,12 @@ def check_pending_delivery(
     Args:
         action_type: String identifier for the action type
         action_parameters: Parameters for the action
-        tool_enum: Tool enum to get appropriate delivery handler
+        tool_name: Tool enum to get appropriate delivery handler
 
     Returns:
         Next pending item or None if no pending delivery
     """
-    delivery_action = get_delivery_action(tool_enum)
+    delivery_action = get_delivery_action(tool_name)
     return delivery_action.check_pending_delivery(action_type, action_parameters)
 
 

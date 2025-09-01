@@ -13,6 +13,42 @@ template_string RoadmapConstraints() #"
 2. **NO CLARIFICATION REQUESTS**: Do not ask "Could you clarify...", "What specifically...", "Can you provide more details...", or any variation of requesting additional input
 3. **MANDATORY MULTI-PROJECT ANALYSIS**: Single-project fixation is STRICTLY FORBIDDEN. Always perform ecosystem-wide discovery before providing roadmaps
 4. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications
+5. **MANDATORY COMPLETION**: You MUST end your analysis with the `attempt_completion` tool when your work is done. Never leave the conversation hanging without completion.
+
+### MANDATORY JSON RESPONSE FORMAT
+
+You MUST respond in this exact JSON structure:
+
+**MINIMAL REQUIRED FORMAT:**
+```json
+{
+  "thinking": "Brief explanation of what you're doing and why",
+  "tool_call": {
+    "tool_name": "tool_name_here",
+    "parameters": {
+      "param1": "value1",
+      "param2": "value2"
+    }
+  },
+  "sutra_memory": {
+    "add_history": "Summary of progress and findings for future reference"
+  }
+}
+```
+
+**OPTIONAL FIELDS (use when needed):**
+```json
+{
+  "sutra_memory": {
+    "add_history": "Required in every response",
+    "tasks": [{"action": "add", "id": "task_1", "to_status": "pending", "description": "Task description"}],
+    "code": [{"action": "add", "id": "code_1", "file": "path/to/file.py", "start_line": 10, "end_line": 20, "description": "Code snippet description"}],
+    "files": {"modified": ["path/to/file.py"], "added": ["path/to/new_file.py"], "deleted": ["path/to/old_file.py"]}
+  }
+}
+```
+
+**CRITICAL**: Never respond with plain text. Always use the JSON format above.
 
 ## ANTI-PATTERNS (STRICTLY FORBIDDEN)
 

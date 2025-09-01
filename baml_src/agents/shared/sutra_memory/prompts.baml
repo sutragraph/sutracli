@@ -13,16 +13,13 @@ template_string SutraMemoryPrompt() #"
 
     ### MANDATORY JSON FORMAT
 
-    Every response must include Sutra Memory updates:
-    ```json
-    {
-      "sutra_memory": {
-        "add_history": "Summary of current iteration actions and key findings"
-      }
-    }
-    ```
-
     The "add_history" field is required in every response - no exceptions.
+
+    Parameter Requirements:
+    - add_history: "Summary of current iteration actions and key findings" (required)
+    - tasks: Task operations array (optional)
+    - code: Code storage operations array (optional)
+    - files: File change tracking (optional)
 
     ### SYSTEM CONSTRAINTS
 
@@ -36,68 +33,18 @@ template_string SutraMemoryPrompt() #"
     ### CRITICAL: Single Current Task Examples
 
     ❌ **INCORRECT** - This will fail:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "add",
-            "id": "2",
-            "to_status": "current",
-            "description": "New urgent task"
-          }
-        ],
-        "add_history": "Added new task"
-      }
-    }
-    ```
+    Task Parameters: action: "add", id: "2", to_status: "current", description: "New urgent task"
     <!-- If task "1" is already current, this violates the constraint -->
 
     ✅ **CORRECT** - Move existing current task first:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "move",
-            "id": "1",
-            "from_status": "current",
-            "to_status": "completed"
-          },
-          {
-            "action": "add",
-            "id": "2",
-            "to_status": "current",
-            "description": "New urgent task"
-          }
-        ],
-        "add_history": "Completed task 1 and started new urgent task"
-      }
-    }
-    ```
+    Task Parameters:
+    - Move existing: action: "move", id: "1", from_status: "current", to_status: "completed"
+    - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
 
     Alternative - Move current to pending:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "move",
-            "id": "1",
-            "from_status": "current",
-            "to_status": "pending"
-          },
-          {
-            "action": "add",
-            "id": "2",
-            "to_status": "current",
-            "description": "New urgent task"
-          }
-        ],
-        "add_history": "Paused task 1 and started new urgent task"
-      }
-    }
-    ```
+    Task Parameters:
+    - Pause existing: action: "move", id: "1", from_status: "current", to_status: "pending"
+    - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
 
     ### TASK MANAGEMENT
 
@@ -106,123 +53,31 @@ template_string SutraMemoryPrompt() #"
     **pending → current → completed**
 
     #### Add Tasks:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "add",
-            "id": "1",
-            "to_status": "pending",
-            "description": "Analyze authentication system architecture"
-          },
-          {
-            "action": "add",
-            "id": "2",
-            "to_status": "current",
-            "description": "Review user model structure"
-          },
-          {
-            "action": "add",
-            "id": "3",
-            "to_status": "completed",
-            "description": "Initial project exploration finished"
-          }
-        ],
-        "add_history": "Set up task pipeline for authentication work"
-      }
-    }
-    ```
+    Task Parameters:
+    - Add pending: action: "add", id: "1", to_status: "pending", description: "Analyze authentication system architecture"
+    - Add current: action: "add", id: "2", to_status: "current", description: "Review user model structure"
+    - Add completed: action: "add", id: "3", to_status: "completed", description: "Initial project exploration finished"
 
     #### Move Tasks:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "move",
-            "id": "1",
-            "from_status": "current",
-            "to_status": "completed"
-          },
-          {
-            "action": "move",
-            "id": "2",
-            "from_status": "pending",
-            "to_status": "current"
-          }
-        ],
-        "add_history": "Completed analysis task, now starting user model review"
-      }
-    }
-    ```
+    Task Parameters:
+    - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
+    - Start pending: action: "move", id: "2", from_status: "pending", to_status: "current"
 
     #### Remove Tasks:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "remove",
-            "id": "3"
-          }
-        ],
-        "add_history": "Cleaned up completed exploration task"
-      }
-    }
-    ```
+    Task Parameters: action: "remove", id: "3"
 
     ### CODE STORAGE
 
     Store code snippets you'll reference in future iterations:
-    ```json
-    {
-      "sutra_memory": {
-        "code": [
-          {
-            "action": "add",
-            "id": "1",
-            "file": "src/auth/validator.py",
-            "start_line": 15,
-            "end_line": 28,
-            "description": "validateUser function signature - needs role parameter"
-          }
-        ],
-        "add_history": "Stored validateUser function for future modification"
-      }
-    }
-    ```
+    Code Parameters: action: "add", id: "1", file: "src/auth/validator.py", start_line: 15, end_line: 28, description: "validateUser function signature - needs role parameter"
 
     Remove when no longer needed:
-    ```json
-    {
-      "sutra_memory": {
-        "code": [
-          {
-            "action": "remove",
-            "id": "1"
-          }
-        ],
-        "add_history": "Removed completed validation function reference"
-      }
-    }
-    ```
+    Code Parameters: action: "remove", id: "1"
 
     ### FILE CHANGE TRACKING
 
     Track modifications that affect your stored code or future work:
-    ```json
-    {
-      "sutra_memory": {
-        "files": {
-          "modified": ["src/models/user.py"],
-          "added": ["src/auth/roles.py"],
-          "deleted": ["migrations/old_schema.sql"]
-        },
-        "add_history": "Updated user model and created role system"
-      }
-    }
-    ```
+    Files Parameters: modified: ["src/models/user.py"], added: ["src/auth/roles.py"], deleted: ["migrations/old_schema.sql"]
 
     ### WHAT TO STORE
 
@@ -245,144 +100,30 @@ template_string SutraMemoryPrompt() #"
     ### COMPLETE WORKFLOW EXAMPLES
 
     #### Multi-Step Implementation:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "add",
-            "id": "1",
-            "to_status": "current",
-            "description": "Understand current authentication system"
-          },
-          {
-            "action": "add",
-            "id": "2",
-            "to_status": "pending",
-            "description": "Design role-based access control integration"
-          },
-          {
-            "action": "add",
-            "id": "3",
-            "to_status": "pending",
-            "description": "Implement role checking in validateUser"
-          },
-          {
-            "action": "add",
-            "id": "4",
-            "to_status": "pending",
-            "description": "Update all authentication callers"
-          }
-        ],
-        "add_history": "User requested role-based authentication. Created implementation pipeline: analysis → design → core implementation → caller updates. Starting with understanding current system."
-      }
-    }
-    ```
+    Task Parameters:
+    - Current task: action: "add", id: "1", to_status: "current", description: "Understand current authentication system"
+    - Pipeline tasks: action: "add", id: "2-4", to_status: "pending", description: "Design → Implementation → Updates"
 
     #### Discovering and Storing Key Code:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "move",
-            "id": "1",
-            "from_status": "current",
-            "to_status": "completed"
-          },
-          {
-            "action": "move",
-            "id": "2",
-            "from_status": "pending",
-            "to_status": "current"
-          }
-        ],
-        "code": [
-          {
-            "action": "add",
-            "id": "1",
-            "file": "src/auth/validator.py",
-            "start_line": 15,
-            "end_line": 28,
-            "description": "validateUser function - current signature validateUser(username, password)"
-          },
-          {
-            "action": "add",
-            "id": "2",
-            "file": "src/models/user.py",
-            "start_line": 23,
-            "end_line": 35,
-            "description": "User class constructor - needs role field integration"
-          }
-        ],
-        "add_history": "Completed authentication system analysis. Found validateUser in validator.py and User constructor in models/user.py. Both need role integration. Discovered 3 caller locations: login.py line 45, middleware.py line 23, api.py line 67. Stored key functions for modification. Now designing role integration approach."
-      }
-    }
-    ```
+    Task Parameters:
+    - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
+    - Start next: action: "move", id: "2", from_status: "pending", to_status: "current"
+    Code Parameters:
+    - Store validator: action: "add", id: "1", file: "src/auth/validator.py", start_line: 45, end_line: 67, description: "validateUser() implementation"
+    - Store user model: action: "add", id: "2", file: "src/models/user.py", start_line: 12, end_line: 25, description: "User class structure"
 
     #### Implementing Changes:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "move",
-            "id": "2",
-            "from_status": "current",
-            "to_status": "completed"
-          },
-          {
-            "action": "move",
-            "id": "3",
-            "from_status": "pending",
-            "to_status": "current"
-          }
-        ],
-        "files": {
-          "modified": ["src/models/user.py"],
-          "added": ["src/models/user_role.py"]
-        },
-        "code": [
-          {
-            "action": "remove",
-            "id": "2"
-          }
-        ],
-        "add_history": "Completed role integration design. Modified User model to include role field with default 'user' value. Created UserRole model with permissions mapping. Removed stored User constructor code as modification is complete. Now implementing role checking in validateUser function using stored code reference."
-      }
-    }
-    ```
+    Task Parameters:
+    - Complete current: action: "move", id: "2", from_status: "current", to_status: "completed"
+    - Start next: action: "move", id: "3", from_status: "pending", to_status: "current"
+    Files Parameters: modified: ["src/models/user.py"], added: ["src/models/user_role.py"]
+    Code Parameters: action: "remove", id: "2"
 
     #### Memory Cleanup:
-    ```json
-    {
-      "sutra_memory": {
-        "tasks": [
-          {
-            "action": "move",
-            "id": "3",
-            "from_status": "current",
-            "to_status": "completed"
-          },
-          {
-            "action": "remove",
-            "id": "1"
-          },
-          {
-            "action": "remove",
-            "id": "2"
-          }
-        ],
-        "code": [
-          {
-            "action": "remove",
-            "id": "1"
-          }
-        ],
-        "add_history": "Completed validateUser role integration. All authentication functions now support role checking. Cleaned up completed tasks and code references. Role-based authentication system implementation finished."
-      }
-    }
-    ```
+    Task Parameters:
+    - Complete current: action: "move", id: "3", from_status: "current", to_status: "completed"
+    - Remove completed: action: "remove", id: "1", action: "remove", id: "2"
+    Code Parameters: action: "remove", id: "1"
 
     ### PRACTICAL GUIDELINES
 

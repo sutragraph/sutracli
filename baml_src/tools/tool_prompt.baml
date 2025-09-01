@@ -1,15 +1,7 @@
 template_string GlobalToolsPrompt(tools: ToolName[]) #"
 ## Available Tools
 
-### Output Format
-When invoking any tool, respond in the following JSON format:
 
-tool_call: {
-  tool_name: "tool_name_here",
-  parameters: {
-    // tool-specific parameters here
-  }
-}
 
 {% for tool in tools %}
 {% if tool == ToolName.Database %}

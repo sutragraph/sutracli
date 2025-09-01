@@ -1,6 +1,6 @@
 class RoadmapCompletionToolCall {
   tool_name "attempt_completion"
-  parameters RoadmapCompletionParams
+  parameters RoadmapCompletionParams | BaseCompletionParams
 }
 
 type RoadmapToolCall = DatabaseToolCall | SearchKeywordToolCall  | SemanticSearchToolCall | ListFilesToolCall  | RoadmapCompletionToolCall

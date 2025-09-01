@@ -25,6 +25,7 @@ from prompt_toolkit.styles import Style
 from src.agent_management.prerequisites.agent_config import (
     get_agent_registry,
 )
+from src.agents_new import Agent
 from cli.utils import setup_logging
 from config.settings import reload_config
 
@@ -288,7 +289,7 @@ class ModernSutraKit:
         # Reload the configuration to update the in-memory instance
         reload_config()
 
-    def select_agent(self) -> str:
+    def select_agent(self) -> Agent:
         """Interactive agent selection with arrow keys."""
         available_agents = self.agent_registry.get_available_agents()
 
@@ -309,7 +310,7 @@ class ModernSutraKit:
 
         if not available_agents:
             console.error("No agents available")
-            return "roadmap"
+            return Agent.ROADMAP
 
         # Use arrow key selection
         selected_agent = self._arrow_key_select_agents(available_agents)
@@ -431,9 +432,9 @@ class ModernSutraKit:
         # Run the application
         return application.run()
 
-    def show_agent_prerequisites(self, agent_key: str):
+    def show_agent_prerequisites(self, agent_enum: Agent):
         """Show prerequisites for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_key)
+        agent_config = self.agent_registry.get_agent(agent_enum)
         if not agent_config:
             return
 
@@ -448,11 +449,11 @@ class ModernSutraKit:
         console.print(table)
         console.print()
 
-    def run_agent_workflow(self, agent_key: str, current_dir: Path):
+    def run_agent_workflow(self, agent_enum: Agent, current_dir: Path):
         """Run the workflow for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_key)
+        agent_config = self.agent_registry.get_agent(agent_enum)
         if not agent_config:
-            console.error(f"Agent '{agent_key}' not found.")
+            console.error(f"Agent '{agent_enum}' not found.")
             return
 
         # Check if agent is available (implemented)
@@ -471,10 +472,10 @@ class ModernSutraKit:
                 self._run_cross_indexing(current_dir)
 
             # Run the actual agent
-            if agent_key == "roadmap":
+            if agent_enum.value == "ROADMAP":
                 self._run_roadmap_agent(current_dir, agent_config)
             else:
-                console.error(f"Agent '{agent_key}' not implemented yet.")
+                console.error(f"Agent '{agent_enum}' not implemented yet.")
 
         except UserCancelledError:
             console.warning("Workflow stopped by user choice.")
@@ -612,7 +613,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             class Args:
 
                 def __init__(self):
-                    self.agent_type = agent_config.key
+                    self.agent_type = agent_config.key.value.lower()
                     self.project_path = project_dir
                     self.directory = str(project_dir)
                     self.project_name = None
@@ -632,7 +633,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
                 console.process(f"Processing {agent_config.name} results...")
 
                 # Get appropriate handler for this agent and process results directly
-                handler = get_agent_handler(agent_config.key)
+                handler = get_agent_handler(agent_config.key.value.lower())
 
                 # Process the agent result directly - no wrapper needed
                 post_result = handler.process_agent_result_direct(agent_result)

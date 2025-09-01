@@ -1,20 +1,12 @@
 from typing import Iterator, Dict, Any
-import time
 from models.agent import AgentAction
+from .action import execute_completion_action as base_execute_completion_action
 
 
 def execute_completion_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
-    """Execute generic completion tool - handles BaseCompletionParams only."""
-
+    """Execute roadmap completion with union type detection."""
     try:
-        params = action.parameters
-        result = params.get("result", "Task completed")
-
-        yield {
-            "type": "tool_use",
-            "tool_name": "attempt_completion",
-            "data": {"result": result}
-        }
+        yield from base_execute_completion_action(action)
 
     except Exception as e:
         yield {

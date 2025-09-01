@@ -4,7 +4,7 @@ import time
 import re
 import os
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Iterator, Union
+from typing import Dict, Any, List, Optional, Union
 from loguru import logger
 from graph.graph_operations import GraphOperations
 from graph.sqlite_client import SQLiteConnection
@@ -275,23 +275,20 @@ class ProjectManager:
             self._project_dir_cache[project_name] = None
             raise
 
-    def ensure_project_indexed(self, project_name: str, project_path: Path) -> None:
-        """Ensure the specified project is indexed in the database.
+    def check_project_exists(self, project_name: str) -> bool:
+        """Check if a project exists in the database.
 
         Args:
-            project_name: Name of the project
-            project_path: Optional path to the project directory
+            project_name: Name of the project to check
+
+        Returns:
+            True if project exists, False otherwise
         """
         try:
-            print(f"🏷️  Project: {project_name}")
-
-            # Check if project exists in database
-            if not self.db_connection.project_exists(project_name):
-                self.auto_index_project(project_name, project_path)
+            return self.db_connection.project_exists(project_name)
         except Exception as e:
-            logger.error(f"Error checking project indexing status: {e}")
-            print(f"❌ Error checking project status: {e}")
-            print("   Continuing with limited functionality...")
+            logger.error(f"Error checking if project exists {project_name}: {e}")
+            return False
 
     def auto_index_project(self, project_name: str, project_path: Path) -> None:
         """Automatically index the specified project if not found in database.
@@ -314,26 +311,26 @@ class ProjectManager:
 
     def perform_incremental_indexing(
         self, project_name: str
-    ) -> Iterator[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """Perform incremental reindexing of the database for the specified project.
 
         Args:
             project_name: Name of the project to reindex
 
-        Yields:
+        Returns:
             Indexing status and statistics
         """
         logger.debug(f"🔄 Running incremental indexing for project {project_name}")
         stats = self.project_indexer.incremental_index_project(project_name)
 
         if stats.get("status") == "success":
-            yield {
+            return {
                 "type": "indexing_complete",
                 "stats": stats,
                 "timestamp": time.time(),
             }
         else:
-            yield {
+            return {
                 "type": "error",
                 "message": stats.get("error", "Unknown indexing error"),
                 "stats": stats,

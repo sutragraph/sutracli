@@ -3,15 +3,8 @@ template_string CrossIndexingCompletion() #"
 
 Give summary of current task in short in 3-4 lines when you are done with your all task.
 
-Usage: attempt_completion(result="Brief summary of what you accomplished")
-
-Expected Format:
-{
-  tool_name: "attempt_completion",
-  parameters: {
-    "result": "Brief summary of what was accomplished and key findings in 3-4 lines."
-  }
-}
+Parameter Examples:
+- Complete task: result: "Brief summary of what was accomplished and key findings in 3-4 lines."
 
 Summary Requirements:
 - Provide only a brief 3-4 line summary

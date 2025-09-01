@@ -1,11 +1,11 @@
 """
 Tool Guidance System
 
-Provides guidance and formatting for tool results. Each tool can have optional
-guidance hooks that are called by the ActionExecutor during tool execution.
+Provides guidance and formatting for tool results. Tools with registered guidance
+handlers get enhanced with contextual messages, while others pass through unchanged.
 
 Architecture:
-- BaseToolGuidance: Abstract base with hooks for tool lifecycle
+- BaseToolGuidance: Abstract base with on_event hook for processing results
 - Tool-specific classes: Handle guidance for semantic search, database, and keyword search
 - GuidanceRegistry: Factory for retrieving guidance handlers by tool type
 """
@@ -15,12 +15,13 @@ from abc import ABC
 from enum import Enum
 from loguru import logger
 
+from models.agent import AgentAction
+
 from tools.utils.constants import (
     GUIDANCE_MESSAGES,
     DATABASE_ERROR_GUIDANCE,
     SEARCH_CONFIG,
 )
-from tools import ToolName
 
 
 class SearchType(Enum):
@@ -255,19 +256,23 @@ def calculate_database_batch_with_line_limit(
 
     for i, node in enumerate(nodes):
         code_content = node.get("code_snippet", "") or node.get("data", "")
-        logger.debug(f"📦 DEBUG: Processing node {i+1}/{len(nodes)}")
+        logger.debug(f"📦 DEBUG: Processing node {i + 1}/{len(nodes)}")
         logger.debug(f"📦 DEBUG: Node keys: {list(node.keys())}")
 
         if code_content:
             node_lines = len(str(code_content).split("\n"))
             logger.debug(
-                f"📦 DEBUG: Node {i+1} has {node_lines} lines, current total: {total_lines}"
+                f"📦 DEBUG: Node {i + 1} has {node_lines} lines, current total: {total_lines}"
             )
 
             # Check if adding this node would exceed the limit
             if total_lines + node_lines > line_limit and batch_nodes:
                 logger.debug(
-                    f"📦 DEBUG: Adding node {i+1} would exceed limit ({total_lines + node_lines} > {line_limit}), stopping batch"
+                    f"📦 DEBUG: Adding node {
+                        i +
+                        1} would exceed limit ({
+                        total_lines +
+                        node_lines} > {line_limit}), stopping batch"
                 )
                 # Don't add this node, return current batch
                 break
@@ -275,10 +280,10 @@ def calculate_database_batch_with_line_limit(
             batch_nodes.append(node)
             total_lines += node_lines
             logger.debug(
-                f"📦 DEBUG: Added node {i+1} to batch, new total lines: {total_lines}"
+                f"📦 DEBUG: Added node {i + 1} to batch, new total lines: {total_lines}"
             )
         else:
-            logger.debug(f"📦 DEBUG: Node {i+1} has no code content, adding anyway")
+            logger.debug(f"📦 DEBUG: Node {i + 1} has no code content, adding anyway")
             # Add nodes without code content
             batch_nodes.append(node)
 
@@ -473,14 +478,14 @@ def build_enhanced_fetch_note(
 
 
 def enhance_semantic_search_event(
-    event: Dict[str, Any], action_parameters: Dict[str, Any]
+    event: Dict[str, Any], action: AgentAction
 ) -> Dict[str, Any]:
     """
     Enhance semantic search event with dynamic guidance.
 
     Args:
         event: The original event from semantic search
-        action_parameters: Parameters from the action
+        action: The AgentAction being executed
 
     Returns:
         Enhanced event with guidance
@@ -515,7 +520,7 @@ def enhance_semantic_search_event(
 
 def enhance_database_search_event(
     event: Dict[str, Any],
-    action_parameters: Dict[str, Any],
+    action: AgentAction,
     delivery_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
@@ -523,7 +528,7 @@ def enhance_database_search_event(
 
     Args:
         event: The original event from database search
-        action_parameters: Parameters from the action
+        action: The AgentAction being executed
         delivery_context: Optional context about delivery state
 
     Returns:
@@ -536,7 +541,7 @@ def enhance_database_search_event(
         return event
 
     # Check if this is a metadata-only query (like GET_FILE_BLOCK_SUMMARY)
-    query_name = action_parameters.get("query_name", "")
+    query_name = action.parameters.get("query_name", "")
     include_code = event.get("code_snippet", True)
     is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY" or not include_code
 
@@ -551,7 +556,7 @@ def enhance_database_search_event(
             guidance_message = f"Found {total_nodes} nodes."
             if remaining_nodes > 0:
                 guidance_message += _get_fetch_next_code_note()
-        
+
         # Add guidance as prefix to data
         event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
         return event
@@ -622,24 +627,11 @@ class BaseToolGuidance(ABC):
     """
     Base class for tool guidance handlers.
 
-    Provides hooks for tool lifecycle events:
-    - on_start: Called before tool execution
-    - on_event: Called for each event yielded by the tool
+    Provides a single hook for processing tool events:
+    - on_event: Called for each event yielded by the tool to add contextual guidance
     """
 
-    def on_start(self, action) -> Optional[Dict[str, Any]]:
-        """
-        Pre-execution hook called before tool starts.
-
-        Args:
-            action: The AgentAction being executed
-
-        Returns:
-            Optional event to yield before tool execution
-        """
-        return None
-
-    def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
         """
         Post-execution hook called for each tool event.
 
@@ -691,7 +683,7 @@ class SemanticSearchGuidance(BaseToolGuidance):
     - Provide dynamic guidance for batch delivery with node and line information
     """
 
-    def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
         # Only process semantic search events
         if not self._is_semantic_search_event(event):
             return event
@@ -754,7 +746,7 @@ class DatabaseSearchGuidance(BaseToolGuidance):
     - Provide dynamic guidance for batch delivery with line counting
     """
 
-    def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
         # Only process database events
         if not self._is_database_event(event):
             return event
@@ -825,7 +817,7 @@ class DatabaseSearchGuidance(BaseToolGuidance):
 
         return None
 
-    def _handle_no_results(self, event: Dict[str, Any], action) -> Dict[str, Any]:
+    def _handle_no_results(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
         """Handle no results case with comprehensive error guidance."""
         # Build error guidance
         query_name = action.parameters.get("query_name", "unknown")
@@ -887,50 +879,50 @@ class GuidanceRegistry:
     """
 
     _HANDLERS = {
-        ToolName.SEMANTIC_SEARCH: SemanticSearchGuidance,
-        ToolName.DATABASE_SEARCH: DatabaseSearchGuidance,
+        "semantic_search": SemanticSearchGuidance,
+        "database": DatabaseSearchGuidance,
     }
 
     @classmethod
-    def get_guidance(cls, tool_enum: ToolName) -> Optional[BaseToolGuidance]:
+    def get_guidance(cls, tool_name: str) -> Optional[BaseToolGuidance]:
         """
         Get guidance handler for the specified tool.
 
         Args:
-            tool_enum: The tool type to get guidance for
+            tool_name: The tool name to get guidance for
 
         Returns:
             Guidance handler instance or None if no guidance exists
         """
-        guidance_class = cls._HANDLERS.get(tool_enum)
+        guidance_class = cls._HANDLERS.get(tool_name)
         return guidance_class() if guidance_class else None
 
     @classmethod
-    def register_guidance(cls, tool_enum: ToolName, guidance_class: type):
+    def register_guidance(cls, tool_name: str, guidance_class: type):
         """
         Register a new guidance handler.
 
         Args:
-            tool_enum: The tool type
+            tool_name: The tool name
             guidance_class: The guidance class to register
         """
-        cls._HANDLERS[tool_enum] = guidance_class
+        cls._HANDLERS[tool_name] = guidance_class
 
     @classmethod
-    def get_supported_tools(cls) -> List[ToolName]:
+    def get_supported_tools(cls) -> List[str]:
         """Get list of tools that have guidance support."""
         return list(cls._HANDLERS.keys())
 
 
 # Public factory function for backward compatibility
-def get_tool_guidance(tool_enum: ToolName) -> Optional[BaseToolGuidance]:
+def get_tool_guidance(tool_name: str) -> Optional[BaseToolGuidance]:
     """
     Factory function to get guidance handler for a tool.
 
     Args:
-        tool_enum: The tool type to get guidance for
+        tool_name: The tool name to get guidance for
 
     Returns:
         Guidance handler instance or None if no guidance exists
     """
-    return GuidanceRegistry.get_guidance(tool_enum)
+    return GuidanceRegistry.get_guidance(tool_name)

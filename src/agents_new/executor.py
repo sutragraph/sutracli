@@ -9,8 +9,9 @@ from baml_client.types import (
     BasePromptParams,
     RoadmapResponse,
 
+
 )
-from services.baml_service import BAMLService, BAMLTokenUsage
+from services.baml_service import BAMLService
 from .utils import get_project_context_for_agent, get_system_info
 
 
@@ -23,7 +24,6 @@ class AgentResponse(NamedTuple):
 
     agent_type: Agent
     content: AgentContentType
-    token_usage: BAMLTokenUsage
 
 
 def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
@@ -85,8 +85,7 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
 
         return AgentResponse(
             agent_type=agent_name,
-            content=baml_response.content,
-            token_usage=baml_response.token_usage,
+            content=baml_response,
         )
 
     except Exception as e:

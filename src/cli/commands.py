@@ -6,16 +6,15 @@ import webbrowser
 from pathlib import Path
 from loguru import logger
 import requests
-from prompt_toolkit import prompt
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.key_binding import KeyBindings
+
+
 from services.project_manager import ProjectManager
 from services.cross_indexing.core.cross_index_system import CrossIndexSystem
 from graph import ASTToSqliteConverter
-from services.agent_service import AgentService
+from services.agent_service_new import AgentService
 from services.auth.token_manager import get_token_manager
 from config import config
+from utils.console import console
 from embeddings import get_vector_store
 from tools.utils.code_processing_utils import (
     add_line_numbers_to_code,
@@ -273,97 +272,36 @@ def handle_agent_command(args):
 
         agent = AgentService(project_path=project_directory)
 
-        if args.problem_query:
-            print(f"📝 Initial Problem: {args.problem_query}")
-            print("🚀 Starting analysis...")
-            print("-" * 40)
 
-            # Capture the agent result for post-processing
-            agent_result = _process_agent_updates_with_result(
-                agent.solve_problem(
-                    problem_query=args.problem_query,
-                    project_id=getattr(args, "project_id", None),
-                ),
-            )
-            print("\n✅ INITIAL REQUEST COMPLETED")
-
-            # Return the result for post-processing by modern CLI
-            return agent_result
-        else:
-            print("🚀 Welcome to Sutra Agent!")
-            print(
-                "   I'm here to help you with coding, debugging, and knowledge sharing."
-            )
+        print("🚀 Welcome to Sutra Agent!")
+        print(
+            "   I'm here to help you with coding, debugging, and knowledge sharing."
+        )
 
         print("\n💬 How can I help you? Type your questions or requests below.")
-        print("   Type 'exit' or 'quit' to end the session.")
-        print("=" * 80)
 
+        # Get user input once
         while True:
-            try:
-                # Create history and completer for enhanced input
-                history = InMemoryHistory()
-                completer = WordCompleter(["exit", "quit", "bye", "goodbye", "help"])
+            user_input = console.input("\n👤 You: ", multiline=True)
+            print("-" * 40)
 
-                # Create key bindings
-                bindings = KeyBindings()
+            if not user_input:
+                continue
 
-                @bindings.add("c-c")
-                def _(event):
-                    """Handle Ctrl+C"""
-                    raise KeyboardInterrupt
+            if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
+                print("\n👋 Goodbye! Session ended.")
+                return
 
-                # Enhanced prompt with multiline support and navigation
-                user_input = prompt(
-                    "\n👤 You: ",
-                    multiline=True,
-                    history=history,
-                    completer=completer,
-                    complete_while_typing=True,
-                    key_bindings=bindings,
-                    mouse_support=True,
-                    bottom_toolbar="Press [Meta+Enter] or [Escape followed by Enter] to submit multiline input. Use arrow keys to navigate.",
-                ).strip()
-                print("-" * 40)
+            # Got valid input, break out of input loop
+            break
 
-                if not user_input:
-                    continue
+        # Run agent session with the input
+        print("🚀 Starting agent session...")
+        result = agent.solve_problem(problem_query=user_input)
+        print(f"\n✅ Agent session {result}")
 
-                if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
-                    print("\n👋 Goodbye! Session ended.")
-                    break
+        return result
 
-                if user_input.lower() in ["version", "--version", "-v"]:
-                    print("\n📦 Sutra Agent Version Information:")
-                    print("   Sutra Knowledge CLI v1.0")
-                    print("   AI-Powered Repository Assistant")
-                    print("   Build: Agent Interface")
-                    continue
-
-                if args.problem_query:
-                    agent_result = _process_agent_updates_with_result(
-                        agent.continue_conversation(
-                            query=user_input,
-                            project_id=getattr(args, "project_id", None),
-                        ),
-                    )
-                else:
-                    agent_result = _process_agent_updates_with_result(
-                        agent.solve_problem(
-                            problem_query=user_input,
-                            project_id=getattr(args, "project_id", None),
-                        ),
-                    )
-                    args.problem_query = user_input
-
-                print("\n✅ Response completed. What would you like to do next?")
-
-            except KeyboardInterrupt:
-                print("\n\n👋 Session interrupted. Goodbye!")
-                break
-            except EOFError:
-                print("\n\n👋 Session ended. Goodbye!")
-                break
 
     except KeyboardInterrupt:
         print("\n❌ Operation interrupted by user")

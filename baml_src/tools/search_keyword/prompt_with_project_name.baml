@@ -28,105 +28,13 @@ template_string SearchKeywordToolTemplate() #"
       - Use project_name when you want to search the entire project
     - Either file_paths or project_name must be provided
 
-    Usage with explicit file paths:
-    {
-      tool_name: "search_keyword",
-      parameters: {
-        "keyword": "search term",
-        "before_lines": "number",
-        "after_lines": "number",
-        "case_sensitive": "boolean",
-        "regex": "boolean",
-        "file_paths": "path/to/file1.js, path/to/file2.ts"
-      }
-    }
-
-    Usage with project name (auto-resolves to project base path):
-    {
-      tool_name: "search_keyword",
-      parameters: {
-        "keyword": "search term",
-        "project_name": "Project name here",
-        "before_lines": "number",
-        "after_lines": "number",
-        "case_sensitive": "boolean",
-        "regex": "boolean"
-      }
-    }
-
     **DO NOT use both file_paths and project_name together - choose one approach:**
 
-    Examples:
-
-    1. Searching for a function across multiple specific files:
-    parameters: {
-      "keyword": "getUserById",
-      "before_lines": 5,
-      "after_lines": 5,
-      "case_sensitive": false,
-      "regex": false,
-      "file_paths": "/home/user/project/src/services/user-service.ts, /home/user/project/src/controllers/user-controller.ts"
-    }
-
-    2. Searching for a pattern with regex in single file:
-    parameters: {
-      "keyword": "function\\s+\\w+\\s*\\(.*\\)",
-      "case_sensitive": false,
-      "regex": true,
-      "file_paths": "/home/user/project/src/utils/helpers.ts"
-    }
-
-    3. Searching across entire project using project name:
-    parameters: {
-      "keyword": "FirebaseRealtimeDB",
-      "project_name": "my-awesome-project",
-      "before_lines": 0,
-      "after_lines": 10,
-      "case_sensitive": true,
-      "regex": false
-    }
-
-    4. Searching for import statements in multiple files:
-    parameters: {
-      "keyword": "import.*redis",
-      "case_sensitive": false,
-      "regex": true,
-      "file_paths": "/home/user/project/src/services/cache-service.ts, /home/user/project/src/config/database.ts, /home/user/project/src/utils/redis-cache.ts"
-    }
-
-    5. Searching for multiple patterns (API endpoints) using project name:
-    parameters: {
-      "keyword": "\\b(app|router)\\.(put|PUT)\\s*\\([^)]*apiFunction\\b|\\bapiFunction\\b.*\\b(put|PUT)\\b",
-      "project_name": "api-server",
-      "case_sensitive": false,
-      "regex": true,
-      "after_lines": 3,
-      "before_lines": 1
-    }
-
-    6. Searching for multiple function names using project name:
-    parameters: {
-      "keyword": "getUserData|setUserData|deleteUserData",
-      "project_name": "user-management-service",
-      "case_sensitive": false,
-      "regex": true
-    }
-
-    7. Searching within specific directories using file paths:
-    parameters: {
-      "keyword": "config|Config",
-      "file_paths": "src/config, src/utils",
-      "case_sensitive": false,
-      "regex": true
-    }
-
-    8. Searching within a project using project name (auto-resolves base path):
-    parameters: {
-      "keyword": "getUserById",
-      "project_name": "my-awesome-project",
-      "before_lines": 2,
-      "after_lines": 5,
-      "case_sensitive": false,
-      "regex": false
-    }
+    Parameter Examples:
+    - Search function in files: keyword: "getUserById", file_paths: "src/services/user-service.ts, src/controllers/user-controller.ts", before_lines: 5, after_lines: 5
+    - Search with regex: keyword: "function\\s+\\w+\\s*\\(.*\\)", regex: true, file_paths: "src/utils/helpers.ts"
+    - Search entire project: keyword: "FirebaseRealtimeDB", project_name: "my-awesome-project", case_sensitive: true, after_lines: 10
+    - Search imports: keyword: "import.*redis", regex: true, file_paths: "src/services/cache-service.ts, src/config/database.ts"
+    - Multiple patterns: keyword: "getUserData|setUserData|deleteUserData", project_name: "user-management-service", regex: true
+    - Search directories: keyword: "config|Config", file_paths: "src/config, src/utils", regex: true
 "#

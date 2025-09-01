@@ -29,52 +29,10 @@ template_string DatabaseToolTemplate() #"
     - Use this tool when you need structured codebase information and relationships
     - IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
 
-    Usage:
-    {
-      tool_name: "database",
-      parameters: {
-        "query_name": "query_type",
-        "file_path": "path/to/file",
-        "start_line": "start_line_number",
-        "end_line": "end_line_number",
-        "block_id": "block_identifier",
-        "fetch_next_code": "true|false"
-      }
-    }
-
-    Examples:
-
-    1. Get file information by path:
-    parameters: {
-      "query_name": "GET_FILE_BY_PATH",
-      "file_path": "path/to/your/file.py"
-    }
-
-    2. Get specific section of a file:
-    parameters: {
-      "query_name": "GET_FILE_BY_PATH",
-      "file_path": "path/to/your/file.py",
-      "start_line": 10,
-      "end_line": 50
-    }
-
-    3. Get all code blocks in a file:
-    parameters: {
-      "query_name": "GET_FILE_BLOCK_SUMMARY",
-      "file_path": "path/to/your/file.py"
-    }
-
-    4. Get block details:
-    parameters: {
-      "query_name": "GET_BLOCK_DETAILS",
-      "block_id": "123"
-    }
-
-    5. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
-    parameters: {
-      "query_name": "GET_FILE_BLOCK_SUMMARY",
-      "file_path": "path/to/your/file.py",
-      "fetch_next_code": true
-    }
+    Parameter Examples:
+    - Get file information: query_name: "GET_FILE_BY_PATH", file_path: "path/to/your/file.py"
+    - Get file section: query_name: "GET_FILE_BY_PATH", file_path: "path/to/your/file.py", start_line: 10, end_line: 50
+    - Get code blocks: query_name: "GET_FILE_BLOCK_SUMMARY", file_path: "path/to/your/file.py"
+    - Get block details: query_name: "GET_BLOCK_DETAILS", block_id: "123"
+    - Fetch next chunk: query_name: "GET_FILE_BLOCK_SUMMARY", file_path: "path/to/your/file.py", fetch_next_code: true
 "#
-

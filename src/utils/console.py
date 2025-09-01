@@ -2,6 +2,7 @@
 
 from rich.console import Console
 from rich.theme import Theme
+from prompt_toolkit import prompt
 from typing import Optional
 
 
@@ -97,6 +98,22 @@ class SutraConsole:
     def dim(self, message: str):
         """Print dimmed text."""
         self._console.print(message, style="dim")
+
+    def input(self, prompt_text: str, default: str = None, multiline: bool = True) -> str:
+        """Get user input using standard prompt_toolkit multiline behavior."""
+        try:
+            result = prompt(
+                prompt_text,
+                multiline=True,
+                mouse_support=True,
+                default=default or "",
+            )
+            return result.strip() if result else ""
+
+        except (EOFError, KeyboardInterrupt):
+            raise
+
+
 
 
 # Global singleton instance
