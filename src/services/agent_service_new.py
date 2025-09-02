@@ -15,6 +15,8 @@ from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from .project_manager import ProjectManager
 from pathlib import Path
+from rich.panel import Panel
+from rich.text import Text
 
 
 from agents_new import Agent, execute_agent, AgentResponse, RoadmapResponse, RoadmapCompletionParams, BaseCompletionParams
@@ -259,12 +261,26 @@ class AgentService:
         return is_completion
 
     def _parse_thinking(self, thinking: str) -> None:
-        console.print("🤔 [bold dim]Thinking...[/bold dim]")
+        header = Text("THINKING", style="bold yellow")
+
+        content_lines = []
         for line in thinking.split('\n'):
             if line.strip():
-                console.print(f"   [thinking]{line}[/thinking]")
+                content_lines.append(line)
             else:
-                console.print()
+                content_lines.append("")  # Preserve empty lines
+
+        content = Text("\n".join(content_lines), style="dim")
+
+        thinking_panel = Panel(
+            content,
+            title=header,
+            title_align="left",
+            border_style="yellow",
+            padding=(1, 1),
+        )
+
+        console.print(thinking_panel)
 
     def _parse_sutra_memory(self, sutra_memory: SutraMemoryParams) -> None:
         results = self.memory_manager.process_sutra_memory_params(sutra_memory)

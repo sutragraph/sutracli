@@ -1,6 +1,9 @@
 from typing import Any, Dict
 from loguru import logger
 from utils.console import console
+from rich.panel import Panel
+from rich.text import Text
+from rich.console import Group
 from baml_client.types import Agent, ImpactLevel, FileOperation
 
 
@@ -266,9 +269,25 @@ def _build_completion_status(event: Dict[str, Any], agent: Agent) -> str:
 
 def _build_simple_completion_status(event: Dict[str, Any]) -> str:
     """Build status for simple completion."""
+
     result = event.get("data", {}).get("result", "Task completed")
 
-    console.print(f"✅ [bold green]Completion:[/bold green] {result}")
+    # Create header
+    header = Text("RESULT", style="bold cyan")
+
+    # Create content
+    content = Text(result, style="white")
+
+    # Create panel
+    completion_panel = Panel(
+        content,
+        title=header,
+        title_align="left",
+        border_style="cyan",
+        padding=(1, 2),
+    )
+
+    console.print(completion_panel)
 
     status_parts = ["Tool: attempt_completion", f"Result: {result}"]
 
@@ -276,20 +295,21 @@ def _build_simple_completion_status(event: Dict[str, Any]) -> str:
 
 
 def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
-    """Build status for roadmap completion with enhanced display showing all BAML structure details."""
+    """Build status for roadmap completion with detailed panel display."""
+
     data = event.get("data", {})
     summary = data.get("summary", "")
     projects = data.get("projects", [])
-    projects_count = len(projects)
 
-    # Enhanced roadmap completion display - COMPREHENSIVE DETAIL PRINTING
-    console.print(f"🗺️  [bold blue]Roadmap Summary:[/bold blue] {summary}")
-    console.print(f"📊 [bold cyan]Total Projects:[/bold cyan] {projects_count}")
+    # Main summary header
+    console.print("[bold blue]Implementation Roadmap Generated[/bold blue]")
+    if summary:
+        console.print(f"[dim]{summary}[/dim]")
+    console.print(f"[cyan]{len(projects)} projects ready for implementation[/cyan]")
     console.print()
 
-    # Display every single detail from each project
+    # Display each project in a beautiful panel
     for i, project in enumerate(projects, 1):
-        # Extract ALL project fields
         project_name = project.get("project_name", f"Project {i}")
         project_path = project.get("project_path", "")
         impact_level = project.get("impact_level", "Unknown")
@@ -297,104 +317,142 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         changes = project.get("changes", [])
         impl_notes = project.get("implementation_notes", "")
 
-        # Color code impact level
-        impact_color = {
+        # Impact level styling
+        impact_colors = {
             ImpactLevel.High: "red",
             ImpactLevel.Medium: "yellow",
-            ImpactLevel.Low: "green",
-            ImpactLevel.NoImpact: "dim",
-        }.get(impact_level, "white")
+            ImpactLevel.Low: "blue",
+            ImpactLevel.NoImpact: "dim"
+        }
+        impact_color = impact_colors.get(impact_level, "white")
 
-        # PROJECT HEADER - Show all project fields
-        console.print(f"━━━ PROJECT {i}: [bold]{project_name}[/bold] ━━━")
-        console.print(f"    📁 Path: [dim]{project_path or 'Not specified'}[/dim]")
-        console.print(
-            f"    📊 Impact Level: [{impact_color}]{impact_level}[/{impact_color}]"
-        )
-        console.print(
-            f"    📝 Reasoning: [italic]{reasoning or 'No reasoning provided'}[/italic]"
-        )
-        console.print(f"    📋 Total File Changes: {len(changes)}")
+        # Create project header
+        project_header = Text()
+        project_header.append(f"PROJECT {i}/{len(projects)}", style="bold cyan")
+        project_header.append(f"\nPath: {project_path}", style="dim")
+        project_header.append(f"\nImpact: ", style="dim")
+        project_header.append(f"{impact_level}", style=f"bold {impact_color}")
 
+        # Build content sections using Rich Text
+        content_elements = []
+
+        # Reasoning section
+        if reasoning:
+            reasoning_text = Text()
+            reasoning_text.append("Reasoning: ", style="bold")
+            reasoning_text.append(reasoning)
+            content_elements.append(reasoning_text)
+            content_elements.append(Text())
+
+        # Implementation notes
         if impl_notes:
-            console.print(f"    💡 Implementation Notes: [dim]{impl_notes}[/dim]")
-        else:
-            console.print(f"    💡 Implementation Notes: [dim]None provided[/dim]")
+            impl_text = Text()
+            impl_text.append("Implementation Notes: ", style="bold")
+            impl_text.append(impl_notes)
+            content_elements.append(impl_text)
+            content_elements.append(Text())
 
-        # FILE CHANGES - Show every detail for each file
+        # File changes summary
         if changes:
-            console.print(f"    📄 File Changes:")
+            file_header = Text()
+            file_header.append("File Changes: ", style="bold")
+            file_header.append(f"{len(changes)} files", style="cyan")
+            content_elements.append(file_header)
+            content_elements.append(Text())
+
             for j, change in enumerate(changes, 1):
-                file_path = change.get("file_path", "Unknown file")
-                operation = change.get("operation", "Unknown operation")
+                file_path = change.get("file_path", "Unknown")
+                operation = change.get("operation", "Unknown")
                 instructions = change.get("instructions", [])
 
-                # Color code operation
-                operation_color = {
-                    FileOperation.Create: "green",
-                    FileOperation.Modify: "yellow",
-                    FileOperation.Delete: "red",
-                }.get(operation, "white")
+                # File operation line
+                file_line = Text()
+                file_line.append(f"   {j}. ", style="bold")
+                file_line.append(f"{operation.upper()}", style="bold")
+                file_line.append(f" → {file_path}")
+                content_elements.append(file_line)
 
-                console.print(
-                    f"        {j}. [{operation_color}]{operation.upper()}[/{operation_color}] → {file_path}"
-                )
-                console.print(
-                    f"           📝 Instructions: {len(instructions)} change(s)"
-                )
+                # Show detailed instructions for each file
+                if instructions:
+                    for k, instruction in enumerate(instructions, 1):
+                        description = instruction.get("description", "No description provided")
+                        current_state = instruction.get("current_state", "")
+                        target_state = instruction.get("target_state", "")
+                        start_line = instruction.get("start_line")
+                        end_line = instruction.get("end_line")
+                        additional_notes = instruction.get("additional_notes", "")
 
-                # CHANGE INSTRUCTIONS - Show every field for each instruction
-                for k, instruction in enumerate(instructions, 1):
-                    description = instruction.get("description", "")
-                    current_state = instruction.get("current_state", "")
-                    target_state = instruction.get("target_state", "")
-                    start_line = instruction.get("start_line")
-                    end_line = instruction.get("end_line")
-                    additional_notes = instruction.get("additional_notes", "")
+                        # Description
+                        desc_text = Text()
+                        desc_text.append("     • ", style="bold")
+                        desc_text.append(description)
+                        content_elements.append(desc_text)
 
-                    console.print(
-                        f"             {k}. [bold cyan]Change Description:[/bold cyan] {description or 'No description'}"
-                    )
+                        # Line number information
+                        if start_line is not None:
+                            line_text = Text("     ")
+                            if end_line is not None and end_line != start_line:
+                                line_text.append("Lines: ", style="bold")
+                                line_text.append(f"{start_line}-{end_line}")
+                            else:
+                                line_text.append("Line: ", style="bold")
+                                line_text.append(str(start_line))
+                            content_elements.append(line_text)
 
-                    # Line numbers
-                    if start_line is not None:
-                        line_info = f"Line {start_line}"
-                        if end_line is not None and end_line != start_line:
-                            line_info += f" to {end_line}"
-                        console.print(f"                📍 Location: {line_info}")
-                    else:
-                        console.print(f"                📍 Location: Not specified")
+                        # Current state
+                        if current_state:
+                            current_text = Text("     ")
+                            current_text.append("Current: ", style="bold")
+                            current_text.append(current_state)
+                            content_elements.append(current_text)
 
-                    # Current state
-                    if current_state:
-                        console.print(f"                🔴 Current: {current_state}")
-                    else:
-                        console.print(f"                🔴 Current: Not specified")
+                        # Target state
+                        if target_state:
+                            target_text = Text("     ")
+                            target_text.append("Target: ", style="bold")
+                            target_text.append(target_state)
+                            content_elements.append(target_text)
 
-                    # Target state
-                    if target_state:
-                        console.print(f"                🟢 Target: {target_state}")
-                    else:
-                        console.print(f"                🟢 Target: Not specified")
+                        # Additional notes
+                        if additional_notes:
+                            notes_text = Text("     ")
+                            notes_text.append("Notes: ", style="bold")
+                            notes_text.append(additional_notes)
+                            content_elements.append(notes_text)
 
-                    # Additional notes
-                    if additional_notes:
-                        console.print(f"                💡 Notes: {additional_notes}")
-                    else:
-                        console.print(f"                💡 Notes: None")
-
-                    console.print()  # Space between instructions
+                        # Add spacing between instructions if there are multiple
+                        if k < len(instructions):
+                            content_elements.append(Text())
+                else:
+                    no_instr_text = Text("     No detailed instructions provided", style="dim")
+                    content_elements.append(no_instr_text)
         else:
-            console.print(f"    📄 File Changes: [dim]No changes specified[/dim]")
+            no_changes_text = Text()
+            no_changes_text.append("File Changes: ", style="bold")
+            no_changes_text.append("No changes needed", style="dim")
+            content_elements.append(no_changes_text)
 
-        console.print()  # Space between projects
+        # Create panel content using Group for multiple Text elements
+        panel_content = Group(*content_elements)
+
+        # Create the project panel
+        project_panel = Panel(
+            panel_content,
+            title=project_header,
+            title_align="left",
+            border_style=impact_color,
+            padding=(1, 2),
+        )
+
+        console.print(project_panel)
+        console.print()
 
     # Build comprehensive status string for return
     status_parts = [
         "Tool: attempt_completion",
         f"Summary: {summary}",
-        f"Projects analyzed: {projects_count}",
-        "\nDetailed Projects:",
+        f"Projects analyzed: {len(projects)}",
+        "\nDetailed Projects:"
     ]
 
     for i, project in enumerate(projects, 1):
