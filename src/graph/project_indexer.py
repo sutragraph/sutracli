@@ -14,7 +14,7 @@ from config.settings import config
 from graph.graph_operations import GraphOperations
 
 # Import indexer functions for file processing
-from indexer import compute_directory_hashes
+from utils.hash_utils import compute_directory_hashes
 from indexer.ast_parser import ASTParser
 from utils.file_utils import (
     get_extraction_file_path,

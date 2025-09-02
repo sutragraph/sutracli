@@ -1,6 +1,7 @@
 """Agent Service with unified tool status handling."""
 
 import time
+
 from typing import Dict, Any, List, Optional, Iterator, Union
 from loguru import logger
 from rich.prompt import Confirm
@@ -23,13 +24,12 @@ class AgentService:
     """Agent Service with unified tool status handling."""
 
     def __init__(
-        self, session_id: Optional[str] = None, project_path: Optional[str] = None
+        self, session_id: Optional[str] = None
     ):
         """Initialize the Agent Service.
 
         Args:
             session_id: Optional session ID for conversation continuity
-            project_path: Optional path to the project directory. If None, uses current directory.
 
         """
 
@@ -51,7 +51,7 @@ class AgentService:
         self.llm_call_count = 0
 
         # Prompt user to confirm indexing if project is not indexed
-        project_path_obj = Path(project_path) if project_path else Path.cwd()
+        project_path_obj = Path.cwd()
 
         self.current_project_name = self.project_manager.determine_project_name(
             project_path_obj
@@ -123,14 +123,15 @@ class AgentService:
             logger.error(f"Error during project indexing prompt: {e}")
             console.error(f"Error during indexing setup: {e}")
 
-    def solve_problem(self, problem_query: str) -> Union[RoadmapCompletionParams, BaseCompletionParams, Dict[str, Any]]:
-        # if (self._should_index_current_project):
-        #     console.warning("Project is not indexed. Some features may be limited.")
-        # else:
-        #     # Perform incremental indexing
-        #     indexing_result = self.project_manager.perform_incremental_indexing(
-        #         self.current_project_name
-        #     )
+    def solve_problem(self, agent_name: Agent,
+                      problem_query: str) -> Union[RoadmapCompletionParams, BaseCompletionParams, Dict[str, Any]]:
+        if (self._should_index_current_project):
+            console.warning("Project is not indexed. Some features may be limited.")
+        else:
+            # Perform incremental indexing
+            indexing_result = self.project_manager.perform_incremental_indexing(
+                self.current_project_name
+            )
 
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
@@ -140,25 +141,49 @@ class AgentService:
         current_iteration = 0
         max_iterations = 50
 
-        while current_iteration < max_iterations:
-            current_iteration += 1
-            user_message = self._build_user_message(problem_query, current_iteration)
+        try:
+            while current_iteration < max_iterations:
+                current_iteration += 1
+                logger.info(f"Iteration {current_iteration}/{max_iterations}")
 
-            # change this to as per user selection XXXX
-            agent_name = Agent.ROADMAP
+                if current_iteration == 15:
+                    console.print()
+                    console.print(f"[yellow]Completed 15 iterations. Current progress:[/yellow]")
 
-            logger.debug(f"Invoking agent: {agent_name}")
+                    should_continue = Confirm.ask(
+                        f"[bold cyan]Continue with the remaining {
+                            max_iterations - current_iteration} iterations?[/bold cyan]",
+                        default=True
+                    )
 
-            agent_response: AgentResponse = execute_agent(
-                agent_name,
-                context=user_message
-            )
+                    if not should_continue:
+                        console.print("[yellow]Task stopped by user after 15 iterations.[/yellow]")
+                        return {"result": "Task stopped by user after 15 iterations",
+                                "iterations_completed": current_iteration}
 
-            # Check if completion occurred
-            is_completion = self._parse_agent_response(agent_response)
+                user_message = self._build_user_message(problem_query, current_iteration)
 
-            if is_completion:
-                return self.result if self.result else {"result": "Task completed"}  # ignore: R1720
+                logger.debug(f"Invoking agent: {agent_name}")
+
+                agent_response: AgentResponse = execute_agent(
+                    agent_name,
+                    context=user_message
+                )
+
+                # Check if completion occurred
+                is_completion = self._parse_agent_response(agent_response)
+
+                if is_completion:
+                    return self.result if self.result else {"result": "Task completed"}
+
+        except KeyboardInterrupt:
+            console.print()
+            console.print(f"[yellow]Task interrupted by user.[/yellow]")
+            return {
+                "result": "Task interrupted by user",
+                "iterations_completed": current_iteration,
+                "reason": "KeyboardInterrupt"
+            }
 
         return {"result": "Max iterations reached without completion."}
 

@@ -39,8 +39,6 @@ class SQLiteConnection:
                 if cls._instance is None:
                     logger.debug("🔧 Creating new SQLiteConnection singleton instance")
                     cls._instance = super(SQLiteConnection, cls).__new__(cls)
-        else:
-            logger.debug("♻️ Reusing existing SQLiteConnection singleton instance")
         return cls._instance
 
     def _connect(self) -> sqlite3.Connection:
@@ -169,8 +167,8 @@ class SQLiteConnection:
         try:
             cursor = self.connection.cursor()
             cursor.execute(
-                """INSERT OR REPLACE INTO projects 
-                   (name, path, created_at, updated_at, cross_indexing_done) 
+                """INSERT OR REPLACE INTO projects
+                   (name, path, created_at, updated_at, cross_indexing_done)
                    VALUES (?, ?, ?, ?, ?)""",
                 (
                     project.name,

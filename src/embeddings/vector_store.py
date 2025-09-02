@@ -360,8 +360,6 @@ class VectorStore:
                 if cls._instance is None:
                     logger.debug("🔧 Creating new VectorStore singleton instance")
                     cls._instance = super(VectorStore, cls).__new__(cls)
-        else:
-            logger.debug("♻️ Reusing existing VectorStore singleton instance")
         return cls._instance  # type: ignore[return-value]
 
     def __init__(self, db_path: Optional[str] = None, model_path: Optional[str] = None):
