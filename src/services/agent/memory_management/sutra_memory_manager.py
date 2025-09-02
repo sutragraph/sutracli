@@ -14,10 +14,7 @@ from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
 
 from .models import Task, TaskStatus, CodeSnippet, HistoryEntry
-from baml_client.types import (
-    SutraMemoryParams, TaskOperation, TaskOperationAction,
-    CodeStorage, CodeStorageAction, FileChanges
-)
+from baml_client.types import SutraMemoryParams, TaskOperationAction, CodeStorageAction
 
 from .memory_operations import MemoryOperations
 from .state_persistence import StatePersistence
@@ -155,13 +152,13 @@ class SutraMemoryManager:
             else:
                 results["warnings"].append("No history entry found - history is mandatory in every response")
 
-            # Process task operations
-            if sutra_memory.tasks:
+            # Process task operations (optional field)
+            if hasattr(sutra_memory, "tasks") and sutra_memory.tasks:
                 for task_op in sutra_memory.tasks:
                     if task_op.action == TaskOperationAction.Add:
                         # Use counter+1 for task ID instead of LLM provided ID
                         actual_task_id = self.get_next_task_id()
-                        
+
                         # Convert BAML status to TaskStatus enum
                         try:
                             if task_op.to_status:
@@ -173,7 +170,7 @@ class SutraMemoryManager:
                                     status = task_op.to_status
                             else:
                                 status = TaskStatus.PENDING
-                                
+
                             if self.add_task(actual_task_id, task_op.description, status):
                                 results["changes_applied"]["tasks"].append(f"Added task {actual_task_id}: {task_op.description} (LLM ID {task_op.id} ignored)")
                             else:
@@ -190,7 +187,7 @@ class SutraMemoryManager:
                             else:
                                 # Handle TaskStatus enum directly
                                 target_status = task_op.to_status
-                            
+
                             if self.move_task(task_op.id, target_status):
                                 results["changes_applied"]["tasks"].append(f"Moved task {task_op.id} to {target_status.value}")
                             else:
@@ -204,8 +201,8 @@ class SutraMemoryManager:
                         else:
                             results["errors"].append(f"Failed to remove task {task_op.id}")
 
-            # Process code operations
-            if sutra_memory.code:
+            # Process code operations (optional field)
+            if hasattr(sutra_memory, "code") and sutra_memory.code:
                 for code_op in sutra_memory.code:
                     if code_op.action == CodeStorageAction.Add:
                         if self.add_code_snippet(code_op.id, code_op.file, code_op.start_line, code_op.end_line, code_op.description):
@@ -219,8 +216,8 @@ class SutraMemoryManager:
                         else:
                             results["errors"].append(f"Failed to remove code snippet {code_op.id}")
 
-            # Process file changes
-            if sutra_memory.files:
+            # Process file changes (optional field)
+            if hasattr(sutra_memory, "files") and sutra_memory.files:
                 if sutra_memory.files.modified:
                     for file_path in sutra_memory.files.modified:
                         if self.track_file_change(file_path, "modified"):

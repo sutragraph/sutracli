@@ -142,8 +142,6 @@ class AgentService:
 
         while current_iteration < max_iterations:
             current_iteration += 1
-            logger.info(f"Iteration {current_iteration}/{max_iterations}")
-
             user_message = self._build_user_message(problem_query, current_iteration)
 
             # change this to as per user selection XXXX

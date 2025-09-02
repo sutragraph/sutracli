@@ -1,4 +1,3 @@
-
 from typing import Any, Dict
 from loguru import logger
 from baml_client.types import Agent
@@ -33,8 +32,6 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
     delivery_items = []
 
     for event in tool_function(action):
-        logger.debug(f"event: {event}")
-
         event_type = event.get("type")
 
         if event_type == "tool_use" or event_type == "tool_error":

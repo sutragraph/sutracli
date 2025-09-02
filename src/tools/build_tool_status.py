@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from loguru import logger
 from utils.console import console
 from baml_client.types import Agent, ImpactLevel, FileOperation
@@ -6,23 +6,22 @@ from baml_client.types import Agent, ImpactLevel, FileOperation
 
 def build_tool_status(tool_name: str, event: Dict[str, Any], agent: Agent) -> str:
     """Helper to build tool status dictionary."""
-    logger.debug(f"building tool status for {tool_name} with event: {event}")
     match tool_name:
         case "database":
-            return _build_database_status(event)
+            return _build_database_status(event, agent)
         case "semantic_search":
-            return _build_semantic_search_status(event)
+            return _build_semantic_search_status(event, agent)
         case "list_files":
-            return _build_list_files_status(event)
-        case "keyword_search":
-            return _build_keyword_search_status(event)
+            return _build_list_files_status(event, agent)
+        case "search_keyword":
+            return _build_search_keyword_status(event, agent)
         case "attempt_completion":
             return _build_completion_status(event, agent)
         case _:
             return f"Unknown tool name '{tool_name}'"
 
 
-def _build_database_status(event: Dict[str, Any]) -> str:
+def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
     """Helper to build database status dictionary."""
     query_name = event.get("query_name")
     query = event.get("query")
@@ -49,9 +48,6 @@ def _build_database_status(event: Dict[str, Any]) -> str:
 
     console.print(f"🗄️  [bold]Database Tool[/bold] → {' → '.join(status_parts)}")
 
-    if data:
-        logger.debug(f"Database results: {str(data)[:200]}...")
-
     # Build status string for return
     status_parts = ["Tool: database"]
     if query_name:
@@ -68,19 +64,20 @@ def _build_database_status(event: Dict[str, Any]) -> str:
     if error:
         status_parts.append(f"ERROR: {error}")
 
-    status_parts.extend([
-        "Results:",
-        str(data),
-        "",
-        "NOTE: Store relevant search results in sutra memory if you are not making "
-        "changes in current iteration or want this code for later use, as search "
-        "results will not persist to next iteration."
-    ])
+    status_parts.extend(["Results:", str(data), ""])
+
+    # Add agent-specific notes
+    if agent == Agent.CrossIndexing:
+        status_parts.append("")
+    else:
+        status_parts.append(
+            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+        )
 
     return "\n".join(status_parts).rstrip()
 
 
-def _build_semantic_search_status(event: Dict[str, Any]) -> str:
+def _build_semantic_search_status(event: Dict[str, Any], agent: Agent) -> str:
     """Build status for semantic search tool."""
     query = event.get("query")
     count = event.get("count") or event.get("total_nodes")
@@ -96,7 +93,9 @@ def _build_semantic_search_status(event: Dict[str, Any]) -> str:
             remaining = batch_info.get("remaining_count", 0)
             start_node = count - remaining - delivered + 1
             end_node = count - remaining
-            status_parts.append(f"[success]{count} nodes (showing {start_node}-{end_node})[/success]")
+            status_parts.append(
+                f"[success]{count} nodes (showing {start_node}-{end_node})[/success]"
+            )
         else:
             if count > 0:
                 status_parts.append(f"[success]{count} nodes found[/success]")
@@ -109,9 +108,6 @@ def _build_semantic_search_status(event: Dict[str, Any]) -> str:
         status_parts.append(f"[info]Results available[/info]")
 
     console.print(f"🧠 [bold]Semantic Search[/bold] → {' → '.join(status_parts)}")
-
-    if data:
-        logger.debug(f"Semantic search results: {str(data)[:200]}...")
 
     # Build status string for return
     status_parts = ["Tool: semantic_search"]
@@ -135,22 +131,22 @@ def _build_semantic_search_status(event: Dict[str, Any]) -> str:
         status_parts.append(f"ERROR: {error}")
 
     if data:
-        status_parts.extend([
-            "Results:",
-            str(data)
-        ])
+        status_parts.extend(["Results:", str(data)])
 
-    status_parts.extend([
-        "",
-        "NOTE: Store relevant search results in sutra memory if you are not making "
-        "changes in current iteration or want this code for later use, as search "
-        "results will not persist to next iteration."
-    ])
+    status_parts.append("")
+
+    # Add agent-specific notes
+    if agent == Agent.CrossIndexing:
+        status_parts.append("")
+    else:
+        status_parts.append(
+            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+        )
 
     return "\n".join(status_parts).rstrip()
 
 
-def _build_list_files_status(event: Dict[str, Any]) -> str:
+def _build_list_files_status(event: Dict[str, Any], agent: Agent) -> str:
     """Build status for list_files tool."""
     directory = event.get("directory")
     count = event.get("count")
@@ -183,16 +179,19 @@ def _build_list_files_status(event: Dict[str, Any]) -> str:
     if error:
         status_parts.append(f"ERROR: {error}")
     if data:
-        status_parts.extend([
-            "Results:",
-            str(data)
-        ])
+        status_parts.extend(["Results:", str(data)])
+
+    # Add agent-specific notes for list_files
+    if agent == Agent.CrossIndexing:
+        status_parts.append(
+            "NOTE: Store relevant file/folder information in Sutra memory's history section for connection analysis, as directory listings will not persist in next iterations.",
+        )
 
     return "\n".join(status_parts).rstrip()
 
 
-def _build_keyword_search_status(event: Dict[str, Any]) -> str:
-    """Build status for keyword_search tool."""
+def _build_search_keyword_status(event: Dict[str, Any], agent: Agent) -> str:
+    """Build status for search_keyword tool."""
     keyword = event.get("keyword")
     file_paths = event.get("file_paths")
     matches_found = event.get("matches_found")
@@ -219,7 +218,7 @@ def _build_keyword_search_status(event: Dict[str, Any]) -> str:
     console.print(f"🔍 [bold]Keyword Search[/bold] → {' → '.join(status_parts)}")
 
     # Build status string for return
-    status_parts = ["Tool: keyword_search"]
+    status_parts = ["Tool: search_keyword"]
 
     if keyword:
         status_parts.append(f"Keyword: '{keyword}'")
@@ -235,10 +234,15 @@ def _build_keyword_search_status(event: Dict[str, Any]) -> str:
     if error:
         status_parts.append(f"ERROR: {error}")
     if data:
-        status_parts.extend([
-            "Results:",
-            str(data)
-        ])
+        status_parts.extend(["Results:", str(data)])
+
+    # Add agent-specific notes for search_keyword
+    if agent == Agent.CrossIndexing:
+        status_parts.append("")
+    else:
+        status_parts.append(
+            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+        )
 
     return "\n".join(status_parts).rstrip()
 
@@ -253,8 +257,8 @@ def _build_completion_status(event: Dict[str, Any], agent: Agent) -> str:
         console.print(f"❌ [bold red]Completion Error:[/bold red] {error}")
         return f"Tool: attempt_completion\nERROR: {error}"
 
-    # Use agent_name to determine completion type
-    if agent_name == Agent.ROADMAP:
+    # Use agent to determine completion type
+    if agent == Agent.ROADMAP:
         return _build_roadmap_completion_status(event)
     else:
         return _build_simple_completion_status(event)
@@ -266,10 +270,7 @@ def _build_simple_completion_status(event: Dict[str, Any]) -> str:
 
     console.print(f"✅ [bold green]Completion:[/bold green] {result}")
 
-    status_parts = [
-        "Tool: attempt_completion",
-        f"Result: {result}"
-    ]
+    status_parts = ["Tool: attempt_completion", f"Result: {result}"]
 
     return "\n".join(status_parts)
 
@@ -301,14 +302,18 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
             ImpactLevel.High: "red",
             ImpactLevel.Medium: "yellow",
             ImpactLevel.Low: "green",
-            ImpactLevel.NoImpact: "dim"
+            ImpactLevel.NoImpact: "dim",
         }.get(impact_level, "white")
 
         # PROJECT HEADER - Show all project fields
         console.print(f"━━━ PROJECT {i}: [bold]{project_name}[/bold] ━━━")
         console.print(f"    📁 Path: [dim]{project_path or 'Not specified'}[/dim]")
-        console.print(f"    📊 Impact Level: [{impact_color}]{impact_level}[/{impact_color}]")
-        console.print(f"    📝 Reasoning: [italic]{reasoning or 'No reasoning provided'}[/italic]")
+        console.print(
+            f"    📊 Impact Level: [{impact_color}]{impact_level}[/{impact_color}]"
+        )
+        console.print(
+            f"    📝 Reasoning: [italic]{reasoning or 'No reasoning provided'}[/italic]"
+        )
         console.print(f"    📋 Total File Changes: {len(changes)}")
 
         if impl_notes:
@@ -328,11 +333,15 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                 operation_color = {
                     FileOperation.Create: "green",
                     FileOperation.Modify: "yellow",
-                    FileOperation.Delete: "red"
+                    FileOperation.Delete: "red",
                 }.get(operation, "white")
 
-                console.print(f"        {j}. [{operation_color}]{operation.upper()}[/{operation_color}] → {file_path}")
-                console.print(f"           📝 Instructions: {len(instructions)} change(s)")
+                console.print(
+                    f"        {j}. [{operation_color}]{operation.upper()}[/{operation_color}] → {file_path}"
+                )
+                console.print(
+                    f"           📝 Instructions: {len(instructions)} change(s)"
+                )
 
                 # CHANGE INSTRUCTIONS - Show every field for each instruction
                 for k, instruction in enumerate(instructions, 1):
@@ -344,7 +353,8 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                     additional_notes = instruction.get("additional_notes", "")
 
                     console.print(
-                        f"             {k}. [bold cyan]Change Description:[/bold cyan] {description or 'No description'}")
+                        f"             {k}. [bold cyan]Change Description:[/bold cyan] {description or 'No description'}"
+                    )
 
                     # Line numbers
                     if start_line is not None:
@@ -384,7 +394,7 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         "Tool: attempt_completion",
         f"Summary: {summary}",
         f"Projects analyzed: {projects_count}",
-        "\nDetailed Projects:"
+        "\nDetailed Projects:",
     ]
 
     for i, project in enumerate(projects, 1):
@@ -394,18 +404,22 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         reasoning = project.get("reasoning", "")
         changes = project.get("changes", [])
 
-        status_parts.extend([
-            f"\n  {i}. {project_name} ({project_path})",
-            f"     Impact: {impact_level}",
-            f"     Reasoning: {reasoning}",
-            f"     Files to change: {len(changes)}"
-        ])
+        status_parts.extend(
+            [
+                f"\n  {i}. {project_name} ({project_path})",
+                f"     Impact: {impact_level}",
+                f"     Reasoning: {reasoning}",
+                f"     Files to change: {len(changes)}",
+            ]
+        )
 
         for j, change in enumerate(changes, 1):
             file_path = change.get("file_path", "")
             operation = change.get("operation", "")
             instructions = change.get("instructions", [])
 
-            status_parts.append(f"       {j}. {operation} {file_path} ({len(instructions)} instructions)")
+            status_parts.append(
+                f"       {j}. {operation} {file_path} ({len(instructions)} instructions)"
+            )
 
     return "\n".join(status_parts)

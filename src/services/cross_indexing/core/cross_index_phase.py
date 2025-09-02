@@ -280,6 +280,13 @@ class CrossIndexing:
                     )
                     continue
 
+                # Skip if only incoming OR only outgoing connections (need both for matching)
+                if not incoming_connections or not outgoing_connections:
+                    print(
+                        f"   ⏭️ Skipping {tech_type}: {len(incoming_connections)} incoming, {len(outgoing_connections)} outgoing (need both for matching)"
+                    )
+                    continue
+
                 print(
                     f"   Matching {len(incoming_connections)} incoming with {len(outgoing_connections)} outgoing connections for {tech_type}"
                 )

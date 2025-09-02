@@ -200,10 +200,6 @@ class BAMLService:
                 logger.debug(error_msg)
 
                 if attempt < max_retries:
-                    logger.warning(
-                        f"⚠️  BAML call failed (attempt {attempt + 1}/{max_retries + 1}). "
-                        f"Retrying in {retry_delay} seconds..."
-                    )
                     print(
                         f"⚠️  Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries + 1})"
                     )

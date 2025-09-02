@@ -12,7 +12,6 @@ from .cross_indexing_task_manager import CrossIndexingTaskManager
 from .cross_index_service import CrossIndexService
 from .cross_index_phase import CrossIndexing
 from src.graph.graph_operations import GraphOperations
-from tools import ActionExecutor
 
 
 class CrossIndexSystem:
@@ -52,8 +51,7 @@ class CrossIndexSystem:
                 self._skip_cross_indexing = False
 
                 try:
-                    # Run incremental indexing synchronously during initialization
-                    self._perform_initialization_incremental_indexing()
+                    self.project_manager.perform_incremental_indexing(self.project_name)
                     print(
                         f"✅ Incremental indexing completed for project '{self.project_name}'"
                     )
@@ -70,100 +68,14 @@ class CrossIndexSystem:
 
         self.task_manager = CrossIndexingTaskManager()
         self.cross_indexing = CrossIndexing()
-        self.action_executor = ActionExecutor(
-            self.task_manager,
-            context="cross_index",
-        )
 
         self.cross_index_service = CrossIndexService(
             cross_indexing=self.cross_indexing,
             task_manager=self.task_manager,
-            action_executor=self.action_executor,
             session_manager=self.session_manager,
             graph_ops=self.graph_ops,
         )
 
-    def _perform_initialization_incremental_indexing(self):
-        """
-        Perform incremental indexing synchronously during cross-indexing system initialization.
-        This ensures the database is up-to-date before cross-indexing analysis begins.
-        """
-        try:
-            logger.debug(
-                f"Starting incremental indexing for project: {self.project_name}"
-            )
-
-            # Use project manager to perform incremental indexing
-            # We consume the iterator to run it synchronously during initialization
-            indexing_events = list(
-                self.project_manager.perform_incremental_indexing(self.project_name)
-            )
-
-            # Check if indexing completed successfully
-            indexing_success = False
-            for event in indexing_events:
-                if event.get("type") == "indexing_complete":
-                    indexing_success = True
-                    break
-                elif event.get("type") == "error":
-                    logger.warning(
-                        f"Incremental indexing error: {event.get('message', 'Unknown error')}"
-                    )
-
-            if indexing_success:
-                self.memory_manager.add_history(
-                    f"Performed incremental indexing for project '{self.project_name}' before cross-indexing analysis"
-                )
-            else:
-                logger.warning(
-                    f"Incremental indexing may not have completed fully for project: {self.project_name}"
-                )
-
-        except Exception as e:
-            logger.error(f"Error during initialization incremental indexing: {e}")
-            raise
-
-    def _update_session_memory(self):
-        """Update session memory with current memory state (like agent service)."""
-        try:
-            # Get the rich formatted memory from task manager (includes code snippets)
-            # Task manager is the authoritative source for cross-indexing memory
-            memory_summary = self.task_manager.get_memory_for_llm()
-            code_snippets_count = len(self.task_manager.get_all_code_snippets())
-
-            # Update session manager with the rich memory content
-            self.session_manager.update_sutra_memory(memory_summary)
-            logger.debug(
-                f"Updated Cross-Index Sutra Memory in session: {len(memory_summary)} characters"
-            )
-            logger.debug(f"Memory includes {code_snippets_count} code snippets")
-        except Exception as e:
-            logger.error(f"Error updating cross-index session memory: {e}")
-
     def clear_session(self) -> None:
         """Clear the current cross-indexing session."""
         self.session_manager.clear_session()
-
-    def mark_cross_indexing_phase_completed(self, phase: str) -> None:
-        """Mark a specific phase of cross-indexing as completed."""
-        if not self.project_name:
-            return
-
-        db_connection = self.project_manager.connection
-
-        if phase == "phase4":
-            db_connection.update_cross_indexing_status(
-                self.project_name, "phase4_completed"
-            )
-            print(
-                f"✅ Phase 4 completed for project '{self.project_name}' - basic cross-indexing done"
-            )
-        elif phase == "phase5" or phase == "completed":
-            db_connection.update_cross_indexing_status(self.project_name, "completed")
-            print(
-                f"✅ Cross-indexing fully completed for project '{self.project_name}'"
-            )
-
-    def should_skip_cross_indexing(self) -> bool:
-        """Check if cross-indexing should be skipped for this project."""
-        return getattr(self, "_skip_cross_indexing", False)

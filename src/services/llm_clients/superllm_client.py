@@ -48,7 +48,7 @@ class SuperLLMClient(LLMClientBase):
                 config_token,
                 {"api_endpoint": self.api_endpoint, "source": "config_migration"},
             )
-            logger.info("Migrated Firebase token from config to secure storage")
+            print("Migrated Firebase token from config to secure storage")
 
         if not self.firebase_token:
             logger.warning(
@@ -62,7 +62,7 @@ class SuperLLMClient(LLMClientBase):
                 "Please run 'sutra auth login' to authenticate with SuperLLM."
             )
 
-        logger.info("🚀 SuperLLM client initialized successfully")
+        print("🚀 SuperLLM client initialized successfully")
 
     def _get_headers(self) -> Dict[str, str]:
         """Get headers for API requests."""
@@ -83,7 +83,7 @@ class SuperLLMClient(LLMClientBase):
 
         if new_token and new_token != self.firebase_token:
             self.firebase_token = new_token
-            logger.info("Firebase token refreshed from storage")
+            print("Firebase token refreshed from storage")
             return True
 
         return False

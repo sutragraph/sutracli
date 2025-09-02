@@ -1,8 +1,6 @@
 template_string GlobalToolsPrompt(tools: ToolName[]) #"
 ## Available Tools
 
-
-
 {% for tool in tools %}
 {% if tool == ToolName.Database %}
 {{ DatabaseToolTemplate() }}

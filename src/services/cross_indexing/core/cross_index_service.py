@@ -3,6 +3,8 @@ from typing import Any, Dict, Iterator, Optional
 from loguru import logger
 from services.agent.memory_management.models import TaskStatus
 from src.utils.debug_utils import get_user_confirmation_for_llm_call
+from baml_client.types import Agent
+from src.tools.tool_executor import execute_tool
 
 
 class CrossIndexService:
@@ -21,13 +23,11 @@ class CrossIndexService:
         self,
         cross_indexing,
         task_manager,
-        action_executor,
         session_manager,
         graph_ops,
     ):
         self.cross_indexing = cross_indexing
         self.task_manager = task_manager
-        self.action_executor = action_executor
         self.session_manager = session_manager
         self.graph_ops = graph_ops
         self._memory_needs_update = False
@@ -42,14 +42,6 @@ class CrossIndexService:
             logger.debug(
                 f"Starting cross-indexing analysis for project {project_id} at {project_path}"
             )
-
-            yield {
-                "type": "cross_index_start",
-                "project_id": project_id,
-                "project_path": project_path,
-                "message": "Starting cross-indexing analysis",
-            }
-
             # Initialize and reset to Phase 1
             self.cross_indexing.reset_to_phase(1)
             self.task_manager.set_current_phase(1)
@@ -68,12 +60,8 @@ class CrossIndexService:
                     f"Cross-indexing iteration {current_iteration} - Phase {current_phase}"
                 )
 
-                yield {
-                    "type": "iteration_start",
-                    "iteration": current_iteration,
-                    "phase": current_phase,
-                    "message": f"Phase {current_phase} - Iteration {current_iteration}",
-                }
+                # Iteration start - no yield needed
+                logger.debug(f"Phase {current_phase} - Iteration {current_iteration}")
 
                 # Get BAML response for current phase
                 baml_response = self._get_baml_response(
@@ -84,105 +72,83 @@ class CrossIndexService:
                 if isinstance(baml_response, dict) and baml_response.get(
                     "user_cancelled"
                 ):
-                    yield {
-                        "type": "user_cancelled",
-                        "iteration": current_iteration,
-                        "message": "User cancelled the operation",
-                    }
+                    logger.debug("User cancelled the operation")
                     return
 
-                # Process BAML response - use it directly if it has the right structure
+                # Process BAML response using model_dump() directly
                 task_complete = False
 
-                # BAML responses come as raw JSON, use them directly
-                for event in self.action_executor.process_json_response(
-                    baml_response, analysis_query
+                # Convert BAML response to dictionary using model_dump()
+                response_dict = (
+                    baml_response.model_dump()
+                    if hasattr(baml_response, "model_dump")
+                    else baml_response
+                )
+
+                # Process tool_call if present
+                if response_dict.get("tool_call"):
+                    tool_call = response_dict["tool_call"]
+                    tool_name = tool_call.get("tool_name")
+                    tool_params = tool_call.get("parameters", {})
+
+                    if tool_name and tool_name != "attempt_completion":
+                        # Execute tool using execute_tool function (handles tool execution and status building)
+                        tool_status = execute_tool(
+                            Agent.CrossIndexing, tool_name, tool_params
+                        )
+
+                        # Store tool status for memory context (no yielding needed)
+                        last_tool_result = {
+                            "tool_name": tool_name,
+                            "tool_status": tool_status,
+                        }
+                        self._memory_needs_update = True
+
+                        # Run code manager after processing database/search_keyword tools in Phase 3
+                        if current_phase == 3 and tool_name in [
+                            "database",
+                            "search_keyword",
+                        ]:
+                            logger.debug(
+                                f"Running code manager after {tool_name} in Phase 3"
+                            )
+                            # Note: We'll need to extract actual tool data from the status for code manager
+                            self._process_tool_with_code_manager_from_status(
+                                tool_status, tool_name
+                            )
+
+                    elif tool_name == "attempt_completion":
+                        task_complete = True
+                        logger.debug(
+                            f"Phase {current_phase} marked complete due to attempt_completion"
+                        )
+
+                # Process sutra_memory updates using original BAML object
+                if (
+                    hasattr(baml_response, "sutra_memory")
+                    and baml_response.sutra_memory
                 ):
-                    event_type = event.get("type", "unknown")
+                    try:
+                        # Use the original BAML sutra_memory object directly
+                        # No need to convert to dict and back to object
+                        memory_result = self.task_manager.process_sutra_memory_params(
+                            baml_response.sutra_memory
+                        )
 
-                    if event_type == "thinking":
-                        yield {
-                            "type": "thinking",
-                            "iteration": current_iteration,
-                            "phase": current_phase,
-                            "content": event.get("content", "analyzing..."),
-                        }
-
-                    elif event_type == "tool_use":
-                        tool_name = event.get("tool_name", "unknown")
-
-                        # Update last_tool_result first (this is the tool result that was just processed)
-                        last_tool_result = event
-
-                        self._memory_needs_update = True
-
-                        yield event
-
-                    elif event_type == "sutra_memory_update":
-                        self._memory_needs_update = True
-                        yield {
-                            "type": "memory_update",
-                            "iteration": current_iteration,
-                            "phase": current_phase,
-                            "message": "Memory updated with connection data",
-                        }
-
-                        # Run code manager after processing sutra memory in Phase 3
-                        # Use the last_tool_result (the database/search_keyword result that was just processed)
-                        if current_phase == 3 and last_tool_result:
+                        if memory_result.get("success"):
                             logger.debug(
-                                f"Code manager check: last_tool_result type = {type(last_tool_result)}"
+                                f"Sutra memory processed successfully: {memory_result.get('changes_applied', {})}"
                             )
-
-                            if isinstance(
-                                last_tool_result, dict
-                            ) and last_tool_result.get("tool_name") in [
-                                "database",
-                                "search_keyword",
-                            ]:
-                                logger.debug(
-                                    f"Running code manager after sutra memory update in Phase 3 using {last_tool_result.get('tool_name')} result"
-                                )
-                                self._process_tool_with_code_manager(last_tool_result)
-                            else:
-                                logger.warning(
-                                    f"Skipping code manager - invalid last_tool_result: type={type(last_tool_result)}, is_dict={isinstance(last_tool_result, dict)}"
-                                )
-                                if isinstance(last_tool_result, dict):
-                                    logger.warning(
-                                        f"Tool name: {last_tool_result.get('tool_name')}"
-                                    )
-
-                    elif event_type in ["completion", "task_complete"]:
-                        tool_name = event.get("tool_name", "attempt_completion")
-                        # CRITICAL FIX: Only mark task complete if there's actually an attempt_completion
-                        # Don't trigger phase completion for other tool completions
-                        if (
-                            tool_name == "attempt_completion"
-                            and event_type == "completion"
-                        ):
-                            task_complete = True
-                            logger.debug(
-                                f"Phase {current_phase} marked complete due to attempt_completion"
-                            )
-                            break
-                        elif event_type == "task_complete":
-                            task_complete = True
-                            logger.debug(
-                                f"Phase {current_phase} marked complete due to task_complete event"
-                            )
-                            break
                         else:
-                            logger.debug(
-                                f"Ignoring completion event: tool_name={tool_name}, event_type={event_type}"
+                            logger.warning(
+                                f"Sutra memory processing had errors: {memory_result.get('errors', [])}"
                             )
 
-                    elif event_type == "tool_error":
-                        last_tool_result = event
-                        yield event
+                        self._memory_needs_update = True
 
-                    else:
-                        yield event
+                    except Exception as e:
+                        logger.error(f"Error processing sutra memory: {e}")
+                        self._memory_needs_update = True
 
                 # Handle phase completion and advancement
                 if task_complete:
@@ -195,23 +161,14 @@ class CrossIndexService:
                                 self.cross_indexing.current_phase
                             )
 
-                            yield {
-                                "type": "phase_complete",
-                                "iteration": current_iteration,
-                                "completed_phase": current_phase,
-                                "next_phase": self.cross_indexing.current_phase,
-                                "message": f"Phase {current_phase} complete - advancing to Phase {self.cross_indexing.current_phase}",
-                            }
+                            logger.debug(
+                                f"Phase {current_phase} complete - advancing to Phase {self.cross_indexing.current_phase}"
+                            )
 
                             last_tool_result = None
                             continue
                         else:
-                            yield {
-                                "type": "phase_error",
-                                "iteration": current_iteration,
-                                "phase": current_phase,
-                                "message": f"Phase {current_phase} completion failed",
-                            }
+                            logger.error(f"Phase {current_phase} completion failed")
                             return
 
                     elif current_phase == 3:
@@ -219,13 +176,9 @@ class CrossIndexService:
                         self.cross_indexing.current_phase = 4
                         # Don't call task_manager.set_current_phase to preserve memory
 
-                        yield {
-                            "type": "phase_complete",
-                            "iteration": current_iteration,
-                            "completed_phase": 3,
-                            "next_phase": 4,
-                            "message": "Phase 3 complete - advancing to Phase 4 (memory preserved)",
-                        }
+                        logger.debug(
+                            "Phase 3 complete - advancing to Phase 4 (memory preserved)"
+                        )
 
                         # Execute Phase 4
                         phase4_result = self._execute_phase_4()
@@ -260,6 +213,7 @@ class CrossIndexService:
                     self._memory_needs_update = False
 
             # Analysis didn't complete within iteration limit
+            logger.error(f"Analysis did not complete after {max_iterations} iterations")
             yield {
                 "type": "cross_index_failure",
                 "iterations_completed": max_iterations,
@@ -294,11 +248,9 @@ class CrossIndexService:
             # Get memory context
             memory_context = self._get_memory_context()
 
-            # Build tool status
-            tool_status = self._build_tool_status(last_tool_result)
-
-            # Combine memory and tool status
-            if tool_status and tool_status.strip():
+            # Combine memory and tool status (tool status now handled by execute_tool)
+            if last_tool_result and last_tool_result.get("tool_status"):
+                tool_status = last_tool_result["tool_status"]
                 full_context = f"{memory_context}\n\nTOOL STATUS\n\n{tool_status}\n===="
             else:
                 full_context = memory_context
@@ -313,9 +265,8 @@ class CrossIndexService:
             )
 
             if response.get("success"):
-                # Convert BAML response object to dictionary
                 baml_results = response.get("results")
-                return self._convert_baml_object_to_dict(baml_results)
+                return baml_results
             else:
                 # Handle BAML error
                 error_msg = response.get("error", "BAML execution failed")
@@ -363,238 +314,27 @@ class CrossIndexService:
         # Build memory context - let task manager handle all task display
         return self.task_manager.get_memory_for_llm()
 
-    def _build_tool_status(self, last_tool_result: Optional[Dict[str, Any]]) -> str:
+    def _process_tool_with_code_manager_from_status(
+        self, tool_status: str, tool_name: str
+    ) -> None:
         """
-        Build tool status for cross-indexing context.
-
-        Args:
-            last_tool_result: Last tool execution result
-
-        Returns:
-            Formatted tool status string
-        """
-        if not last_tool_result:
-            return "No previous tool execution in cross-indexing analysis"
-
-        tool_name = last_tool_result.get("tool_name", "unknown_tool")
-
-        if tool_name == "semantic_search":
-            return self._build_semantic_status_cross_index(last_tool_result)
-        elif tool_name == "search_keyword":
-            return self._build_search_keyword_status_cross_index(last_tool_result)
-        elif tool_name == "list_files":
-            return self._build_list_files_status_cross_index(last_tool_result)
-        elif tool_name == "database":
-            return self._build_database_status_cross_index(last_tool_result)
-        else:
-            return self._build_generic_status_cross_index(last_tool_result, tool_name)
-
-    def _build_semantic_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build semantic search status for cross-indexing."""
-        status = "Tool: semantic_search\n"
-
-        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            # Handle error events - they only have error and tool_name fields
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            query = result.get("query")
-            if query and query != "fetch_next_code":
-                status += f"Query: '{query}'\n"
-
-            count = result.get("count") or result.get("total_nodes")
-            if count is not None:
-                status += f"Found {count} nodes for connection analysis\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        return status.rstrip()
-
-    def _build_search_keyword_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build keyword search status for cross-indexing."""
-        status = "Tool: search_keyword\n"
-
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            keyword = result.get("keyword")
-            if keyword:
-                status += f"Keyword: '{keyword}'\n"
-
-            # Add searched paths information
-            file_paths = result.get("file_paths")
-            if file_paths:
-                if isinstance(file_paths, list) and file_paths:
-                    paths_str = ", ".join(file_paths)
-                    status += f"Searched in: {paths_str}\n"
-                elif isinstance(file_paths, str):
-                    status += f"Searched in: {file_paths}\n"
-
-            matches_found = result.get("matches_found")
-            if matches_found is not None:
-                matches_status = "Found" if matches_found else "Not Found"
-                status += f"Matches Status: '{matches_status}'\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        return status.rstrip()
-
-    def _build_list_files_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build list files status for cross-indexing."""
-        status = "Tool: list_files\n"
-
-        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            # Handle error events - they only have error and tool_name fields
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            directory = result.get("directory")
-            if directory:
-                status += f"Directory: {directory}\n"
-
-            count = result.get("count")
-            if count is not None:
-                status += f"Files: {count} found\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        status += "\n\nNOTE: Store relevant file/folder information in Sutra memory's history section for connection analysis, as directory listings will not persist in next iterations."
-        return status.rstrip()
-
-    def _build_database_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build database status for cross-indexing."""
-        status = "Tool: database\n"
-
-        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            # Handle error events - they only have error and tool_name fields
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            query_name = result.get("query_name")
-            if query_name:
-                status += f"Query Name: {query_name}\n"
-
-            query = result.get("query")
-            if query:
-                status += f"Query: {query}\n"
-
-            count = result.get("count") or result.get("total_results")
-            if count is not None:
-                status += f"Results: {count} found\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        return status.rstrip()
-
-    def _build_generic_status_cross_index(
-        self, result: Dict[str, Any], tool_name: str
-    ) -> str:
-        """Build generic status for unknown tools in cross-indexing."""
-        status = f"Tool: {tool_name}\n"
-
-        error = result.get("error", "Unknown error")
-        if error:
-            status += f"ERROR: {error}\n"
-
-        query = result.get("query")
-        if query:
-            status += f"Query: '{query}'\n"
-
-        query_name = result.get("query_name")
-        if query_name:
-            status += f"Query Name: '{query_name}'\n"
-
-        success = result.get("success")
-        if success is not None:
-            status += f"Status: {'success' if success else 'failed'}\n"
-
-        data = result.get("data", "")
-        if data:
-            status += f"Results:\n{data}"
-        return status.rstrip()
-
-    def _process_tool_with_code_manager(self, event: Dict[str, Any]) -> None:
-        """
-        Process tool results with code manager to extract connection code.
+        Process tool results with code manager using tool status string.
         Only processes database and search_keyword tools.
 
         Args:
-            event: Tool execution event with results from current iteration
+            tool_status: Tool status string from execute_tool
+            tool_name: Name of the tool that was executed
         """
         try:
-            logger.debug(f"Code manager processing - event type: {type(event)}")
-            logger.debug(
-                f"Code manager processing - event keys: {list(event.keys()) if isinstance(event, dict) else 'N/A'}"
-            )
-
-            # Validate that event is a dictionary
-            if not isinstance(event, dict):
-                logger.warning(f"Code manager received non-dict event: {type(event)}")
-                return
-
-            logger.debug("Step 1: Getting tool_name")
-            tool_name = event.get("tool_name", "unknown")
-            logger.debug(f"Step 1 complete: tool_name = {tool_name}")
-
-            logger.debug("Step 2: Getting tool_result")
-            tool_result = event.get("data", "")
-            logger.debug(
-                f"Step 2 complete: tool_result length = {len(str(tool_result))}"
-            )
-
             if tool_name not in ["database", "search_keyword"]:
                 logger.debug(
                     f"Skipping code manager processing for tool: {tool_name} (not database or search_keyword)"
                 )
                 return
 
-            if not tool_result or tool_result.strip() == "":
+            if not tool_status or tool_status.strip() == "":
                 logger.debug(
-                    f"Skipping code manager processing for tool: {tool_name} (no result data)"
+                    f"Skipping code manager processing for tool: {tool_name} (no status data)"
                 )
                 return
 
@@ -602,24 +342,28 @@ class CrossIndexService:
                 f"Processing tool results with code manager for tool: {tool_name}"
             )
 
-            logger.debug("Step 3: Calling _format_tool_for_code_manager")
-            formatted_tool_results = self._format_tool_for_code_manager(event)
-            logger.debug(
-                f"Step 3 complete: formatted_tool_results length = {len(formatted_tool_results)}"
-            )
+            # Format tool status for code manager
+            formatted_tool_results = f"""
+Tool Results:
+{tool_status}
+"""
 
-            logger.debug("Step 4: Calling cross_indexing.run_code_manager")
-            # Use BAML code manager instead of old LLM call
+            # Use BAML code manager
             baml_result = self.cross_indexing.run_code_manager(formatted_tool_results)
             logger.debug(
-                f"Step 4 complete: baml_result success = {baml_result.get('success') if isinstance(baml_result, dict) else 'N/A'}"
+                f"BAML code manager result success = {baml_result.get('success') if isinstance(baml_result, dict) else 'N/A'}"
             )
 
             if baml_result.get("success"):
-                logger.debug("Step 5: Processing successful BAML result")
-                # Process code manager response to extract connection code
+                logger.debug("Processing successful BAML code manager result")
+                # Process code manager response to extract connection code using model_dump()
                 baml_response = baml_result.get("results")
-                self._add_code_snippets_to_memory(baml_response)
+                response_data = (
+                    baml_response.model_dump()
+                    if hasattr(baml_response, "model_dump")
+                    else baml_response
+                )
+                self._add_code_snippets_to_memory(response_data)
                 logger.debug("BAML code manager processing completed")
             else:
                 error_msg = baml_result.get("error", "BAML code manager failed")
@@ -631,53 +375,24 @@ class CrossIndexService:
 
             logger.error(f"Full traceback: {traceback.format_exc()}")
 
-    def _format_tool_for_code_manager(self, event: Dict[str, Any]) -> str:
+    def _add_code_snippets_to_memory(self, response_data) -> None:
         """
-        Format tool execution event for code manager analysis.
+        Process code manager response and extract connection code with deduplication.
 
         Args:
-            event: Tool execution event
-
-        Returns:
-            Formatted tool results string
-        """
-        tool_result = event.get("data", "")
-
-        result = f"""
-Tool Results:
-{tool_result}
-"""
-
-        return result
-
-    def _add_code_snippets_to_memory(self, baml_response) -> None:
-        """
-        Process BAML code manager response and extract connection code with deduplication.
-
-        Args:
-            baml_response: BAML CodeManagerResponse object
+            response_data: Code manager response data (from model_dump())
         """
         try:
-            logger.debug("Processing BAML code manager response for connection code")
-            logger.debug(f"BAML response type: {type(baml_response)}")
+            logger.debug("Processing code manager response for connection code")
+            logger.debug(f"Response data type: {type(response_data)}")
 
-            if not baml_response:
-                logger.debug("No BAML code manager response to process")
+            if not response_data:
+                logger.debug("No code manager response to process")
                 return
 
-            # Process connection code from BAML response (correct field name)
-            connection_code_list = None
-
-            # Try different ways to access the connection code
-            if hasattr(baml_response, "connection_code"):
-                connection_code_list = baml_response.connection_code
-                logger.debug(
-                    f"Found connection_code attribute with {len(connection_code_list) if connection_code_list else 0} items"
-                )
-            else:
-                logger.debug(
-                    f"No connection_code or code_snippets found in BAML response. Available attributes: {[attr for attr in dir(baml_response) if not attr.startswith('_')]}"
-                )
+            # Get connection code from response data
+            connection_code_list = response_data.get("connection_code", [])
+            logger.debug(f"Found {len(connection_code_list)} connection code items")
 
             if connection_code_list:
                 code_snippets_added = 0
@@ -686,11 +401,11 @@ Tool Results:
                 for code_connection in connection_code_list:
                     logger.debug(f"Processing connection: {code_connection}")
 
-                    # Extract fields from CodeConnection object
-                    file_path = getattr(code_connection, "file", None)
-                    start_line = getattr(code_connection, "start_line", None)
-                    end_line = getattr(code_connection, "end_line", None)
-                    description = getattr(code_connection, "description", None)
+                    # Extract fields from code connection dictionary
+                    file_path = code_connection.get("file")
+                    start_line = code_connection.get("start_line")
+                    end_line = code_connection.get("end_line")
+                    description = code_connection.get("description")
 
                     if not all([file_path, start_line, end_line, description]):
                         logger.warning(
@@ -832,7 +547,16 @@ Tool Results:
                 logger.debug(f"Running task filtering on {len(tasks_to_filter)} tasks")
 
                 # Run task filtering
-                filtered_tasks = self.cross_indexing.filter_tasks(tasks_to_filter)
+                filtering_result = self.cross_indexing.filter_tasks(tasks_to_filter)
+
+                # Extract filtered tasks using model_dump() if it's a BAML response
+                if hasattr(filtering_result, "model_dump"):
+                    filter_data = filtering_result.model_dump()
+                    filtered_tasks = filter_data.get("tasks", [])
+                elif isinstance(filtering_result, dict):
+                    filtered_tasks = filtering_result.get("tasks", [])
+                else:
+                    filtered_tasks = filtering_result
 
                 if not filtered_tasks:
                     logger.warning(
@@ -884,72 +608,6 @@ Tool Results:
             logger.error(f"Error handling Phase {phase} completion: {e}")
             return False
 
-    def _convert_baml_object_to_dict(self, baml_obj) -> Dict[str, Any]:
-        """Convert BAML response object to dictionary format."""
-        try:
-            if not baml_obj:
-                return {}
-
-            # If already a dictionary, return as is
-            if isinstance(baml_obj, dict):
-                return baml_obj
-
-            # Convert object attributes to dictionary
-            result_dict = {}
-
-            # Handle thinking
-            if hasattr(baml_obj, "thinking"):
-                result_dict["thinking"] = baml_obj.thinking
-
-            # Handle tool_call
-            if hasattr(baml_obj, "tool_call"):
-                tool_call = baml_obj.tool_call
-                if tool_call:
-                    result_dict["tool_call"] = {
-                        "tool_name": getattr(tool_call, "tool_name", None),
-                        "parameters": getattr(tool_call, "parameters", {}),
-                    }
-
-            # Handle sutra_memory
-            if hasattr(baml_obj, "sutra_memory"):
-                sutra_memory = baml_obj.sutra_memory
-                if sutra_memory and hasattr(sutra_memory, "__dict__"):
-                    result_dict["sutra_memory"] = {
-                        "add_history": getattr(sutra_memory, "add_history", None),
-                        "tasks": getattr(sutra_memory, "tasks", []),
-                    }
-                elif sutra_memory:
-                    result_dict["sutra_memory"] = sutra_memory
-
-            # Handle attempt_completion
-            if hasattr(baml_obj, "attempt_completion"):
-                attempt_completion = baml_obj.attempt_completion
-                if attempt_completion:
-                    result_dict["attempt_completion"] = {
-                        "result": getattr(
-                            attempt_completion, "result", str(attempt_completion)
-                        )
-                    }
-
-            # Handle reasoning (fallback for thinking)
-            if "thinking" not in result_dict and hasattr(baml_obj, "reasoning"):
-                result_dict["thinking"] = baml_obj.reasoning
-
-            # Handle next_steps (fallback for attempt_completion)
-            if "attempt_completion" not in result_dict and hasattr(
-                baml_obj, "next_steps"
-            ):
-                result_dict["attempt_completion"] = {"result": baml_obj.next_steps}
-
-            logger.debug(
-                f"Converted BAML object to dict with keys: {list(result_dict.keys())}"
-            )
-            return result_dict
-
-        except Exception as e:
-            logger.error(f"Error converting BAML object to dict: {e}")
-            return {"thinking": f"Error converting BAML response: {str(e)}"}
-
     def _execute_phase_baml(
         self, phase: int, analysis_query: str, memory_context: str
     ) -> Dict[str, Any]:
@@ -995,11 +653,43 @@ Tool Results:
                     "error": f"Connection splitting failed: {splitting_result.get('error')}",
                 }
 
-            # Get the analysis result from connection splitting and convert BAML object to dict
+            # Get the analysis result from connection splitting using model_dump()
             baml_analysis_result = splitting_result.get("results")
-            analysis_result = self._convert_connection_splitting_to_dict(
-                baml_analysis_result
-            )
+
+            # Add logging to diagnose the response format issue
+            logger.debug(f"BAML analysis result type: {type(baml_analysis_result)}")
+            logger.debug(f"BAML analysis result: {baml_analysis_result}")
+
+            # Handle both object and string responses
+            if hasattr(baml_analysis_result, "model_dump"):
+                analysis_result = baml_analysis_result.model_dump()
+                logger.debug("Used model_dump() to convert BAML response")
+            elif isinstance(baml_analysis_result, str):
+                # Parse JSON string if BAML returned a string
+                try:
+                    analysis_result = json.loads(baml_analysis_result)
+                    logger.debug("Parsed JSON string from BAML response")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse BAML JSON response: {e}")
+                    return {
+                        "success": False,
+                        "error": f"Invalid JSON response from connection splitting: {str(e)}",
+                    }
+            else:
+                analysis_result = baml_analysis_result
+                logger.debug("Used BAML response directly")
+
+            logger.debug(f"Final analysis result type: {type(analysis_result)}")
+
+            # Ensure analysis_result is a dictionary before proceeding
+            if not isinstance(analysis_result, dict):
+                logger.error(
+                    f"Analysis result is not a dictionary: {type(analysis_result)}"
+                )
+                return {
+                    "success": False,
+                    "error": f"Connection splitting returned invalid format: {type(analysis_result)}",
+                }
 
             # Check if technology correction is needed
             unmatched_technologies = self._get_unmatched_technologies(analysis_result)
@@ -1025,9 +715,15 @@ Tool Results:
                 )
 
                 if correction_result.get("success"):
-                    # Apply corrections to analysis result
+                    # Apply corrections to analysis result using model_dump()
+                    correction_results = correction_result.get("results")
+                    correction_data = (
+                        correction_results.model_dump()
+                        if hasattr(correction_results, "model_dump")
+                        else correction_results
+                    )
                     corrected_analysis = self._apply_technology_corrections(
-                        analysis_result, correction_result.get("results")
+                        analysis_result, correction_data
                     )
                     if corrected_analysis:
                         analysis_result = corrected_analysis
@@ -1050,92 +746,6 @@ Tool Results:
         except Exception as e:
             logger.error(f"Error in Phase 4 execution: {e}")
             return {"success": False, "error": f"Phase 4 execution error: {str(e)}"}
-
-    def _convert_connection_splitting_to_dict(self, baml_response) -> Dict[str, Any]:
-        """Convert BAML ConnectionSplittingResponse to dictionary format."""
-        try:
-            if not baml_response:
-                return {}
-
-            # If already a dictionary, return as is
-            if isinstance(baml_response, dict):
-                return baml_response
-
-            result = {}
-
-            # Extract incoming connections
-            if hasattr(baml_response, "incoming_connections"):
-                result["incoming_connections"] = []
-                incoming = baml_response.incoming_connections
-                if incoming:
-                    # Convert BAML object structure to expected dictionary format
-                    for tech_name, files_data in incoming.items():
-                        for file_path, connections in files_data.items():
-                            for conn in connections:
-                                result["incoming_connections"].append(
-                                    {
-                                        "description": getattr(conn, "description", ""),
-                                        "file_path": file_path,
-                                        "snippet_lines": self._parse_snippet_lines(
-                                            getattr(conn, "snippet_lines", "")
-                                        ),
-                                        "technology": {
-                                            "name": tech_name,
-                                            "type": "unknown",
-                                        },
-                                    }
-                                )
-
-            # Extract outgoing connections
-            if hasattr(baml_response, "outgoing_connections"):
-                result["outgoing_connections"] = []
-                outgoing = baml_response.outgoing_connections
-                if outgoing:
-                    # Convert BAML object structure to expected dictionary format
-                    for tech_name, files_data in outgoing.items():
-                        for file_path, connections in files_data.items():
-                            for conn in connections:
-                                result["outgoing_connections"].append(
-                                    {
-                                        "description": getattr(conn, "description", ""),
-                                        "file_path": file_path,
-                                        "snippet_lines": self._parse_snippet_lines(
-                                            getattr(conn, "snippet_lines", "")
-                                        ),
-                                        "technology": {
-                                            "name": tech_name,
-                                            "type": "unknown",
-                                        },
-                                    }
-                                )
-
-            # Extract summary if available
-            if hasattr(baml_response, "summary"):
-                result["summary"] = baml_response.summary
-
-            logger.debug(
-                f"Converted connection splitting response: {len(result.get('incoming_connections', []))} incoming, {len(result.get('outgoing_connections', []))} outgoing"
-            )
-            return result
-
-        except Exception as e:
-            logger.error(f"Error converting connection splitting response: {e}")
-            return {
-                "incoming_connections": [],
-                "outgoing_connections": [],
-                "error": str(e),
-            }
-
-    def _parse_snippet_lines(self, snippet_range: str) -> list:
-        """Parse snippet lines from range format (e.g., '15-20') to list of line numbers."""
-        try:
-            if not snippet_range or "-" not in snippet_range:
-                return []
-
-            start, end = snippet_range.split("-")
-            return list(range(int(start), int(end) + 1))
-        except (ValueError, AttributeError):
-            return []
 
     def _get_code_snippets_only_context(self) -> str:
         """Get only code snippets for Phase 4 connection splitting."""
@@ -1205,7 +815,10 @@ Tool Results:
             matching_result = self.cross_indexing.run_connection_matching()
 
             if matching_result.get("success"):
-                matches = matching_result.get("results", {}).get("matches", [])
+                matching_data = matching_result.get("results", {})
+                if hasattr(matching_data, "model_dump"):
+                    matching_data = matching_data.model_dump()
+                matches = matching_data.get("matches", [])
 
                 # Store mappings if matches found
                 if matches:
@@ -1274,7 +887,7 @@ Tool Results:
         return confidence_map.get(confidence.lower(), 0.5)
 
     def _get_unmatched_technologies(self, analysis_result: Dict[str, Any]) -> list:
-        """Get list of technology names that don't match valid enums."""
+        """Get list of technology names that don't match valid enums from BAML format."""
         valid_enums = {
             "GraphQL",
             "HTTP/HTTPS",
@@ -1285,15 +898,15 @@ Tool Results:
         }
         unmatched = set()
 
-        # Check incoming connections
-        for connection in analysis_result.get("incoming_connections", []):
-            tech_name = connection.get("technology", {}).get("name")
+        # Check incoming connections - BAML format: {"tech_name": {"file": [details]}}
+        incoming_connections = analysis_result.get("incoming_connections", {})
+        for tech_name in incoming_connections.keys():
             if tech_name and tech_name not in valid_enums:
                 unmatched.add(tech_name)
 
-        # Check outgoing connections
-        for connection in analysis_result.get("outgoing_connections", []):
-            tech_name = connection.get("technology", {}).get("name")
+        # Check outgoing connections - BAML format: {"tech_name": {"file": [details]}}
+        outgoing_connections = analysis_result.get("outgoing_connections", {})
+        for tech_name in outgoing_connections.keys():
             if tech_name and tech_name not in valid_enums:
                 unmatched.add(tech_name)
 
@@ -1302,13 +915,15 @@ Tool Results:
     def _apply_technology_corrections(
         self, analysis_result: Dict[str, Any], baml_corrections
     ) -> Dict[str, Any]:
-        """Apply technology corrections to analysis result."""
+        """Apply technology corrections to analysis result in BAML format."""
         try:
-            # Convert BAML response to dictionary if needed
-            if hasattr(baml_corrections, "corrections"):
-                corrections_list = baml_corrections.corrections
+            # Use model_dump() to get corrections data
+            if hasattr(baml_corrections, "model_dump"):
+                corrections_data = baml_corrections.model_dump()
             else:
-                corrections_list = baml_corrections.get("corrections", [])
+                corrections_data = baml_corrections
+
+            corrections_list = corrections_data.get("corrections", [])
 
             if not corrections_list:
                 logger.debug("No corrections provided by technology correction")
@@ -1317,30 +932,28 @@ Tool Results:
             # Build correction mapping
             correction_map = {}
             for correction in corrections_list:
-                if hasattr(correction, "original_name") and hasattr(
-                    correction, "corrected_name"
-                ):
-                    correction_map[correction.original_name] = correction.corrected_name
-                elif isinstance(correction, dict):
-                    correction_map[correction.get("original_name")] = correction.get(
-                        "corrected_name"
-                    )
+                original_name = correction.get("original_name")
+                corrected_name = correction.get("corrected_name")
+                if original_name and corrected_name:
+                    correction_map[original_name] = corrected_name
 
             logger.debug(f"Applying technology corrections: {correction_map}")
 
-            # Apply corrections to incoming connections
-            for connection in analysis_result.get("incoming_connections", []):
-                tech_name = connection.get("technology", {}).get("name")
-                if tech_name in correction_map:
-                    connection["technology"]["name"] = correction_map[tech_name]
-                    connection["technology"]["type"] = "corrected"
+            # Apply corrections to incoming connections - BAML format
+            incoming_connections = analysis_result.get("incoming_connections", {})
+            corrected_incoming = {}
+            for tech_name, files_dict in incoming_connections.items():
+                corrected_tech_name = correction_map.get(tech_name, tech_name)
+                corrected_incoming[corrected_tech_name] = files_dict
+            analysis_result["incoming_connections"] = corrected_incoming
 
-            # Apply corrections to outgoing connections
-            for connection in analysis_result.get("outgoing_connections", []):
-                tech_name = connection.get("technology", {}).get("name")
-                if tech_name in correction_map:
-                    connection["technology"]["name"] = correction_map[tech_name]
-                    connection["technology"]["type"] = "corrected"
+            # Apply corrections to outgoing connections - BAML format
+            outgoing_connections = analysis_result.get("outgoing_connections", {})
+            corrected_outgoing = {}
+            for tech_name, files_dict in outgoing_connections.items():
+                corrected_tech_name = correction_map.get(tech_name, tech_name)
+                corrected_outgoing[corrected_tech_name] = files_dict
+            analysis_result["outgoing_connections"] = corrected_outgoing
 
             return analysis_result
 

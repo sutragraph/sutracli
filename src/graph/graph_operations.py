@@ -1641,49 +1641,59 @@ class GraphOperations:
                     f"connections_data is not a dict: {type(connections_data)}"
                 )
 
-            # Store incoming connections
+            # Store incoming connections - Handle BAML format: {"tech_name": {"file": [details]}}
             if "incoming_connections" in connections_data:
-                for conn in connections_data["incoming_connections"]:
-                    file_id = self._get_file_id_by_path(conn.get("file_path"))
-                    snippet_lines = conn.get("snippet_lines", [])
-                    code_snippet = (
-                        self._fetch_code_snippet_from_lines(
-                            conn["file_path"], snippet_lines
-                        )
-                        if snippet_lines and conn.get("file_path")
-                        else ""
-                    )
+                incoming_connections = connections_data["incoming_connections"]
+                for tech_name, files_dict in incoming_connections.items():
+                    for file_path, connection_details in files_dict.items():
+                        for detail in connection_details:
+                            file_id = self._get_file_id_by_path(file_path)
+                            
+                            # Parse snippet_lines from detail
+                            snippet_lines_str = detail.get("snippet_lines", "")
+                            snippet_lines = self._parse_snippet_lines_from_detail(snippet_lines_str)
+                            
+                            code_snippet = (
+                                self._fetch_code_snippet_from_lines(file_path, snippet_lines)
+                                if snippet_lines and file_path
+                                else ""
+                            )
 
-                    connection_id = self.insert_incoming_connection(
-                        conn["description"],
-                        file_id,
-                        snippet_lines,
-                        conn.get("technology", {}).get("name", "unknown"),
-                        code_snippet,
-                    )
-                    stored_incoming.append(connection_id)
+                            connection_id = self.insert_incoming_connection(
+                                detail.get("description", ""),
+                                file_id,
+                                snippet_lines,
+                                tech_name,
+                                code_snippet,
+                            )
+                            stored_incoming.append(connection_id)
 
-            # Store outgoing connections
+            # Store outgoing connections - Handle BAML format: {"tech_name": {"file": [details]}}
             if "outgoing_connections" in connections_data:
-                for conn in connections_data["outgoing_connections"]:
-                    file_id = self._get_file_id_by_path(conn.get("file_path"))
-                    snippet_lines = conn.get("snippet_lines", [])
-                    code_snippet = (
-                        self._fetch_code_snippet_from_lines(
-                            conn["file_path"], snippet_lines
-                        )
-                        if snippet_lines and conn.get("file_path")
-                        else ""
-                    )
+                outgoing_connections = connections_data["outgoing_connections"]
+                for tech_name, files_dict in outgoing_connections.items():
+                    for file_path, connection_details in files_dict.items():
+                        for detail in connection_details:
+                            file_id = self._get_file_id_by_path(file_path)
+                            
+                            # Parse snippet_lines from detail
+                            snippet_lines_str = detail.get("snippet_lines", "")
+                            snippet_lines = self._parse_snippet_lines_from_detail(snippet_lines_str)
+                            
+                            code_snippet = (
+                                self._fetch_code_snippet_from_lines(file_path, snippet_lines)
+                                if snippet_lines and file_path
+                                else ""
+                            )
 
-                    connection_id = self.insert_outgoing_connection(
-                        conn["description"],
-                        file_id,
-                        snippet_lines,
-                        conn.get("technology", {}).get("name", "unknown"),
-                        code_snippet,
-                    )
-                    stored_outgoing.append(connection_id)
+                            connection_id = self.insert_outgoing_connection(
+                                detail.get("description", ""),
+                                file_id,
+                                snippet_lines,
+                                tech_name,
+                                code_snippet,
+                            )
+                            stored_outgoing.append(connection_id)
 
             # Commit all changes
             self.connection.connection.commit()
@@ -1938,3 +1948,32 @@ class GraphOperations:
         """
         all_types = self.get_all_technology_types()
         return [t for t in all_types if t != "Unknown"]
+
+    def _parse_snippet_lines_from_detail(self, snippet_lines_str: str) -> List[int]:
+        """
+        Parse snippet_lines from BAML detail format.
+        
+        Args:
+            snippet_lines_str: String like "46-46" or "112-112" from BAML ConnectionDetail
+            
+        Returns:
+            List of line numbers
+        """
+        try:
+            if not snippet_lines_str or snippet_lines_str.strip() == "":
+                return []
+            
+            # Handle range format like "46-46" or "112-115"
+            if "-" in snippet_lines_str:
+                parts = snippet_lines_str.split("-")
+                if len(parts) == 2:
+                    start_line = int(parts[0].strip())
+                    end_line = int(parts[1].strip())
+                    return list(range(start_line, end_line + 1))
+            
+            # Handle single line number
+            return [int(snippet_lines_str.strip())]
+            
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse snippet_lines '{snippet_lines_str}': {e}")
+            return []

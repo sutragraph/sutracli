@@ -882,64 +882,8 @@ def handle_cross_indexing_command(args) -> None:
         ):
             update_type = update.get("type", "unknown")
 
-            if update_type == "cross_index_start":
-                print(f"📁 Analyzing project: {update.get('project_path')}")
-
-            elif update_type == "iteration_start":
-                iteration = update.get("iteration", 0)
-                max_iterations = update.get("max_iterations", 50)
-                print(f"🔄 Iteration {iteration}/{max_iterations}")
-
-            elif update_type == "thinking":
-                print("🤔 Analyzing connections...")
-
-            elif update_type == "tool_use":
-                tool_name = update.get("tool_name", "unknown")
-
-                if tool_name == "database":
-                    query = update.get("query", "")
-                    query_name = update.get("query_name", "")
-                    results = update.get("result", "")
-                    # Only show results if found, reduce verbosity
-                    if "Found 0 nodes" not in results:
-                        print(f'🔍 Database search "{query}" {query_name} | {results}')
-                        print("-" * 40)
-
-                elif tool_name == "semantic_search":
-                    query = update.get("query", "")
-                    results = update.get("result", "")
-                    # Only print for the first result or results with batch info to avoid spam
-                    batch_info = update.get("batch_info")
-                    node_index = update.get("node_index", 1)
-                    if node_index == 1 or batch_info is not None:
-                        print(f'🔍 Semantic search "{query}" | {results}')
-                        print("-" * 40)
-
-                elif tool_name == "list_files":
-                    directory = update.get("directory", "")
-                    files_count = update.get("count", 0)
-                    print(f"📁 Listed {files_count} files in {directory}")
-                    print("-" * 40)
-
-                elif tool_name == "search_keyword":
-                    keyword = update.get("keyword", "")
-                    matches_found = update.get("matches_found")
-                    print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
-                    print("-" * 40)
-
-                elif tool_name == "attempt_completion":
-                    result = update.get("result", "")
-                    print(f"🎉 Analysis Completed")
-                    if result:
-                        print(f"   Result: {result}")
-                    print("-" * 40)
-
-            elif update_type == "analysis_complete":
-                print("✅ Analysis Complete")
-
-            elif update_type == "cross_index_success":
+            if update_type == "cross_index_success":
                 analysis_result = update.get("analysis_result")
-                matching_result = update.get("matching_result", {})
                 iteration = update.get("iteration", 0)
                 print(
                     f"🎉 Cross-indexing completed successfully in {iteration} iterations"
@@ -953,19 +897,6 @@ def handle_cross_indexing_command(args) -> None:
                 print(f"   ⬇️  Incoming connections: {incoming_count}")
                 print(f"   ⬆️  Outgoing connections: {outgoing_count}")
                 break
-
-            elif update_type == "tool_error":
-                error = update.get("error", "Unknown error")
-                print(f"⚠️  Tool error: {error}")
-
-            elif update_type == "iteration_error":
-                error = update.get("error", "Unknown error")
-                iteration = update.get("iteration", 0)
-                print(f"⚠️  Error in iteration {iteration}: {error}")
-
-            elif update_type == "analysis_error":
-                error = update.get("error", "Unknown error")
-                print(f"⚠️  Analysis error: {error}, retrying...")
 
             elif update_type == "cross_index_failure":
                 error = update.get("error", "Analysis failed")
