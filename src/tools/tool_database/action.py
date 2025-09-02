@@ -26,7 +26,6 @@ from tools.delivery_actions import (
     check_pending_delivery,
     register_delivery_queue_and_get_first_batch_with_line_limit,
 )
-from tools import ToolName
 
 
 def should_chunk_content(code_content: str, chunking_threshold: int) -> bool:
@@ -499,7 +498,7 @@ def execute_structured_database_query(
 
                     # Check if we have a pending delivery for this query
                     next_item = check_pending_delivery(
-                        "database", action.parameters, ToolName.DATABASE_SEARCH
+                        "database", action.parameters, "database"
                     )
                     if next_item is not None:
                         logger.debug(
@@ -566,7 +565,7 @@ def execute_structured_database_query(
                             "database",
                             action.parameters,
                             delivery_items,
-                            ToolName.DATABASE_SEARCH,
+                            "database",
                         )
                     )
                     if first_item:
@@ -630,7 +629,7 @@ def execute_structured_database_query(
             # Multiple results with code - use delivery manager for sequential delivery
             # Check if we have a pending delivery for this query
             next_item = check_pending_delivery(
-                "database", action.parameters, ToolName.DATABASE_SEARCH
+                "database", action.parameters, "database"
             )
             if next_item is not None:
                 yield next_item
@@ -776,7 +775,7 @@ def execute_structured_database_query(
 
             # Register delivery queue and get first batch with line limit for guidance
             first_item = register_delivery_queue_and_get_first_batch_with_line_limit(
-                "database", action.parameters, delivery_items, ToolName.DATABASE_SEARCH
+                "database", action.parameters, delivery_items, "database"
             )
             if first_item:
                 yield first_item

@@ -6,7 +6,7 @@ import webbrowser
 from pathlib import Path
 from loguru import logger
 import requests
-
+from agents_new import Agent
 
 from services.project_manager import ProjectManager
 from services.cross_indexing.core.cross_index_system import CrossIndexSystem
@@ -265,13 +265,7 @@ def handle_agent_command(args):
     agent_result = None  # Store the final agent result for post-processing
 
     try:
-        # Get project directory from args if provided
-        project_directory = getattr(args, "directory", None)
-        if project_directory:
-            print(f"📁 Working directory: {project_directory}")
-
-        agent = AgentService(project_path=project_directory)
-
+        agent = AgentService()
 
         print("🚀 Welcome to Sutra Agent!")
         print(
@@ -297,11 +291,10 @@ def handle_agent_command(args):
 
         # Run agent session with the input
         print("🚀 Starting agent session...")
-        result = agent.solve_problem(problem_query=user_input)
+        result = agent.solve_problem(problem_query=user_input, agent_name=Agent.ROADMAP)
         print(f"\n✅ Agent session {result}")
 
         return result
-
 
     except KeyboardInterrupt:
         print("\n❌ Operation interrupted by user")

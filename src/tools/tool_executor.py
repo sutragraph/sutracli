@@ -28,7 +28,6 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
     action = AgentAction(description=tool_name, parameters=tool_params)
 
     tool_has_guidance = GuidanceRegistry.get_guidance(tool_name)
-
     delivery_items = []
 
     for event in tool_function(action):

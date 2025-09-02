@@ -146,8 +146,6 @@ class AgentService:
         try:
             while current_iteration < max_iterations:
                 current_iteration += 1
-                logger.info(f"Iteration {current_iteration}/{max_iterations}")
-
                 if current_iteration == 15:
                     console.print()
                     console.print(f"[yellow]Completed 15 iterations. Current progress:[/yellow]")

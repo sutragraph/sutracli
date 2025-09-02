@@ -766,7 +766,7 @@ class DefaultDeliveryAction(BaseDeliveryAction):
 # Registry mapping tool names to delivery action classes
 _DELIVERY_REGISTRY = {
     "semantic_search": SemanticSearchDeliveryAction,
-    "database_search": DatabaseSearchDeliveryAction,
+    "database": DatabaseSearchDeliveryAction,
     "search_keyword": SearchKeywordDeliveryAction,
     "list_files": ListFilesDeliveryAction,
     # Other tools use default (no-op) delivery

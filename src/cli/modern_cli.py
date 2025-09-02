@@ -603,12 +603,6 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             from cli.commands import handle_agent_command
             from src.agent_management.post_requisites.handlers import get_agent_handler
 
-            # Get query from user
-            user_query = Prompt.ask(
-                "[bold cyan]💭 Enter your query for the Roadmap Agent[/bold cyan]",
-                default="Analyze this codebase and provide development insights",
-            )
-
             # Mock args object for agent execution
             class Args:
 
@@ -617,7 +611,6 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
                     self.project_path = project_dir
                     self.directory = str(project_dir)
                     self.project_name = None
-                    self.problem_query = user_query
                     self.project_id = None
                     self.log_level = "INFO"
 

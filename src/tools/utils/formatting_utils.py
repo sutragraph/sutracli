@@ -41,15 +41,6 @@ def beautify_node_result(
     # Build result parts
     result_parts = []
 
-    # Add node header with index if provided
-    if idx is not None:
-        if total_nodes:
-            result_parts.append(f"=== NODE {idx} of {total_nodes} ===")
-        else:
-            result_parts.append(f"=== NODE {idx} ===")
-    else:
-        result_parts.append("=== NODE ===")
-
     # Add chunk information if provided
     if chunk_info:
         chunk_num = chunk_info.get("chunk_num", 1)
