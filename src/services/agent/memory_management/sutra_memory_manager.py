@@ -52,7 +52,7 @@ class SutraMemoryManager:
 
     # Task Management Methods
     def add_task(self, task_id: str, description: str, status: TaskStatus) -> bool:
-        """Add a new task with validation"""
+        """Add a new task with validation (task_id is ignored, counter+1 used instead)"""
         return self.memory_ops.add_task(task_id, description, status)
 
     def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
@@ -84,7 +84,7 @@ class SutraMemoryManager:
         end_line: int,
         description: str,
     ) -> bool:
-        """Add code snippet to memory"""
+        """Add code snippet to memory (code_id is ignored, counter+1 used instead)"""
         return self.memory_ops.add_code_snippet(
             code_id, file_path, start_line, end_line, description
         )
@@ -156,9 +156,6 @@ class SutraMemoryManager:
             if hasattr(sutra_memory, "tasks") and sutra_memory.tasks:
                 for task_op in sutra_memory.tasks:
                     if task_op.action == TaskOperationAction.Add:
-                        # Use counter+1 for task ID instead of LLM provided ID
-                        actual_task_id = self.get_next_task_id()
-
                         # Convert BAML status to TaskStatus enum
                         try:
                             if task_op.to_status:
@@ -171,12 +168,15 @@ class SutraMemoryManager:
                             else:
                                 status = TaskStatus.PENDING
 
-                            if self.add_task(actual_task_id, task_op.description, status):
+                            # add_task will use counter+1 internally and ignore the LLM provided ID
+                            if self.add_task(task_op.id, task_op.description, status):
+                                # Get the actual ID that was assigned (current counter value)
+                                actual_task_id = str(self.memory_ops.task_id_counter)
                                 results["changes_applied"]["tasks"].append(f"Added task {actual_task_id}: {task_op.description} (LLM ID {task_op.id} ignored)")
                             else:
-                                results["errors"].append(f"Failed to add task {actual_task_id} (LLM ID {task_op.id})")
+                                results["errors"].append(f"Failed to add task (LLM ID {task_op.id})")
                         except ValueError as e:
-                            results["errors"].append(f"Invalid status '{task_op.to_status}' for new task {actual_task_id}: {e}")
+                            results["errors"].append(f"Invalid status '{task_op.to_status}' for new task (LLM ID {task_op.id}): {e}")
 
                     elif task_op.action == TaskOperationAction.Move:
                         # Convert BAML status to TaskStatus enum
@@ -205,10 +205,17 @@ class SutraMemoryManager:
             if hasattr(sutra_memory, "code") and sutra_memory.code:
                 for code_op in sutra_memory.code:
                     if code_op.action == CodeStorageAction.Add:
+                        # add_code_snippet will use counter+1 internally and ignore the LLM provided ID
                         if self.add_code_snippet(code_op.id, code_op.file, code_op.start_line, code_op.end_line, code_op.description):
-                            results["changes_applied"]["code"].append(f"Added code {code_op.id}: {code_op.description}")
+                            # Get the actual ID that was assigned (current counter value)
+                            actual_code_id = str(self.memory_ops.code_id_counter)
+                            results["changes_applied"]["code"].append(
+                                f"Added code {actual_code_id}: {code_op.description} (LLM ID {code_op.id} ignored)"
+                            )
                         else:
-                            results["errors"].append(f"Failed to add code snippet {code_op.id}")
+                            results["errors"].append(
+                                f"Failed to add code snippet (LLM ID {code_op.id})"
+                            )
 
                     elif code_op.action == CodeStorageAction.Remove:
                         if self.remove_code_snippet(code_op.id):

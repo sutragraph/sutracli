@@ -26,20 +26,22 @@ class CrossIndexingTaskManager(SutraMemoryManager):
 
     def _initialize_default_tasks(self):
         """Initialize default tasks for Phase 1."""
-        # Add default Phase 1 task
-        task1_id = "1"
+        # Add default Phase 1 task - parent class will use counter-based ID
         super().add_task(
-            task1_id,
+            "1", 
             "Use list_files tool to find package files in this project that list all used packages. Store them in sutra memory history with file paths for future findings.",
             TaskStatus.CURRENT,
         )
+        # Get the actual ID that was assigned (current counter value)
+        task1_id = str(self.memory_ops.task_id_counter)
 
-        task2_id = "2"
         super().add_task(
-            task2_id,
+            "2",
             "Open each package file one by one by checking history to find all connection-related packages used for data communication. Create tasks for import pattern discovery based on findings. (NOTE: only mark this task completed after creating all tasks for finding imports based on packages in current files)",
             TaskStatus.PENDING,
         )
+        # Get the actual ID that was assigned (current counter value)
+        task2_id = str(self.memory_ops.task_id_counter)
 
         self._task_phase_metadata[task1_id] = {
             "created_in_phase": 1,
@@ -129,10 +131,13 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         status: TaskStatus = TaskStatus.PENDING,
         target_phase: Optional[int] = None,
     ) -> bool:
-        """Add task with phase metadata."""
+        """Add task with phase metadata (task_id is ignored, counter+1 used instead)."""
         success = super().add_task(task_id, description, status)
 
         if success:
+            # Get the actual counter-based ID that was assigned by parent class
+            actual_task_id = str(self.memory_ops.task_id_counter)
+            
             # Set target phase based on your expected flow:
             # Phase 1 creates tasks → visible in Phase 2
             # Phase 2 creates tasks → visible in Phase 3
@@ -146,8 +151,8 @@ class CrossIndexingTaskManager(SutraMemoryManager):
                 # Phase 1 & 2 tasks are visible in next phase
                 actual_target_phase = self.current_phase + 1
 
-            # Set metadata for new task
-            self._task_phase_metadata[task_id] = {
+            # Set metadata for new task using actual counter-based ID
+            self._task_phase_metadata[actual_task_id] = {
                 "created_in_phase": self.current_phase,
                 "target_phase": actual_target_phase,
                 "is_default": False,
@@ -155,7 +160,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
             }
 
             logger.debug(
-                f"Added task {task_id} in Phase {self.current_phase} targeting Phase {actual_target_phase}"
+                f"Added task {actual_task_id} in Phase {self.current_phase} targeting Phase {actual_target_phase} (LLM ID {task_id} ignored)"
             )
 
         return success
@@ -289,17 +294,24 @@ class CrossIndexingTaskManager(SutraMemoryManager):
     def add_filtered_task(
         self, task_id: str, description: str, created_in_phase: int, target_phase: int
     ) -> bool:
-        """Add a filtered task with proper metadata."""
+        """Add a filtered task with proper metadata (task_id is ignored, counter+1 used instead)."""
         success = super().add_task(task_id, description, TaskStatus.PENDING)
 
         if success:
-            self._task_phase_metadata[task_id] = {
+            # Get the actual counter-based ID that was assigned by parent class
+            actual_task_id = str(self.memory_ops.task_id_counter)
+            
+            self._task_phase_metadata[actual_task_id] = {
                 "created_in_phase": created_in_phase,
                 "target_phase": target_phase,
                 "is_default": False,
                 "is_filtered": True,
                 "created_at": datetime.now().isoformat(),
             }
+            
+            logger.debug(
+                f"Added filtered task {actual_task_id} (LLM ID {task_id} ignored)"
+            )
 
         return success
 

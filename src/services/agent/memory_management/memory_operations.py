@@ -43,7 +43,7 @@ class MemoryOperations:
         Add a new task with validation.
 
         Args:
-            task_id: Unique task identifier
+            task_id: Unique task identifier (ignored, counter+1 used instead)
             description: Task description
             status: Task status
 
@@ -51,24 +51,20 @@ class MemoryOperations:
             bool: True if task was added successfully
 
         Raises:
-            ValueError: If task_id already exists or if trying to add multiple current tasks
+            ValueError: If trying to add multiple current tasks
         """
-        if task_id in self.tasks:
-            raise ValueError(f"Task ID {task_id} already exists")
+        # Always use counter + 1 instead of LLM provided ID
+        self.task_id_counter += 1
+        actual_task_id = str(self.task_id_counter)
 
         if status == TaskStatus.CURRENT and self.get_current_task() is not None:
             raise ValueError("Only one current task is allowed at a time")
 
-        self.tasks[task_id] = Task(id=task_id, description=description, status=status)
+        self.tasks[actual_task_id] = Task(id=actual_task_id, description=description, status=status)
 
-        # Update counter if task_id is numeric and higher than current counter
-        try:
-            task_num = int(task_id)
-            if task_num > self.task_id_counter:
-                self.task_id_counter = task_num
-        except ValueError:
-            pass
-
+        logger.debug(
+            f"Task {actual_task_id} added successfully (LLM ID {task_id} ignored)"
+        )
         return True
 
     def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
