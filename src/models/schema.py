@@ -78,6 +78,7 @@ class Project(BaseModel):
     id: int  # Database ID
     name: str
     path: str
+    description: str
     created_at: str
     updated_at: str
     cross_indexing_done: bool = False  # Whether cross-indexing is completed
