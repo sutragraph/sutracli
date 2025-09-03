@@ -28,7 +28,7 @@ def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
     """Helper to build database status dictionary."""
     query_name = event.get("query_name")
     query = event.get("query")
-    count = event.get("count") or event.get("total_events")
+    count = event.get("count") or event.get("total_events") or event.get("total_nodes")
     error = event.get("error")
     data = event.get("data", "")
 
@@ -37,12 +37,6 @@ def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
 
     if query_name:
         status_parts.append(f"[value]{query_name}[/value]")
-
-    if count is not None:
-        if count > 0:
-            status_parts.append(f"[success]{count} events found[/success]")
-        else:
-            status_parts.append(f"[warning]{count} events found[/warning]")
 
     if error:
         status_parts.append(f"[error]Error[/error]")
@@ -62,12 +56,13 @@ def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
             status_parts.append(f"Query: {query_copy}")
         else:
             status_parts.append(f"Query: '{query}'")
-    if count is not None:
-        status_parts.append(f"Events: {count} found")
     if error:
         status_parts.append(f"ERROR: {error}")
 
-    status_parts.extend(["Results:", str(data), ""])
+    if data:
+        status_parts.extend(["Results:", str(data)])
+
+    status_parts.append("")
 
     # Add agent-specific notes
     if agent == Agent.CrossIndexing:

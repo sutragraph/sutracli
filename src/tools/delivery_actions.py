@@ -6,15 +6,9 @@ Tool Delivery Actions Factory
 - Centralizes all fetch_next_code and batch delivery logic
 """
 
-from tools import ToolName
 from typing import Optional, Dict, Any, List
 from loguru import logger
 from services.agent.delivery_management import delivery_manager
-from tools.guidance_builder import (
-    enhance_semantic_search_event,
-    enhance_database_search_event,
-    calculate_database_batch_with_line_limit,
-)
 
 # Delivery queue configuration for different tool types
 DELIVERY_QUEUE_CONFIG = {
@@ -144,8 +138,7 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
                 },
             }
 
-            # Enhance with dynamic guidance
-            return enhance_semantic_search_event(event, action.parameters)
+            return event
         else:
             # No more items available
             return {
@@ -220,8 +213,7 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
             },
         }
 
-        # Enhance with dynamic guidance
-        return enhance_semantic_search_event(event, action_parameters)
+        return event
 
     def create_no_items_response(
         self,
@@ -274,7 +266,27 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         Returns:
             List of items that fit within the line limit
         """
-        return calculate_database_batch_with_line_limit(delivery_items, line_limit)
+        batch_nodes = []
+        total_lines = 0
+
+        for i, node in enumerate(delivery_items):
+            code_content = node.get("code_snippet", "") or node.get("data", "")
+            
+            if code_content:
+                node_lines = len(str(code_content).split("\n"))
+                
+                # Check if adding this node would exceed the limit
+                if total_lines + node_lines > line_limit and batch_nodes:
+                    # Don't add this node, return current batch
+                    break
+
+                batch_nodes.append(node)
+                total_lines += node_lines
+            else:
+                # Add nodes without code content
+                batch_nodes.append(node)
+
+        return batch_nodes
 
     def register_and_deliver_first_batch_with_line_limit(
         self,
@@ -294,17 +306,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
             action_type, action_parameters, delivery_items
         )
 
-        # Debug: Check queue state after registration
-        query_signature = delivery_manager._generate_query_signature(
-            action_type, action_parameters
-        )
-
-        # Get line-based batch instead of fixed count batch
-        logger.debug(
-            f"📦 Getting batch from {len(delivery_items)} items with line_limit={line_limit}"
-        )
-
-        # This prevents all small chunks from being delivered in the first batch
+        # Check if this is chunked content
         is_chunked_content = any(
             item.get("chunk_info")
             and item.get("chunk_info", {}).get("total_chunks", 1) > 1
@@ -312,197 +314,98 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         )
 
         if is_chunked_content:
-            logger.debug("📦 Detected chunked content - delivering single chunk")
-            # Sort chunks by chunk_num to ensure correct order
+            logger.debug("📦 Detected chunked content - delivering first chunk")
+            # Sort chunks by chunk_num to ensure correct order and get the first chunk
             sorted_chunks = sorted(
                 delivery_items,
                 key=lambda x: x.get("chunk_info", {}).get("chunk_num", 1),
             )
-            line_based_batch = [sorted_chunks[0]] if sorted_chunks else []
-
-            if sorted_chunks and sorted_chunks[0].get("chunk_info"):
-                chunk_info = sorted_chunks[0]["chunk_info"]
-                logger.debug(
-                    f"📦 Delivering chunk {chunk_info.get('chunk_num', 1)}/{chunk_info.get('total_chunks', 1)}"
-                )
-        else:
-            line_based_batch = self.get_line_based_batch(delivery_items, line_limit)
-
-        if not line_based_batch:
-            return None
-
-        # Advance delivery queue position by the number of items in the line-based batch
-        query_signature = delivery_manager._generate_query_signature(
-            action_type, action_parameters
-        )
-        delivered_count = len(line_based_batch)
-        old_position = delivery_manager._queue_positions.get(query_signature, 0)
-
-        if query_signature in delivery_manager._queue_positions:
-            delivery_manager._queue_positions[query_signature] = delivered_count
-            logger.debug(
-                f"📦 Advanced queue position from {old_position} to {delivered_count}"
+            first_chunk = sorted_chunks[0]
+            
+            # Advance delivery manager position by 1 to mark first chunk as delivered
+            query_signature = delivery_manager._generate_query_signature(
+                action_type, action_parameters
             )
-        else:
-            logger.debug(
-                f"❌ ERROR - Cannot advance position, query signature not found!"
-            )
+            if query_signature in delivery_manager._queue_positions:
+                delivery_manager._queue_positions[query_signature] = 1
+                logger.debug("📦 Advanced queue position to 1 for first chunk delivery")
 
-        # Calculate delivery statistics - handle chunked content properly
-        # For chunked content, count unique files/nodes, not individual chunks
-        unique_files = set()
-        delivered_files = set()
+            chunk_info = first_chunk.get("chunk_info", {})
+            chunk_num = chunk_info.get("chunk_num", 1)
+            total_chunks = chunk_info.get("total_chunks", 1)
+            original_file_lines = chunk_info.get("original_file_lines", 0)
+            start_line = chunk_info.get("start_line", 1)
+            end_line = chunk_info.get("end_line", 0)
+            
+            logger.debug(f"📦 Delivering chunk {chunk_num}/{total_chunks} (lines {start_line}-{end_line})")
 
-        for item in delivery_items:
-            # Use file path or node index to identify unique files
-            file_key = item.get("file_path") or item.get(
-                "node_index", item.get("data", "")[:50]
-            )
-            unique_files.add(file_key)
+            # Build the event for the first chunk
+            query_name = action_parameters.get("query_name", "unknown")
+            is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY"
 
-        for item in line_based_batch:
-            file_key = item.get("file_path") or item.get(
-                "node_index", item.get("data", "")[:50]
-            )
-            delivered_files.add(file_key)
-
-        total_nodes = len(unique_files) if unique_files else len(delivery_items)
-        delivered_nodes = (
-            len(delivered_files) if delivered_files else len(line_based_batch)
-        )
-        remaining_nodes = total_nodes - delivered_nodes
-
-        # Calculate line statistics - use chunk info if available for more accurate counts
-        total_lines = 0
-        delivered_lines = 0
-
-        # For chunked content, use original file line counts from the delivered batch
-        chunk_based_calculation = False
-        if line_based_batch:
-            for item in line_based_batch:
-                chunk_info = item.get("chunk_info")
-                if chunk_info:
-                    chunk_based_calculation = True
-                    # Use the original file lines from the delivered chunks, not all delivery items
-                    total_lines = chunk_info.get("original_file_lines", 0)
-                    break
-
-        if chunk_based_calculation:
-            # Use chunk info for accurate line counting
-            for item in line_based_batch:
-                chunk_info = item.get("chunk_info")
-                if chunk_info:
-                    delivered_lines += (
-                        chunk_info.get("end_line", 0)
-                        - chunk_info.get("start_line", 0)
-                        + 1
-                    )
-        else:
-            # Fallback to content-based line counting
-            total_lines = sum(
-                len(
-                    str(item.get("data", "") or item.get("code_snippet", "")).split(
-                        "\n"
-                    )
-                )
-                for item in delivery_items
-            )
-            delivered_lines = sum(
-                len(
-                    str(item.get("data", "") or item.get("code_snippet", "")).split(
-                        "\n"
-                    )
-                )
-                for item in line_based_batch
-            )
-
-        # Combine data from batch items (clean any existing guidance first)
-        cleaned_data_items = []
-        guidance_found = False
-        for item in line_based_batch:
-            data = str(item.get("data", ""))
-            # Remove any existing guidance messages that might have been added to individual items
-            lines = data.split("\n")
-            cleaned_lines = []
-            skip_until_empty = False
-
-            for line in lines:
-                if line.startswith("Found ") and ("nodes" in line or "node" in line):
-                    skip_until_empty = True
-                    guidance_found = True
-                    continue
-                elif line.startswith("NOTE: There are more results"):
-                    skip_until_empty = True
-                    continue
-                elif skip_until_empty and line.strip() == "":
-                    skip_until_empty = False
-                    continue
-                elif not skip_until_empty:
-                    cleaned_lines.append(line)
-
-            cleaned_data = "\n".join(cleaned_lines).strip()
-            if cleaned_data:
-                cleaned_data_items.append(cleaned_data)
-
-        combined_data = "\n\n".join(cleaned_data_items)
-
-        # Check if this is a metadata-only query
-        query_name = action_parameters.get("query_name", "unknown")
-        is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY"
-
-        event = {
-            "type": "tool_use",
-            "tool_name": "database",
-            "query_name": query_name,
-            "query": action_parameters,
-            "result": f"found: {total_nodes}",
-            "data": combined_data,
-            "code_snippet": not is_metadata_only,  # Set to False for metadata-only queries
-            "total_nodes": total_nodes,
-            "batch_info": {
-                "delivered_count": delivered_nodes,
-                "remaining_count": remaining_nodes,
-                "delivered_lines": delivered_lines,
-                "total_lines": total_lines,
-            },
-        }
-
-        # Enhance with dynamic guidance
-        delivery_context = {
-            "is_batch": True,
-            "remaining_nodes": remaining_nodes,
-            "delivered_nodes": delivered_nodes,
-            "total_lines": total_lines,
-            "delivered_lines": delivered_lines,
-        }
-
-        # Add chunk_info if any of the delivery items has it
-        if line_based_batch and line_based_batch[0].get("chunk_info"):
-            # For multiple chunks in batch, calculate combined range
-            first_chunk = line_based_batch[0].get("chunk_info")
-            last_chunk = line_based_batch[-1].get("chunk_info")
-
-            combined_chunk_info = {
-                "start_line": first_chunk.get("start_line", 1),
-                "end_line": last_chunk.get("end_line", first_chunk.get("end_line", 1)),
-                "chunk_num": first_chunk.get("chunk_num", 1),
-                "total_chunks": first_chunk.get("total_chunks", 1),
-                "original_file_lines": first_chunk.get(
-                    "original_file_lines", total_lines
-                ),
+            event = {
+                "type": "tool_use",
+                "tool_name": "database",
+                "query_name": query_name,
+                "query": action_parameters,
+                "result": f"found: 1",
+                "data": first_chunk.get("data", ""),
+                "code_snippet": not is_metadata_only,
+                "total_nodes": 1,
+                "batch_info": {
+                    "delivered_count": 1,
+                    "remaining_count": 0 if total_chunks == 1 else 1,
+                    "delivered_lines": end_line - start_line + 1,
+                    "total_lines": original_file_lines,
+                },
+                "chunk_info": chunk_info
             }
-            delivery_context["chunk_info"] = combined_chunk_info
 
-            # Override delivery_context values with chunk-based values for accurate guidance
-            delivery_context["total_lines"] = combined_chunk_info["original_file_lines"]
-            delivery_context["delivered_lines"] = (
-                combined_chunk_info["end_line"] - combined_chunk_info["start_line"] + 1
+            return event
+        else:
+            # For non-chunked content, use line-based batching
+            line_based_batch = self.get_line_based_batch(delivery_items, line_limit)
+            
+            if not line_based_batch:
+                return None
+
+            # Advance delivery queue position
+            query_signature = delivery_manager._generate_query_signature(
+                action_type, action_parameters
             )
+            delivered_count = len(line_based_batch)
+            
+            if query_signature in delivery_manager._queue_positions:
+                delivery_manager._queue_positions[query_signature] = delivered_count
+                logger.debug(f"📦 Advanced queue position to {delivered_count}")
 
-            # Override event total_nodes to 1 since chunks represent a single file
-            event["total_nodes"] = 1
+            # Build event for non-chunked content
+            combined_data = "\n\n".join(str(item.get("data", "")) for item in line_based_batch)
+            
+            query_name = action_parameters.get("query_name", "unknown")
+            is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY"
+            
+            total_nodes = len(delivery_items)
+            remaining_nodes = total_nodes - delivered_count
 
-        return enhance_database_search_event(event, action_parameters, delivery_context)
+            event = {
+                "type": "tool_use",
+                "tool_name": "database",
+                "query_name": query_name,
+                "query": action_parameters,
+                "result": f"found: {total_nodes}",
+                "data": combined_data,
+                "code_snippet": not is_metadata_only,
+                "total_nodes": total_nodes,
+                "batch_info": {
+                    "delivered_count": delivered_count,
+                    "remaining_count": remaining_nodes,
+                    "delivered_lines": len(combined_data.split("\n")),
+                    "total_lines": sum(len(str(item.get("data", "")).split("\n")) for item in delivery_items),
+                },
+            }
+
+            return event
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
         """Handle fetch_next_code requests for database search."""
@@ -556,9 +459,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 "delivered_nodes": 1,
                 "chunk_info": next_item.get("chunk_info"),
             }
-            return enhance_database_search_event(
-                event, action.parameters, delivery_context
-            )
+            return event
         else:
             logger.debug(f"🔍 TRACE FETCH: ❌ *** NO NEXT ITEM AVAILABLE ***")
 
@@ -599,56 +500,39 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         if not delivery_items:
             return None
 
-        # Register all items with delivery manager
-        delivery_manager.register_delivery_queue(
-            action_type, action_parameters, delivery_items
-        )
-
-        logger.debug(f"📦 Registered {len(delivery_items)} items for {action_type}")
-
-        # For database search, find the item with actual content (not just status)
-        # Check if this is chunked content
+        # Check if this is chunked content - if so, delegate to line limit method
         is_chunked_content = any(
             item.get("chunk_info")
             and item.get("chunk_info", {}).get("total_chunks", 1) > 1
             for item in delivery_items
         )
 
-        content_item = None
         if is_chunked_content:
-            # Sort chunks by chunk_num to ensure correct order
-            sorted_chunks = sorted(
-                delivery_items,
-                key=lambda x: x.get("chunk_info", {}).get("chunk_num", 1),
+            logger.debug("📦 Chunked content detected - using line limit method")
+            return self.register_and_deliver_first_batch_with_line_limit(
+                action_type, action_parameters, delivery_items, 500
             )
-            content_item = sorted_chunks[0]
-            chunk_num = content_item.get("chunk_info", {}).get("chunk_num", 1)
-            logger.debug(f"📦 Selected chunk {chunk_num} for delivery")
-        else:
-            # Original logic for non-chunked content
-            for i, item in enumerate(delivery_items):
-                # Look for the item that has substantial data content
-                if item.get("data") and len(str(item.get("data", ""))) > 50:
-                    content_item = item
-                    break
 
-        if not content_item:
-            content_item = delivery_items[0]
+        # For non-chunked content, proceed with normal delivery
+        delivery_manager.register_delivery_queue(
+            action_type, action_parameters, delivery_items
+        )
+
+        logger.debug(f"📦 Registered {len(delivery_items)} items for {action_type}")
 
         # Get the first item from the delivery manager to advance the queue
         next_item = delivery_manager.get_next_item(action_type, action_parameters)
-        if next_item:
-            # Update the content item with delivery metadata
-            content_item.update(next_item)
+        if not next_item:
+            return None
 
         # Add project header if project information is available
-        project_name = content_item.get("project_name")
+        project_name = next_item.get("project_name")
         if project_name:
-            data = content_item.get("data", "")
+            data = next_item.get("data", "")
             if data:
-                content_item["data"] = f"PROJECT: {project_name}\n{data}"
+                next_item["data"] = f"PROJECT: {project_name}\n{data}"
 
-        return content_item
+        return next_item
 
     def check_pending_delivery(
         self, action_type: str, action_parameters: Dict[str, Any]

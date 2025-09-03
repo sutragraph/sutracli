@@ -1,11 +1,10 @@
 from typing import Any, Dict
-from loguru import logger
 from baml_client.types import Agent
 from models.agent import AgentAction
 from tools.guidance_builder import GuidanceRegistry
 from tools.tool_action import get_tool_action
 from tools.build_tool_status import build_tool_status
-from tools.delivery_actions import register_delivery_queue_and_get_first_batch
+from tools.delivery_actions import register_delivery_queue_and_get_first_batch, handle_fetch_next_request
 
 
 def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> str:
@@ -28,15 +27,25 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
     action = AgentAction(description=tool_name, parameters=tool_params)
 
     tool_has_guidance = GuidanceRegistry.get_guidance(tool_name)
+
+    # Check if this is a fetch_next_code request
+    if action.parameters.get("fetch_next_code", False):
+        delivery_result = handle_fetch_next_request(action, tool_name)
+
+        if delivery_result:
+            if tool_has_guidance:
+                delivery_result = tool_has_guidance.on_event(delivery_result, action)
+            return build_tool_status(tool_name, delivery_result, agent)
+        else:
+            return f"No more results available for {tool_name}"
+
+    # Handle regular (non-fetch_next) requests
     delivery_items = []
 
     for event in tool_function(action):
         event_type = event.get("type")
 
         if event_type == "tool_use" or event_type == "tool_error":
-            if tool_has_guidance:
-                event = tool_has_guidance.on_event(event, action)
-
             delivery_items.append(event)
 
     if len(delivery_items):
@@ -48,6 +57,9 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
         )
 
         if delivery_result:
+            if tool_has_guidance:
+                delivery_result = tool_has_guidance.on_event(delivery_result, action)
+
             return build_tool_status(tool_name, delivery_result, agent)
 
     return f"No result for {tool_name}"
