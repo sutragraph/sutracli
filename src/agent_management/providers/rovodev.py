@@ -44,8 +44,6 @@ class RovodevProvider:
         """Format prompt for command line execution by escaping special characters."""
         # Replace newlines with literal \n for proper command line handling
         formatted_prompt = prompt.replace("\n", "\\n")
-        # Escape single quotes to prevent command injection
-        formatted_prompt = formatted_prompt.replace("'", "\\'")
         # Escape hash/pound characters to prevent shell comment interpretation
         formatted_prompt = formatted_prompt.replace("#", "\\#")
         return formatted_prompt
