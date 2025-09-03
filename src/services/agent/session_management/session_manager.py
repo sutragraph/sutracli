@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional
 from loguru import logger
 
 from config import config
-from ..memory_management.memory_formatter import clean_sutra_memory_content
+from services.agent.memory_management.memory_formatter import clean_sutra_memory_content
 
 
 class SessionManager:

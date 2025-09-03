@@ -2,7 +2,7 @@ from typing import Dict, Any, List
 from src.utils.system_utils import get_home_and_current_directories
 from loguru import logger
 from src.graph.graph_operations import GraphOperations
-from ..utils import format_connections, validate_and_process_baml_results
+from services.cross_indexing.utils import format_connections, validate_and_process_baml_results
 from baml_client.types import (
     CodeManagerResponse,
     CrossIndexingResponse,

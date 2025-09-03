@@ -3,7 +3,7 @@ from loguru import logger
 from typing import List, Dict, Any, Union
 from .llm_client_base import LLMClientBase, TokenUsage, LLMResponse
 from config import config
-from ..auth.token_manager import get_token_manager
+from services.auth.token_manager import get_token_manager
 
 
 class SuperLLMClient(LLMClientBase):

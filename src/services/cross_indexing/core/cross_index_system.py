@@ -6,8 +6,8 @@ Enhanced version that integrates with Sutra memory and uses the new folder struc
 
 from typing import Optional
 from loguru import logger
-from ...agent.session_management import SessionManager
-from ...agent.memory_management.sutra_memory_manager import SutraMemoryManager
+from services.agent.session_management import SessionManager
+from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from .cross_indexing_task_manager import CrossIndexingTaskManager
 from .cross_index_service import CrossIndexService
 from .cross_index_phase import CrossIndexing

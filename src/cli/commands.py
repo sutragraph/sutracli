@@ -274,8 +274,6 @@ def handle_agent_command(agent_name: Agent, project_path: Path):
         print(f"\n❌ Unexpected error: {e}")
         sys.exit(1)
 
-    return agent_result
-
 
 def handle_parse_command(args) -> str:
     """Handle parse command for code analysis."""

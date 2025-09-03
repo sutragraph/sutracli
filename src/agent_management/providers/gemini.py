@@ -7,7 +7,7 @@ import os
 import time
 from typing import Dict, Any
 from .config import AgentProviderConfig
-from ...tools.tool_terminal_commands.action import TerminalSessionManager
+from tools.tool_terminal_commands.action import TerminalSessionManager
 
 
 class GeminiProvider:

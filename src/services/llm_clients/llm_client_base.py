@@ -1,5 +1,5 @@
 from typing import Dict, List, Any, Union, NamedTuple, Optional
-from ..agent.xml_service import XMLService
+from services.agent.xml_service import XMLService
 
 
 class TokenUsage(NamedTuple):

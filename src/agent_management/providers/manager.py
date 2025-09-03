@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional, List
 from .config import AgentProviderConfig, get_provider_config_manager
 from .rovodev import RovodevProvider
 from .gemini import GeminiProvider
-from ...tools.tool_terminal_commands.action import TerminalSessionManager
+from tools.tool_terminal_commands.action import TerminalSessionManager
 
 
 class AgentProviderManager:
@@ -37,8 +37,8 @@ class AgentProviderManager:
         """Get all available and enabled providers."""
         enabled_configs = self.config_manager.get_enabled_providers()
         return {
-            name: provider 
-            for name, provider in self._providers.items() 
+            name: provider
+            for name, provider in self._providers.items()
             if name in enabled_configs and provider.is_available()
         }
 
@@ -158,7 +158,7 @@ class AgentProviderManager:
     def list_providers_info(self) -> List[Dict[str, Any]]:
         """Get information about all providers."""
         return [
-            provider.get_provider_info() 
+            provider.get_provider_info()
             for provider in self._providers.values()
         ]
 
