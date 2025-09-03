@@ -370,7 +370,7 @@ class GraphOperations:
                         result["snippet_lines_parsed"] = json.loads(
                             result["snippet_lines"]
                         )
-                    except:
+                    except BaseException:
                         result["snippet_lines_parsed"] = []
                 else:
                     result["snippet_lines_parsed"] = []
@@ -566,7 +566,7 @@ class GraphOperations:
                     sender_file.file_path as sender_file_path,
                     sender_file.language as sender_language,
                     sender_project.name as sender_project,
-    
+
                     -- Receiver (incoming) details
                     ic.id as receiver_id,
                     ic.description as receiver_description,
@@ -576,7 +576,7 @@ class GraphOperations:
                     receiver_file.file_path as receiver_file_path,
                     receiver_file.language as receiver_language,
                     receiver_project.name as receiver_project
-    
+
                 FROM connection_mappings cm
                 JOIN outgoing_connections oc ON cm.sender_id = oc.id
                 JOIN incoming_connections ic ON cm.receiver_id = ic.id
@@ -584,7 +584,7 @@ class GraphOperations:
                 LEFT JOIN files receiver_file ON ic.file_id = receiver_file.id
                 LEFT JOIN projects sender_project ON sender_file.project_id = sender_project.id
                 LEFT JOIN projects receiver_project ON receiver_file.project_id = receiver_project.id
-    
+
                 WHERE (oc.file_id = ? OR ic.file_id = ?)
                 ORDER BY cm.match_confidence DESC, cm.created_at DESC
             """
@@ -634,125 +634,8 @@ class GraphOperations:
 
                 return json.loads(snippet_lines_json)
             return []
-        except:
+        except BaseException:
             return []
-
-    def _generate_connection_note(
-        self, connections: Dict[str, List[Dict[str, Any]]]
-    ) -> str:
-        """
-        Generate a note about connections and their implications for code changes.
-
-        Args:
-            connections: Dictionary with incoming and outgoing connections
-
-        Returns:
-            Note string for the user
-        """
-        try:
-            incoming_count = len(connections.get("incoming", []))
-            outgoing_count = len(connections.get("outgoing", []))
-
-            if incoming_count == 0 and outgoing_count == 0:
-                return ""
-
-            note_parts = []
-
-            if incoming_count > 0:
-                note_parts.append(f"{incoming_count} incoming connection(s)")
-
-            if outgoing_count > 0:
-                note_parts.append(f"{outgoing_count} outgoing connection(s)")
-
-            connection_summary = " and ".join(note_parts)
-
-            # Check if any connections have mappings
-            has_mappings = False
-            for conn_list in connections.values():
-                for conn in conn_list:
-                    if conn.get("mapped_connections"):
-                        has_mappings = True
-                        break
-                if has_mappings:
-                    break
-
-            note = f"CONNECTIONS FOUND: This code has {connection_summary}."
-
-            if has_mappings:
-                note += " Some connections have mapped relationships."
-
-            note += " If you make changes to this code, consider updating the related connections to maintain system consistency."
-
-            return note
-
-        except Exception as e:
-            logger.error(f"Error generating connection note: {e}")
-            return "🔗 Connection information available but could not generate note."
-
-    def get_agent_connection_summary(
-        self, connections: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Create structured connection summary for agent consumption.
-
-        Args:
-            connections: Connection information dictionary
-
-        Returns:
-            Structured summary for agent decision-making
-        """
-        try:
-            if not connections:
-                return {"summary": "No connections found", "details": {}}
-
-            incoming = connections.get("incoming", [])
-            outgoing = connections.get("outgoing", [])
-
-            summary = {
-                "total_connections": len(incoming) + len(outgoing),
-                "incoming_count": len(incoming),
-                "outgoing_count": len(outgoing),
-                "technologies": set(),
-                "impact_areas": [],
-            }
-
-            details = {"incoming": [], "outgoing": []}
-
-            # Process incoming connections
-            for conn in incoming:
-                tech = conn.get("technology_name", "Unknown")
-                summary["technologies"].add(tech)
-
-                details["incoming"].append(
-                    {
-                        "description": conn.get("description", "No description"),
-                        "technology": tech,
-                        "has_code": bool(conn.get("code_snippet")),
-                        "mapped_connections": len(conn.get("mapped_connections", [])),
-                    }
-                )
-
-            # Process outgoing connections
-            for conn in outgoing:
-                tech = conn.get("technology_name", "Unknown")
-                summary["technologies"].add(tech)
-
-                details["outgoing"].append(
-                    {
-                        "description": conn.get("description", "No description"),
-                        "technology": tech,
-                        "has_code": bool(conn.get("code_snippet")),
-                        "mapped_connections": len(conn.get("mapped_connections", [])),
-                    }
-                )
-
-            summary["technologies"] = list(summary["technologies"])
-
-            return {"summary": summary, "details": details}
-
-        except Exception as e:
-            logger.error(f"Error creating agent connection summary: {e}")
-            return {"summary": "Error processing connections", "details": {}}
 
     def get_enriched_block_context(self, block_id: int) -> Optional[Dict[str, Any]]:
         """
@@ -769,10 +652,27 @@ class GraphOperations:
             if not block_data:
                 return None
 
-            # Get connections overlapping with this block
-            connections = self._get_connections_for_file_and_lines(
+            # Get both connection mappings and basic connections
+            connection_mappings = self._get_connection_mappings_for_display(
                 block_data["file_id"], block_data["start_line"], block_data["end_line"]
             )
+            basic_connections = self._get_connections_for_file_and_lines(
+                block_data["file_id"], block_data["start_line"], block_data["end_line"]
+            )
+
+            # Filter out basic connections that are already represented in mappings
+            filtered_connections = self._filter_unmapped_connections(
+                basic_connections, connection_mappings, block_data["file_path"]
+            )
+
+            # Combine mappings and remaining basic connections
+            connections = {}
+            if connection_mappings:
+                connections["mappings"] = connection_mappings
+            if filtered_connections.get("incoming"):
+                connections["incoming"] = filtered_connections["incoming"]
+            if filtered_connections.get("outgoing"):
+                connections["outgoing"] = filtered_connections["outgoing"]
 
             # Get parent/child relationships
             parent_info = None
@@ -781,10 +681,9 @@ class GraphOperations:
 
             child_blocks = self.get_block_children(block_id)
 
-            return {
+            result = {
                 "block": block_data,
                 "connections": connections,
-                "connection_summary": self.get_agent_connection_summary(connections),
                 "parent_block": parent_info,
                 "child_blocks": child_blocks,
                 "file_context": {
@@ -793,6 +692,12 @@ class GraphOperations:
                     "project_name": block_data["project_name"],
                 },
             }
+
+            # Add connection mappings to the result if available
+            if connection_mappings:
+                result["connection_mappings"] = connection_mappings
+
+            return result
 
         except Exception as e:
             logger.error(f"Error getting enriched block context for {block_id}: {e}")
@@ -813,31 +718,36 @@ class GraphOperations:
             if not file_data:
                 return None
 
-            # Get all connections for this file
-            connections = self._get_connections_for_file_and_lines(file_id, None, None)
+            # Get both connection mappings and basic connections
+            connection_mappings = self._get_connection_mappings_for_display(file_id, None, None)
+            basic_connections = self._get_connections_for_file_and_lines(file_id, None, None)
 
-            # Get file blocks summary
-            blocks_summary = self.get_file_block_summary(file_id)
+            # Filter out basic connections that are already represented in mappings
+            filtered_connections = self._filter_unmapped_connections(
+                basic_connections, connection_mappings, file_data["file_path"]
+            )
 
-            # Get import relationships
-            imports = self.get_imports(file_id)
-            importers = self.get_importers(file_id)
+            # Combine mappings and remaining basic connections
+            connections = {}
+            if connection_mappings:
+                connections["mappings"] = connection_mappings
+            if filtered_connections.get("incoming"):
+                connections["incoming"] = filtered_connections["incoming"]
+            if filtered_connections.get("outgoing"):
+                connections["outgoing"] = filtered_connections["outgoing"]
 
-            return {
+
+
+            result = {
                 "file": file_data,
-                "blocks_summary": blocks_summary,
                 "connections": connections,
-                "connection_summary": self.get_agent_connection_summary(connections),
-                "imports": imports,
-                "importers": importers,
-                "dependency_context": {
-                    "imports_count": len(imports),
-                    "importers_count": len(importers),
-                    "has_external_connections": bool(
-                        connections.get("incoming") or connections.get("outgoing")
-                    ),
-                },
             }
+
+            # Add connection mappings to the result if available
+            if connection_mappings:
+                result["connection_mappings"] = connection_mappings
+
+            return result
 
         except Exception as e:
             logger.error(f"Error getting enriched file context for {file_id}: {e}")
@@ -1648,11 +1558,17 @@ class GraphOperations:
                     for file_path, connection_details in files_dict.items():
                         for detail in connection_details:
                             file_id = self._get_file_id_by_path(file_path)
-                            
+
+                            if not file_id:
+                                logger.warning(
+                                    f"File not found in database for incoming connection: {file_path}"
+                                )
+                                continue
+
                             # Parse snippet_lines from detail
                             snippet_lines_str = detail.get("snippet_lines", "")
                             snippet_lines = self._parse_snippet_lines_from_detail(snippet_lines_str)
-                            
+
                             code_snippet = (
                                 self._fetch_code_snippet_from_lines(file_path, snippet_lines)
                                 if snippet_lines and file_path
@@ -1675,11 +1591,15 @@ class GraphOperations:
                     for file_path, connection_details in files_dict.items():
                         for detail in connection_details:
                             file_id = self._get_file_id_by_path(file_path)
-                            
+
+                            if not file_id:
+                                logger.warning(f"File not found in database: {file_path}")
+                                continue
+
                             # Parse snippet_lines from detail
                             snippet_lines_str = detail.get("snippet_lines", "")
                             snippet_lines = self._parse_snippet_lines_from_detail(snippet_lines_str)
-                            
+
                             code_snippet = (
                                 self._fetch_code_snippet_from_lines(file_path, snippet_lines)
                                 if snippet_lines and file_path
@@ -1714,7 +1634,7 @@ class GraphOperations:
             # Rollback on error
             try:
                 self.connection.connection.rollback()
-            except:
+            except BaseException:
                 pass
             return {
                 "success": False,
@@ -1760,7 +1680,7 @@ class GraphOperations:
             # Rollback on error
             try:
                 self.connection.connection.rollback()
-            except:
+            except BaseException:
                 pass
             return {
                 "success": False,
@@ -1816,7 +1736,8 @@ class GraphOperations:
 
             if result and result.get("code"):
                 logger.debug(
-                    f"Fetched and beautified code snippet from {file_path} lines {start_line}-{end_line}: {result['total_lines']} lines"
+                    f"Fetched and beautified code snippet from {file_path} lines {start_line}-{end_line}: {
+                        result['total_lines']} lines"
                 )
                 return result["code"]
             else:
@@ -1851,7 +1772,7 @@ class GraphOperations:
         try:
             cursor = self.connection.connection.cursor()
             cursor.execute(
-                """UPDATE projects 
+                """UPDATE projects
                    SET cross_indexing_done = 1, updated_at = CURRENT_TIMESTAMP
                    WHERE id = ?""",
                 (project_id,),
@@ -1949,20 +1870,70 @@ class GraphOperations:
         all_types = self.get_all_technology_types()
         return [t for t in all_types if t != "Unknown"]
 
+    def _filter_unmapped_connections(
+        self,
+        basic_connections: Dict[str, Any],
+        connection_mappings: List[Dict[str, Any]],
+        current_file_path: str
+    ) -> Dict[str, Any]:
+        """
+        Filter out basic connections that are already represented in connection mappings.
+
+        Args:
+            basic_connections: Dict with incoming/outgoing connection lists
+            connection_mappings: List of connection mapping dictionaries
+            current_file_path: Path of the current file being processed
+
+        Returns:
+            Filtered basic connections excluding ones already in mappings
+        """
+        if not connection_mappings:
+            return basic_connections
+
+        # Create sets of mapped file paths for quick lookup
+        mapped_incoming = set()  # Files that send to current file (current is receiver)
+        mapped_outgoing = set()  # Files that current file sends to (current is sender)
+
+        for mapping in connection_mappings:
+            sender_file = mapping.get("sender_file_path", "")
+            receiver_file = mapping.get("receiver_file_path", "")
+
+            if receiver_file == current_file_path and sender_file:
+                mapped_incoming.add(sender_file)
+            elif sender_file == current_file_path and receiver_file:
+                mapped_outgoing.add(receiver_file)
+
+        # Filter basic connections
+        filtered = {"incoming": [], "outgoing": []}
+
+        # Filter incoming connections (remove if sender file is already mapped)
+        for conn in basic_connections.get("incoming", []):
+            source_file = conn.get("source_file_path", conn.get("connected_file_path", ""))
+            if source_file not in mapped_incoming:
+                filtered["incoming"].append(conn)
+
+        # Filter outgoing connections (remove if target file is already mapped)
+        for conn in basic_connections.get("outgoing", []):
+            target_file = conn.get("target_file_path", conn.get("connected_file_path", ""))
+            if target_file not in mapped_outgoing:
+                filtered["outgoing"].append(conn)
+
+        return filtered
+
     def _parse_snippet_lines_from_detail(self, snippet_lines_str: str) -> List[int]:
         """
         Parse snippet_lines from BAML detail format.
-        
+
         Args:
             snippet_lines_str: String like "46-46" or "112-112" from BAML ConnectionDetail
-            
+
         Returns:
             List of line numbers
         """
         try:
             if not snippet_lines_str or snippet_lines_str.strip() == "":
                 return []
-            
+
             # Handle range format like "46-46" or "112-115"
             if "-" in snippet_lines_str:
                 parts = snippet_lines_str.split("-")
@@ -1970,10 +1941,10 @@ class GraphOperations:
                     start_line = int(parts[0].strip())
                     end_line = int(parts[1].strip())
                     return list(range(start_line, end_line + 1))
-            
+
             # Handle single line number
             return [int(snippet_lines_str.strip())]
-            
+
         except (ValueError, TypeError) as e:
             logger.warning(f"Failed to parse snippet_lines '{snippet_lines_str}': {e}")
             return []
