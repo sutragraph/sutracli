@@ -66,14 +66,6 @@ class SuperLLMConfig:
 
 
 @dataclass
-class AnthropicConfig:
-    """Anthropic configuration."""
-
-    api_key: str
-    model_id: str
-
-
-@dataclass
 class LLMConfig:
     """LLM provider configuration."""
 
@@ -122,16 +114,14 @@ class EmbeddingConfig:
     """Embedding and vector search configuration."""
 
     # Model settings
-    model_name: str
     model_path: str
+
+    # Tokenizer settings
+    tokenizer_max_length: int  # Override tokenizer's default max length
 
     # Chunking settings
     max_tokens: int
     overlap_tokens: int
-
-    # Search settings
-    similarity_threshold: float
-    enable_optimization: bool
 
 
 @dataclass

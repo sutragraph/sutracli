@@ -43,10 +43,7 @@ class ProjectIndexer:
         self.converter = ASTToSqliteConverter()
         self.graphOperations = GraphOperations()
         self.graph_ops = GraphOperations()
-        self.embedding_engine = get_embedding_engine(
-            max_tokens=config.embedding.max_tokens,
-            overlap_tokens=config.embedding.overlap_tokens,
-        )
+        self.embedding_engine = get_embedding_engine()
 
         # Use provided memory manager or create new one (lazy import to avoid circular imports)
         if sutra_memory_manager:

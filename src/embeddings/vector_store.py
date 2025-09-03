@@ -11,7 +11,6 @@ import onnxruntime as ort
 import sqlite_vec
 from loguru import logger
 from tokenizers import Tokenizer
-from graph.graph_operations import GraphOperations
 from config import config
 
 
@@ -39,8 +38,13 @@ class EmbeddingModel:
             tokenizer_file = self.model_path / "tokenizer.json"
             if tokenizer_file.exists():
                 self.tokenizer = Tokenizer.from_file(str(tokenizer_file))
+                # Override tokenizer's default max_length to use model's full capacity
+                if self.tokenizer is not None:
+                    self.tokenizer.enable_truncation(max_length=config.embedding.tokenizer_max_length)
+                    self.tokenizer.enable_padding(length=config.embedding.tokenizer_max_length)
             else:
                 logger.warning("Tokenizer file not found, using basic tokenization")
+                self.tokenizer = None
 
             logger.debug(f"Loaded embedding model from {self.model_path}")
 
@@ -48,8 +52,14 @@ class EmbeddingModel:
             logger.error(f"Failed to load embedding model: {e}")
             raise
 
-    def _tokenize(self, text: str, max_length: int = 256) -> Dict[str, np.ndarray]:
+    def _tokenize(self, text: str, max_length: Optional[int] = None) -> Dict[str, np.ndarray]:
         """Tokenize text for the model."""
+        if max_length is None:
+            max_length = config.embedding.tokenizer_max_length
+
+        # Type assertion to help type checker
+        assert max_length is not None, "max_length must be set"
+
         if self.tokenizer:
             encoding = self.tokenizer.encode(text)
             tokens = encoding.ids
@@ -98,7 +108,7 @@ class EmbeddingModel:
         logger.debug(f"🔍 TOKENIZING: {len(text)} characters")
         try:
             # Align counting with the embedding model's tokenization and max length
-            inputs = self._tokenize(text, max_length=256)
+            inputs = self._tokenize(text, max_length=config.embedding.tokenizer_max_length)
             attention_mask = inputs["attention_mask"]
             if isinstance(attention_mask, np.ndarray):
                 # attention_mask shape is (1, seq_len)
@@ -147,28 +157,22 @@ class EmbeddingModel:
             return []
 
         try:
-            # Tokenize all texts
-            all_inputs = []
-            for text in texts:
-                if not text or not text.strip():
-                    all_inputs.append(
-                        {
-                            "input_ids": np.zeros((1, 256), dtype=np.int64),
-                            "attention_mask": np.zeros((1, 256), dtype=np.int64),
-                            "token_type_ids": np.zeros((1, 256), dtype=np.int64),
-                        }
-                    )
-                else:
-                    all_inputs.append(self._tokenize(text))
+            # Pre-allocate batch tensors for better performance
+            batch_size = len(texts)
+            max_length = config.embedding.tokenizer_max_length
 
-            # Batch all inputs
-            batch_input_ids = np.vstack([inp["input_ids"] for inp in all_inputs])
-            batch_attention_mask = np.vstack(
-                [inp["attention_mask"] for inp in all_inputs]
-            )
-            batch_token_type_ids = np.vstack(
-                [inp["token_type_ids"] for inp in all_inputs]
-            )
+            batch_input_ids = np.zeros((batch_size, max_length), dtype=np.int64)
+            batch_attention_mask = np.zeros((batch_size, max_length), dtype=np.int64)
+            batch_token_type_ids = np.zeros((batch_size, max_length), dtype=np.int64)
+
+            # Batch tokenization with direct tensor insertion
+            for i, text in enumerate(texts):
+                if text and text.strip():
+                    tokens = self._tokenize(text)
+                    batch_input_ids[i] = tokens["input_ids"].reshape(-1)[:max_length]
+                    batch_attention_mask[i] = tokens["attention_mask"].reshape(-1)[:max_length]
+                    batch_token_type_ids[i] = tokens["token_type_ids"].reshape(-1)[:max_length]
+                # Empty texts remain as zeros (already pre-allocated)
 
             batch_inputs = {
                 "input_ids": batch_input_ids,
@@ -218,7 +222,7 @@ class TextChunker:
         overlap_tokens: int = 30,
         metadata: str = "",
     ) -> List[Dict[str, Any]]:
-        """Split text into fixed 20-line chunks. First chunk includes metadata prefix once."""
+        """Split text into token-based adaptive chunks. First chunk includes metadata prefix once."""
         if not text or not text.strip():
             return []
 
@@ -229,33 +233,92 @@ class TextChunker:
         chunks: List[Dict[str, Any]] = []
         metadata_prefix = (metadata + "\n\n") if metadata else ""
 
+        # Reserve tokens for metadata in first chunk
+        first_chunk_token_budget = max_tokens - self._count_tokens(metadata_prefix) if metadata_prefix else max_tokens
+
         line_index = 0
+        overlap_text = ""
+
         while line_index < len(lines):
             start_line = line_index + 1
-            end_index = min(line_index + 20, len(lines))
+            chunk_lines = []
+            current_chunk_text = overlap_text
 
-            chunk_lines = lines[line_index:end_index]
-            chunk_text = "".join(chunk_lines)
-
+            # Add metadata to first chunk only
             if len(chunks) == 0 and metadata_prefix:
-                chunk_text = metadata_prefix + chunk_text
+                current_chunk_text = metadata_prefix + current_chunk_text
+                token_budget = first_chunk_token_budget
+            else:
+                token_budget = max_tokens
 
-            # Compute character offsets
-            char_start = len("".join(lines[:line_index]))
-            char_end = len("".join(lines[:end_index]))
+            # Build chunk line by line until we hit token limit
+            while line_index < len(lines):
+                line_to_add = lines[line_index]
+                potential_text = current_chunk_text + line_to_add
+
+                if self._count_tokens(potential_text) > token_budget and chunk_lines:
+                    # We've hit the token limit and have at least one line
+                    break
+
+                chunk_lines.append(line_to_add)
+                current_chunk_text = potential_text
+                line_index += 1
+
+            # If no lines fit, take at least one line (truncated if necessary)
+            if not chunk_lines and line_index < len(lines):
+                line_to_add = lines[line_index]
+                potential_text = current_chunk_text + line_to_add
+
+                if self._count_tokens(potential_text) > token_budget:
+                    # Truncate the line to fit
+                    truncated_line = self._trim_to_max_tokens(
+                        current_chunk_text + line_to_add, token_budget
+                    )
+                    # Remove the prefix to get just the truncated line part
+                    prefix_len = len(current_chunk_text)
+                    if len(truncated_line) > prefix_len:
+                        line_to_add = truncated_line[prefix_len:]
+                    else:
+                        line_to_add = ""
+
+                chunk_lines.append(line_to_add)
+                current_chunk_text = current_chunk_text + line_to_add
+                line_index += 1
+
+            if not chunk_lines:
+                break
+
+            # Calculate line numbers and character offsets
+            chunk_start_line = start_line
+            chunk_end_line = start_line + len(chunk_lines) - 1
+
+            # Remove overlap text from the beginning for character offset calculation
+            chunk_text_for_offset = "".join(chunk_lines)
+            if overlap_text and current_chunk_text.startswith(overlap_text):
+                char_start = len("".join(lines[:start_line-1])) - len(overlap_text.rstrip('\n'))
+            else:
+                char_start = len("".join(lines[:start_line-1]))
+
+            char_end = len("".join(lines[:chunk_end_line]))
 
             chunks.append(
                 {
-                    "text": chunk_text,
+                    "text": current_chunk_text,
                     "start": char_start,
                     "end": char_end,
-                    "start_line": start_line,
-                    "end_line": end_index,
-                    "token_count": 0,
+                    "start_line": chunk_start_line,
+                    "end_line": chunk_end_line,
+                    "token_count": self._count_tokens(current_chunk_text),
                 }
             )
 
-            line_index = end_index
+            # Prepare overlap for next chunk
+            if overlap_tokens > 0 and line_index < len(lines):
+                overlap_text = self._get_overlap_text(chunk_text_for_offset, overlap_tokens)
+                if overlap_text:
+                    overlap_text += "\n"
+            else:
+                overlap_text = ""
 
         return chunks
 
@@ -375,7 +438,6 @@ class VectorStore:
         self.db_path = Path(resolved_db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.connection: Optional[sqlite3.Connection] = None
-        self.graph_ops = GraphOperations()
 
         # Initialize embedding components
         if model_path is None:
@@ -565,6 +627,7 @@ class VectorStore:
 
         embedding_ids: List[int] = []
 
+        cursor = None
         try:
             # Store embeddings in vector database using sqlite-vec
             assert self.connection is not None
@@ -614,7 +677,8 @@ class VectorStore:
 
         except Exception as e:
             try:
-                cursor.execute("ROLLBACK")
+                if cursor is not None:
+                    cursor.execute("ROLLBACK")
             except Exception:
                 pass
             logger.error(f"Failed to batch store embeddings: {e}")
