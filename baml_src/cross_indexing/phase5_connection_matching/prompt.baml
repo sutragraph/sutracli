@@ -31,42 +31,50 @@ template_string ConnectionMatchingSystemPrompt() #"
     - Do NOT limit, sample, or truncate results
     - This is production analysis requiring 100% coverage
 
-    ## COMPREHENSIVE CONNECTION MATCHING STRATEGIES
+    ## STRICT CONNECTION MATCHING STRATEGIES
 
     ### 1. EXACT IDENTIFIER MATCHES (HIGH CONFIDENCE)
 
-    #### API Endpoints - Exact Path Matching
-    - Match: `/api/users` with `/api/users`
-    - Match: `/users/:id` with `/users/123` or `/users/{id}`
-    - Match: `POST /api/login` with `POST /api/login`
-    - Match: `GET /api/data` with `app.get('/api/data')`
+    #### API Endpoints - EXACT PATH MATCHING ONLY
+    - Match: `/api/users` with `/api/users` (IDENTICAL paths)
+    - Match: `/users/:id` with `/users/{id}` (same path, different parameter syntax)
+    - Match: `POST /api/login` with `POST /api/login` (IDENTICAL method and path)
+    - Match: `GET /api/data` with `app.get('/api/data')` (IDENTICAL endpoint)
+    - DO NOT MATCH: `/api/users` with `/api/user` (different paths - user != users)
+    - DO NOT MATCH: `/get-data` with `/getData` (completely different endpoints - get-data != getData)
 
-    #### WebSocket Events - Exact Event Names
-    - Match: `socket.emit('joinRoom')` with `socket.on('joinRoom')`
-    - Match: `io.emit('userUpdate')` with `io.on('userUpdate')`
-    - Match: `ws.send('message')` with `ws.on('message')`
+    #### WebSocket Events - EXACT EVENT NAMES ONLY
+    - Match: `socket.emit('joinRoom')` with `socket.on('joinRoom')` (IDENTICAL event names)
+    - Match: `io.emit('userUpdate')` with `io.on('userUpdate')` (IDENTICAL event names)
+    - Match: `ws.send('message')` with `ws.on('message')` (IDENTICAL event names)
+    - DO NOT MATCH: `emit('join')` with `on('leave')` (different event names)
 
-    #### Message Queue Names - Exact Queue Identifiers
-    - Match: `channel.publish('user_queue')` with `channel.consume('user_queue')`
-    - Match: `sendToQueue('ASSIGNMENT_QUEUE')` with `consume('ASSIGNMENT_QUEUE')`
-    - Match: `producer.send('notifications')` with `consumer.subscribe('notifications')`
+    #### Message Queue Names - EXACT QUEUE IDENTIFIERS ONLY
+    - Match: `channel.publish('user_queue')` with `channel.consume('user_queue')` (IDENTICAL queue names)
+    - Match: `sendToQueue('ASSIGNMENT_QUEUE')` with `consume('ASSIGNMENT_QUEUE')` (IDENTICAL queue names)
+    - Match: `producer.send('notifications')` with `consumer.subscribe('notifications')` (IDENTICAL queue names)
+    - DO NOT MATCH: `publish('user_queue')` with `consume('order_queue')` (different queue names)
 
-    ### 2. PARAMETER VALUE MATCHES (HIGH CONFIDENCE)
+    ### 2. PARAMETER VALUE MATCHES (HIGH CONFIDENCE - REQUIRES EXACT MATCH)
 
-    #### Function Parameter Matching
-    - Match: `callAPI('/users', 'GET')` with `app.get('/users')` (first parameter matches endpoint)
-    - Match: `makeRequest({url: '/api/login'})` with `app.post('/api/login')` (url property matches endpoint)
-    - Match: `httpClient.request('/data', 'POST')` with `router.post('/data')` (parameter matches route)
-    - Match: `sendMessage('user-queue', data)` with `consumeFrom('user-queue')` (queue name parameter matches)
+    #### Function Parameter Matching - EXACT VALUES ONLY
+    - Match: `callAPI('/users', 'GET')` with `app.get('/users')` (EXACT endpoint path match)
+    - Match: `makeRequest({url: '/api/login'})` with `app.post('/api/login')` (EXACT URL property match)
+    - Match: `httpClient.request('/data', 'POST')` with `router.post('/data')` (EXACT path match)
+    - Match: `sendMessage('user-queue', data)` with `consumeFrom('user-queue')` (EXACT queue name match)
+    - DO NOT MATCH: `callAPI('/users/details')` with `app.get('/users')` (different paths)
+    - DO NOT MATCH: `makeRequest('/jobFormDetails')` with `app.get('/getFormDetails')` (different endpoint names)
 
-    #### Object Property Matching
-    - Match: `fetch({endpoint: '/api/users'})` with `app.get('/api/users')` (endpoint property matches)
-    - Match: `publish({topic: 'notifications'})` with `subscribe({topic: 'notifications'})` (topic property matches)
-    - Match: `emit({event: 'userJoined'})` with `on({event: 'userJoined'})` (event property matches)
+    #### Object Property Matching - EXACT VALUES ONLY
+    - Match: `fetch({endpoint: '/api/users'})` with `app.get('/api/users')` (EXACT endpoint match)
+    - Match: `publish({topic: 'notifications'})` with `subscribe({topic: 'notifications'})` (EXACT topic match)
+    - Match: `emit({event: 'userJoined'})` with `on({event: 'userJoined'})` (EXACT event match)
+    - DO NOT MATCH: `fetch({endpoint: '/api/user'})` with `app.get('/api/users')` (different paths - user != users)
 
-    #### Variable Value Matching
-    - Match: `const endpoint = '/api/users'; fetch(endpoint)` with `app.get('/api/users')` (variable value matches)
-    - Match: `const queueName = 'tasks'; sendTo(queueName)` with `consume('tasks')` (variable value matches)
+    #### Variable Value Matching - EXACT VALUES ONLY
+    - Match: `const endpoint = '/api/users'; fetch(endpoint)` with `app.get('/api/users')` (EXACT value match)
+    - Match: `const queueName = 'tasks'; sendTo(queueName)` with `consume('tasks')` (EXACT value match)
+    - DO NOT MATCH: `const path = '/get-data'; fetch(path)` with `app.get('/health-check')` (different endpoints)
 
     ### 3. ENVIRONMENT VARIABLE MATCHES (MEDIUM-HIGH CONFIDENCE)
 
@@ -197,7 +205,7 @@ template_string ConnectionMatchingUserPrompt(incoming_connections: string, outgo
     ### INCOMING CONNECTIONS
     {{ incoming_connections }}
 
-    ### OUTGOING CONNECTIONS  
+    ### OUTGOING CONNECTIONS
     {{ outgoing_connections }}
 
     Find all connection matches and return as JSON.
@@ -229,4 +237,3 @@ function ChatGPTConnectionMatching(incoming_connections: string, outgoing_connec
     {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
   "#
 }
-
