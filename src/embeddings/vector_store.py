@@ -105,7 +105,6 @@ class EmbeddingModel:
                 "Tokenizer not available - cannot count tokens accurately"
             )
 
-        logger.debug(f"🔍 TOKENIZING: {len(text)} characters")
         try:
             # Align counting with the embedding model's tokenization and max length
             inputs = self._tokenize(text, max_length=config.embedding.tokenizer_max_length)
@@ -116,7 +115,6 @@ class EmbeddingModel:
             else:
                 token_count = int(sum(attention_mask))
 
-            logger.debug(f"🎯 FINAL RESULT: {len(text)} chars → {token_count} tokens")
             return token_count
         except Exception as e:
             logger.error(f"❌ TOKENIZER FAILED: {e}")
