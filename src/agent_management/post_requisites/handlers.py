@@ -8,7 +8,10 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.prompt import Confirm
 from rich.markdown import Markdown
-from ..providers.manager import get_agent_provider_manager
+from agent_management.providers.manager import get_agent_provider_manager
+from agents_new import Agent
+from utils.console import console
+from tools import RoadmapCompletionParams
 
 
 class RoadmapAgentHandler:
@@ -16,7 +19,6 @@ class RoadmapAgentHandler:
 
     def __init__(self):
         self.provider_manager = get_agent_provider_manager()
-        self.console = Console()
 
     def process_agent_result_direct(self, agent_result: Any) -> Dict[str, Any]:
         """Process roadmap agent result directly and trigger post-requisites.
@@ -29,26 +31,16 @@ class RoadmapAgentHandler:
         Returns:
             Dict containing the processing results
         """
-        if not agent_result:
-            return {
-                "success": False,
-                "error": "No agent result provided",
-                "processed_actions": []
-            }
 
-        # Extract data from the result
-        data = agent_result.get("data") if isinstance(agent_result, dict) else None
-        if not data:
+        if not isinstance(agent_result, RoadmapCompletionParams):
             return {
                 "success": False,
                 "error": "No data field found in agent result",
                 "processed_actions": [],
             }
 
-        # Convert roadmap data to project prompts format
-        project_prompts = self._convert_roadmap_to_prompts(data)
+        project_prompts = self._convert_roadmap_to_prompts(agent_result.model_dump())
 
-        # Process the roadmap results - spawn external agents
         return self._spawn_external_agents(project_prompts)
 
     def _convert_roadmap_to_prompts(self, data: Dict[str, Any]) -> list:
@@ -169,7 +161,7 @@ class RoadmapAgentHandler:
     def _spawn_external_agents(self, project_prompts: list) -> Dict[str, Any]:
         """Spawn external agents for each project with prompts."""
         # Display all generated prompts to the user first
-        if not self._display_prompts_and_get_confirmation(project_prompts):
+        if not self._get_confirmation(project_prompts):
             return {
                 "success": False,
                 "error": "User declined to proceed with the roadmap",
@@ -238,7 +230,7 @@ class RoadmapAgentHandler:
             }]
         }
 
-    def _display_prompts_and_get_confirmation(self, project_prompts: list) -> bool:
+    def _get_confirmation(self, project_prompts: list) -> bool:
         """Display all generated prompts to the user and get confirmation to proceed.
 
         Args:
@@ -247,57 +239,6 @@ class RoadmapAgentHandler:
         Returns:
             bool: True if user wants to continue, False otherwise
         """
-        # Create main header panel
-        header_text = Text()
-        header_text.append("🗺️  ROADMAP AGENT", style="bold blue")
-        header_text.append(" - ", style="white")
-        header_text.append("GENERATED PROMPTS REVIEW", style="bold yellow")
-
-        header_panel = Panel(header_text, border_style="bright_blue", padding=(1, 2))
-        self.console.print(header_panel)
-
-        # Summary information
-        summary_text = f"The roadmap agent has generated [bold green]{len(project_prompts)}[/bold green] prompt(s) for external agents.\n"
-        summary_text += "[dim]Please review the prompts below before proceeding:[/dim]"
-        self.console.print(summary_text)
-        self.console.print()
-
-        # Display each prompt in a beautiful panel
-        for i, project_prompt in enumerate(project_prompts, 1):
-            prompt_content = project_prompt.get("prompt", "No prompt available")
-
-            # Get project path for display
-            project_path = project_prompt.get("project_path")
-            project_display = f"📁 {project_path}"
-
-            # Create prompt header
-            prompt_header = Text()
-            prompt_header.append(
-                f"📋 PROMPT {i}/{len(project_prompts)}", style="bold cyan"
-            )
-            prompt_header.append(f"\nProject: ", style="dim")
-            prompt_header.append(project_display, style="green")
-
-            # Create prompt content with syntax highlighting if it looks like code
-            if "**File:" in prompt_content and "**Steps**:" in prompt_content:
-                # This looks like a structured prompt, render as markdown
-                prompt_display = Markdown(prompt_content)
-            else:
-                # Plain text prompt
-                prompt_display = Text(prompt_content, style="white")
-
-            # Create the prompt panel
-            prompt_panel = Panel(
-                prompt_display,
-                title=prompt_header,
-                title_align="left",
-                border_style="cyan",
-                padding=(1, 2),
-            )
-
-            self.console.print(prompt_panel)
-            self.console.print()
-
         # Create confirmation panel
         confirmation_text = Text()
         confirmation_text.append("🤔 CONFIRMATION REQUIRED", style="bold yellow")
@@ -315,43 +256,43 @@ class RoadmapAgentHandler:
         confirmation_panel = Panel(
             confirmation_text, border_style="yellow", padding=(1, 2)
         )
-        self.console.print(confirmation_panel)
+        console.print(confirmation_panel)
 
         # Use Rich's Confirm for user input
         try:
             result = Confirm.ask(
                 "[bold cyan]👤 Do you want to proceed with this roadmap?[/bold cyan]",
                 default=False,
-                console=self.console,
+                console=console,
             )
 
             if result:
-                self.console.print(
+                console.print(
                     "\n[bold green]✅ Proceeding with roadmap execution...[/bold green]"
                 )
                 return True
             else:
-                self.console.print(
+                console.print(
                     "\n[bold red]❌ Roadmap execution cancelled by user.[/bold red]"
                 )
                 return False
 
         except KeyboardInterrupt:
-            self.console.print(
+            console.print(
                 "\n\n[bold red]❌ Operation cancelled by user (Ctrl+C)[/bold red]"
             )
             return False
         except EOFError:
-            self.console.print("\n\n[bold red]❌ Operation cancelled (EOF)[/bold red]")
+            console.print("\n\n[bold red]❌ Operation cancelled (EOF)[/bold red]")
             return False
 
 
 class BaseAgentHandler:
     """Base class for agent handlers."""
-    
-    def __init__(self, agent_key: str):
+
+    def __init__(self, agent_key: Agent):
         self.agent_key = agent_key
-    
+
     def process_agent_result_direct(self, agent_result: Any) -> Dict[str, Any]:
         """Process agent result directly - default implementation."""
         return {
@@ -362,9 +303,9 @@ class BaseAgentHandler:
 
 
 # Factory function to get appropriate handler
-def get_agent_handler(agent_key: str):
+def get_agent_handler(agent_key: Agent):
     """Get the appropriate handler for an agent."""
-    if agent_key == "roadmap":
+    if agent_key == Agent.ROADMAP:
         return RoadmapAgentHandler()
     else:
         return BaseAgentHandler(agent_key)

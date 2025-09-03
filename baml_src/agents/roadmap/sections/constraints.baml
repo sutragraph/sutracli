@@ -19,11 +19,11 @@ template_string RoadmapConstraints() #"
 
 You MUST respond in this exact JSON structure:
 
-**MINIMAL REQUIRED FORMAT:**
+**RESPONSE FORMAT (with all available fields):**
 ```json
 {
-  "thinking": "Brief explanation of what you're doing and why",
-  "tool_call": {
+  "thinking": "Brief explanation of what you're doing and why", // REQUIRED
+  "tool_call": {                                              // REQUIRED
     "tool_name": "tool_name_here",
     "parameters": {
       "param1": "value1",
@@ -31,19 +31,28 @@ You MUST respond in this exact JSON structure:
     }
   },
   "sutra_memory": {
-    "add_history": "Summary of progress and findings for future reference"
-  }
-}
-```
-
-**OPTIONAL FIELDS (use when needed):**
-```json
-{
-  "sutra_memory": {
-    "add_history": "Required in every response",
-    "tasks": [{"action": "add", "id": "task_1", "to_status": "pending", "description": "Task description"}],
-    "code": [{"action": "add", "id": "code_1", "file": "path/to/file.py", "start_line": 10, "end_line": 20, "description": "Code snippet description"}],
-    "files": {"modified": ["path/to/file.py"], "added": ["path/to/new_file.py"], "deleted": ["path/to/old_file.py"]}
+    "add_history": "Summary of progress and findings for future reference", // REQUIRED
+    "tasks": [                                                               // OPTIONAL
+      {"action": "add", "id": "task_1", "to_status": "pending", "description": "Task description"},
+      {"action": "move", "id": "task_2", "from_status": "pending", "to_status": "current"},
+      {"action": "remove", "id": "task_3"}
+    ],
+    "code": [                                                                // OPTIONAL
+      {
+        "action": "add",
+        "id": "code_1",
+        "file": "path/to/file.py",
+        "start_line": 10,
+        "end_line": 20,
+        "description": "Code snippet description",
+        "content": "code content"
+      }
+    ],
+    "files": {                                                               // OPTIONAL
+      "modified": ["path/to/file.py"],
+      "added": ["path/to/new_file.py"],
+      "deleted": ["path/to/old_file.py"]
+    }
   }
 }
 ```
@@ -67,6 +76,9 @@ You MUST respond in this exact JSON structure:
 - ❌ Providing roadmaps without examining connected controllers/handlers
 - ❌ Skipping cross-repository analysis when connections point to external repos
 - ❌ Missing data flow gaps (timestamps, audit fields, validation)
+- ❌ Ignoring existing API patterns and conventions when creating new endpoints
+- ❌ Breaking established project conventions (routing, naming, structure patterns)
+- ❌ Creating inconsistent implementations that don't follow existing patterns
 
 ### Communication Anti-Patterns
 - ❌ Vague instructions without exact file paths and contracts
@@ -116,6 +128,8 @@ Before providing any roadmap guidance, verify ALL items:
 □ **EXACT LOCATIONS SPECIFIED** - file paths and line numbers documented
 □ **API CONTRACTS DEFINED** - request/response formats specified
 □ **DEPLOYMENT SEQUENCE PLANNED** - implementation order documented
+□ **EXISTING PATTERNS ANALYZED** - examined current implementations, conventions, and architectural patterns
+□ **CONSISTENCY MAINTAINED** - new implementations follow established project conventions and patterns
 
 ## OUTPUT CONSTRAINTS
 

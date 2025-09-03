@@ -39,7 +39,7 @@ class CodeStorage {
   start_line int
   end_line int
   description string
-  content string? // optional content field
+  content string
 }
 
 // File Change Tracking Types

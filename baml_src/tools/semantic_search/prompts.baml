@@ -22,11 +22,15 @@ template_string SemanticSearchToolTemplate() #"
     - The query parameter is passed through the JSON structure and processed as action.parameters.get("query")
 
     Parameter Examples:
-    - Find authentication patterns: query: "user authentication login"
-    - Find API routing patterns: query: "API routing router express"
-    - Find file upload implementations: query: "file upload multer storage"
-    - Find database patterns in project: query: "database connection setup", project_name: "my-backend-project"
-    - Find error handling patterns: query: "error handling try catch exception"
-    - Find payment processing: query: "payment processing stripe integration"
-    - Fetch next chunk: query: "database connection setup mongodb", fetch_next_code: true
+    - Find user authentication logic: query: "validate user credentials check password hash compare login verification"
+    - Find API endpoint handlers: query: "handle HTTP requests parse request body validate input send JSON response"
+    - Find file upload functionality: query: "process uploaded files save to disk validate file type handle multipart form data"
+    - Find database query patterns: query: "execute SQL queries handle database connections close connections transaction management", project_name: "backend-api"
+    - Find error handling middleware: query: "catch exceptions log errors return error responses handle validation failures"
+    - Find JWT token management: query: "generate JWT tokens verify token signature decode payload check expiration"
+    - Find email sending functionality: query: "send emails configure SMTP create email templates handle delivery failures"
+    - Find data validation patterns: query: "validate form input sanitize user data check required fields return validation errors"
+    - Find caching implementation: query: "cache frequently accessed data Redis integration cache invalidation TTL management"
+    - Find pagination logic: query: "paginate database results limit offset calculate total pages navigation links"
+    - Fetch next chunk: query: "process user registration create new account validate email", fetch_next_code: true
 "#

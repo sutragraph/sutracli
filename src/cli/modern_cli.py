@@ -109,7 +109,8 @@ class ModernSutraKit:
         console.info("LLM Provider Setup")
 
         providers = [
-            {"name": "Anthropic (Claude)", "key": "anthropic", "description": "Claude models (claude-3.5-sonnet, etc.)"},
+            {"name": "Anthropic (Claude)", "key": "anthropic",
+             "description": "Claude models (claude-3.5-sonnet, etc.)"},
             {"name": "AWS Bedrock", "key": "aws", "description": "AWS managed AI services"},
             {"name": "Google Gemini", "key": "gcp", "description": "Google's Gemini models"},
             {"name": "OpenAI (ChatGPT)", "key": "openai", "description": "GPT models via OpenAI API"}
@@ -473,7 +474,7 @@ class ModernSutraKit:
 
             # Run the actual agent
             if agent_enum.value == "ROADMAP":
-                self._run_roadmap_agent(current_dir, agent_config)
+                self._execute_agent(current_dir, agent_enum, agent_config)
             else:
                 console.error(f"Agent '{agent_enum}' not implemented yet.")
 
@@ -481,13 +482,6 @@ class ModernSutraKit:
             console.warning("Workflow stopped by user choice.")
             console.dim("You can restart the workflow anytime when ready.")
             return
-
-    def _run_roadmap_agent(self, current_dir: Path, agent_config):
-        """Run the roadmap agent workflow."""
-        console.info("Starting Roadmap Agent Workflow")
-
-        # Run the actual agent (prerequisites are now handled in run_agent_workflow)
-        self._execute_agent(current_dir, agent_config)
 
     def _run_indexing(self, project_dir: Path):
         """Run normal indexing for the project."""
@@ -595,7 +589,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
         except Exception as e:
             console.error(f"Cross-indexing failed: {e}")
 
-    def _execute_agent(self, project_dir: Path, agent_config):
+    def _execute_agent(self, project_dir: Path, agent_name: Agent, agent_config):
         """Execute the actual agent."""
         console.highlight(f"Executing {agent_config.name}")
 
@@ -603,48 +597,36 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             from cli.commands import handle_agent_command
             from src.agent_management.post_requisites.handlers import get_agent_handler
 
-            # Mock args object for agent execution
-            class Args:
-
-                def __init__(self):
-                    self.agent_type = agent_config.key.value.lower()
-                    self.project_path = project_dir
-                    self.directory = str(project_dir)
-                    self.project_name = None
-                    self.project_id = None
-                    self.log_level = "INFO"
-
-            args = Args()
-
             # Execute the agent and capture result
-            agent_result = handle_agent_command(args)
-
-            console.success(f"{agent_config.name} completed successfully!")
+            agent_result = handle_agent_command(agent_name=agent_name, project_path=project_dir)
 
             # Handle post-requisites if agent returned results
-            if agent_result:
-                console.process(f"Processing {agent_config.name} results...")
+            if not agent_result:
+                return
 
-                # Get appropriate handler for this agent and process results directly
-                handler = get_agent_handler(agent_config.key.value.lower())
+            console.process(f"Processing {agent_config.name} results...")
 
-                # Process the agent result directly - no wrapper needed
-                post_result = handler.process_agent_result_direct(agent_result)
+            # Get appropriate handler for this agent and process results directly
+            handler = get_agent_handler(agent_name)
 
-                if post_result.get("success"):
-                    console.success("Post-processing completed successfully!")
+            # Process the agent result directly - no wrapper needed
+            post_result = handler.process_agent_result_direct(agent_result)
 
-                    # Show details if available
-                    processed_actions = post_result.get("processed_actions", [])
-                    if processed_actions:
-                        console.dim(f"Processed {len(processed_actions)} post-requisite actions")
-                        for action in processed_actions:
-                            if action.get("success"):
-                                console.success(f"  ✓ {action['action']}: {action.get('message', 'Success')}")
-                            else:
-                                console.error(f"  ✗ {action['action']}: {action.get('error', 'Failed')}")
-                else:
-                    console.warning(f"Post-processing completed with issues: {post_result.get('message', 'Unknown error')}")
+            if post_result.get("success"):
+                console.success("Post-processing completed successfully!")
+
+                # Show details if available
+                processed_actions = post_result.get("processed_actions", [])
+                if processed_actions:
+                    console.dim(f"Processed {len(processed_actions)} post-requisite actions")
+                    for action in processed_actions:
+                        if action.get("success"):
+                            console.success(f"  ✓ {action['action']}: {action.get('message', 'Success')}")
+                        else:
+                            console.error(f"  ✗ {action['action']}: {action.get('error', 'Failed')}")
+            else:
+                console.warning(
+                    f"Post-processing completed with issues: {post_result.get('message', 'Unknown error')}")
 
         except Exception as e:
             console.error(f"Agent execution failed: {e}")

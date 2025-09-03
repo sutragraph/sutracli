@@ -1,32 +1,33 @@
 """Agent Service with unified tool status handling."""
 
-import time
 
-from typing import Dict, Any, List, Optional, Iterator, Union
+from typing import Optional
 from loguru import logger
 from rich.prompt import Confirm
 from rich.panel import Panel
 from rich.text import Text
 from utils.console import console
-from tools import execute_tool
+from tools import execute_tool, AllToolParams
 
 from baml_client.types import SutraMemoryParams
 from .agent.session_management import SessionManager
 from .agent.memory_management import SutraMemoryManager
 from .project_manager import ProjectManager
 from pathlib import Path
-from rich.panel import Panel
-from rich.text import Text
 
 
-from agents_new import Agent, execute_agent, AgentResponse, RoadmapResponse, RoadmapCompletionParams, BaseCompletionParams
+from agents_new import Agent, execute_agent, AgentResponse, RoadmapResponse
 
 
 class AgentService:
     """Agent Service with unified tool status handling."""
 
     def __init__(
-        self, session_id: Optional[str] = None
+        self,
+        session_id: Optional[str] = None,
+        agent_name: Optional[Agent] = None,
+        project_path: Optional[Path] = None
+
     ):
         """Initialize the Agent Service.
 
@@ -34,7 +35,13 @@ class AgentService:
             session_id: Optional session ID for conversation continuity
 
         """
+        if project_path is None:
+            raise ValueError("Project path must be provided")
 
+        if agent_name is None:
+            raise ValueError("Agent name must be provided")
+
+        self.agent_name = agent_name
         self.session_manager = SessionManager.get_or_create_session(session_id)
         self.memory_manager = SutraMemoryManager()
 
@@ -53,10 +60,8 @@ class AgentService:
         self.llm_call_count = 0
 
         # Prompt user to confirm indexing if project is not indexed
-        project_path_obj = Path.cwd()
-
         self.current_project_name = self.project_manager.determine_project_name(
-            project_path_obj
+            project_path
         )
 
         is_project_indexed = self.project_manager.check_project_exists(
@@ -66,7 +71,7 @@ class AgentService:
         self._should_index_current_project = not is_project_indexed
 
         if not is_project_indexed:
-            self._prompt_and_index_project(project_path_obj)
+            self._prompt_and_index_project(project_path)
 
     def _prompt_and_index_project(self, project_path: Path) -> None:
         """Prompt user to index the current project if it's not already indexed.
@@ -77,11 +82,11 @@ class AgentService:
         try:
             # Create informative panel about the current project
             project_info = Text()
-            project_info.append(f"Project Name: ", style="bold blue")
+            project_info.append("Project Name: ", style="bold blue")
             project_info.append(f"{self.current_project_name}\n", style="white")
-            project_info.append(f"Project Path: ", style="bold blue")
+            project_info.append("Project Path: ", style="bold blue")
             project_info.append(f"{project_path}\n", style="white")
-            project_info.append(f"Status: ", style="bold blue")
+            project_info.append("Status: ", style="bold blue")
             project_info.append("Not indexed", style="red")
 
             panel = Panel(
@@ -125,13 +130,41 @@ class AgentService:
             logger.error(f"Error during project indexing prompt: {e}")
             console.error(f"Error during indexing setup: {e}")
 
-    def solve_problem(self, agent_name: Agent,
-                      problem_query: str) -> Union[RoadmapCompletionParams, BaseCompletionParams, Dict[str, Any]]:
+    def run(self) -> Optional[AllToolParams]:
+        """Run the agent with user prompting and problem solving.
+
+        Returns:
+            The result of the problem solving process
+        """
+        print("🚀 Welcome to Sutra Agent!")
+        print("   I'm here to help you with coding, debugging, and knowledge sharing.")
+        print("\n💬 How can I help you? Type your questions or requests below.")
+
+        # Get user input
+        while True:
+            user_input = console.input("\n👤 You: ", multiline=True)
+            print("-" * 40)
+
+            if not user_input:
+                continue
+
+            if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
+                print("\n👋 Goodbye! Session ended.")
+                return None
+
+            # Got valid input, break out of input loop
+            break
+
+        # Run agent session with the input
+        print("🚀 Starting agent session...")
+        return self.solve_problem(problem_query=user_input)
+
+    def solve_problem(self, problem_query: str) -> Optional[AllToolParams]:
         if (self._should_index_current_project):
             console.warning("Project is not indexed. Some features may be limited.")
         else:
             # Perform incremental indexing
-            indexing_result = self.project_manager.perform_incremental_indexing(
+            self.project_manager.perform_incremental_indexing(
                 self.current_project_name
             )
 
@@ -148,7 +181,7 @@ class AgentService:
                 current_iteration += 1
                 if current_iteration == 15:
                     console.print()
-                    console.print(f"[yellow]Completed 15 iterations. Current progress:[/yellow]")
+                    console.print("[yellow]Completed 15 iterations. Current progress:[/yellow]")
 
                     should_continue = Confirm.ask(
                         f"[bold cyan]Continue with the remaining {
@@ -158,15 +191,14 @@ class AgentService:
 
                     if not should_continue:
                         console.print("[yellow]Task stopped by user after 15 iterations.[/yellow]")
-                        return {"result": "Task stopped by user after 15 iterations",
-                                "iterations_completed": current_iteration}
+                        return None
 
                 user_message = self._build_user_message(problem_query, current_iteration)
 
-                logger.debug(f"Invoking agent: {agent_name}")
+                logger.debug(f"Invoking agent: {self.agent_name}")
 
                 agent_response: AgentResponse = execute_agent(
-                    agent_name,
+                    self.agent_name,
                     context=user_message
                 )
 
@@ -174,18 +206,14 @@ class AgentService:
                 is_completion = self._parse_agent_response(agent_response)
 
                 if is_completion:
-                    return self.result if self.result else {"result": "Task completed"}
+                    return self.result
 
         except KeyboardInterrupt:
             console.print()
-            console.print(f"[yellow]Task interrupted by user.[/yellow]")
-            return {
-                "result": "Task interrupted by user",
-                "iterations_completed": current_iteration,
-                "reason": "KeyboardInterrupt"
-            }
+            console.print("[yellow]Task interrupted by user.[/yellow]")
+            return None
 
-        return {"result": "Max iterations reached without completion."}
+        return None
 
     def _build_user_message(self, problem_query: str, current_iteration: int) -> str:
         user_message = []

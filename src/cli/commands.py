@@ -256,45 +256,16 @@ def _process_agent_updates_with_result(updates_generator):
     return agent_result
 
 
-def handle_agent_command(args):
+def handle_agent_command(agent_name: Agent, project_path: Path):
     """Handle agent command for autonomous problem solving."""
     print(f"\n🤖 SUTRA AGENT - AI-Powered Repository Assistant")
     print("   Your intelligent companion for coding, debugging, and knowledge sharing")
     print("=" * 80)
 
-    agent_result = None  # Store the final agent result for post-processing
-
     try:
-        agent = AgentService()
+        agent = AgentService(agent_name=agent_name, project_path=project_path)
 
-        print("🚀 Welcome to Sutra Agent!")
-        print(
-            "   I'm here to help you with coding, debugging, and knowledge sharing."
-        )
-
-        print("\n💬 How can I help you? Type your questions or requests below.")
-
-        # Get user input once
-        while True:
-            user_input = console.input("\n👤 You: ", multiline=True)
-            print("-" * 40)
-
-            if not user_input:
-                continue
-
-            if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
-                print("\n👋 Goodbye! Session ended.")
-                return
-
-            # Got valid input, break out of input loop
-            break
-
-        # Run agent session with the input
-        print("🚀 Starting agent session...")
-        result = agent.solve_problem(problem_query=user_input, agent_name=Agent.ROADMAP)
-        print(f"\n✅ Agent session {result}")
-
-        return result
+        return agent.run()
 
     except KeyboardInterrupt:
         print("\n❌ Operation interrupted by user")

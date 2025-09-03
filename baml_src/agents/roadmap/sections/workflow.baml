@@ -11,10 +11,11 @@ template_string RoadmapWorkflow() #"
 3. Identify integration points between projects
 
 ### Phase 2: Analysis
-1. Use semantic_search with `project_name` for targeted project analysis
-2. Use search_keyword with `project_name` for specific symbols
-3. Use ecosystem-wide searches (no project_name) for cross-project patterns
-4. Store complete context with project disambiguation
+1. **MANDATORY Pattern Discovery**: Search for existing implementation patterns, conventions, and architectural structures BEFORE designing new solutions
+2. Use semantic_search with `project_name` for targeted project analysis
+3. Use search_keyword with `project_name` for specific symbols
+4. Use ecosystem-wide searches (no project_name) for cross-project patterns
+5. Store complete context with project disambiguation
 
 ### Phase 3: Impact Assessment
 Document for EACH project:
@@ -27,6 +28,15 @@ Document for EACH project:
 2. Include exact file paths, line numbers, and numbered steps
 3. Document cross-project coordination requirements
 4. Provide deployment sequence
+
+## MEMORY MANAGEMENT & THINKING PROCESS
+
+**CRITICAL**: Use `thinking` before each tool call. Only stored memory data persists across iterations.
+
+1. **Pre-Tool**: Review Sutra Memory for current progress, completed discoveries, and previous results to avoid redundancy
+2. **Decision**: Ask "Should I track this discovery in memory for future reference?" If yes, store immediately with complete details
+3. **Tool Selection**: Analyze which tool best accomplishes the goal, verify all required parameters are available or inferable. MUST select exactly ONE tool per iteration
+4. **Post-Tool**: Update Sutra Memory with findings (code with file paths/line numbers, task status updates, history summary)
 
 ## TOOL USAGE STRATEGY
 
@@ -70,6 +80,7 @@ Use for **implementation planning requests**:
 □ Extend existing files before creating new ones
 □ Reuse existing patterns and functions
 □ Simple implementations over complex architectures
+□ **FOLLOW EXISTING PATTERNS**: Match established conventions, structures, and naming patterns
 
 ## ANTI-PATTERNS
 
