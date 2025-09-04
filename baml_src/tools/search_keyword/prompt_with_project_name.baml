@@ -6,21 +6,23 @@ template_string SearchKeywordToolTemplate() #"
 
     **CRITICAL**: Use SPECIFIC, TARGETED keywords. Avoid broad "kitchen sink" searches that return massive results and cause token limit issues.
 
-    Special behavior: If no file_paths provided but project_name is specified, the tool will automatically search within the project's base path.
-
     Required Parameters:
     - keyword: The search pattern. Can be:
       * Single keyword: "functionName"
       * Multiple patterns: "pattern1|pattern2|pattern3" (use with regex=true)
       * Regex pattern: "\\.(get|post|put)\\s*\\(" (use with regex=true)
 
-    Optional Parameters:
+    Other Parameters:
     - before_lines: Lines before match (default: 0)
     - after_lines: Lines after match (default: 10)
     - case_sensitive: Case-sensitive search (default: false)
     - regex: Treat keyword as regex pattern (default: false)
-    - file_paths: (optional) Comma-separated file or directory paths to search. Use this when you know specific paths to search.
-    - project_name: (optional) The name of the project to search within. Use this to search the entire project automatically.
+    - file_paths: Comma-separated file or directory paths to search. Use this when you know specific paths to search.
+    - project_name: The name of the project to search within. Use this to search the entire project automatically.
+
+    IMPORTANT: **DO NOT use both file_paths and project_name together - choose one approach:**
+      - Use file_paths when you know specific files/directories to search
+      - Use project_name when you want to search the entire project
 
     Notes:
     - For multiple patterns, use "pattern1|pattern2" with regex=true
@@ -29,8 +31,6 @@ template_string SearchKeywordToolTemplate() #"
       - Use file_paths when you know specific files/directories to search
       - Use project_name when you want to search the entire project
     - Either file_paths or project_name must be provided
-
-    **DO NOT use both file_paths and project_name together - choose one approach:**
 
     Parameter Examples:
     - ✅ GOOD - Specific function: keyword: "getUserById", file_paths: "src/services/user-service.ts, src/controllers/user-controller.ts", before_lines: 5, after_lines: 5
