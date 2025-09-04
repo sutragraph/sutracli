@@ -28,7 +28,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         """Initialize default tasks for Phase 1."""
         # Add default Phase 1 task - parent class will use counter-based ID
         super().add_task(
-            "1", 
+            "1",
             "Use list_files tool to find package files in this project that list all used packages. Store them in sutra memory history with file paths for future findings.",
             TaskStatus.CURRENT,
         )
@@ -137,7 +137,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         if success:
             # Get the actual counter-based ID that was assigned by parent class
             actual_task_id = str(self.memory_ops.task_id_counter)
-            
+
             # Set target phase based on your expected flow:
             # Phase 1 creates tasks → visible in Phase 2
             # Phase 2 creates tasks → visible in Phase 3
@@ -167,6 +167,27 @@ class CrossIndexingTaskManager(SutraMemoryManager):
 
     def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
         """Move task to new status while preserving phase metadata."""
+        # Phase validation for phases 1 and 2 only
+        if self.current_phase in [1, 2]:
+            # Check if task exists and get its metadata
+            if hasattr(self, "memory_ops") and task_id in self.memory_ops.tasks:
+                metadata = self._task_phase_metadata.get(task_id, {})
+                target_phase = metadata.get("target_phase", self.current_phase)
+
+                # If task doesn't belong to current phase, silently ignore the operation
+                if target_phase != self.current_phase:
+                    logger.debug(
+                        f"Silently ignoring move request for task {task_id} (target_phase={target_phase}) "
+                        f"in current phase {self.current_phase}"
+                    )
+                    return True  # Return True to avoid showing error to LLM
+            elif hasattr(self, "memory_ops") and task_id not in self.memory_ops.tasks:
+                # Task doesn't exist at all, silently ignore
+                logger.debug(
+                    f"Silently ignoring move request for non-existent task {task_id} in phase {self.current_phase}"
+                )
+                return True  # Return True to avoid showing error to LLM
+
         # Call parent move_task method
         success = super().move_task(task_id, new_status)
 
@@ -300,7 +321,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         if success:
             # Get the actual counter-based ID that was assigned by parent class
             actual_task_id = str(self.memory_ops.task_id_counter)
-            
+
             self._task_phase_metadata[actual_task_id] = {
                 "created_in_phase": created_in_phase,
                 "target_phase": target_phase,
@@ -308,7 +329,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
                 "is_filtered": True,
                 "created_at": datetime.now().isoformat(),
             }
-            
+
             logger.debug(
                 f"Added filtered task {actual_task_id} (LLM ID {task_id} ignored)"
             )

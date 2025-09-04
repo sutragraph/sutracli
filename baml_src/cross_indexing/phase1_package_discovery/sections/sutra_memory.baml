@@ -115,6 +115,7 @@ In the thinking field, assess what package information you already have and what
 - Include complete package names and file paths
 - Track comprehensive package information for import discovery
 - Write only what you did/found in the current iteration
+- Do not mention specific task and IDs in history - focus on actions and discoveries made
 
 6. Critical Rules
 - Sutra Memory MUST be updated in every package discovery response alongside exactly one tool call
