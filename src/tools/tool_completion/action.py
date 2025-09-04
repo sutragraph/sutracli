@@ -10,6 +10,7 @@ def execute_completion_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         result = params.get("result", "Task completed")
 
         yield {
+            "simple":True,
             "type": "tool_use",
             "tool_name": "attempt_completion",
             "data": {"result": result}

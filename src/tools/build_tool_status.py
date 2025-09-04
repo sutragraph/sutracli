@@ -248,7 +248,7 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent) -> str:
 def _build_completion_status(event: Dict[str, Any], agent: Agent) -> str:
     """Build status for completion tool based on agent_name."""
     error = event.get("error")
-    agent_name = event.get("agent_name")
+    is_simple = event.get("simple", False)
 
     if error:
         # Error case
@@ -256,7 +256,7 @@ def _build_completion_status(event: Dict[str, Any], agent: Agent) -> str:
         return f"Tool: attempt_completion\nERROR: {error}"
 
     # Use agent to determine completion type
-    if agent == Agent.ROADMAP:
+    if agent == Agent.ROADMAP and not is_simple:
         return _build_roadmap_completion_status(event)
     else:
         return _build_simple_completion_status(event)

@@ -13,20 +13,17 @@ def execute_completion_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         # Union type detection: RoadmapCompletionParams | BaseCompletionParams
         if isinstance(params, dict):
             if "projects" in params and "summary" in params:
-                # RoadmapCompletionParams - handle complex roadmap completion
                 yield from _handle_roadmap_completion(params)
             elif "result" in params:
-                # BaseCompletionParams - delegate to base action
                 yield from base_execute_completion_action(action)
             else:
                 # Invalid parameters
                 yield {
-                    "type": "tool_use",
+                    "type": "tool_error",
                     "tool_name": "attempt_completion",
                     "error": f"Invalid completion parameters. Expected either 'result' or 'projects+summary', got: {list(params.keys())}"
                 }
         else:
-            # Non-dict parameters - delegate to base action
             yield from base_execute_completion_action(action)
 
     except Exception as e:
