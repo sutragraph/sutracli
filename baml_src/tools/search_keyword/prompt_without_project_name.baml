@@ -2,6 +2,8 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     ## search_keyword
     Description: Search for keywords or patterns in the codebase using ripgrep. Supports single keywords, multiple patterns (using OR), and regex patterns. Faster than terminal commands and provides line numbers for precise location tracking.
 
+    **CRITICAL**: Use SPECIFIC, TARGETED keywords. Avoid broad "kitchen sink" searches that return massive results and cause token limit issues.
+
     Required Parameters:
     - keyword: The search pattern. Can be:
       * Single keyword: "functionName"
@@ -33,7 +35,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     }
 
     Examples:
-    1. Search function in specific files:
+    1. ✅ GOOD - Search specific function in files:
     "tool_call": {
       "tool_name": "search_keyword",
       "parameters": {
@@ -44,11 +46,11 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
       }
     }
 
-    2. Search with regex:
+    2. ✅ GOOD - Targeted regex search:
     "tool_call": {
       "tool_name": "search_keyword",
       "parameters": {
-        "keyword": "function\\s+\\w+\\s*\\(.*\\)",
+        "keyword": "function\\s+getUserById\\s*\\(",
         "regex": true,
         "file_paths": "src/utils/helpers.ts"
         "before_lines": 1
@@ -56,7 +58,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
       }
     }
 
-    3. Search imports:
+    3. ✅ GOOD - Specific import search:
     "tool_call": {
       "tool_name": "search_keyword",
       "parameters": {
@@ -67,7 +69,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
         "after_lines": 3
       }
     }
-    
+
     4. Multiple patterns:
     "tool_call": {
       "tool_name": "search_keyword",
@@ -79,7 +81,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
         "after_lines": 3
       }
     }
-    
+
     5. Multiple functions:
     "tool_call": {
       "tool_name": "search_keyword",
@@ -91,8 +93,8 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
         "after_lines": 3
       }
     }
-    
-    6. Search directories:
+
+    6. ✅ GOOD - Related terms search:
     "tool_call": {
       "tool_name": "search_keyword",
       "parameters": {
@@ -101,6 +103,27 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
         "regex": true,
         "before_lines": 1
         "after_lines": 3
+      }
+    }
+
+    **AVOID THESE BAD EXAMPLES:**
+    7. ❌ BAD - Too broad/kitchen sink:
+    "tool_call": {
+      "tool_name": "search_keyword",
+      "parameters": {
+        "keyword": "function|class|method|import|export|const|let|var",
+        "regex": true,
+        "file_paths": "src"
+      }
+    }
+
+    8. ❌ BAD - Massive OR search:
+    "tool_call": {
+      "tool_name": "search_keyword",
+      "parameters": {
+        "keyword": "user|User|auth|Auth|login|register|session|token|jwt|api|controller|service",
+        "regex": true,
+        "file_paths": "src"
       }
     }
 "#

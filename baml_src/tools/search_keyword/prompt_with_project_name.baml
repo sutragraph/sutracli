@@ -4,6 +4,8 @@ template_string SearchKeywordToolTemplate() #"
     ## search_keyword
     Description: Search for keywords or patterns in the codebase using ripgrep. Supports single keywords, multiple patterns (using OR), and regex patterns. Faster than terminal commands and provides line numbers for precise location tracking.
 
+    **CRITICAL**: Use SPECIFIC, TARGETED keywords. Avoid broad "kitchen sink" searches that return massive results and cause token limit issues.
+
     Special behavior: If no file_paths provided but project_name is specified, the tool will automatically search within the project's base path.
 
     Required Parameters:
@@ -31,10 +33,11 @@ template_string SearchKeywordToolTemplate() #"
     **DO NOT use both file_paths and project_name together - choose one approach:**
 
     Parameter Examples:
-    - Search function in files: keyword: "getUserById", file_paths: "src/services/user-service.ts, src/controllers/user-controller.ts", before_lines: 5, after_lines: 5
-    - Search with regex: keyword: "function\\s+\\w+\\s*\\(.*\\)", regex: true, file_paths: "src/utils/helpers.ts"
-    - Search entire project: keyword: "FirebaseRealtimeDB", project_name: "my-awesome-project", case_sensitive: true, after_lines: 10
-    - Search imports: keyword: "import.*redis", regex: true, file_paths: "src/services/cache-service.ts, src/config/database.ts"
-    - Multiple patterns: keyword: "getUserData|setUserData|deleteUserData", project_name: "user-management-service", regex: true
-    - Search directories: keyword: "config|Config", file_paths: "src/config, src/utils", regex: true
+    - ✅ GOOD - Specific function: keyword: "getUserById", file_paths: "src/services/user-service.ts, src/controllers/user-controller.ts", before_lines: 5, after_lines: 5
+    - ✅ GOOD - Targeted regex: keyword: "function\\s+getUserById\\s*\\(", regex: true, file_paths: "src/utils/helpers.ts"
+    - ✅ GOOD - Specific term: keyword: "FirebaseRealtimeDB", project_name: "my-awesome-project", case_sensitive: true, after_lines: 10
+    - ✅ GOOD - Targeted import: keyword: "import.*redis", regex: true, file_paths: "src/services/cache-service.ts, src/config/database.ts"
+    - ✅ GOOD - Related functions (max 3): keyword: "getUserData|setUserData|deleteUserData", project_name: "user-management-service", regex: true
+    - ❌ BAD - Too broad: keyword: "function|class|method|import|export|const|let|var", regex: true
+    - ❌ BAD - Kitchen sink: keyword: "user|User|auth|Auth|login|register|session|token|jwt|api", regex: true
 "#

@@ -111,24 +111,5 @@ Use for **implementation planning requests**:
 ✅ Contract specifications include input/output formats, error codes, and examples
 ✅ Each project receives all contracts it needs to implement
 
-## OUTPUT FORMAT FOR FOLLOW-UP AGENTS
 
-**PER-PROJECT INSTRUCTIONS:**
-
-### **Project: [name]**
-**File: /exact/path/file.ext (Line X)**
-**Current**: [existing signature/code]
-**Target**: [new signature/requirements]
-**Steps**:
-1. Line X: [exact change]
-2. Line Y: [exact change]
-
-**API Contract** (if applicable):
-- Route: `METHOD /path`
-- Request: `{type: format}`
-- Response: `{type: format}`
-- Errors: [specific codes]
-
-**Integration**: [cross-project data contracts]
-**Deploy**: [sequence requirements]
 "#
