@@ -43,6 +43,19 @@ class BaseDeliveryAction:
         """Get the batch size for this tool."""
         return 15  # Default batch size
 
+    def register_and_deliver_first_batch_with_line_limit(
+        self,
+        action_type: str,
+        action_parameters: Dict[str, Any],
+        delivery_items: List[Dict[str, Any]],
+        line_limit: int = 500,
+    ) -> Optional[Dict[str, Any]]:
+        """Register delivery queue and return first batch with line limit."""
+        # Default implementation falls back to regular delivery
+        return self.register_and_deliver_first_batch(
+            action_type, action_parameters, delivery_items
+        )
+
     def create_no_items_response(
         self,
         action_parameters: Dict[str, Any],
@@ -348,7 +361,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 "tool_name": "database",
                 "query_name": query_name,
                 "query": action_parameters,
-                "result": f"found: 1",
+                "result": "found: 1",
                 "data": first_chunk.get("data", ""),
                 "code_snippet": not is_metadata_only,
                 "total_nodes": 1,
@@ -393,7 +406,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 "tool_name": "database",
                 "query_name": query_name,
                 "query": action_parameters,
-                "result": f"found: {total_nodes}",
+                "result": "found: {}".format(total_nodes),
                 "data": combined_data,
                 "code_snippet": not is_metadata_only,
                 "total_nodes": total_nodes,
@@ -452,16 +465,10 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 **base_response,
             }
 
-            # Enhance with dynamic guidance for database
-            delivery_context = {
-                "is_batch": True,
-                "remaining_nodes": 0,  # Will be calculated by delivery manager
-                "delivered_nodes": 1,
-                "chunk_info": next_item.get("chunk_info"),
-            }
+
             return event
         else:
-            logger.debug(f"🔍 TRACE FETCH: ❌ *** NO NEXT ITEM AVAILABLE ***")
+            logger.debug("🔍 TRACE FETCH: ❌ *** NO NEXT ITEM AVAILABLE ***")
 
             # Debug final queue state
             if delivery_manager._last_query_signature:
@@ -480,7 +487,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 "code_snippet": True,
             }
 
-            logger.debug(f"🔍 TRACE FETCH: *** RETURNING QUERY_COMPLETE ***")
+            logger.debug("🔍 TRACE FETCH: *** RETURNING QUERY_COMPLETE ***")
             return {
                 "type": "tool_use",
                 "tool_name": "database",
@@ -570,9 +577,30 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
 class ListFilesDeliveryAction(BaseDeliveryAction):
     """Delivery action for list_files tool."""
 
+
+
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
-        """List files doesn't support fetch_next - return None."""
-        return None
+        """Handle fetch_next_chunk requests for list_files."""
+        if not action.parameters.get("fetch_next_chunk", False):
+            return None
+
+        logger.debug("🔄 Fetch next request for list_files")
+
+        next_item = delivery_manager.get_next_item_from_existing_queue()
+
+        if next_item:
+            return next_item
+        else:
+            # No more items available
+            return {
+                "type": "tool_use",
+                "tool_name": "list_files",
+                "query": action.parameters,
+                "result": "query_complete",
+                "data": "No more chunks available. All content has been delivered.",
+                "code_snippet": True,
+                "total_nodes": 0,
+            }
 
     def register_and_deliver_first_batch(
         self,
@@ -580,28 +608,63 @@ class ListFilesDeliveryAction(BaseDeliveryAction):
         action_parameters: Dict[str, Any],
         delivery_items: List[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
-        """Handle single result delivery for list_files."""
+        """Handle delivery queue registration for list_files."""
         if not delivery_items:
             return None
 
-        # List files should only have one result item
-        result_item = delivery_items[0]
+        # If only one item and no chunk_info, return as-is (no chunking needed)
+        if len(delivery_items) == 1 and "chunk_info" not in delivery_items[0]:
+            return delivery_items[0]
 
-        # Add project header if project_name is available
-        project_name = result_item.get("project_name")
-        if project_name:
-            data = result_item.get("data", "")
-            result_item["data"] = f"PROJECT: {project_name}\n{data}"
+        # Register all items with delivery manager for chunked content
+        delivery_manager.register_delivery_queue(
+            action_type, action_parameters, delivery_items
+        )
 
-        return result_item
+        # Get first item
+        first_item = delivery_manager.get_next_item(action_type, action_parameters)
+        if not first_item:
+            return delivery_items[0]
+
+        # Add batch info if this is chunked content
+        if first_item.get("chunk_info"):
+            chunk_info = first_item["chunk_info"]
+            total_chunks = chunk_info.get("total_chunks", 1)
+
+            first_item["batch_info"] = {
+                "delivered_count": 1,
+                "remaining_count": 0 if total_chunks == 1 else 1,
+                "batch_size": 1,
+            }
+
+        return first_item
 
 
 class SearchKeywordDeliveryAction(BaseDeliveryAction):
     """Delivery action for search_keyword tool."""
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
-        """Search keyword doesn't support fetch_next - return None."""
-        return None
+        """Handle fetch_next_chunk requests for search_keyword."""
+        if not action.parameters.get("fetch_next_chunk", False):
+            return None
+
+        logger.debug("🔄 Fetch next request for search_keyword")
+
+        next_item = delivery_manager.get_next_item_from_existing_queue()
+
+        if next_item:
+            return next_item
+        else:
+            # No more items available
+            return {
+                "type": "tool_use",
+                "tool_name": "search_keyword",
+                "query": action.parameters,
+                "result": "query_complete",
+                "data": "No more chunks available. All content has been delivered.",
+                "code_snippet": True,
+                "total_nodes": 0,
+            }
 
     def register_and_deliver_first_batch(
         self,
@@ -609,20 +672,36 @@ class SearchKeywordDeliveryAction(BaseDeliveryAction):
         action_parameters: Dict[str, Any],
         delivery_items: List[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
-        """Handle single result delivery for search_keyword."""
+        """Handle delivery queue registration for search_keyword."""
         if not delivery_items:
             return None
 
-        # Search keyword should only have one result item
-        result_item = delivery_items[0]
+        # If only one item and no chunk_info, return as-is (no chunking needed)
+        if len(delivery_items) == 1 and "chunk_info" not in delivery_items[0]:
+            return delivery_items[0]
 
-        # Add project header if project_name is available
-        project_name = result_item.get("project_name")
-        if project_name:
-            data = result_item.get("data", "")
-            result_item["data"] = f"PROJECT: {project_name}\n{data}"
+        # Register all items with delivery manager for chunked content
+        delivery_manager.register_delivery_queue(
+            action_type, action_parameters, delivery_items
+        )
 
-        return result_item
+        # Get first item
+        first_item = delivery_manager.get_next_item(action_type, action_parameters)
+        if not first_item:
+            return delivery_items[0]
+
+        # Add batch info if this is chunked content
+        if first_item.get("chunk_info"):
+            chunk_info = first_item["chunk_info"]
+            total_chunks = chunk_info.get("total_chunks", 1)
+
+            first_item["batch_info"] = {
+                "delivered_count": 1,
+                "remaining_count": 0 if total_chunks == 1 else 1,
+                "batch_size": 1,
+            }
+
+        return first_item
 
 
 class DefaultDeliveryAction(BaseDeliveryAction):

@@ -674,7 +674,7 @@ class AgentService:
             cleaned_data = self._remove_duplicate_guidance_messages(data)
             status += f"Results:\n{cleaned_data}"
 
-        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
 
         return status.rstrip()
 
@@ -741,7 +741,7 @@ class AgentService:
         if data:
             status += f"Results:\n{data}"
 
-        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
 
         return status.rstrip()
 

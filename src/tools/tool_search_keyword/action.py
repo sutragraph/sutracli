@@ -1,7 +1,7 @@
 import subprocess
 import re
 from pathlib import Path
-from typing import Iterator, Dict, Any
+from typing import Iterator, Dict, Any, List
 from loguru import logger
 from models.agent import AgentAction
 from graph.sqlite_client import SQLiteConnection
@@ -9,6 +9,63 @@ from tools.utils.project_utils import (
     auto_detect_project_from_paths,
     resolve_project_base_path,
 )
+from tools.utils.constants import SEARCH_CONFIG
+
+
+def chunk_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
+    """
+    Chunk content into smaller pieces based on line count.
+
+    Args:
+        content: The content to chunk
+        chunk_size: Maximum lines per chunk
+
+    Returns:
+        List of chunk dictionaries with chunk_info
+    """
+    if not content:
+        return []
+
+    lines = content.split('\n')
+    total_lines = len(lines)
+
+    # If content is small enough, return as single chunk
+    if total_lines <= chunk_size:
+        return [{
+            "data": content,
+            "chunk_info": {
+                "chunk_num": 1,
+                "total_chunks": 1,
+                "start_line": 1,
+                "end_line": total_lines,
+                "original_file_lines": total_lines
+            }
+        }]
+
+    chunks = []
+    total_chunks = (total_lines + chunk_size - 1) // chunk_size  # Ceiling division
+
+    for i in range(total_chunks):
+        start_idx = i * chunk_size
+        end_idx = min((i + 1) * chunk_size, total_lines)
+
+        chunk_lines = lines[start_idx:end_idx]
+        chunk_content = '\n'.join(chunk_lines)
+
+        chunk_info = {
+            "chunk_num": i + 1,
+            "total_chunks": total_chunks,
+            "start_line": start_idx + 1,
+            "end_line": end_idx,
+            "original_file_lines": total_lines
+        }
+
+        chunks.append({
+            "data": chunk_content,
+            "chunk_info": chunk_info
+        })
+
+    return chunks
 
 
 def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
@@ -19,8 +76,8 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         file_paths_str = action.parameters.get("file_paths", "")
         # Handle None values properly for before_lines and after_lines
         before_lines_param = action.parameters.get("before_lines", 0)
-        after_lines_param = action.parameters.get("after_lines", 10)
-        
+        after_lines_param = action.parameters.get("after_lines", 5)
+
         before_lines = int(before_lines_param) if before_lines_param is not None else 0
         after_lines = int(after_lines_param) if after_lines_param is not None else 10
         case_sensitive = (
@@ -218,22 +275,56 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         )
 
         if combined_output:
-            # Project header will be added by delivery system
-            yield {
-                "type": "tool_use",
-                "tool_name": "search_keyword",
-                "keyword": keyword,
-                "file_paths": (
-                    file_paths if file_paths else "all files (including .env*)"
-                ),
-                "matches_found": True,
-                "data": combined_output,
-                "command": " | ".join(commands_run),
-                "project_name": project_name,
-            }
+            # Add project header if project_name is available
+            data_with_header = combined_output
+            if project_name:
+                data_with_header = f"PROJECT: {project_name}\n{combined_output}"
+
+            # Check if content needs chunking
+            chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
+            chunk_size = SEARCH_CONFIG["chunk_size"]
+
+            lines = data_with_header.split('\n')
+            total_lines = len(lines)
+
+            if total_lines <= chunking_threshold:
+                # Content is small enough, return as-is
+                yield {
+                    "type": "tool_use",
+                    "tool_name": "search_keyword",
+                    "keyword": keyword,
+                    "file_paths": (
+                        file_paths if file_paths else "all files (including .env*)"
+                    ),
+                    "matches_found": True,
+                    "data": data_with_header,
+                    "command": " | ".join(commands_run),
+                    "project_name": project_name,
+                }
+            else:
+                # Content needs chunking
+                chunks = chunk_content(data_with_header, chunk_size)
+
+                for chunk in chunks:
+                    yield {
+                        "type": "tool_use",
+                        "tool_name": "search_keyword",
+                        "keyword": keyword,
+                        "file_paths": (
+                            file_paths if file_paths else "all files (including .env*)"
+                        ),
+                        "matches_found": True,
+                        "data": chunk["data"],
+                        "command": " | ".join(commands_run),
+                        "project_name": project_name,
+                        "chunk_info": chunk["chunk_info"],
+                    }
         else:
             no_matches_msg = f"No matches found for '{keyword}'"
-            # Project header will be added by delivery system
+            # Add project header for no matches case if needed
+            if project_name:
+                no_matches_msg = f"PROJECT: {project_name}\n{no_matches_msg}"
+
             yield {
                 "type": "tool_use",
                 "tool_name": "search_keyword",

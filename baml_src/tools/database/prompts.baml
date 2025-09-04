@@ -22,12 +22,12 @@ template_string DatabaseToolTemplate() #"
 
     Notes:
     - Use complete file paths for all file operations
-    - When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_chunk command - if the user does not tell you to use it, do not use it
+    - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
     - Most queries now use file_path directly - the system handles internal ID conversion automatically
     - For block-specific operations, you may need block_id (obtained from GET_FILE_BLOCK_SUMMARY)
     - Line numbers are 1-indexed
     - Use this tool when you need structured codebase information and relationships
-    - IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
+    - IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration
 
     Parameter Examples:
     - Get file information: query_name: "GET_FILE_BY_PATH", file_path: "path/to/your/file.py"

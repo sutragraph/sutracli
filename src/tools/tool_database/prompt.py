@@ -24,7 +24,7 @@ Notes:
 - For block-specific operations, you may need block_id (obtained from GET_FILE_BLOCK_SUMMARY)
 - Line numbers are 1-indexed
 - Use this tool when you need structured codebase information and relationships
-- IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
+- IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration
 
 Usage:
 <database>

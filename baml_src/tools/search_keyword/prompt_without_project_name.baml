@@ -13,11 +13,13 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
 
     Optional Parameters:
     - before_lines: Lines before match (default: 0)
-    - after_lines: Lines after match (default: 10)
+    - after_lines: Lines after match (default: 5)
     - case_sensitive: Case-sensitive search (default: false)
     - regex: Treat keyword as regex pattern (default: false)
+    - fetch_next_chunk: Set to true to fetch next chunks of results when more are available (default: false)
 
     Notes:
+    - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
     - For multiple patterns, use "pattern1|pattern2" with regex=true
     - Use \\b for word boundaries in regex patterns
 
@@ -27,10 +29,11 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
       "parameters": {
         "keyword": "your_search_pattern",
         "file_paths": "path/to/file1,path/to/dir2",
-        "before_lines": 1,
-        "after_lines": 3,
+        "before_lines": 0,
+        "after_lines": 5,
         "case_sensitive": true|false,
-        "regex": true|false
+        "regex": true|false,
+        "fetch_next_chunk": true|false
       }
     }
 
@@ -41,8 +44,8 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
       "parameters": {
         "keyword": "getUserById",
         "file_paths": "src/services/user-service.ts, src/controllers/user-controller.ts",
-        "before_lines": 1,
-        "after_lines": 3
+        "before_lines": 0,
+        "after_lines": 5
       }
     }
 
@@ -53,8 +56,8 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
         "keyword": "function\\s+getUserById\\s*\\(",
         "regex": true,
         "file_paths": "src/utils/helpers.ts"
-        "before_lines": 1
-        "after_lines": 3
+        "before_lines": 0
+        "after_lines": 5
       }
     }
 
@@ -65,32 +68,32 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
         "keyword": "import.*redis",
         "regex": true,
         "file_paths": "src/services/cache-service.ts, src/config/database.ts"
-        "before_lines": 1
-        "after_lines": 3
+        "before_lines": 0
+        "after_lines": 5
       }
     }
 
-    4. Multiple patterns:
+    4. ✅ GOOD - Multiple patterns:
     "tool_call": {
       "tool_name": "search_keyword",
       "parameters": {
         "keyword": "\\b(app|router)\\.(put|PUT)\\s*\\([^)]*apiFunction\\b",
         "regex": true,
         "file_paths": "src/api",
-        "before_lines": 1
-        "after_lines": 3
+        "before_lines": 0
+        "after_lines": 5
       }
     }
 
-    5. Multiple functions:
+    5. ✅ GOOD - Multiple functions:
     "tool_call": {
       "tool_name": "search_keyword",
       "parameters": {
         "keyword": "getUserData|setUserData|deleteUserData",
         "regex": true,
         "file_paths": "src/config",
-        "before_lines": 1
-        "after_lines": 3
+        "before_lines": 0
+        "after_lines": 5
       }
     }
 
@@ -101,8 +104,8 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
         "keyword": "config|Config",
         "file_paths": "src/config, src/utils",
         "regex": true,
-        "before_lines": 1
-        "after_lines": 3
+        "before_lines": 0
+        "after_lines": 5
       }
     }
 

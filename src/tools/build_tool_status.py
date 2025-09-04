@@ -69,7 +69,7 @@ def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
         status_parts.append("")
     else:
         status_parts.append(
-            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
         )
 
     return "\n".join(status_parts).rstrip()
@@ -138,7 +138,7 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent) -> str:
         status_parts.append("")
     else:
         status_parts.append(
-            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
         )
 
     return "\n".join(status_parts).rstrip()
@@ -239,7 +239,7 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent) -> str:
         status_parts.append("")
     else:
         status_parts.append(
-            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+            "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
         )
 
     return "\n".join(status_parts).rstrip()

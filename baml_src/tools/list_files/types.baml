@@ -5,9 +5,11 @@ class ListFilesParams {
   path string?
   project_name string?
   recursive bool?
+  fetch_next_chunk bool?
 }
 
 class ListFilesParamsWithoutProjectName {
   path string
   recursive bool?
+  fetch_next_chunk bool?
 }

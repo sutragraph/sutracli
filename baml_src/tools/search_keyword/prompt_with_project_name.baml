@@ -14,17 +14,19 @@ template_string SearchKeywordToolTemplate() #"
 
     Other Parameters:
     - before_lines: Lines before match (default: 0)
-    - after_lines: Lines after match (default: 10)
+    - after_lines: Lines after match (default: 5)
     - case_sensitive: Case-sensitive search (default: false)
     - regex: Treat keyword as regex pattern (default: false)
+    - fetch_next_chunk: Set to true to fetch next chunks of results when more are available (default: false)
     - file_paths: Comma-separated file or directory paths to search. Use this when you know specific paths to search.
     - project_name: The name of the project to search within. Use this to search the entire project automatically.
-
+    
     IMPORTANT: **DO NOT use both file_paths and project_name together - choose one approach:**
       - Use file_paths when you know specific files/directories to search
       - Use project_name when you want to search the entire project
 
     Notes:
+    - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
     - For multiple patterns, use "pattern1|pattern2" with regex=true
     - Use \\b for word boundaries in regex patterns
     - **IMPORTANT: Use EITHER file_paths OR project_name, never both together**

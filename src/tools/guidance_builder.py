@@ -157,11 +157,11 @@ def build_database_guidance_with_line_info(
             total_chunks = chunk_info.get("total_chunks", 1)
             original_file_lines = chunk_info.get("original_file_lines", total_lines)
 
-            message = f"Found 1 node with {original_file_lines} total lines. Showing lines {start_line}:{end_line}."
+            message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
             if chunk_num < total_chunks:
                 message += _get_fetch_next_chunk_note()
         else:
-            message = f"Found 1 node with {total_lines} total lines. Showing lines 1 to {delivered_lines}."
+            message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{delivered_lines} lines)"
             if delivered_lines < total_lines:
                 message += _get_fetch_next_chunk_note()
     else:
@@ -174,7 +174,7 @@ def build_database_guidance_with_line_info(
             original_file_lines = chunk_info.get("original_file_lines", total_lines)
 
             # Show actual line range instead of just counts
-            message = f"Found {total_nodes} nodes with {original_file_lines} total lines. Showing lines {start_line}:{end_line}."
+            message = f"Found {total_nodes} nodes with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
             if chunk_num < total_chunks:
                 message += _get_fetch_next_chunk_note()
         else:
@@ -320,11 +320,13 @@ def enhance_database_search_event(
         total_chunks = chunk_info.get("total_chunks", 1)
         original_file_lines = chunk_info.get("original_file_lines", 0)
 
-        guidance_message = f"Found 1 node with {original_file_lines} total lines. Showing chunk {chunk_num}/{total_chunks} (lines {start_line}-{end_line})."
+        guidance_message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
 
         # Add fetch_next_chunk note if there are more chunks
         if chunk_num < total_chunks:
-            guidance_message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining)."""
+            guidance_message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
+
+Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
 
         # Add guidance as prefix to data
         event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
@@ -334,7 +336,7 @@ def enhance_database_search_event(
         # Single node scenario (non-chunked)
         if should_chunk_delivery(data):
             # Fallback to content-based chunking detection
-            guidance_message = f"Found 1 node with {total_lines} total lines. Showing lines 1 to {current_lines}."
+            guidance_message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{current_lines} lines)"
             if current_lines < total_lines:
                 guidance_message += _get_fetch_next_chunk_note()
         else:
@@ -645,6 +647,158 @@ class DatabaseSearchGuidance(BaseToolGuidance):
         return " ".join(guidance_parts)
 
 
+class ListFilesGuidance(BaseToolGuidance):
+    """
+    Guidance handler for list_files tool.
+
+    Responsibilities:
+    - Handle no results scenarios
+    - Provide dynamic guidance for chunked delivery with line counting
+    """
+
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
+        # Validate event data
+        if not self._validate_event(event):
+            logger.warning(f"Invalid event data for list_files guidance: {event}")
+            return event
+
+        # Only process list_files events
+        if not self._is_list_files_event(event):
+            return event
+
+        # Handle no results case
+        if self._has_no_results(event):
+            message = GuidanceFormatter.format_no_results_message("list_files")
+            return GuidanceFormatter.add_prefix_to_data(event, message)
+
+        # Handle chunked delivery
+        if self._should_add_chunk_guidance(event):
+            guidance_message = self._build_chunk_guidance(event)
+            if guidance_message:
+                return GuidanceFormatter.add_prefix_to_data(event, guidance_message)
+
+        return event
+
+    def _validate_event(self, event: Dict[str, Any]) -> bool:
+        """Validate that event has required fields."""
+        if not isinstance(event, dict):
+            return False
+
+        required_fields = ["type", "tool_name"]
+        return all(field in event for field in required_fields)
+
+    def _is_list_files_event(self, event: Dict[str, Any]) -> bool:
+        """Check if this is a list_files event."""
+        return isinstance(event, dict) and event.get("tool_name") == "list_files"
+
+    def _has_no_results(self, event: Dict[str, Any]) -> bool:
+        """Check if the list_files returned no results."""
+        count = event.get("count", 0)
+        return count == 0
+
+    def _should_add_chunk_guidance(self, event: Dict[str, Any]) -> bool:
+        """Check if we should add chunk guidance for list_files results."""
+        return event.get("chunk_info") is not None
+
+    def _build_chunk_guidance(self, event: Dict[str, Any]) -> Optional[str]:
+        """Build guidance message for list_files chunk delivery."""
+        chunk_info = event.get("chunk_info")
+        if not chunk_info:
+            return None
+
+        chunk_num = chunk_info.get("chunk_num", 1)
+        total_chunks = chunk_info.get("total_chunks", 1)
+        start_line = chunk_info.get("start_line", 1)
+        end_line = chunk_info.get("end_line", 0)
+        original_file_lines = chunk_info.get("original_file_lines", 0)
+
+        message = f"Found file listing with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
+
+        # Add fetch_next_chunk note if there are more chunks
+        if chunk_num < total_chunks:
+            message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
+
+Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+
+        return message
+
+
+class SearchKeywordGuidance(BaseToolGuidance):
+    """
+    Guidance handler for search_keyword tool.
+
+    Responsibilities:
+    - Handle no results scenarios
+    - Provide dynamic guidance for chunked delivery with line counting
+    """
+
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
+        # Validate event data
+        if not self._validate_event(event):
+            logger.warning(f"Invalid event data for search_keyword guidance: {event}")
+            return event
+
+        # Only process search_keyword events
+        if not self._is_search_keyword_event(event):
+            return event
+
+        # Handle no results case
+        if self._has_no_results(event):
+            message = GuidanceFormatter.format_no_results_message("keyword search")
+            return GuidanceFormatter.add_prefix_to_data(event, message)
+
+        # Handle chunked delivery
+        if self._should_add_chunk_guidance(event):
+            guidance_message = self._build_chunk_guidance(event)
+            if guidance_message:
+                return GuidanceFormatter.add_prefix_to_data(event, guidance_message)
+
+        return event
+
+    def _validate_event(self, event: Dict[str, Any]) -> bool:
+        """Validate that event has required fields."""
+        if not isinstance(event, dict):
+            return False
+
+        required_fields = ["type", "tool_name"]
+        return all(field in event for field in required_fields)
+
+    def _is_search_keyword_event(self, event: Dict[str, Any]) -> bool:
+        """Check if this is a search_keyword event."""
+        return isinstance(event, dict) and event.get("tool_name") == "search_keyword"
+
+    def _has_no_results(self, event: Dict[str, Any]) -> bool:
+        """Check if the search_keyword returned no results."""
+        matches_found = event.get("matches_found", False)
+        return not matches_found
+
+    def _should_add_chunk_guidance(self, event: Dict[str, Any]) -> bool:
+        """Check if we should add chunk guidance for search_keyword results."""
+        return event.get("chunk_info") is not None
+
+    def _build_chunk_guidance(self, event: Dict[str, Any]) -> Optional[str]:
+        """Build guidance message for search_keyword chunk delivery."""
+        chunk_info = event.get("chunk_info")
+        if not chunk_info:
+            return None
+
+        chunk_num = chunk_info.get("chunk_num", 1)
+        total_chunks = chunk_info.get("total_chunks", 1)
+        start_line = chunk_info.get("start_line", 1)
+        end_line = chunk_info.get("end_line", 0)
+        original_file_lines = chunk_info.get("original_file_lines", 0)
+
+        message = f"Found keyword matches with {original_file_lines} total result lines. There are more results available showing only ({start_line}-{end_line} lines)"
+
+        # Add fetch_next_chunk note if there are more chunks
+        if chunk_num < total_chunks:
+            message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
+
+Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+
+        return message
+
+
 class GuidanceRegistry:
     """
     Registry for tool guidance handlers.
@@ -656,6 +810,8 @@ class GuidanceRegistry:
     _HANDLERS = {
         "semantic_search": SemanticSearchGuidance,
         "database": DatabaseSearchGuidance,
+        "list_files": ListFilesGuidance,
+        "search_keyword": SearchKeywordGuidance,
     }
 
     @classmethod

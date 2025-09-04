@@ -9,6 +9,7 @@ class SearchKeywordParams {
   regex bool?
   file_paths string?
   project_name string?
+  fetch_next_chunk bool?
 }
 
 class SearchKeywordParamsWithoutProjectName{
@@ -18,4 +19,5 @@ class SearchKeywordParamsWithoutProjectName{
   after_lines int?
   case_sensitive bool?
   regex bool?
+  fetch_next_chunk bool?
 }

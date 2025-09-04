@@ -15,8 +15,9 @@ template_string SemanticSearchToolTemplate() #"
     - fetch_next_chunk: Only use when the system explicitly tells you there are more results available - do not use preemptively
 
     Notes:
+    - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
     - Results are delivered in batches for performance - the system will tell you if more chunks are available
-    - IMPORTANT: When using semantic search, always store relevant results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration
+    - IMPORTANT: When using semantic search, always store relevant results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration
     - The query parameter is passed through the JSON structure and processed as action.parameters.get("query")
 
     Parameter Examples:
