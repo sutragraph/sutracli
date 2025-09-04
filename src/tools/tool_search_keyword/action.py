@@ -57,7 +57,7 @@ def group_matches_by_file(ripgrep_output: str) -> str:
                     if line_number.strip() and line_number.strip().isdigit():
                         if file_path not in file_matches:
                             file_matches[file_path] = []
-                        file_matches[file_path].append(f"[L{line_number.strip()}] {content}")
+                        file_matches[file_path].append(f"{line_number.strip()} | {content}")
 
     # Format grouped output
     grouped_lines = []
@@ -75,8 +75,6 @@ def group_matches_by_file(ripgrep_output: str) -> str:
         grouped_lines.pop()
 
     return '\n'.join(grouped_lines)
-
-
 
 
 def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
@@ -147,7 +145,7 @@ def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str,
     for group in file_groups:
         # Check if adding this group would exceed chunk size
         if (current_chunk_line_count + group['line_count'] > chunk_size and
-            current_chunk_lines):
+                current_chunk_lines):
 
             # Save current chunk
             chunk_content = '\n'.join(current_chunk_lines)
