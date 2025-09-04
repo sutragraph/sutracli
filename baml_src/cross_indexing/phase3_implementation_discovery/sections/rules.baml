@@ -88,7 +88,7 @@ RULES
      - CREATE TASKS IMMEDIATELY when you find:
        * Connection code with variable parameters: `sendToQueue(queueName, message)` → Search for wrapper function calls
        * Environment variables in connection code: `process.env.API_URL` → Search for config files
-       * Dynamic endpoints/topics/events: `axios.get(url)` → Search for function calls with actual URLs
+       * Dynamic endpoints/topics/events: `axios.get(url)` → Search for wrapper function calls with actual URLs
        * Custom wrapper classes: `apiClient.makeRequest(endpoint)` → Search for all method calls
      
      - DON'T CREATE TASKS when you find:
