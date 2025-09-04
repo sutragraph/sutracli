@@ -121,7 +121,7 @@ def beautify_enriched_block_context(
         if incoming_conns or outgoing_conns:
             if connection_mappings:
                 # Add separator if we already showed mappings
-                result_parts.append("Additional connections:")
+                result_parts.append("Additional connections:\n")
             else:
                 result_parts.append(f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing")
 
@@ -214,10 +214,6 @@ def beautify_enriched_file_context(
     file_path = file_data.get("file_path", "unknown")
     result_parts.append(f"File: {file_path}")
 
-
-
-
-
     # Connection details - show both mappings and remaining basic connections
     connection_mappings = enriched_context.get('connection_mappings', [])
     connections = enriched_context.get('connections', {})
@@ -236,7 +232,7 @@ def beautify_enriched_file_context(
         if incoming_conns or outgoing_conns:
             if connection_mappings:
                 # Add separator if we already showed mappings
-                result_parts.append("Additional connections:")
+                result_parts.append("Additional connections:\n")
             else:
                 result_parts.append(f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing")
 
@@ -271,8 +267,6 @@ def beautify_enriched_file_context(
                         result_parts.extend(conn_lines)
                         result_parts.append("")  # Add spacing between technology groups
                     tech_count += 1
-
-
 
     # File content (if requested)
     if include_code and file_data.get('content'):
@@ -377,7 +371,8 @@ def format_chunk_with_enriched_context(
     return "\n".join(chunk_parts)
 
 
-def _group_connections_by_technology(connections: List[Dict[str, Any]], direction: str) -> Dict[str, List[Dict[str, Any]]]:
+def _group_connections_by_technology(
+        connections: List[Dict[str, Any]], direction: str) -> Dict[str, List[Dict[str, Any]]]:
     """
     Group connections by technology to handle 1-to-many relationships.
 
@@ -395,6 +390,7 @@ def _group_connections_by_technology(connections: List[Dict[str, Any]], directio
             grouped[technology] = []
         grouped[technology].append(conn)
     return grouped
+
 
 def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
     """
