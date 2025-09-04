@@ -347,7 +347,7 @@ class SQLiteConnection:
         """List all projects in the database."""
         try:
             rows = self.execute_query(
-                "SELECT id, name, path, created_at, updated_at, cross_indexing_done FROM projects ORDER BY name"
+                "SELECT id, name, path, description, created_at, updated_at, cross_indexing_done FROM projects ORDER BY name"
             )
             return [
                 Project(
