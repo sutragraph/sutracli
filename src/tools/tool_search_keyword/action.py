@@ -12,12 +12,80 @@ from tools.utils.project_utils import (
 from tools.utils.constants import SEARCH_CONFIG
 
 
-def chunk_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
+def group_matches_by_file(ripgrep_output: str) -> str:
     """
-    Chunk content into smaller pieces based on line count.
+    Group ripgrep matches by file path to avoid repeating file paths on every line.
 
     Args:
-        content: The content to chunk
+        ripgrep_output: Raw ripgrep output with file:line:content format
+
+    Returns:
+        Formatted output with matches grouped by file
+    """
+    if not ripgrep_output.strip():
+        return ripgrep_output
+
+    # Dictionary to store matches grouped by file
+    file_matches = {}
+    current_group_matches = []
+
+    for line in ripgrep_output.split('\n'):
+        if not line.strip():
+            continue
+
+        # Handle ripgrep separator lines between match groups
+        if line == '--':
+            # Add spacing between different match groups within the same file
+            if current_group_matches:
+                current_group_matches.append("")  # Empty line for spacing
+            continue
+
+        # Parse ripgrep output format: file:line:content or file-line-content (for context lines)
+        separator = ':' if ':' in line else '-' if '-' in line else None
+
+        if separator:
+            # Find the first and second separators to handle content with same separator
+            first_sep = line.find(separator)
+            if first_sep != -1:
+                second_sep = line.find(separator, first_sep + 1)
+                if second_sep != -1:
+                    file_path = line[:first_sep]
+                    line_number = line[first_sep + 1:second_sep]
+                    content = line[second_sep + 1:]
+
+                    # Validate line number
+                    if line_number.strip() and line_number.strip().isdigit():
+                        if file_path not in file_matches:
+                            file_matches[file_path] = []
+                        file_matches[file_path].append(f"[L{line_number.strip()}] {content}")
+
+    # Format grouped output
+    grouped_lines = []
+    for file_path, matches in file_matches.items():
+        grouped_lines.append(f"{file_path}:")
+        for match in matches:
+            if match == "":  # Empty line for spacing
+                grouped_lines.append("")
+            else:
+                grouped_lines.append(f"  {match}")
+        grouped_lines.append("")  # Empty line between files
+
+    # Remove the last empty line
+    if grouped_lines and grouped_lines[-1] == "":
+        grouped_lines.pop()
+
+    return '\n'.join(grouped_lines)
+
+
+
+
+def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
+    """
+    Chunk grouped content while respecting file group boundaries.
+    Never splits a file's matches across different chunks.
+
+    Args:
+        content: The grouped content to chunk
         chunk_size: Maximum lines per chunk
 
     Returns:
@@ -42,30 +110,94 @@ def chunk_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
             }
         }]
 
+    # Find file group boundaries (lines that don't start with space and end with :)
+    file_boundaries = []
+    for i, line in enumerate(lines):
+        if line and not line.startswith('  ') and line.endswith(':'):
+            file_boundaries.append(i)
+
+    # Add the end of content as a boundary
+    file_boundaries.append(total_lines)
+
+    # Group lines into file groups
+    file_groups = []
+    for i in range(len(file_boundaries) - 1):
+        start_idx = file_boundaries[i]
+        end_idx = file_boundaries[i + 1]
+
+        # Include empty line after group if it exists
+        if end_idx < total_lines and not lines[end_idx - 1].strip():
+            group_lines = lines[start_idx:end_idx]
+        else:
+            group_lines = lines[start_idx:end_idx]
+
+        file_groups.append({
+            'lines': group_lines,
+            'start_line': start_idx + 1,
+            'end_line': end_idx,
+            'line_count': len(group_lines)
+        })
+
+    # Create chunks respecting file group boundaries
     chunks = []
-    total_chunks = (total_lines + chunk_size - 1) // chunk_size  # Ceiling division
+    current_chunk_lines = []
+    current_chunk_start = 1
+    current_chunk_line_count = 0
 
-    for i in range(total_chunks):
-        start_idx = i * chunk_size
-        end_idx = min((i + 1) * chunk_size, total_lines)
+    for group in file_groups:
+        # Check if adding this group would exceed chunk size
+        if (current_chunk_line_count + group['line_count'] > chunk_size and
+            current_chunk_lines):
 
-        chunk_lines = lines[start_idx:end_idx]
-        chunk_content = '\n'.join(chunk_lines)
+            # Save current chunk
+            chunk_content = '\n'.join(current_chunk_lines)
+            chunks.append({
+                "data": chunk_content,
+                "lines": current_chunk_lines.copy(),
+                "start_line": current_chunk_start,
+                "line_count": current_chunk_line_count
+            })
 
+            # Start new chunk with current group
+            current_chunk_lines = group['lines'].copy()
+            current_chunk_start = group['start_line']
+            current_chunk_line_count = group['line_count']
+        else:
+            # Add group to current chunk
+            if not current_chunk_lines:
+                current_chunk_start = group['start_line']
+            current_chunk_lines.extend(group['lines'])
+            current_chunk_line_count += group['line_count']
+
+    # Don't forget the last chunk
+    if current_chunk_lines:
+        chunk_content = '\n'.join(current_chunk_lines)
+        chunks.append({
+            "data": chunk_content,
+            "lines": current_chunk_lines,
+            "start_line": current_chunk_start,
+            "line_count": current_chunk_line_count
+        })
+
+    # Add chunk info
+    total_chunks = len(chunks)
+    result_chunks = []
+
+    for i, chunk in enumerate(chunks):
         chunk_info = {
             "chunk_num": i + 1,
             "total_chunks": total_chunks,
-            "start_line": start_idx + 1,
-            "end_line": end_idx,
+            "start_line": chunk["start_line"],
+            "end_line": chunk["start_line"] + chunk["line_count"] - 1,
             "original_file_lines": total_lines
         }
 
-        chunks.append({
-            "data": chunk_content,
+        result_chunks.append({
+            "data": chunk["data"],
             "chunk_info": chunk_info
         })
 
-    return chunks
+    return result_chunks
 
 
 def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
@@ -275,10 +407,13 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         )
 
         if combined_output:
+            # Group matches by file path to avoid repetitive file paths
+            grouped_output = group_matches_by_file(combined_output)
+
             # Add project header if project_name is available
-            data_with_header = combined_output
+            data_with_header = grouped_output
             if project_name:
-                data_with_header = f"PROJECT: {project_name}\n{combined_output}"
+                data_with_header = f"PROJECT: {project_name}\n{grouped_output}"
 
             # Check if content needs chunking
             chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
@@ -302,8 +437,8 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                     "project_name": project_name,
                 }
             else:
-                # Content needs chunking
-                chunks = chunk_content(data_with_header, chunk_size)
+                # Content needs chunking - use group-aware chunking for grouped output
+                chunks = chunk_grouped_content(data_with_header, chunk_size)
 
                 for chunk in chunks:
                     yield {
