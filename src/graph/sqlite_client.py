@@ -131,7 +131,7 @@ class SQLiteConnection:
         """Get project details by name."""
         try:
             result = self.execute_query(
-                "SELECT id, name, path, created_at, updated_at, cross_indexing_done FROM projects WHERE name = ?",
+                "SELECT id, name, path, description, created_at, updated_at, cross_indexing_done FROM projects WHERE name = ?",
                 (project_name,),
             )
             if result:
@@ -140,6 +140,7 @@ class SQLiteConnection:
                     id=row["id"],
                     name=row["name"],
                     path=row["path"],
+                    description=row["description"],
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
                     cross_indexing_done=bool(row.get("cross_indexing_done", 0)),

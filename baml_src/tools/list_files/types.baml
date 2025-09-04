@@ -4,10 +4,10 @@
 class ListFilesParams {
   path string?
   project_name string?
-  recursive bool?
+  recursive string?
 }
 
 class ListFilesParamsWithoutProjectName {
   path string
-  recursive bool?
+  recursive string?
 }
