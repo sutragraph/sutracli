@@ -7,5 +7,5 @@ class DatabaseParams {
   start_line int?
   end_line int?
   block_id string?
-  fetch_next_code bool?
+  fetch_next_chunk bool?
 }

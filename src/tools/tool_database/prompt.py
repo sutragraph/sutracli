@@ -10,16 +10,16 @@ Required: query_name, file_path
 2. GET_FILE_BY_PATH:
 Gets complete file information by file path including content, language, and project details.
 Required: query_name, file_path
-Optional: start_line, end_line, fetch_next_code
+Optional: start_line, end_line, fetch_next_chunk
 
 3. GET_BLOCK_DETAILS:
 Gets detailed information about a specific code block (function, class, method) including its content and all connections with other project nodes.
 Required: query_name, block_id
-Optional: fetch_next_code
+Optional: fetch_next_chunk
 
 Notes:
 - Use complete file paths for all file operations
-- When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_code command - if the user does not tell you to use it, do not use it
+- When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_chunk command - if the user does not tell you to use it, do not use it
 - Most queries now use file_path directly - the system handles internal ID conversion automatically
 - For block-specific operations, you may need block_id (obtained from GET_FILE_BLOCK_SUMMARY)
 - Line numbers are 1-indexed
@@ -34,7 +34,7 @@ Usage:
 <end_line>end_line_number</end_line>
 <block_id>block_identifier</block_id>  <!-- Only for GET_BLOCK_DETAILS -->
 
-<fetch_next_code>true|false</fetch_next_code>
+<fetch_next_chunk>true|false</fetch_next_chunk>
 </database>
 
 Examples:
@@ -67,10 +67,10 @@ Examples:
 
 
 
-6. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
+6. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_chunk):
 <database>
 <query_name>GET_FILE_BLOCK_SUMMARY</query_name>
 <file_path>/home/user/project/src/utils/helpers.py</file_path>
-<fetch_next_code>true</fetch_next_code>
+<fetch_next_chunk>true</fetch_next_chunk>
 </database>
 """

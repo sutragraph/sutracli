@@ -110,7 +110,7 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent) -> str:
     # Build status string for return
     status_parts = ["Tool: semantic_search"]
 
-    if query and query != "fetch_next_code":
+    if query and query != "fetch_next_chunk":
         status_parts.append(f"Query: '{query}'")
 
     if count is not None:

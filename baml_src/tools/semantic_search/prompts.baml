@@ -7,14 +7,12 @@ template_string SemanticSearchToolTemplate() #"
     Parameters:
     - query: (required) The search terms to find similar implementations - describe what you're looking for in natural language
     - project_name: (optional) Name of the project to search within. If not provided, searches across all projects
-    - fetch_next_code: (optional) Set to true to fetch next chunks of results when more are available
-
-
+    - fetch_next_chunk: (optional) Set to true to fetch next chunks of results when more are available
 
     Parameter Details:
     - query: Use descriptive terms that capture the concept you're looking for (e.g., "user authentication", "file upload handler", "database connection setup")
     - project_name: Specify a project name to limit search scope to that project only. Useful when you want to find patterns within a specific codebase
-    - fetch_next_code: Only use when the system explicitly tells you there are more results available - do not use preemptively
+    - fetch_next_chunk: Only use when the system explicitly tells you there are more results available - do not use preemptively
 
     Notes:
     - Results are delivered in batches for performance - the system will tell you if more chunks are available
@@ -32,5 +30,5 @@ template_string SemanticSearchToolTemplate() #"
     - Find data validation patterns: query: "validate form input sanitize user data check required fields return validation errors"
     - Find caching implementation: query: "cache frequently accessed data Redis integration cache invalidation TTL management"
     - Find pagination logic: query: "paginate database results limit offset calculate total pages navigation links"
-    - Fetch next chunk: query: "process user registration create new account validate email", fetch_next_code: true
+    - Fetch next chunk: query: "process user registration create new account validate email", fetch_next_chunk: true
 "#

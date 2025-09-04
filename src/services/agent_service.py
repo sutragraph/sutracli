@@ -715,7 +715,7 @@ class AgentService:
         status = "Tool: semantic_search\n"
 
         query = result.get("query")
-        if query and query != "fetch_next_code":
+        if query and query != "fetch_next_chunk":
             status += f"Query: '{query}'\n"
 
         count = result.get("count") or result.get("total_nodes")

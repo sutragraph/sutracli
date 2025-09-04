@@ -13,16 +13,16 @@ template_string DatabaseToolTemplate() #"
     2. GET_FILE_BY_PATH:
     Gets complete file information by file path including content, language, and project details.
     Required: query_name, file_path
-    Optional: start_line, end_line, fetch_next_code
+    Optional: start_line, end_line, fetch_next_chunk
 
     3. GET_BLOCK_DETAILS:
     Gets detailed information about a specific code block (function, class, method) including its content and all connections with other project nodes.
     Required: query_name, block_id
-    Optional: fetch_next_code
+    Optional: fetch_next_chunk
 
     Notes:
     - Use complete file paths for all file operations
-    - When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_code command - if the user does not tell you to use it, do not use it
+    - When there are more results available, the user will give you data in chunks and will tell you to use fetch_next_chunk command - if the user does not tell you to use it, do not use it
     - Most queries now use file_path directly - the system handles internal ID conversion automatically
     - For block-specific operations, you may need block_id (obtained from GET_FILE_BLOCK_SUMMARY)
     - Line numbers are 1-indexed
@@ -34,5 +34,5 @@ template_string DatabaseToolTemplate() #"
     - Get file section: query_name: "GET_FILE_BY_PATH", file_path: "path/to/your/file.py", start_line: 10, end_line: 50
     - Get code blocks: query_name: "GET_FILE_BLOCK_SUMMARY", file_path: "path/to/your/file.py"
     - Get block details: query_name: "GET_BLOCK_DETAILS", block_id: "123"
-    - Fetch next chunk: query_name: "GET_FILE_BLOCK_SUMMARY", file_path: "path/to/your/file.py", fetch_next_code: true
+    - Fetch next chunk: query_name: "GET_FILE_BLOCK_SUMMARY", file_path: "path/to/your/file.py", fetch_next_chunk: true
 "#

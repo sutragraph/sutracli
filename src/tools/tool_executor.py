@@ -28,8 +28,8 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
 
     tool_has_guidance = GuidanceRegistry.get_guidance(tool_name)
 
-    # Check if this is a fetch_next_code request
-    if action.parameters.get("fetch_next_code", False):
+    # Check if this is a fetch_next_chunk request
+    if action.parameters.get("fetch_next_chunk", False):
         delivery_result = handle_fetch_next_request(action, tool_name)
 
         if delivery_result:

@@ -3,7 +3,7 @@ Tool Delivery Actions Factory
 
 - Pattern: per-tool subclasses implement delivery batch functionality
 - Usage: ActionExecutor asks factory for a delivery handler by tool name
-- Centralizes all fetch_next_code and batch delivery logic
+- Centralizes all fetch_next_chunk and batch delivery logic
 """
 
 from typing import Optional, Dict, Any, List
@@ -21,7 +21,7 @@ class BaseDeliveryAction:
     """Base class for tool-specific delivery actions."""
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
-        """Handle fetch_next_code requests for this tool."""
+        """Handle fetch_next_chunk requests for this tool."""
         return None
 
     def register_and_deliver_first_batch(
@@ -60,8 +60,8 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
         return DELIVERY_QUEUE_CONFIG.get("semantic_search", 15)
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
-        """Handle fetch_next_code requests for semantic search."""
-        if not action.parameters.get("fetch_next_code", False):
+        """Handle fetch_next_chunk requests for semantic search."""
+        if not action.parameters.get("fetch_next_chunk", False):
             return None
 
         logger.debug("🔄 Fetch next request for semantic search")
@@ -69,11 +69,11 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
         batch_size = self.get_batch_size()
         batch_items = []
 
-        # Only use existing delivery queue if NO query is provided (just fetch_next_code)
-        # If query is provided along with fetch_next_code, treat it as a new query
+        # Only use existing delivery queue if NO query is provided (just fetch_next_chunk)
+        # If query is provided along with fetch_next_chunk, treat it as a new query
         if not action.parameters.get("query"):
             logger.debug(
-                "🔄 No query provided - using existing delivery queue for fetch_next_code"
+                "🔄 No query provided - using existing delivery queue for fetch_next_chunk"
             )
             # Get next batch of items from existing queue
             for _ in range(batch_size):
@@ -125,7 +125,7 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
             event = {
                 "tool_name": "semantic_search",
                 "type": "tool_use",
-                "query": batch_items[0].get("query", "fetch_next_code"),
+                "query": batch_items[0].get("query", "fetch_next_chunk"),
                 "result": f"Found {total_nodes} nodes",
                 "data": final_data,
                 "code_snippet": True,
@@ -144,7 +144,7 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
             return {
                 "tool_name": "semantic_search",
                 "type": "tool_use",
-                "query": action.parameters.get("query", "fetch_next_code"),
+                "query": action.parameters.get("query", "fetch_next_chunk"),
                 "result": "result found: 0",
                 "data": "No more code chunks/nodes available. All items from the previous query have been delivered.",
                 "code_snippet": True,
@@ -271,10 +271,10 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
 
         for i, node in enumerate(delivery_items):
             code_content = node.get("code_snippet", "") or node.get("data", "")
-            
+
             if code_content:
                 node_lines = len(str(code_content).split("\n"))
-                
+
                 # Check if adding this node would exceed the limit
                 if total_lines + node_lines > line_limit and batch_nodes:
                     # Don't add this node, return current batch
@@ -321,7 +321,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 key=lambda x: x.get("chunk_info", {}).get("chunk_num", 1),
             )
             first_chunk = sorted_chunks[0]
-            
+
             # Advance delivery manager position by 1 to mark first chunk as delivered
             query_signature = delivery_manager._generate_query_signature(
                 action_type, action_parameters
@@ -336,7 +336,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
             original_file_lines = chunk_info.get("original_file_lines", 0)
             start_line = chunk_info.get("start_line", 1)
             end_line = chunk_info.get("end_line", 0)
-            
+
             logger.debug(f"📦 Delivering chunk {chunk_num}/{total_chunks} (lines {start_line}-{end_line})")
 
             # Build the event for the first chunk
@@ -365,7 +365,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         else:
             # For non-chunked content, use line-based batching
             line_based_batch = self.get_line_based_batch(delivery_items, line_limit)
-            
+
             if not line_based_batch:
                 return None
 
@@ -374,17 +374,17 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 action_type, action_parameters
             )
             delivered_count = len(line_based_batch)
-            
+
             if query_signature in delivery_manager._queue_positions:
                 delivery_manager._queue_positions[query_signature] = delivered_count
                 logger.debug(f"📦 Advanced queue position to {delivered_count}")
 
             # Build event for non-chunked content
             combined_data = "\n\n".join(str(item.get("data", "")) for item in line_based_batch)
-            
+
             query_name = action_parameters.get("query_name", "unknown")
             is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY"
-            
+
             total_nodes = len(delivery_items)
             remaining_nodes = total_nodes - delivered_count
 
@@ -408,8 +408,8 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
             return event
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
-        """Handle fetch_next_code requests for database search."""
-        if not action.parameters.get("fetch_next_code", False):
+        """Handle fetch_next_chunk requests for database search."""
+        if not action.parameters.get("fetch_next_chunk", False):
             return None
         logger.debug("🔄 Fetch next request for database search")
 
@@ -417,7 +417,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         query_provided = action.parameters.get("query")
 
         if not query_provided:
-            logger.debug("🔄 Using existing delivery queue for fetch_next_code")
+            logger.debug("🔄 Using existing delivery queue for fetch_next_chunk")
             next_item = delivery_manager.get_next_item_from_existing_queue()
         else:
             # Check if this query matches the existing queue
@@ -446,7 +446,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
             event = {
                 "type": "tool_use",
                 "tool_name": "database",
-                "query_name": "fetch_next_code",
+                "query_name": "fetch_next_chunk",
                 "query": action.parameters,
                 "data": next_item.get("data", ""),
                 **base_response,
@@ -484,7 +484,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
             return {
                 "type": "tool_use",
                 "tool_name": "database",
-                "query_name": "fetch_next_code",
+                "query_name": "fetch_next_chunk",
                 "query": action.parameters,
                 "data": "No more code chunks available. All items from the previous query have been delivered.",
                 **base_response,
@@ -538,8 +538,8 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
         self, action_type: str, action_parameters: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Check if there's a pending delivery for this query."""
-        # If this is a fetch_next_code request, handle it as such
-        if action_parameters.get("fetch_next_code", False):
+        # If this is a fetch_next_chunk request, handle it as such
+        if action_parameters.get("fetch_next_chunk", False):
             return self.handle_fetch_next(
                 type("Action", (), {"parameters": action_parameters})()
             )
@@ -629,7 +629,7 @@ class DefaultDeliveryAction(BaseDeliveryAction):
     """Default delivery action for tools that don't need special delivery handling."""
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
-        """Default fetch_next_code handler - just return None (no-op)."""
+        """Default fetch_next_chunk handler - just return None (no-op)."""
         return None
 
     def register_and_deliver_first_batch(
@@ -679,7 +679,7 @@ def get_delivery_action(tool_name: str) -> BaseDeliveryAction:
 
 def handle_fetch_next_request(action, tool_name: str) -> Optional[Dict[str, Any]]:
     """
-    Centralized fetch_next_code handling for all tools.
+    Centralized fetch_next_chunk handling for all tools.
 
     Args:
         action: AgentAction with parameters
@@ -688,7 +688,7 @@ def handle_fetch_next_request(action, tool_name: str) -> Optional[Dict[str, Any]
     Returns:
         Response dict if this is a fetch_next request, None otherwise
     """
-    if not action.parameters.get("fetch_next_code", False):
+    if not action.parameters.get("fetch_next_chunk", False):
         return None
 
     delivery_action = get_delivery_action(tool_name)

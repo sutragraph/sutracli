@@ -77,7 +77,7 @@ def execute_structured_database_query(
         query_params = {
             k: v
             for k, v in action.parameters.items()
-            if k not in ["query_name", "code_snippet", "fetch_next_code"]
+            if k not in ["query_name", "code_snippet", "fetch_next_chunk"]
         }
 
         logger.debug(f"🗄️ Executing structured query: {query_name}")

@@ -4,5 +4,5 @@
 class SemanticSearchParams {
   query string
   project_name string?
-  fetch_next_code bool?
+  fetch_next_chunk bool?
 }

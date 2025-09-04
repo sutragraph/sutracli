@@ -53,14 +53,15 @@ class SequentialNodeScenario(Enum):
     NODE_NO_CODE_CONTENT = "node_no_code_content"
 
 
-def _get_fetch_next_code_note() -> str:
+def _get_fetch_next_chunk_note() -> str:
     """
-    Helper function to generate the fetch_next_code note.
+    Helper function to generate the fetch_next_chunk note.
 
     Returns:
         Formatted note about fetching next code
     """
-    return GUIDANCE_MESSAGES["FETCH_NEXT_CODE_NOTE"]
+    return GUIDANCE_MESSAGES["fetch_next_chunk_NOTE"]
+
 
 def calculate_database_batch_with_line_limit(
     nodes: List[Dict[str, Any]], line_limit: int = 500
@@ -158,11 +159,11 @@ def build_database_guidance_with_line_info(
 
             message = f"Found 1 node with {original_file_lines} total lines. Showing lines {start_line}:{end_line}."
             if chunk_num < total_chunks:
-                message += _get_fetch_next_code_note()
+                message += _get_fetch_next_chunk_note()
         else:
             message = f"Found 1 node with {total_lines} total lines. Showing lines 1 to {delivered_lines}."
             if delivered_lines < total_lines:
-                message += _get_fetch_next_code_note()
+                message += _get_fetch_next_chunk_note()
     else:
         # For multiple nodes, check if we have chunk info to show line ranges
         if chunk_info:
@@ -175,12 +176,12 @@ def build_database_guidance_with_line_info(
             # Show actual line range instead of just counts
             message = f"Found {total_nodes} nodes with {original_file_lines} total lines. Showing lines {start_line}:{end_line}."
             if chunk_num < total_chunks:
-                message += _get_fetch_next_code_note()
+                message += _get_fetch_next_chunk_note()
         else:
             # Fallback to original format when no chunk info available
             message = f"Found {total_nodes} nodes with {total_lines} total lines. Delivered {delivered_nodes} nodes ({delivered_lines} lines)."
             if remaining_nodes > 0:
-                message += _get_fetch_next_code_note()
+                message += _get_fetch_next_chunk_note()
 
     return message
 
@@ -238,7 +239,7 @@ def enhance_semantic_search_event(
     guidance_message = f"Showing nodes {start_node} to {end_node} of {total_nodes}"
 
     if remaining_count > 0:
-        guidance_message += f"""\nNOTE: There are more results available. Use `"fetch_next_code" : true`  to get next codes for your current query. ({remaining_count} more nodes available)"""
+        guidance_message += f"""\nNOTE: There are more results available. Use `"fetch_next_chunk" : true`  to get next codes for your current query. ({remaining_count} more nodes available)"""
     else:
         guidance_message += "."
 
@@ -284,7 +285,7 @@ def enhance_database_search_event(
             )
             guidance_message = f"Found {total_nodes} nodes."
             if remaining_nodes > 0:
-                guidance_message += _get_fetch_next_code_note()
+                guidance_message += _get_fetch_next_chunk_note()
 
         # Add guidance as prefix to data
         event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
@@ -321,9 +322,9 @@ def enhance_database_search_event(
 
         guidance_message = f"Found 1 node with {original_file_lines} total lines. Showing chunk {chunk_num}/{total_chunks} (lines {start_line}-{end_line})."
 
-        # Add fetch_next_code note if there are more chunks
+        # Add fetch_next_chunk note if there are more chunks
         if chunk_num < total_chunks:
-            guidance_message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_code" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining)."""
+            guidance_message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining)."""
 
         # Add guidance as prefix to data
         event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
@@ -335,7 +336,7 @@ def enhance_database_search_event(
             # Fallback to content-based chunking detection
             guidance_message = f"Found 1 node with {total_lines} total lines. Showing lines 1 to {current_lines}."
             if current_lines < total_lines:
-                guidance_message += _get_fetch_next_code_note()
+                guidance_message += _get_fetch_next_chunk_note()
         else:
             guidance_message = f"Found 1 node with {current_lines} lines (complete)."
     else:
@@ -476,9 +477,9 @@ class SemanticSearchGuidance(BaseToolGuidance):
 
         message = f"Showing nodes {start_range} to {end_range} of {total_nodes}."
 
-        # Add fetch_next_code note if there are remaining nodes, but without line numbers
+        # Add fetch_next_chunk note if there are remaining nodes, but without line numbers
         if remaining_count > 0:
-            message += f"""\nNOTE: There are more results available. Use `"fetch_next_code" : true` to get next codes for your current query. ({remaining_count} more nodes available)"""
+            message += f"""\nNOTE: There are more results available. Use `"fetch_next_chunk" : true` to get next codes for your current query. ({remaining_count} more nodes available)"""
 
         return message
 
@@ -606,7 +607,7 @@ class DatabaseSearchGuidance(BaseToolGuidance):
 
     def _extract_query_params(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Extract relevant query parameters excluding internal ones."""
-        excluded_keys = {"query_name", "code_snippet", "fetch_next_code"}
+        excluded_keys = {"query_name", "code_snippet", "fetch_next_chunk"}
         return {k: v for k, v in parameters.items() if k not in excluded_keys}
 
     def _generate_error_guidance(self, query_name: str, params: Dict[str, Any]) -> str:
