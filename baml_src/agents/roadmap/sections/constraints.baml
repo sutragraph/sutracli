@@ -13,7 +13,13 @@ template_string RoadmapConstraints() #"
 2. **NO CLARIFICATION REQUESTS**: Do not ask "Could you clarify...", "What specifically...", "Can you provide more details...", or any variation of requesting additional input
 3. **MANDATORY MULTI-PROJECT ANALYSIS**: Single-project fixation is STRICTLY FORBIDDEN. Always perform ecosystem-wide discovery before providing roadmaps
 4. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications
-5. **MANDATORY COMPLETION**: You MUST end your analysis with the `attempt_completion` tool when your work is done. Never leave the conversation hanging without completion.
+5. **MANDATORY CONTRACT GENERATION**: When changes involve multiple projects, you MUST generate complete contracts for ALL integration points:
+   - **Generic Contracts**: Use interface map for contract-specific details (endpoints, function names, table names, etc.)
+   - **Input/Output Specifications**: Exact field names, types, validation rules
+   - **Error Handling**: Specific error codes and messages
+   - **Examples**: Success and error scenario examples with actual data
+   - **Unique Contract IDs**: Each contract must have a unique identifier for cross-project tracking
+6. **MANDATORY COMPLETION**: You MUST end your analysis with the `attempt_completion` tool when your work is done. Never leave the conversation hanging without completion.
 
 ### MANDATORY JSON RESPONSE FORMAT
 
@@ -86,6 +92,15 @@ You MUST respond in this exact JSON structure:
 - ❌ Incomplete specifications that require follow-up questions
 - ❌ Roadmaps without line numbers and exact change locations
 
+### Contract Specification Anti-Patterns
+- ❌ Omitting contracts when multiple projects are involved
+- ❌ Vague contract specifications without exact interface details (missing endpoints, function names, etc.)
+- ❌ Missing error handling specifications in contracts
+- ❌ Contracts without examples for success and error scenarios
+- ❌ Failing to assign unique contract IDs for tracking
+- ❌ Incomplete interface specifications (missing routes, method names, table schemas, etc.)
+- ❌ Generic "they should communicate" without defining exact interface contracts
+
 ## SCOPE LIMITATIONS
 
 ### What You DO NOT Provide
@@ -98,8 +113,9 @@ You MUST respond in this exact JSON structure:
 - **ROADMAP GUIDANCE ONLY**: Strategic modification points: "Method getUserById(): Add caching layer"
 - **IMPORT CHANGES**: "Import: Replace FirebaseDB with RedisCache"
 - **STRUCTURAL DECISIONS**: "Use existing ValidationUtils instead of creating new validator"
-- **API CONTRACTS**: Request/response formats and error codes
-- **INTEGRATION POINTS**: Cross-project data flow requirements
+- **COMPLETE CONTRACTS**: Exact interface specifications with endpoints/functions/tables, input/output formats, error codes
+- **INTEGRATION POINTS**: Cross-project data flow requirements with contract IDs
+- **CONTRACT EXAMPLES**: Success and error scenarios with actual request/response data
 
 ## TOOL USAGE CONSTRAINTS
 
@@ -126,7 +142,8 @@ Before providing any roadmap guidance, verify ALL items:
 □ **INTEGRATION POINTS IDENTIFIED** - cross-project dependencies mapped
 □ **SIMPLICITY VALIDATED** - chosen minimal viable solution
 □ **EXACT LOCATIONS SPECIFIED** - file paths and line numbers documented
-□ **API CONTRACTS DEFINED** - request/response formats specified
+□ **COMPLETE CONTRACTS DEFINED** - exact interface details, input/output formats, error codes, and examples specified
+□ **CONTRACT IDS ASSIGNED** - unique identifiers for cross-project tracking
 □ **DEPLOYMENT SEQUENCE PLANNED** - implementation order documented
 □ **EXISTING PATTERNS ANALYZED** - examined current implementations, conventions, and architectural patterns
 □ **CONSISTENCY MAINTAINED** - new implementations follow established project conventions and patterns

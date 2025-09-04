@@ -2,12 +2,10 @@
 Specific handlers for different agents' post-requisites.
 """
 
-from typing import Dict, Any, Optional
-from rich.console import Console
+from typing import Dict, Any
 from rich.panel import Panel
 from rich.text import Text
 from rich.prompt import Confirm
-from rich.markdown import Markdown
 from agent_management.providers.manager import get_agent_provider_manager
 from agents_new import Agent
 from utils.console import console
@@ -62,6 +60,7 @@ class RoadmapAgentHandler:
             impact_level = project.get("impact_level", "Medium")
             reasoning = project.get("reasoning", "")
             changes = project.get("changes", [])
+            contracts = project.get("contracts", [])
             implementation_notes = project.get("implementation_notes", "")
 
             # Build the prompt string
@@ -127,6 +126,82 @@ class RoadmapAgentHandler:
                                 prompt_parts.append(f"   **Notes:** {additional_notes}")
 
                             prompt_parts.append("")
+
+                    prompt_parts.append("")
+
+            # Add contracts
+            if contracts:
+                prompt_parts.append("## Integration Contracts")
+                prompt_parts.append("")
+                prompt_parts.append("The following contracts define the interfaces this project must implement or consume:")
+                prompt_parts.append("")
+
+                for i, contract in enumerate(contracts, 1):
+                    contract_id = contract.get("contract_id", "")
+                    contract_type = contract.get("contract_type", "")
+                    contract_name = contract.get("name", "")
+                    description = contract.get("description", "")
+                    interface = contract.get("interface", {})
+                    input_format = contract.get("input_format", [])
+                    output_format = contract.get("output_format", [])
+                    error_codes = contract.get("error_codes", [])
+                    examples = contract.get("examples", "")
+
+                    prompt_parts.append(f"### {i}. {contract_name}")
+                    prompt_parts.append(f"**Contract ID:** {contract_id}")
+                    prompt_parts.append(f"**Type:** {contract_type}")
+                    prompt_parts.append("")
+
+                    if description:
+                        prompt_parts.append(f"**Description:** {description}")
+                        prompt_parts.append("")
+
+                    if interface:
+                        prompt_parts.append("**Interface Details:**")
+                        for key, value in interface.items():
+                            prompt_parts.append(f"- {key}: {value}")
+                        prompt_parts.append("")
+
+                    if input_format:
+                        prompt_parts.append("**Input Format:**")
+                        for field in input_format:
+                            field_name = field.get("name", "")
+                            field_type = field.get("type", "")
+                            required = field.get("required", False)
+                            field_description = field.get("description", "")
+                            validation_rules = field.get("validation_rules", "")
+
+                            req_text = " (required)" if required else " (optional)"
+                            prompt_parts.append(f"- {field_name}: {field_type}{req_text}")
+
+                            if field_description:
+                                prompt_parts.append(f"  - {field_description}")
+                            if validation_rules:
+                                prompt_parts.append(f"  - Validation: {validation_rules}")
+                        prompt_parts.append("")
+
+                    if output_format:
+                        prompt_parts.append("**Output Format:**")
+                        for field in output_format:
+                            field_name = field.get("name", "")
+                            field_type = field.get("type", "")
+                            field_description = field.get("description", "")
+
+                            prompt_parts.append(f"- {field_name}: {field_type}")
+                            if field_description:
+                                prompt_parts.append(f"  - {field_description}")
+                        prompt_parts.append("")
+
+                    if error_codes:
+                        prompt_parts.append("**Error Codes:**")
+                        for error_code in error_codes:
+                            prompt_parts.append(f"- {error_code}")
+                        prompt_parts.append("")
+
+                    if examples:
+                        prompt_parts.append("**Examples:**")
+                        prompt_parts.append(examples)
+                        prompt_parts.append("")
 
                     prompt_parts.append("")
 

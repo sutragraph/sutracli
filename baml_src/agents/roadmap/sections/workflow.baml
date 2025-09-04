@@ -23,11 +23,23 @@ Document for EACH project:
 - Changes required (yes/no with specifics)
 - Integration points with other projects
 
-### Phase 4: Roadmap Generation
+### Phase 4: Contract Generation (MANDATORY for Multi-Project Changes)
+1. **Identify Integration Points**: Document all cross-project data flows, API calls, shared functions
+2. **Generate Complete Contracts**: Create detailed contracts for EVERY integration point:
+   - **Contract ID**: Unique identifier for cross-project tracking
+   - **Input/Output Specifications**: Exact field names, types, validation rules
+   - **Error Handling**: Specific error codes and messages
+   - **Authentication**: Security requirements if applicable
+   - **Examples**: Success and error scenario examples
+3. **Validate Contract Completeness**: Ensure each project has all contracts it needs to implement
+4. **Cross-Reference Dependencies**: Verify contracts match on both sides of integration
+
+### Phase 5: Roadmap Generation
 1. Generate roadmaps ONLY for projects requiring changes
 2. Include exact file paths, line numbers, and numbered steps
-3. Document cross-project coordination requirements
-4. Provide deployment sequence
+3. **MANDATORY**: Include all relevant contracts in each project roadmap
+4. Document cross-project coordination requirements
+5. Provide deployment sequence with contract validation points
 
 ## MEMORY MANAGEMENT & THINKING PROCESS
 
@@ -95,7 +107,9 @@ Use for **implementation planning requests**:
 ✅ All projects in context evaluated with reasoning
 ✅ Minimal, simple solutions that extend existing code
 ✅ Exact implementation instructions for follow-up agents
-✅ Complete integration contracts between projects
+✅ **MANDATORY**: Complete integration contracts between projects with unique IDs
+✅ Contract specifications include input/output formats, error codes, and examples
+✅ Each project receives all contracts it needs to implement
 
 ## OUTPUT FORMAT FOR FOLLOW-UP AGENTS
 

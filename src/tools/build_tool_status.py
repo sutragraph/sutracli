@@ -427,6 +427,92 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
             no_changes_text.append("No changes needed", style="dim")
             content_elements.append(no_changes_text)
 
+        # Contracts summary
+        contracts = project.get("contracts", [])
+        if contracts:
+            content_elements.append(Text())  # Add spacing
+            contract_header = Text()
+            contract_header.append("Integration Contracts: ", style="bold")
+            contract_header.append(f"{len(contracts)} contracts", style="magenta")
+            content_elements.append(contract_header)
+            content_elements.append(Text())
+
+            for j, contract in enumerate(contracts, 1):
+                contract_id = contract.get("contract_id", "Unknown")
+                contract_type = contract.get("contract_type", "Unknown")
+                contract_name = contract.get("name", "Unnamed Contract")
+                description = contract.get("description", "")
+                interface = contract.get("interface", {})
+
+                # Contract header line
+                contract_line = Text()
+                contract_line.append(f"   {j}. ", style="bold")
+                contract_line.append(f"{contract_type.upper()}", style="bold magenta")
+                contract_line.append(f" → {contract_name}")
+                content_elements.append(contract_line)
+
+                # Contract ID
+                id_text = Text("     ")
+                id_text.append("ID: ", style="bold")
+                id_text.append(contract_id, style="magenta")
+                content_elements.append(id_text)
+
+                # Description
+                if description:
+                    desc_text = Text("     ")
+                    desc_text.append("Description: ", style="bold")
+                    desc_text.append(description)
+                    content_elements.append(desc_text)
+
+                # Interface details
+                if interface:
+                    interface_text = Text("     ")
+                    interface_text.append("Interface: ", style="bold")
+                    interface_parts = []
+                    for key, value in interface.items():
+                        interface_parts.append(f"{key}={value}")
+                    interface_text.append(", ".join(interface_parts))
+                    content_elements.append(interface_text)
+
+                # Input/Output formats
+                input_format = contract.get("input_format", [])
+                if input_format:
+                    input_text = Text("     ")
+                    input_text.append("Input: ", style="bold")
+                    input_fields = []
+                    for field in input_format:
+                        field_name = field.get("name", "")
+                        field_type = field.get("type", "")
+                        required = field.get("required", False)
+                        req_marker = " (required)" if required else ""
+                        input_fields.append(f"{field_name}: {field_type}{req_marker}")
+                    input_text.append(", ".join(input_fields))
+                    content_elements.append(input_text)
+
+                output_format = contract.get("output_format", [])
+                if output_format:
+                    output_text = Text("     ")
+                    output_text.append("Output: ", style="bold")
+                    output_fields = []
+                    for field in output_format:
+                        field_name = field.get("name", "")
+                        field_type = field.get("type", "")
+                        output_fields.append(f"{field_name}: {field_type}")
+                    output_text.append(", ".join(output_fields))
+                    content_elements.append(output_text)
+
+                # Error codes
+                error_codes = contract.get("error_codes", [])
+                if error_codes:
+                    error_text = Text("     ")
+                    error_text.append("Error Codes: ", style="bold")
+                    error_text.append(", ".join(error_codes))
+                    content_elements.append(error_text)
+
+                # Add spacing between contracts if there are multiple
+                if j < len(contracts):
+                    content_elements.append(Text())
+
         # Create panel content using Group for multiple Text elements
         panel_content = Group(*content_elements)
 
@@ -457,12 +543,14 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         reasoning = project.get("reasoning", "")
         changes = project.get("changes", [])
 
+        contracts = project.get("contracts", [])
         status_parts.extend(
             [
                 f"\n  {i}. {project_name} ({project_path})",
                 f"     Impact: {impact_level}",
                 f"     Reasoning: {reasoning}",
                 f"     Files to change: {len(changes)}",
+                f"     Integration contracts: {len(contracts)}",
             ]
         )
 
@@ -473,6 +561,15 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
 
             status_parts.append(
                 f"       {j}. {operation} {file_path} ({len(instructions)} instructions)"
+            )
+
+        for j, contract in enumerate(contracts, 1):
+            contract_id = contract.get("contract_id", "")
+            contract_type = contract.get("contract_type", "")
+            contract_name = contract.get("name", "")
+
+            status_parts.append(
+                f"       Contract {j}: {contract_type} - {contract_name} (ID: {contract_id})"
             )
 
     return "\n".join(status_parts)
