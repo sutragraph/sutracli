@@ -686,7 +686,7 @@ class VectorStore:
         self,
         query_embedding: np.ndarray,
         limit: int = 30,
-        threshold: float = 0.20,
+        threshold: float = 0.0,
         project_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Search for similar embeddings."""
@@ -764,7 +764,7 @@ class VectorStore:
         self,
         query_text: str,
         limit: int = 30,
-        threshold: float = 0.2,
+        threshold: float = 0.0,
         project_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Search for similar chunks using text query."""

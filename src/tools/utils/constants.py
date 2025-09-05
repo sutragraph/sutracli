@@ -11,7 +11,7 @@ SEARCH_CONFIG = {
 # Semantic search specific configuration
 SEMANTIC_SEARCH_CONFIG = {
     "total_nodes_limit": 30,  # Always fetch 30 nodes with code snippets
-    "similarity_threshold": 0.1,
+    "similarity_threshold": 0.0,
     "delivery_batch_size": 15,  # Serve 15 nodes at a time via delivery queue
     "block_chunk_threshold": 50,
     **SEARCH_CONFIG,

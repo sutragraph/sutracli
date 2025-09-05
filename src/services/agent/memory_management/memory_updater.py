@@ -363,7 +363,10 @@ class MemoryUpdater:
         return None
 
     def _find_similar_content(
-        self, content_lines: List[str], file_lines: List[str], similarity_threshold: float = 0.7
+        self,
+        content_lines: List[str],
+        file_lines: List[str],
+        similarity_threshold: float = 0.2,
     ) -> Optional[Tuple[int, int]]:
         """
         Find similar content in file using fuzzy matching.
