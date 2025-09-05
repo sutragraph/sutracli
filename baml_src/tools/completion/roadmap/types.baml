@@ -44,7 +44,6 @@ class Contract {
 
   // Additional contract details
   validation_rules string?        // Validation requirements
-  authentication_required bool?   // Whether auth is needed
   examples string?                // Usage examples
 }
 

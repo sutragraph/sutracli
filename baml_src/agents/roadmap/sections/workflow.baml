@@ -85,19 +85,19 @@ Document for EACH project:
 
 ### Simple Completion Format
 Use for **non-roadmap requests**:
-- ❌ Greetings: "hi", "hello", "how are you"
-- ❌ General queries: "list files in this project", "what is this codebase"
-- ❌ Information requests: "explain this function", "what does this do"
-- ❌ Simple questions that don't require implementation planning
+- Not allowed: Greetings: "hi", "hello", "how are you"
+- Not allowed: General queries: "list files in this project", "what is this codebase"
+- Not allowed: Information requests: "explain this function", "what does this do"
+- Not allowed: Simple questions that don't require implementation planning
 
 **Format**: `attempt_completion` with just a `result` field containing your response
 
 ### Full Roadmap Completion Format
 Use for **implementation planning requests**:
-- ✅ Feature requests: "add authentication", "create an API"
-- ✅ Bug fixes: "fix the login issue", "resolve database connection problems"
-- ✅ Architecture changes: "refactor to microservices", "add caching layer"
-- ✅ Integration requests: "connect project A to project B"
+- Allowed: Feature requests: "add authentication", "create an API"
+- Allowed: Bug fixes: "fix the login issue", "resolve database connection problems"
+- Allowed: Architecture changes: "refactor to microservices", "add caching layer"
+- Allowed: Integration requests: "connect project A to project B"
 
 **Format**: `attempt_completion` with full project roadmap structure including `projects` array and `summary`
 
