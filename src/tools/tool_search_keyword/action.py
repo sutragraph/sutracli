@@ -27,7 +27,6 @@ def group_matches_by_file(ripgrep_output: str) -> str:
 
     # Dictionary to store matches grouped by file
     file_matches = {}
-    current_group_matches = []
 
     for line in ripgrep_output.split('\n'):
         if not line.strip():
@@ -35,29 +34,27 @@ def group_matches_by_file(ripgrep_output: str) -> str:
 
         # Handle ripgrep separator lines between match groups
         if line == '--':
-            # Add spacing between different match groups within the same file
-            if current_group_matches:
-                current_group_matches.append("")  # Empty line for spacing
+            # Add spacing between match groups
+            if file_matches:
+                last_file = list(file_matches.keys())[-1]
+                file_matches[last_file].append("")
             continue
 
-        # Parse ripgrep output format: file:line:content or file-line-content (for context lines)
+        # Parse ripgrep output format: file:line:content or file-line-content
         separator = ':' if ':' in line else '-' if '-' in line else None
 
         if separator:
-            # Find the first and second separators to handle content with same separator
-            first_sep = line.find(separator)
-            if first_sep != -1:
-                second_sep = line.find(separator, first_sep + 1)
-                if second_sep != -1:
-                    file_path = line[:first_sep]
-                    line_number = line[first_sep + 1:second_sep]
-                    content = line[second_sep + 1:]
+            # Split only on first 2 occurrences to avoid splitting content that contains separators
+            parts = line.split(separator, 2)
 
-                    # Validate line number
-                    if line_number.strip() and line_number.strip().isdigit():
-                        if file_path not in file_matches:
-                            file_matches[file_path] = []
-                        file_matches[file_path].append(f"{line_number.strip()} | {content}")
+            if len(parts) == 3:
+                file_path, line_number, content = parts
+
+                if line_number.strip() and line_number.strip().isdigit():
+                    if file_path not in file_matches:
+                        file_matches[file_path] = []
+                    formatted_line = f"{line_number.strip()} | {content}"
+                    file_matches[file_path].append(formatted_line)
 
     # Format grouped output
     grouped_lines = []
@@ -210,6 +207,8 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
 
         before_lines = int(before_lines_param) if before_lines_param is not None else 0
         after_lines = int(after_lines_param) if after_lines_param is not None else 10
+
+        logger.debug(f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={action.parameters.get('regex', 'false')}")
         case_sensitive = (
             str(action.parameters.get("case_sensitive", "false")).lower() == "true"
         )
@@ -337,6 +336,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             else:
                 cmd.extend(["-F", keyword])  # Fixed string search
 
+            logger.debug(f"🔍 Built ripgrep command: {' '.join(cmd)}")
             return cmd
 
         all_results = []
