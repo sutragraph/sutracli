@@ -112,7 +112,7 @@ def beautify_enriched_block_context(
     if connection_mappings or incoming_conns or outgoing_conns:
         if connection_mappings:
             # Show detailed connection mappings first
-            result_parts.append("connections:")
+            result_parts.append("Connections:")
             result_parts.append("")
             mapping_lines = _format_connection_mappings(connection_mappings)
             result_parts.extend(mapping_lines)
@@ -223,7 +223,7 @@ def beautify_enriched_file_context(
     if connection_mappings or incoming_conns or outgoing_conns:
         if connection_mappings:
             # Show detailed connection mappings first
-            result_parts.append("connections:")
+            result_parts.append("Connections:")
             result_parts.append("")
             mapping_lines = _format_connection_mappings(connection_mappings)
             result_parts.extend(mapping_lines)
@@ -407,7 +407,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
 
     result_lines = []
 
-    for mapping in mappings:
+    for x, mapping in mappings:
         # Get sender and receiver info
         sender_file = mapping.get('sender_file_path', 'unknown')
         sender_project = mapping.get('sender_project', 'unknown')
@@ -423,7 +423,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
 
         # Add sender info with code snippet
         if sender_snippet and sender_lines:
-            result_lines.append(f"{sender_file} [project: {sender_project}]")
+            result_lines.append(f"{x}.) {sender_file} [project: {sender_project}]")
             # Parse and display code snippet with line numbers
             try:
                 import json
