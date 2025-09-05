@@ -407,7 +407,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
 
     result_lines = []
 
-    for x, mapping in mappings:
+    for x, mapping in enumerate(mappings, 1):
         # Get sender and receiver info
         sender_file = mapping.get('sender_file_path', 'unknown')
         sender_project = mapping.get('sender_project', 'unknown')

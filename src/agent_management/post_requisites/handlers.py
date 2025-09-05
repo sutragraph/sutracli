@@ -337,7 +337,7 @@ class RoadmapAgentHandler:
         try:
             result = Confirm.ask(
                 "[bold cyan]👤 Do you want to proceed with this roadmap?[/bold cyan]",
-                default=False,
+                default=True,
             )
 
             if result:

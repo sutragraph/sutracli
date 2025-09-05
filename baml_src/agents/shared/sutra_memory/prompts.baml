@@ -70,7 +70,7 @@ template_string SutraMemoryPrompt() #"
     ## CODE STORAGE
 
     Store code snippets you'll reference in future iterations:
-    Code Parameters: action: "add", id: "1", file: "src/auth/validator.py", start_line: 15, end_line: 28, description: "validateUser function signature - needs role parameter", content: "Optional code content for reference"
+    Code Parameters: action: "add", id: "1", file: "src/auth/validator.py", start_line: 15, end_line: 28, description: "validateUser function signature - needs role parameter"
 
     Remove when no longer needed:
     Code Parameters: action: "remove", id: "1"
@@ -110,8 +110,8 @@ template_string SutraMemoryPrompt() #"
     - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
     - Start next: action: "move", id: "2", from_status: "pending", to_status: "current"
     Code Parameters:
-    - Store validator: action: "add", id: "1", file: "src/auth/validator.py", start_line: 45, end_line: 67, description: "validateUser() implementation", content: "def validateUser(user_id, role=None): ..."
-    - Store user model: action: "add", id: "2", file: "src/models/user.py", start_line: 12, end_line: 25, description: "User class structure", content: "class User: def __init__(self): ..."
+    - Store validator: action: "add", id: "1", file: "src/auth/validator.py", start_line: 45, end_line: 67, description: "validateUser() implementation"
+    - Store user model: action: "add", id: "2", file: "src/models/user.py", start_line: 12, end_line: 25, description: "User class structure"
 
     ### Implementing Changes:
     Task Parameters:
