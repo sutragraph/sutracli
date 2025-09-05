@@ -514,6 +514,7 @@ def execute_structured_database_query(
                         code_content,
                         file_start_line=start_line or 1,
                         max_lines=SEARCH_CONFIG["chunk_size"],
+                        chunk_threshold=SEARCH_CONFIG["chunking_threshold"],
                     )
 
                     logger.debug(
@@ -695,6 +696,7 @@ def execute_structured_database_query(
                             code_content,
                             file_start_line=start_line or 1,
                             max_lines=SEARCH_CONFIG["chunk_size"],
+                            chunk_threshold=SEARCH_CONFIG["chunking_threshold"],
                         )
 
                         for chunk in chunks:

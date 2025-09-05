@@ -267,7 +267,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         # Add history from memory operations
         if hasattr(self, "memory_ops") and self.memory_ops.history:
             content.append("RECENT HISTORY:")
-            recent_history = self.memory_ops.get_recent_history(5)
+            recent_history = self.memory_ops.get_recent_history()
             for i, entry in enumerate(recent_history, 1):
                 content.append(f"{i}. {entry.summary}")
             content.append("")

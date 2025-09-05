@@ -5,6 +5,10 @@ from services.agent.memory_management.models import TaskStatus
 from src.utils.debug_utils import get_user_confirmation_for_llm_call
 from baml_client.types import Agent
 from src.tools.tool_executor import execute_tool
+from services.agent.session_management import SessionManager
+from .cross_indexing_task_manager import CrossIndexingTaskManager
+from .cross_index_phase import CrossIndexing
+from src.graph.graph_operations import GraphOperations
 
 
 class CrossIndexService:
@@ -21,10 +25,10 @@ class CrossIndexService:
 
     def __init__(
         self,
-        cross_indexing,
-        task_manager,
-        session_manager,
-        graph_ops,
+        cross_indexing: CrossIndexing,
+        task_manager: CrossIndexingTaskManager,
+        session_manager: SessionManager,
+        graph_ops: GraphOperations,
     ):
         self.cross_indexing = cross_indexing
         self.task_manager = task_manager
@@ -51,6 +55,7 @@ class CrossIndexService:
             current_iteration = 0
             max_iterations = 100
             last_tool_result = None
+            pending_code_manager_result = None
 
             while current_iteration < max_iterations:
                 current_iteration += 1
@@ -92,6 +97,21 @@ class CrossIndexService:
                     tool_params = tool_call.get("parameters", {})
 
                     if tool_name and tool_name != "attempt_completion":
+                        # Run code manager with previous tool result before executing new tool
+                        if (
+                            current_phase == 3
+                            and pending_code_manager_result is not None
+                            and pending_code_manager_result["tool_name"] in ["database", "search_keyword"]
+                        ):
+                            logger.debug(
+                                f"Running code manager with previous tool result: {pending_code_manager_result['tool_name']}"
+                            )
+                            self._process_tool_with_code_manager_from_status(
+                                pending_code_manager_result["tool_status"],
+                                pending_code_manager_result["tool_name"]
+                            )
+                            pending_code_manager_result = None
+
                         # Execute tool using execute_tool function (handles tool execution and status building)
                         tool_status = execute_tool(
                             Agent.CrossIndexing, tool_name, tool_params
@@ -104,18 +124,18 @@ class CrossIndexService:
                         }
                         self._memory_needs_update = True
 
-                        # Run code manager after processing database/search_keyword tools in Phase 3
+                        # Store result for code manager processing before next tool (in Phase 3)
                         if current_phase == 3 and tool_name in [
                             "database",
                             "search_keyword",
                         ]:
                             logger.debug(
-                                f"Running code manager after {tool_name} in Phase 3"
+                                f"Storing tool result for code manager processing: {tool_name}"
                             )
-                            # Note: We'll need to extract actual tool data from the status for code manager
-                            self._process_tool_with_code_manager_from_status(
-                                tool_status, tool_name
-                            )
+                            pending_code_manager_result = {
+                                "tool_name": tool_name,
+                                "tool_status": tool_status,
+                            }
 
                     elif tool_name == "attempt_completion":
                         task_complete = True
@@ -166,12 +186,27 @@ class CrossIndexService:
                             )
 
                             last_tool_result = None
+                            pending_code_manager_result = None
                             continue
                         else:
                             logger.error(f"Phase {current_phase} completion failed")
                             return
 
                     elif current_phase == 3:
+                        # Process any remaining code manager result before Phase 3 completion
+                        if (
+                            pending_code_manager_result is not None
+                            and pending_code_manager_result["tool_name"] in ["database", "search_keyword"]
+                        ):
+                            logger.debug(
+                                f"Processing final code manager result before Phase 3 completion: {pending_code_manager_result['tool_name']}"
+                            )
+                            self._process_tool_with_code_manager_from_status(
+                                pending_code_manager_result["tool_status"],
+                                pending_code_manager_result["tool_name"]
+                            )
+                            pending_code_manager_result = None
+
                         # Phase 3 complete - advance to Phase 4 (preserve memory)
                         self.cross_indexing.current_phase = 4
                         # Don't call task_manager.set_current_phase to preserve memory
@@ -417,7 +452,7 @@ Tool Results:
                     if self._is_duplicate_code_snippet(file_path, start_line, end_line):
                         code_snippets_skipped += 1
                         logger.debug(
-                            f"Skipped duplicate code snippet: {file_path} lines {start_line}-{end_line}"
+                            f"Processed overlapping/duplicate code snippet: {file_path} lines {start_line}-{end_line}"
                         )
                         continue
 
@@ -440,11 +475,11 @@ Tool Results:
 
                 if code_snippets_added > 0:
                     logger.debug(
-                        f"Successfully processed BAML code manager: {code_snippets_added} code snippets added, {code_snippets_skipped} duplicates skipped"
+                        f"Successfully processed BAML code manager: {code_snippets_added} code snippets added, {code_snippets_skipped} overlapping/duplicates processed"
                     )
                 elif code_snippets_skipped > 0:
                     logger.debug(
-                        f"BAML code manager processing: {code_snippets_skipped} duplicate code snippets skipped (already in memory)"
+                        f"BAML code manager processing: {code_snippets_skipped} overlapping/duplicate code snippets processed (merged or already in memory)"
                     )
                 else:
                     logger.warning(
@@ -463,7 +498,7 @@ Tool Results:
         self, file_path: str, start_line: int, end_line: int
     ) -> bool:
         """
-        Check if a code snippet already exists in memory.
+        Check if a code snippet already exists in memory and handle merging of overlapping ranges.
 
         Args:
             file_path: Path to the file
@@ -471,7 +506,7 @@ Tool Results:
             end_line: Ending line number
 
         Returns:
-            True if duplicate exists, False otherwise
+            True if duplicate exists (exact match), False otherwise
         """
         try:
             if (
@@ -481,7 +516,7 @@ Tool Results:
                 return False
 
             for existing_snippet in self.task_manager.memory_ops.code_snippets.values():
-                # Check for exact match: same file and overlapping or identical line ranges
+                # Check for exact match: same file and identical line ranges
                 if (
                     existing_snippet.file_path == file_path
                     and existing_snippet.start_line == start_line
@@ -497,13 +532,53 @@ Tool Results:
                     logger.debug(
                         f"Found overlapping code snippet in {file_path}: existing {existing_snippet.start_line}-{existing_snippet.end_line}, new {start_line}-{end_line}"
                     )
-                    return True
+                    
+                    # Merge the overlapping ranges by expanding the existing snippet
+                    merged_start = min(existing_snippet.start_line, start_line)
+                    merged_end = max(existing_snippet.end_line, end_line)
+                    
+                    logger.debug(
+                        f"Merging code snippets: removing existing {existing_snippet.start_line}-{existing_snippet.end_line} and new {start_line}-{end_line}, replacing with merged {merged_start}-{merged_end}"
+                    )
+                    
+                    # Update the existing snippet with merged range
+                    self._update_code_snippet_range(existing_snippet, merged_start, merged_end)
+                    
+                    return True  # Return True to skip adding the new snippet since we merged it
 
             return False
 
         except Exception as e:
             logger.warning(f"Error checking for duplicate code snippet: {e}")
             return False  # If we can't check, allow the addition
+    
+    def _update_code_snippet_range(self, existing_snippet, new_start_line: int, new_end_line: int):
+        """
+        Update an existing code snippet with a new line range and fetch updated content.
+        
+        Args:
+            existing_snippet: The existing CodeSnippet object
+            new_start_line: New starting line number
+            new_end_line: New ending line number
+        """
+        try:
+            # Update the snippet's line range
+            existing_snippet.start_line = new_start_line
+            existing_snippet.end_line = new_end_line
+            
+            # Fetch the updated content for the expanded range
+            if hasattr(self.task_manager.memory_ops, 'code_fetcher'):
+                updated_content = self.task_manager.memory_ops.code_fetcher.fetch_code_from_file(
+                    existing_snippet.file_path, new_start_line, new_end_line
+                )
+                existing_snippet.content = updated_content
+                
+            logger.debug(
+                f"Successfully updated code snippet {existing_snippet.id} to range {new_start_line}-{new_end_line}"
+            )
+            
+        except Exception as e:
+            logger.warning(f"Error updating code snippet range: {e}")
 
     def _update_session_memory(self):
         """Update session memory with current state."""

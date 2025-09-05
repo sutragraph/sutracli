@@ -14,7 +14,7 @@ class SearchKeywordParams {
 
 class SearchKeywordParamsWithoutProjectName{
   keyword string
-  file_paths string
+  file_paths string?
   before_lines int?
   after_lines int?
   case_sensitive bool?

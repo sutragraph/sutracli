@@ -24,7 +24,7 @@ class MemoryOperations:
         self.file_changes: List[FileChange] = []
         self.task_id_counter = 0
         self.code_id_counter = 0
-        self.max_history_entries = 50
+        self.max_history_entries = 40
         self.code_fetcher = CodeFetcher()
 
     def get_next_task_id(self) -> str:
@@ -131,7 +131,7 @@ class MemoryOperations:
         for task in self.tasks.values():
             if task.status == TaskStatus.CURRENT:
                 current_tasks.append(task)
-        
+
         return current_tasks[0] if current_tasks else None
 
     def get_tasks_by_status(self, status: TaskStatus) -> List[Task]:
@@ -140,7 +140,7 @@ class MemoryOperations:
         for task in self.tasks.values():
             if task.status == status:
                 matching_tasks.append(task)
-        
+
         return matching_tasks
 
     def clear_completed_tasks(self) -> int:
@@ -329,26 +329,13 @@ class MemoryOperations:
 
         return True
 
-    def add_history_entry(self, history_entry: HistoryEntry) -> bool:
-        """
-        Add enhanced history entry with full details.
-
-        Args:
-            history_entry: Enhanced history entry with tool details
-
-        Returns:
-            bool: True if history was added successfully
-        """
-        self.history.append(history_entry)
-
-        if len(self.history) > self.max_history_entries:
-            self.history = self.history[-self.max_history_entries :]
-
-        return True
-
-    def get_recent_history(self, count: int = 5) -> List[HistoryEntry]:
+    def get_recent_history(self) -> List[HistoryEntry]:
         """Get recent history entries"""
-        return self.history[-count:] if count <= len(self.history) else self.history
+        return (
+            self.history[-self.max_history_entries :]
+            if self.max_history_entries <= len(self.history)
+            else self.history
+        )
 
     # Memory State Methods
     def get_memory_summary(self) -> Dict[str, Any]:
@@ -380,7 +367,8 @@ class MemoryOperations:
             "file_changes": {
                 "total": len(self.file_changes),
                 "recent": [
-                    (change.path, change.operation) for change in self.file_changes[-5:]
+                    (change.path, change.operation)
+                    for change in self.file_changes[-15:]
                 ],
             },
         }

@@ -115,13 +115,13 @@ class SutraMemoryManager:
         """Add history entry (mandatory in every response)"""
         return self.memory_ops.add_history(summary)
 
-    def get_recent_history(self, count: int = 5) -> List[HistoryEntry]:
+    def get_recent_history(self) -> List[HistoryEntry]:
         """Get recent history entries"""
-        return self.memory_ops.get_recent_history(count)
+        return self.memory_ops.get_recent_history()
 
-    def get_tool_history(self, count: int = 10) -> List[HistoryEntry]:
+    def get_tool_history(self) -> List[HistoryEntry]:
         """Get recent tool execution history with validation results"""
-        history = self.get_recent_history(count)
+        history = self.get_recent_history()
         return [h for h in history if h.tool_name is not None]
 
     # Structured Object Processing Methods

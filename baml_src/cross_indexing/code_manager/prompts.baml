@@ -10,9 +10,10 @@ template_string SystemPrompt_Manager(home: string, current_dir: string) #"
 
 template_string UserPrompt_Manager(tool_results: string) #"
 {{ _.role("user") }}
-# TOOL RESULTS TO ANALYZE
+# CODE SNIPPET TO ANALYZE
 
-Please analyze the following tool results from cross-indexing analysis and extract any connection code that should be returned:
+Please analyze the following code snippet from cross-indexing analysis and extract any connection code that should be returned:
+
 {{tool_results}}
 "#
 

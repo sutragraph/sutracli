@@ -62,4 +62,4 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
 
             return build_tool_status(tool_name, delivery_result, agent)
 
-    return f"No result for {tool_name}"
+    return f"No more results available for {tool_name}\n parameters: {tool_params}"

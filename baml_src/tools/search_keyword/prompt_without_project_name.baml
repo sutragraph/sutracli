@@ -9,13 +9,13 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
       * Single keyword: "functionName"
       * Multiple patterns: "pattern1|pattern2|pattern3" (use with regex=true)
       * Regex pattern: "\\.(get|post|put)\\s*\\(" (use with regex=true)
-    - file_paths: Comma-separated file or directory paths to search. Use this when you know specific paths to search.
 
     Optional Parameters:
     - before_lines: Lines before match (default: 0)
     - after_lines: Lines after match (default: 5)
     - case_sensitive: Case-sensitive search (default: false)
     - regex: Treat keyword as regex pattern (default: false)
+    - file_paths: Comma-separated file or directory paths to search.
     - fetch_next_chunk: Set to true to fetch next chunks of results when more are available (default: false)
 
     Notes:
@@ -28,7 +28,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
       "tool_name": "search_keyword",
       "parameters": {
         "keyword": "your_search_pattern",
-        "file_paths": "path/to/file1,path/to/dir2",
+        "file_paths": "path/to/file1, path/to/dir2",
         "before_lines": 0,
         "after_lines": 5,
         "case_sensitive": true|false,
@@ -43,7 +43,7 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
       "tool_name": "search_keyword",
       "parameters": {
         "keyword": "getUserById",
-        "file_paths": "src/services/user-service.ts, src/controllers/user-controller.ts",
+        "file_paths": ".",
         "before_lines": 0,
         "after_lines": 5
       }

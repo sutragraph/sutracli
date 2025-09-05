@@ -1,10 +1,9 @@
 from typing import Any, Dict
-from loguru import logger
 from utils.console import console
 from rich.panel import Panel
 from rich.text import Text
 from rich.console import Group
-from baml_client.types import Agent, ImpactLevel, FileOperation
+from baml_client.types import Agent, ImpactLevel
 
 
 def build_tool_status(tool_name: str, event: Dict[str, Any], agent: Agent) -> str:

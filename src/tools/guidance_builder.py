@@ -157,13 +157,17 @@ def build_database_guidance_with_line_info(
             total_chunks = chunk_info.get("total_chunks", 1)
             original_file_lines = chunk_info.get("original_file_lines", total_lines)
 
-            message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
             if chunk_num < total_chunks:
+                message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
                 message += _get_fetch_next_chunk_note()
+            else:
+                message = f"Found 1 node with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
         else:
-            message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{delivered_lines} lines)"
             if delivered_lines < total_lines:
+                message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{delivered_lines} lines)"
                 message += _get_fetch_next_chunk_note()
+            else:
+                message = f"Found 1 node with {total_lines} total lines. Showing (1-{delivered_lines} lines) - Complete result."
     else:
         # For multiple nodes, check if we have chunk info to show line ranges
         if chunk_info:
@@ -174,9 +178,11 @@ def build_database_guidance_with_line_info(
             original_file_lines = chunk_info.get("original_file_lines", total_lines)
 
             # Show actual line range instead of just counts
-            message = f"Found {total_nodes} nodes with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
             if chunk_num < total_chunks:
+                message = f"Found {total_nodes} nodes with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
                 message += _get_fetch_next_chunk_note()
+            else:
+                message = f"Found {total_nodes} nodes with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
         else:
             # Fallback to original format when no chunk info available
             message = f"Found {total_nodes} nodes with {total_lines} total lines. Delivered {delivered_nodes} nodes ({delivered_lines} lines)."
@@ -320,13 +326,14 @@ def enhance_database_search_event(
         total_chunks = chunk_info.get("total_chunks", 1)
         original_file_lines = chunk_info.get("original_file_lines", 0)
 
-        guidance_message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
-
-        # Add fetch_next_chunk note if there are more chunks
+        # Check if there are more chunks to determine the message
         if chunk_num < total_chunks:
+            guidance_message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
             guidance_message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
 
 Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+        else:
+            guidance_message = f"Found 1 node with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
 
         # Add guidance as prefix to data
         event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
@@ -336,9 +343,11 @@ Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total
         # Single node scenario (non-chunked)
         if should_chunk_delivery(data):
             # Fallback to content-based chunking detection
-            guidance_message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{current_lines} lines)"
             if current_lines < total_lines:
+                guidance_message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{current_lines} lines)"
                 guidance_message += _get_fetch_next_chunk_note()
+            else:
+                guidance_message = f"Found 1 node with {total_lines} total lines. Showing (1-{current_lines} lines) - Complete result."
         else:
             guidance_message = f"Found 1 node with {current_lines} lines (complete)."
     else:
@@ -712,13 +721,14 @@ class ListFilesGuidance(BaseToolGuidance):
         end_line = chunk_info.get("end_line", 0)
         original_file_lines = chunk_info.get("original_file_lines", 0)
 
-        message = f"Found file listing with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
-
-        # Add fetch_next_chunk note if there are more chunks
+        # Check if there are more chunks to determine the message
         if chunk_num < total_chunks:
+            message = f"Found file listing with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
             message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
 
 Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+        else:
+            message = f"Found file listing with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
 
         return message
 
@@ -788,13 +798,14 @@ class SearchKeywordGuidance(BaseToolGuidance):
         end_line = chunk_info.get("end_line", 0)
         original_file_lines = chunk_info.get("original_file_lines", 0)
 
-        message = f"Found keyword matches with {original_file_lines} total result lines. There are more results available showing only ({start_line}-{end_line} lines)"
-
-        # Add fetch_next_chunk note if there are more chunks
+        # Check if there are more chunks to determine the message
         if chunk_num < total_chunks:
+            message = f"Found keyword matches with {original_file_lines} total result lines. There are more results available showing only ({start_line}-{end_line} lines)"
             message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
 
 Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+        else:
+            message = f"Found keyword matches with {original_file_lines} total result lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
 
         return message
 

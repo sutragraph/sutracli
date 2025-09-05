@@ -227,9 +227,10 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             if detection_result:
                 project_name, matched_paths = detection_result
 
-        # Validate that either file_paths or project_name is provided
+        # Handle case when neither file_paths nor project_name is provided
         if not file_paths_str and not project_name:
-            raise Exception("Either file_paths or project_name must be provided")
+            # Use current directory instead of raising an exception
+            file_paths_str = "."
 
         # Handle path resolution based on priority and relative/absolute paths
         project_base_path = None
