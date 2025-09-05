@@ -285,6 +285,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
                 if snippet.content:
                     for line in snippet.content.split("\n"):
                         content.append(f"  {line}")
+                    content.append("")
                 else:
                     content.append("")
 
