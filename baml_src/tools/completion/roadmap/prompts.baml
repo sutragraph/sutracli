@@ -1,6 +1,7 @@
 // Roadmap Completion Tool Prompts
 
 template_string RoadmapCompletionToolTemplate() #"
+  ====
     ## attempt_completion
     Description: Complete strategic roadmap analysis with simple project instructions. Each project contains a list of files and their change instructions that sub-agents can execute independently.
 

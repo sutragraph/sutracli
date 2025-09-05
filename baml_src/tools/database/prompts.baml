@@ -1,6 +1,8 @@
 // Database Tool Prompts
 
 template_string DatabaseToolTemplate() #"
+  ====
+
     ## database
     Description: Query structured codebase metadata and retrieve complete code content. Use this tool to get file information, code block summaries, and dependency chains. This tool provides structured access to the codebase knowledge graph.
 

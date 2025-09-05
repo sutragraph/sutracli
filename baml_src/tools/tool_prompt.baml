@@ -1,5 +1,6 @@
 template_string GlobalToolsPrompt(tools: ToolName[]) #"
-## Available Tools
+====
+# Tools
 
 {% for tool in tools %}
 {% if tool == ToolName.Database %}
@@ -40,4 +41,5 @@ template_string ToolsPrompt(agent_name: Agent, tools: ToolName[]) #"
 {% endif %}
 
 {{ CompletionToolPrompt(agent_name) }}
+====
 "#

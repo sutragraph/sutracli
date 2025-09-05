@@ -1,6 +1,8 @@
 // Semantic Search Tool Prompts
 
 template_string SemanticSearchToolTemplate() #"
+====
+
     ## semantic_search
     Description: Find similar implementations and patterns in codebase using semantic similarity. Use when you DON'T have specific function/class/file/method names (use database for specific names). Use for discovering existing patterns before creating new code.
 
