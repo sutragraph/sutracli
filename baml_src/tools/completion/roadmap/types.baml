@@ -12,39 +12,43 @@ enum ImpactLevel {
   Low @alias("Low")
   NoImpact @alias("None")
 }
-
-
+enum ContractRole {
+  Provider @alias("provider")     // This project implements this contract
+  Consumer @alias("consumer")     // This project uses this contract
+}
 
 class ContractField {
   name string
-  type string
+  type string                     // string, integer, object, array, boolean
   required bool
   description string?
-  validation_rules string?
+  validation string?              // "enum:day,month,date" | "format:YYYY-MM-DD" | "min:1,max:100"
+  nested ContractField[]?         // For objects/arrays - only show structure, not all fields
 }
 
 class Contract {
-  contract_id string              // Unique identifier for this contract
-  contract_type string            // Type of contract (api, function, database, event, etc.)
-  name string                     // Contract name/title
-  description string              // What this contract defines
-
-  // Interface specification (generic key-value pairs for contract-specific details)
-  // Examples:
-  // API: {"endpoint": "/api/users", "method": "POST"}
-  // Function: {"function_name": "getUserById", "module": "user_service"}
-  // Database: {"table": "users", "operation": "insert"}
-  // Event: {"event_name": "user_created", "channel": "user_events"}
-  interface map<string, string>   // Contract-specific interface details
-
-  // Contract specifications
-  input_format ContractField[]?   // Input data structure
-  output_format ContractField[]?  // Output data structure
-  error_codes string[]?           // Possible error codes/messages
-
-  // Additional contract details
-  validation_rules string?        // Validation requirements
-  examples string?                // Usage examples
+  contract_id string
+  contract_type string            // api, function, database, event
+  name string
+  description string              // One clear sentence
+  role ContractRole
+  
+  // Core interface
+  interface map<string, string>   // Essential details only
+  
+  // Data structure (show key fields only)
+  input_format ContractField[]?   
+  output_format ContractField[]?  
+  error_codes string[]?
+  
+  // Essential implementation details
+  authentication_required bool?
+  
+  // Complete working examples (most important part)
+  examples string                 // Success + Error examples with real data
+  
+  // Brief implementation guidance
+  implementation_notes string?
 }
 
 class ChangeInstruction {

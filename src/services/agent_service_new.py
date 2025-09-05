@@ -68,10 +68,10 @@ class AgentService:
             self.current_project_name
         )
 
-        self._should_index_current_project = not is_project_indexed
+        self._should_index_current_project = False
 
-        if not is_project_indexed:
-            self._prompt_and_index_project(project_path)
+        # if not is_project_indexed:
+        #     self._prompt_and_index_project(project_path)
 
     def _prompt_and_index_project(self, project_path: Path) -> None:
         """Prompt user to index the current project if it's not already indexed.

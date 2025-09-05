@@ -313,10 +313,10 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
 
         # Impact level styling
         impact_colors = {
-            ImpactLevel.High: "red",
-            ImpactLevel.Medium: "yellow",
-            ImpactLevel.Low: "blue",
-            ImpactLevel.NoImpact: "dim"
+            "High": "red",
+            "Medium": "yellow",
+            "Low": "blue",
+            "None": "dim"
         }
         impact_color = impact_colors.get(impact_level, "white")
 
@@ -441,7 +441,9 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                 contract_type = contract.get("contract_type", "Unknown")
                 contract_name = contract.get("name", "Unnamed Contract")
                 description = contract.get("description", "")
+                role = contract.get("role", "")
                 interface = contract.get("interface", {})
+                authentication_required = contract.get("authentication_required", False)
 
                 # Contract header line
                 contract_line = Text()
@@ -450,10 +452,14 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                 contract_line.append(f" → {contract_name}")
                 content_elements.append(contract_line)
 
-                # Contract ID
+                # Contract ID and Role
                 id_text = Text("     ")
                 id_text.append("ID: ", style="bold")
                 id_text.append(contract_id, style="magenta")
+                if role:
+                    id_text.append(" | Role: ", style="bold")
+                    role_color = "green" if role == "provider" else "blue"
+                    id_text.append(role.upper(), style=f"bold {role_color}")
                 content_elements.append(id_text)
 
                 # Description
@@ -473,7 +479,14 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                     interface_text.append(", ".join(interface_parts))
                     content_elements.append(interface_text)
 
-                # Input/Output formats
+                # Authentication
+                if authentication_required:
+                    auth_text = Text("     ")
+                    auth_text.append("Authentication: ", style="bold")
+                    auth_text.append("Required", style="red")
+                    content_elements.append(auth_text)
+
+                # Input/Output formats (simplified for display)
                 input_format = contract.get("input_format", [])
                 if input_format:
                     input_text = Text("     ")
@@ -483,9 +496,9 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                         field_name = field.get("name", "")
                         field_type = field.get("type", "")
                         required = field.get("required", False)
-                        req_marker = " (required)" if required else ""
+                        req_marker = "*" if required else ""
                         input_fields.append(f"{field_name}: {field_type}{req_marker}")
-                    input_text.append(", ".join(input_fields))
+                    input_text.append(", ".join(input_fields))  #
                     content_elements.append(input_text)
 
                 output_format = contract.get("output_format", [])
@@ -566,9 +579,11 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
             contract_id = contract.get("contract_id", "")
             contract_type = contract.get("contract_type", "")
             contract_name = contract.get("name", "")
+            role = contract.get("role", "")
 
+            role_text = f" ({role})" if role else ""
             status_parts.append(
-                f"       Contract {j}: {contract_type} - {contract_name} (ID: {contract_id})"
+                f"       Contract {j}: {contract_type} - {contract_name}{role_text} (ID: {contract_id})"
             )
 
     return "\n".join(status_parts)
