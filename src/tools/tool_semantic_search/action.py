@@ -416,6 +416,6 @@ def execute_semantic_search_action(action: AgentAction) -> Iterator[Dict[str, An
         yield {
             "tool_name": "semantic_search",
             "type": "tool_error",
-            "error": str(e),
+            "error": f"Semantic search failed: {str(e)}\nParameters used:\n {action.parameters}",
             "project_name": action.parameters.get("project_name"),
         }

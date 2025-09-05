@@ -208,7 +208,11 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         before_lines = int(before_lines_param) if before_lines_param is not None else 0
         after_lines = int(after_lines_param) if after_lines_param is not None else 10
 
-        logger.debug(f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={action.parameters.get('regex', 'false')}")
+        logger.debug(
+            f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={
+                action.parameters.get(
+                    'regex',
+                    'false')}")
         case_sensitive = (
             str(action.parameters.get("case_sensitive", "false")).lower() == "true"
         )
@@ -475,7 +479,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
     except Exception as e:
         yield {
             "type": "tool_error",
-            "error": f"Failed to search keyword: {str(e)}",
+            "error": f"Failed to search keyword: {str(e)}\nParameters used:\n {action.parameters}",
             "tool_name": "search_keyword",
             "project_name": action.parameters.get("project_name"),
         }
