@@ -419,11 +419,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
         receiver_snippet = mapping.get('receiver_code_snippet', '')
         receiver_lines = mapping.get('receiver_snippet_lines', '')
 
-        technology = mapping.get('technology_name', 'Unknown')
-        confidence = mapping.get('match_confidence', 0)
-
-        # Format confidence
-        conf_str = f"{int(confidence * 100)}%" if isinstance(confidence, (int, float)) else str(confidence)
+        technology = mapping.get("technology_name", "Unknown")
 
         # Add sender info with code snippet
         if sender_snippet and sender_lines:
@@ -452,7 +448,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
             result_lines.append(f"{sender_file} [project: {sender_project}]")
 
         # Add connection indicator
-        result_lines.append(f"↓ [{technology}] {conf_str}")
+        result_lines.append(f"[{technology}] Connection Connected with")
 
         # Add receiver info with code snippet
         if receiver_snippet and receiver_lines:
@@ -544,12 +540,7 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
 
         # Add technology info
         tech_name = conn.get('technology_name', technology)
-        confidence = conn.get('match_confidence')
-        if confidence is not None:
-            conf_str = f"{int(confidence * 100)}%" if isinstance(confidence, (int, float)) else str(confidence)
-            result_lines.append(f"↔ [{tech_name}] {conf_str}")
-        else:
-            result_lines.append(f"↔ [{tech_name}]")
+        result_lines.append(f"[{tech_name}] Connection Connected with")
 
         # Add spacing between connections
         if i < len(connections) - 1:
