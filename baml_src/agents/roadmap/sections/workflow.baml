@@ -10,12 +10,33 @@ template_string RoadmapWorkflow() #"
 2. Categorize: High/Medium/Low/Not Applicable with reasoning
 3. Identify integration points between projects
 
-### Phase 2: Analysis
+### Phase 2: Pattern Analysis & Reuse Assessment
+**CRITICAL**: Always prioritize reusing and extending existing code over creating new implementations.
+
 1. **MANDATORY Pattern Discovery**: Search for existing implementation patterns, conventions, and architectural structures BEFORE designing new solutions
-2. Use semantic_search with `project_name` for targeted project analysis
-3. Use search_keyword with `project_name` for specific symbols
-4. Use ecosystem-wide searches (no project_name) for cross-project patterns
-5. Store complete context with project disambiguation
+2. **Similar Function Analysis**: Search for existing functions that perform similar operations:
+   - Find functions with similar names or purposes using semantic search or keyword search
+   - Analyze if existing functions can be reused with minimal or no modifications
+   - Check if existing functions can be extended rather than duplicated
+3. **Dependency Analysis**: Before introducing new dependencies:
+   - Search existing dependency management files (package.json, requirements.txt, Cargo.toml, etc.)
+   - Verify if required libraries are already available in the project
+   - Check existing import patterns and library usage conventions
+   - Reuse existing dependency versions and patterns
+4. **Architecture Pattern Matching**: Before creating new components:
+   - Search for similar implementations (endpoints, data access, services, etc.)
+   - Check existing structures, naming conventions, and response formats
+   - Analyze existing authentication, error handling, and integration patterns
+5. **Code Reuse Validation**: For each identified similar function:
+   - Analyze compatibility of input/output parameters
+   - Check if minimal modifications can accommodate new requirements
+   - Verify integration compatibility with existing patterns
+6. **Technical Analysis Execution**:
+   - Use semantic_search with `project_name` for targeted project analysis
+   - Use search_keyword with `project_name` for specific symbols and function names
+   - Use ecosystem-wide searches (no project_name) for cross-project patterns
+   - Store complete context with project disambiguation
+   - Document reuse decisions: what exists, why it can/cannot be reused, what modifications needed
 
 ### Phase 3: Impact Assessment
 Document for EACH project:
@@ -88,28 +109,28 @@ Use for **implementation planning requests**:
 ## SCOPE CONSTRAINTS
 
 **MANDATORY SIMPLICITY CHECKS**:
-□ Default to ONE solution, not multiple (one endpoint, not three controllers)
-□ Extend existing files before creating new ones
-□ Reuse existing patterns and functions
-□ Simple implementations over complex architectures
-□ **FOLLOW EXISTING PATTERNS**: Match established conventions, structures, and naming patterns
+[ ] Default to ONE solution, not multiple (one endpoint, not three controllers)
+[ ] Extend existing files before creating new ones
+[ ] Reuse existing patterns and functions
+[ ] Simple implementations over complex architectures
+[ ] **FOLLOW EXISTING PATTERNS**: Match established conventions, structures, and naming patterns
 
 ## ANTI-PATTERNS
 
 **FORBIDDEN**:
-- ❌ Over-engineering: Creating 3 controllers when user asks for "an API"
-- ❌ Single-project fixation without ecosystem analysis
-- ❌ Missing cross-project integration points
-- ❌ Vague instructions without exact file paths and contracts
+- [FORBIDDEN] Over-engineering: Creating 3 controllers when user asks for "an API"
+- [FORBIDDEN] Single-project fixation without ecosystem analysis
+- [FORBIDDEN] Missing cross-project integration points
+- [FORBIDDEN] Vague instructions without exact file paths and contracts
 
 ## SUCCESS CRITERIA
 
-✅ All projects in context evaluated with reasoning
-✅ Minimal, simple solutions that extend existing code
-✅ Exact implementation instructions for follow-up agents
-✅ **MANDATORY**: Complete integration contracts between projects with unique IDs
-✅ Contract specifications include input/output formats, error codes, and examples
-✅ Each project receives all contracts it needs to implement
+[SUCCESS] All projects in context evaluated with reasoning
+[SUCCESS] Minimal, simple solutions that extend existing code
+[SUCCESS] Exact implementation instructions for follow-up agents
+[SUCCESS] **MANDATORY**: Complete integration contracts between projects with unique IDs
+[SUCCESS] Contract specifications include input/output formats, error codes, and examples
+[SUCCESS] Each project receives all contracts it needs to implement
 
 
 "#
