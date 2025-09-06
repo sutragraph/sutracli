@@ -1,0 +1,3 @@
+class BaseCompletionParams{
+  result string
+}

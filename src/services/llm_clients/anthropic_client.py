@@ -16,7 +16,7 @@ class AnthropicClient(LLMClientBase):
     def _initialize_client(self):
         try:
             self.client = anthropic.Anthropic(api_key=self.api_key)
-            logger.info("🤖 Anthropic client initialized successfully")
+            print("🤖 Anthropic client initialized successfully")
         except Exception as e:
             logger.error(f"❌ Failed to initialize Anthropic client: {e}")
             raise

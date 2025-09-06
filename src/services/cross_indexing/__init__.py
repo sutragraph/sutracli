@@ -8,10 +8,10 @@ inter-service connections and dependencies.
 
 from .core.cross_index_service import CrossIndexService
 from .core.cross_index_system import CrossIndexSystem
-from .prompts.cross_index_prompt_manager_5phase import CrossIndex5PhasePromptManager
+from .core.cross_index_phase import CrossIndexing
 
 __all__ = [
     "CrossIndexService",
     "CrossIndexSystem",
-    "CrossIndex5PhasePromptManager"
+    "CrossIndexing",
 ]

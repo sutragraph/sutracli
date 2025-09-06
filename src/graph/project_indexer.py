@@ -14,7 +14,7 @@ from config.settings import config
 from graph.graph_operations import GraphOperations
 
 # Import indexer functions for file processing
-from indexer import compute_directory_hashes
+from utils.hash_utils import compute_directory_hashes
 from indexer.ast_parser import ASTParser
 from utils.file_utils import (
     get_extraction_file_path,
@@ -43,10 +43,7 @@ class ProjectIndexer:
         self.converter = ASTToSqliteConverter()
         self.graphOperations = GraphOperations()
         self.graph_ops = GraphOperations()
-        self.embedding_engine = get_embedding_engine(
-            max_tokens=config.embedding.max_tokens,
-            overlap_tokens=config.embedding.overlap_tokens,
-        )
+        self.embedding_engine = get_embedding_engine()
 
         # Use provided memory manager or create new one (lazy import to avoid circular imports)
         if sutra_memory_manager:
@@ -712,7 +709,7 @@ class ProjectIndexer:
         project_id = project.id
 
         # Load the parsed data for embedding generation
-        from utils import load_json_file
+        from src.utils import load_json_file
 
         json_data = load_json_file(parser_output_path)
         # ExtractionData already imported at top

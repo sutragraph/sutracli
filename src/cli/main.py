@@ -72,7 +72,7 @@ def setup_baml_environment():
                 if value:
                     os.environ[env_var] = str(value)
 
-        os.environ["BAML_LOG"] = "WARN"
+        os.environ["BAML_LOG"] = "OFF"
 
     except Exception as e:
         # Silent fail - don't break CLI if environment setup fails
@@ -99,8 +99,8 @@ from cli.commands import (
     handle_web_scrap_command,
     handle_version_command,
     handle_cross_indexing_command,
+    handle_run_phase5_command,
 )
-from cli.phase5_command import handle_run_phase5_command
 from cli.utils import (
     process_multiple_projects,
     load_project_config,
@@ -183,23 +183,19 @@ def main():
             handle_web_search_command(args)
         elif args.command == "web_scrap":
             handle_web_scrap_command(args)
-
         elif args.command == "version":
             handle_version_command(args)
-
         elif args.command == "cross-indexing":
             handle_cross_indexing_command(args)
-
         elif args.command == "run-phase5":
-            handle_run_phase5_command()
-
+            handle_run_phase5_command(args)
         else:
             logger.error(f"Unknown command: {args.command}")
             parser.print_help()
             sys.exit(1)
 
     except KeyboardInterrupt:
-        logger.info("Operation interrupted by user")
+        print("Operation interrupted by user")
         sys.exit(1)
     except Exception as e:
         logger.error(f"Unexpected error: {e}")

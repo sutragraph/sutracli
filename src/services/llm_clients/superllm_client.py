@@ -3,7 +3,7 @@ from loguru import logger
 from typing import List, Dict, Any, Union
 from .llm_client_base import LLMClientBase, TokenUsage, LLMResponse
 from config import config
-from ..auth.token_manager import get_token_manager
+from services.auth.token_manager import get_token_manager
 
 
 class SuperLLMClient(LLMClientBase):
@@ -48,7 +48,7 @@ class SuperLLMClient(LLMClientBase):
                 config_token,
                 {"api_endpoint": self.api_endpoint, "source": "config_migration"},
             )
-            logger.info("Migrated Firebase token from config to secure storage")
+            print("Migrated Firebase token from config to secure storage")
 
         if not self.firebase_token:
             logger.warning(
@@ -62,7 +62,7 @@ class SuperLLMClient(LLMClientBase):
                 "Please run 'sutra auth login' to authenticate with SuperLLM."
             )
 
-        logger.info("🚀 SuperLLM client initialized successfully")
+        print("🚀 SuperLLM client initialized successfully")
 
     def _get_headers(self) -> Dict[str, str]:
         """Get headers for API requests."""
@@ -83,7 +83,7 @@ class SuperLLMClient(LLMClientBase):
 
         if new_token and new_token != self.firebase_token:
             self.firebase_token = new_token
-            logger.info("Firebase token refreshed from storage")
+            print("Firebase token refreshed from storage")
             return True
 
         return False

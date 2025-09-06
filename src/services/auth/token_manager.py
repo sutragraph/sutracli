@@ -24,7 +24,7 @@ class TokenManager:
     
     Tokens are encrypted and stored in ~/.sutra/auth/ directory.
     """
-    
+
     def __init__(self, storage_dir: Optional[str] = None):
         """
         Initialize token manager.
@@ -34,17 +34,17 @@ class TokenManager:
         """
         self.storage_dir = Path(storage_dir or Path.home() / ".sutra" / "auth")
         self.storage_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Token file paths
         self.tokens_file = self.storage_dir / "tokens.enc"
         self.key_file = self.storage_dir / "key.dat"
-        
+
         # Initialize encryption
         self._encryption_key = self._get_or_create_encryption_key()
         self._cipher = Fernet(self._encryption_key)
-        
+
         logger.debug(f"Token manager initialized with storage: {self.storage_dir}")
-    
+
     def _get_or_create_encryption_key(self) -> bytes:
         """Get or create encryption key for token storage."""
         if self.key_file.exists():
@@ -56,7 +56,7 @@ class TokenManager:
             machine_id = self._get_machine_id()
             password = machine_id.encode()
             salt = b'sutraknowledge_salt_v1'  # Fixed salt for consistency
-            
+
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
@@ -64,16 +64,16 @@ class TokenManager:
                 iterations=100000,
             )
             key = base64.urlsafe_b64encode(kdf.derive(password))
-            
+
             # Save key
             with open(self.key_file, 'wb') as f:
                 f.write(key)
-            
+
             # Set restrictive permissions
             os.chmod(self.key_file, 0o600)
-            
+
             return key
-    
+
     def _get_machine_id(self) -> str:
         """Get a machine-specific identifier for key generation."""
         try:
@@ -84,7 +84,7 @@ class TokenManager:
                 lambda: os.popen('hostname').read().strip(),
                 lambda: str(os.getuid()) + str(os.getgid()),
             ]
-            
+
             for source in machine_sources:
                 try:
                     machine_id = source()
@@ -92,46 +92,46 @@ class TokenManager:
                         return machine_id
                 except:
                     continue
-            
+
             # Fallback to a hash of the home directory path
             return hashlib.sha256(str(Path.home()).encode()).hexdigest()[:16]
-            
+
         except Exception:
             # Ultimate fallback
             return "sutraknowledge_default"
-    
+
     def _load_tokens(self) -> Dict[str, Any]:
         """Load and decrypt tokens from storage."""
         if not self.tokens_file.exists():
             return {}
-        
+
         try:
             with open(self.tokens_file, 'rb') as f:
                 encrypted_data = f.read()
-            
+
             decrypted_data = self._cipher.decrypt(encrypted_data)
             return json.loads(decrypted_data.decode())
-            
+
         except Exception as e:
             logger.warning(f"Failed to load tokens: {e}")
             return {}
-    
+
     def _save_tokens(self, tokens: Dict[str, Any]) -> None:
         """Encrypt and save tokens to storage."""
         try:
             json_data = json.dumps(tokens, indent=2)
             encrypted_data = self._cipher.encrypt(json_data.encode())
-            
+
             with open(self.tokens_file, 'wb') as f:
                 f.write(encrypted_data)
-            
+
             # Set restrictive permissions
             os.chmod(self.tokens_file, 0o600)
-            
+
         except Exception as e:
             logger.error(f"Failed to save tokens: {e}")
             raise
-    
+
     def store_token(self, provider: str, token: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         """
         Store a token for a specific provider.
@@ -142,18 +142,18 @@ class TokenManager:
             metadata: Optional metadata (expiry, user info, etc.)
         """
         tokens = self._load_tokens()
-        
+
         token_data = {
             'token': token,
             'stored_at': datetime.now().isoformat(),
             'metadata': metadata or {}
         }
-        
+
         tokens[provider] = token_data
         self._save_tokens(tokens)
-        
-        logger.info(f"Token stored for provider: {provider}")
-    
+
+        print(f"Token stored for provider: {provider}")
+
     def get_token(self, provider: str) -> Optional[str]:
         """
         Retrieve a token for a specific provider.
@@ -165,12 +165,12 @@ class TokenManager:
             Token string if found, None otherwise
         """
         tokens = self._load_tokens()
-        
+
         if provider not in tokens:
             return None
-        
+
         token_data = tokens[provider]
-        
+
         # Check if token has expired (if expiry info is available)
         if 'metadata' in token_data and 'expires_at' in token_data['metadata']:
             try:
@@ -181,9 +181,9 @@ class TokenManager:
                     return None
             except Exception:
                 pass  # Ignore expiry check errors
-        
+
         return token_data['token']
-    
+
     def remove_token(self, provider: str) -> bool:
         """
         Remove a token for a specific provider.
@@ -195,15 +195,15 @@ class TokenManager:
             True if token was removed, False if not found
         """
         tokens = self._load_tokens()
-        
+
         if provider in tokens:
             del tokens[provider]
             self._save_tokens(tokens)
-            logger.info(f"Token removed for provider: {provider}")
+            print(f"Token removed for provider: {provider}")
             return True
-        
+
         return False
-    
+
     def list_providers(self) -> Dict[str, Dict[str, Any]]:
         """
         List all providers with stored tokens and their metadata.
@@ -213,16 +213,16 @@ class TokenManager:
         """
         tokens = self._load_tokens()
         result = {}
-        
+
         for provider, token_data in tokens.items():
             result[provider] = {
                 'stored_at': token_data.get('stored_at'),
                 'metadata': token_data.get('metadata', {}),
                 'has_token': bool(token_data.get('token'))
             }
-        
+
         return result
-    
+
     def validate_token(self, provider: str, token: str) -> bool:
         """
         Validate if a token matches the stored token for a provider.
@@ -236,12 +236,12 @@ class TokenManager:
         """
         stored_token = self.get_token(provider)
         return stored_token == token if stored_token else False
-    
+
     def clear_all_tokens(self) -> None:
         """Remove all stored tokens."""
         if self.tokens_file.exists():
             self.tokens_file.unlink()
-        logger.info("All tokens cleared")
+        print("All tokens cleared")
 
 
 # Global token manager instance

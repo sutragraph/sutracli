@@ -116,7 +116,7 @@ class WebScraper:
         max_retries = getattr(config.web_scrap, "max_retries", 3)
         delay_between_retries = getattr(config.web_scrap, "delay_between_retries", 1.0)
 
-        logger.info(f"Fetching content from: {url}")
+        print(f"Fetching content from: {url}")
 
         trafilatura_config = use_config()
 
@@ -314,7 +314,7 @@ class WebScraper:
         if cls._session:
             cls._session.close()
             cls._session = None
-            logger.info("HTTP session closed")
+            print("HTTP session closed")
 
 
 # Alias for consistency with new naming convention

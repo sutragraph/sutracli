@@ -18,11 +18,11 @@ class ErrorSeverity(Enum):
 
 class ErrorHandler:
     """Enhanced error handling with recovery suggestions."""
-    
+
     def __init__(self):
         self.error_history = []
         self.recovery_attempts = {}
-        
+
     def handle_error(self, error: Exception, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle and categorize errors with recovery suggestions.
@@ -44,43 +44,43 @@ class ErrorHandler:
             "should_retry": False,
             "max_retries": 0
         }
-        
+
         # Add to error history
         self.error_history.append(error_info)
-        
+
         # Analyze error and provide recovery suggestions
         error_info = self._analyze_error(error_info)
-        
+
         logger.error(f"Error handled: {error_info['error_type']} - {error_info['message']}")
         if error_info["recovery_suggestions"]:
-            logger.info(f"Recovery suggestions: {error_info['recovery_suggestions']}")
-        
+            print(f"Recovery suggestions: {error_info['recovery_suggestions']}")
+
         return error_info
-    
+
     def _determine_severity(self, error: Exception) -> ErrorSeverity:
         """Determine error severity based on exception type."""
         error_type = type(error).__name__
-        
+
         # Critical errors that should stop execution
         if error_type in ["KeyboardInterrupt", "SystemExit", "MemoryError"]:
             return ErrorSeverity.CRITICAL
-        
+
         # High severity errors
         if error_type in ["FileNotFoundError", "PermissionError", "ConnectionError", "TimeoutError"]:
             return ErrorSeverity.HIGH
-        
+
         # Medium severity errors
         if error_type in ["ValueError", "TypeError", "AttributeError", "ImportError"]:
             return ErrorSeverity.MEDIUM
-        
+
         # Low severity errors
         return ErrorSeverity.LOW
-    
+
     def _analyze_error(self, error_info: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze error and provide specific recovery suggestions."""
         error_type = error_info["error_type"]
         message = error_info["message"].lower()
-        
+
         # File operation errors
         if error_type == "FileNotFoundError":
             error_info["recovery_suggestions"].extend([
@@ -90,7 +90,7 @@ class ErrorHandler:
             ])
             error_info["should_retry"] = True
             error_info["max_retries"] = 2
-        
+
         elif error_type == "PermissionError":
             error_info["recovery_suggestions"].extend([
                 "Check file permissions",
@@ -98,7 +98,7 @@ class ErrorHandler:
                 "Try using sudo if appropriate (with caution)"
             ])
             error_info["should_retry"] = False
-        
+
         # Network errors
         elif error_type in ["ConnectionError", "TimeoutError"]:
             error_info["recovery_suggestions"].extend([
@@ -108,7 +108,7 @@ class ErrorHandler:
             ])
             error_info["should_retry"] = True
             error_info["max_retries"] = 3
-        
+
         # Import errors
         elif error_type == "ImportError":
             error_info["recovery_suggestions"].extend([
@@ -117,7 +117,7 @@ class ErrorHandler:
                 "Install missing dependencies if needed"
             ])
             error_info["should_retry"] = False
-        
+
         # Database errors
         elif "database" in message or "sqlite" in message:
             error_info["recovery_suggestions"].extend([
@@ -127,7 +127,7 @@ class ErrorHandler:
             ])
             error_info["should_retry"] = True
             error_info["max_retries"] = 2
-        
+
         # XML parsing errors
         elif "xml" in message.lower():
             error_info["recovery_suggestions"].extend([
@@ -137,7 +137,7 @@ class ErrorHandler:
             ])
             error_info["should_retry"] = True
             error_info["max_retries"] = 3
-        
+
         # Command execution errors
         elif "command" in message or "exit code" in message:
             error_info["recovery_suggestions"].extend([
@@ -147,85 +147,85 @@ class ErrorHandler:
             ])
             error_info["should_retry"] = True
             error_info["max_retries"] = 2
-        
+
         return error_info
-    
+
     def should_stop_execution(self, error_info: Dict[str, Any]) -> bool:
         """Determine if execution should stop based on error severity."""
         severity = error_info["severity"]
-        
+
         # Always stop for critical errors
         if severity == ErrorSeverity.CRITICAL:
             return True
-        
+
         # Stop if we've seen too many errors of the same type
         error_type = error_info["error_type"]
         same_type_errors = [e for e in self.error_history if e["error_type"] == error_type]
-        
+
         if len(same_type_errors) >= 3:
             logger.warning(f"Too many {error_type} errors, stopping execution")
             return True
-        
+
         # Stop if we've seen too many high severity errors
         high_severity_errors = [e for e in self.error_history if e["severity"] in [ErrorSeverity.HIGH, ErrorSeverity.CRITICAL]]
-        
+
         if len(high_severity_errors) >= 5:
             logger.warning("Too many high severity errors, stopping execution")
             return True
-        
+
         return False
-    
+
     def get_recovery_actions(self, error_info: Dict[str, Any]) -> List[str]:
         """Get specific recovery actions for an error."""
         actions = []
-        
+
         error_type = error_info["error_type"]
         context = error_info.get("context", {})
-        
+
         # Tool-specific recovery actions
         tool_name = context.get("tool_name", "")
-        
+
         if tool_name == "write_to_file" and error_type == "FileNotFoundError":
             actions.append("Use list_files to verify the target directory exists")
             actions.append("Create the directory structure if it doesn't exist")
-        
+
         elif tool_name == "semantic_search" and "database" in error_info["message"].lower():
             actions.append("Check if the project is properly indexed")
             actions.append("Run incremental indexing to update the database")
-        
+
         elif tool_name == "execute_command" and "command not found" in error_info["message"].lower():
             actions.append("Check if the command is installed")
             actions.append("Use absolute path to the command")
             actions.append("Verify the command name is correct")
-        
+
         # General recovery actions
         if error_info["should_retry"]:
             actions.append(f"Retry the operation (max {error_info['max_retries']} attempts)")
-        
+
         actions.extend(error_info["recovery_suggestions"])
-        
+
         return actions
-    
+
     def clear_history(self):
         """Clear error history for new session."""
         self.error_history.clear()
         self.recovery_attempts.clear()
-    
+
     def get_error_summary(self) -> Dict[str, Any]:
         """Get summary of errors encountered."""
         if not self.error_history:
             return {"total_errors": 0, "error_types": {}, "severity_distribution": {}}
-        
+
         error_types = {}
         severity_distribution = {}
-        
+
         for error in self.error_history:
             error_type = error["error_type"]
             severity = error["severity"].value
-            
+
             error_types[error_type] = error_types.get(error_type, 0) + 1
             severity_distribution[severity] = severity_distribution.get(severity, 0) + 1
-        
+
         return {
             "total_errors": len(self.error_history),
             "error_types": error_types,

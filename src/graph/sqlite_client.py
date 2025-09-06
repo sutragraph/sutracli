@@ -39,8 +39,6 @@ class SQLiteConnection:
                 if cls._instance is None:
                     logger.debug("🔧 Creating new SQLiteConnection singleton instance")
                     cls._instance = super(SQLiteConnection, cls).__new__(cls)
-        else:
-            logger.debug("♻️ Reusing existing SQLiteConnection singleton instance")
         return cls._instance
 
     def _connect(self) -> sqlite3.Connection:
@@ -90,7 +88,7 @@ class SQLiteConnection:
         """Close the database connection."""
         if hasattr(self, "connection") and self.connection:
             self.connection.close()
-            logger.info("Database connection closed")
+            logger.debug("Database connection closed")
 
     def execute_query(
         self, query: str, parameters: tuple | None = None
@@ -133,7 +131,7 @@ class SQLiteConnection:
         """Get project details by name."""
         try:
             result = self.execute_query(
-                "SELECT id, name, path, created_at, updated_at, cross_indexing_done FROM projects WHERE name = ?",
+                "SELECT id, name, path, description, created_at, updated_at, cross_indexing_done FROM projects WHERE name = ?",
                 (project_name,),
             )
             if result:
@@ -142,6 +140,7 @@ class SQLiteConnection:
                     id=row["id"],
                     name=row["name"],
                     path=row["path"],
+                    description=row["description"],
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
                     cross_indexing_done=bool(row.get("cross_indexing_done", 0)),
@@ -158,7 +157,7 @@ class SQLiteConnection:
                 "DELETE FROM projects WHERE name = ?", (project_name,)
             )
             self.connection.commit()
-            logger.info(f"Deleted project '{project_name}' and associated data")
+            logger.debug(f"Deleted project '{project_name}' and associated data")
         except Exception as e:
             self.connection.rollback()
             logger.error(f"Failed to delete project '{project_name}': {e}")
@@ -169,8 +168,8 @@ class SQLiteConnection:
         try:
             cursor = self.connection.cursor()
             cursor.execute(
-                """INSERT OR REPLACE INTO projects 
-                   (name, path, created_at, updated_at, cross_indexing_done) 
+                """INSERT OR REPLACE INTO projects
+                   (name, path, created_at, updated_at, cross_indexing_done)
                    VALUES (?, ?, ?, ?, ?)""",
                 (
                     project.name,
@@ -349,13 +348,14 @@ class SQLiteConnection:
         """List all projects in the database."""
         try:
             rows = self.execute_query(
-                "SELECT id, name, path, created_at, updated_at, cross_indexing_done FROM projects ORDER BY name"
+                "SELECT id, name, path, description, created_at, updated_at, cross_indexing_done FROM projects ORDER BY name"
             )
             return [
                 Project(
                     id=row["id"],
                     name=row["name"],
                     path=row["path"],
+                    description=row["description"],
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
                     cross_indexing_done=bool(row.get("cross_indexing_done", 0)),
@@ -388,7 +388,7 @@ class SQLiteConnection:
             # Recreate tables
             self._create_tables()
 
-            logger.info("Database cleared and tables recreated")
+            logger.debug("Database cleared and tables recreated")
 
         except Exception as e:
             self.connection.rollback()
@@ -422,7 +422,7 @@ class SQLiteConnection:
 
             self.connection.commit()
 
-            logger.info(
+            logger.debug(
                 f"Deleted {block_count} code blocks for project '{project_name}'"
             )
             return block_count

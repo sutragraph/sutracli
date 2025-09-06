@@ -84,7 +84,9 @@ class MemoryUpdater:
                 updates_made["codes_removed"] += removed_count
                 if removed_count > 0:
                     updates_made["files_processed"] += 1
-                    logger.info(f"🗑️  Removed {removed_count} code snippets for deleted file: {file_path}")
+                    logger.debug(
+                        f"🗑️  Removed {removed_count} code snippets for deleted file: {file_path}"
+                    )
 
             # Process changed files
             for file_path in changed_files:
@@ -96,11 +98,15 @@ class MemoryUpdater:
 
                 if file_updates["codes_updated"] > 0:
                     updates_made["files_processed"] += 1
-                    logger.info(f"🔄 Updated {file_updates['codes_updated']} code snippets for file: {file_path}")
+                    logger.debug(
+                        f"🔄 Updated {file_updates['codes_updated']} code snippets for file: {file_path}"
+                    )
 
             total_updates = updates_made["codes_updated"] + updates_made["codes_removed"]
             if total_updates > 0:
-                logger.info(f"✅ Memory update completed: {total_updates} code snippets processed")
+                logger.debug(
+                    f"✅ Memory update completed: {total_updates} code snippets processed"
+                )
             else:
                 logger.debug("No memory updates required")
 
@@ -357,7 +363,10 @@ class MemoryUpdater:
         return None
 
     def _find_similar_content(
-        self, content_lines: List[str], file_lines: List[str], similarity_threshold: float = 0.7
+        self,
+        content_lines: List[str],
+        file_lines: List[str],
+        similarity_threshold: float = 0.2,
     ) -> Optional[Tuple[int, int]]:
         """
         Find similar content in file using fuzzy matching.

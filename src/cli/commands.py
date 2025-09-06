@@ -6,16 +6,15 @@ import webbrowser
 from pathlib import Path
 from loguru import logger
 import requests
-from prompt_toolkit import prompt
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.key_binding import KeyBindings
+from agents_new import Agent
+
 from services.project_manager import ProjectManager
 from services.cross_indexing.core.cross_index_system import CrossIndexSystem
 from graph import ASTToSqliteConverter
-from services.agent_service import AgentService
+from services.agent_service_new import AgentService
 from services.auth.token_manager import get_token_manager
 from config import config
+from utils.console import console
 from embeddings import get_vector_store
 from tools.utils.code_processing_utils import (
     add_line_numbers_to_code,
@@ -146,10 +145,14 @@ def handle_stats_command(args, show_database_stats_func) -> None:
     show_database_stats_func()
 
 
-def _process_agent_updates(updates_generator) -> None:
-    """Process agent updates and print them in formatted output."""
+def _process_agent_updates_with_result(updates_generator):
+    """Process agent updates and capture the final result for post-processing."""
+    agent_result = None
+
     for update in updates_generator:
         update_type = update.get("type", "unknown")
+
+        # Process updates normally for display
         if update_type == "thinking":
             content = update.get("content", "Thinking...")
             print(f"🤔 Thinking...")
@@ -163,6 +166,9 @@ def _process_agent_updates(updates_generator) -> None:
             print(f"🎉 Task Completed 🎉 ")
             print(f"   Result: {result_text}")
             print("-" * 40)
+
+            # Capture the completion result for post-processing
+            agent_result = completion.get("result")
 
         if update_type == "tool_use":
             tool_name = update.get("tool_name", "unknown")
@@ -208,7 +214,9 @@ def _process_agent_updates(updates_generator) -> None:
                 project_name = update.get("project_name")
 
                 if project_name:
-                    print(f"📁 [{project_name}] Listed {files_count} files in {directory}")
+                    print(
+                        f"📁 [{project_name}] Listed {files_count} files in {directory}"
+                    )
                 else:
                     print(f"📁 Listed {files_count} files in {directory}")
 
@@ -220,7 +228,9 @@ def _process_agent_updates(updates_generator) -> None:
                 project_name = update.get("project_name")
 
                 if project_name:
-                    print(f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}')
+                    print(
+                        f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}'
+                    )
                 else:
                     print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
 
@@ -243,107 +253,19 @@ def _process_agent_updates(updates_generator) -> None:
         else:
             pass
 
+    return agent_result
 
-def handle_agent_command(args) -> None:
+
+def handle_agent_command(agent_name: Agent, project_path: Path):
     """Handle agent command for autonomous problem solving."""
     print(f"\n🤖 SUTRA AGENT - AI-Powered Repository Assistant")
     print("   Your intelligent companion for coding, debugging, and knowledge sharing")
     print("=" * 80)
 
     try:
-        # Get project directory from args if provided
-        project_directory = getattr(args, "directory", None)
-        if project_directory:
-            print(f"📁 Working directory: {project_directory}")
+        agent = AgentService(agent_name=agent_name, project_path=project_path)
 
-        agent = AgentService(project_path=project_directory)
-
-        if args.problem_query:
-            print(f"📝 Initial Problem: {args.problem_query}")
-            print("🚀 Starting analysis...")
-            print("-" * 40)
-            _process_agent_updates(
-                agent.solve_problem(
-                    problem_query=args.problem_query,
-                    project_id=getattr(args, "project_id", None),
-                ),
-            )
-            print("\n✅ INITIAL REQUEST COMPLETED")
-        else:
-            print("🚀 Welcome to Sutra Agent!")
-            print(
-                "   I'm here to help you with coding, debugging, and knowledge sharing."
-            )
-
-        print("\n💬 How can I help you? Type your questions or requests below.")
-        print("   Type 'exit' or 'quit' to end the session.")
-        print("=" * 80)
-
-        while True:
-            try:
-                # Create history and completer for enhanced input
-                history = InMemoryHistory()
-                completer = WordCompleter(["exit", "quit", "bye", "goodbye", "help"])
-
-                # Create key bindings
-                bindings = KeyBindings()
-
-                @bindings.add("c-c")
-                def _(event):
-                    """Handle Ctrl+C"""
-                    raise KeyboardInterrupt
-
-                # Enhanced prompt with multiline support and navigation
-                user_input = prompt(
-                    "\n👤 You: ",
-                    multiline=True,
-                    history=history,
-                    completer=completer,
-                    complete_while_typing=True,
-                    key_bindings=bindings,
-                    mouse_support=True,
-                    bottom_toolbar="Press [Meta+Enter] or [Escape followed by Enter] to submit multiline input. Use arrow keys to navigate.",
-                ).strip()
-                print("-" * 40)
-
-                if not user_input:
-                    continue
-
-                if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
-                    print("\n👋 Goodbye! Session ended.")
-                    break
-
-                if user_input.lower() in ["version", "--version", "-v"]:
-                    print("\n📦 Sutra Agent Version Information:")
-                    print("   Sutra Knowledge CLI v1.0")
-                    print("   AI-Powered Repository Assistant")
-                    print("   Build: Agent Interface")
-                    continue
-
-                if args.problem_query:
-                    _process_agent_updates(
-                        agent.continue_conversation(
-                            query=user_input,
-                            project_id=getattr(args, "project_id", None),
-                        ),
-                    )
-                else:
-                    _process_agent_updates(
-                        agent.solve_problem(
-                            problem_query=user_input,
-                            project_id=getattr(args, "project_id", None),
-                        ),
-                    )
-                    args.problem_query = user_input
-
-                print("\n✅ Response completed. What would you like to do next?")
-
-            except KeyboardInterrupt:
-                print("\n\n👋 Session interrupted. Goodbye!")
-                break
-            except EOFError:
-                print("\n\n👋 Session ended. Goodbye!")
-                break
+        return agent.run()
 
     except KeyboardInterrupt:
         print("\n❌ Operation interrupted by user")
@@ -922,64 +844,8 @@ def handle_cross_indexing_command(args) -> None:
         ):
             update_type = update.get("type", "unknown")
 
-            if update_type == "cross_index_start":
-                print(f"📁 Analyzing project: {update.get('project_path')}")
-
-            elif update_type == "iteration_start":
-                iteration = update.get("iteration", 0)
-                max_iterations = update.get("max_iterations", 50)
-                print(f"🔄 Iteration {iteration}/{max_iterations}")
-
-            elif update_type == "thinking":
-                print("🤔 Analyzing connections...")
-
-            elif update_type == "tool_use":
-                tool_name = update.get("tool_name", "unknown")
-
-                if tool_name == "database":
-                    query = update.get("query", "")
-                    query_name = update.get("query_name", "")
-                    results = update.get("result", "")
-                    # Only show results if found, reduce verbosity
-                    if "Found 0 nodes" not in results:
-                        print(f'🔍 Database search "{query}" {query_name} | {results}')
-                        print("-" * 40)
-
-                elif tool_name == "semantic_search":
-                    query = update.get("query", "")
-                    results = update.get("result", "")
-                    # Only print for the first result or results with batch info to avoid spam
-                    batch_info = update.get("batch_info")
-                    node_index = update.get("node_index", 1)
-                    if node_index == 1 or batch_info is not None:
-                        print(f'🔍 Semantic search "{query}" | {results}')
-                        print("-" * 40)
-
-                elif tool_name == "list_files":
-                    directory = update.get("directory", "")
-                    files_count = update.get("count", 0)
-                    print(f"📁 Listed {files_count} files in {directory}")
-                    print("-" * 40)
-
-                elif tool_name == "search_keyword":
-                    keyword = update.get("keyword", "")
-                    matches_found = update.get("matches_found")
-                    print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
-                    print("-" * 40)
-
-                elif tool_name == "attempt_completion":
-                    result = update.get("result", "")
-                    print(f"🎉 Analysis Completed")
-                    if result:
-                        print(f"   Result: {result}")
-                    print("-" * 40)
-
-            elif update_type == "analysis_complete":
-                print("✅ Analysis Complete")
-
-            elif update_type == "cross_index_success":
+            if update_type == "cross_index_success":
                 analysis_result = update.get("analysis_result")
-                matching_result = update.get("matching_result", {})
                 iteration = update.get("iteration", 0)
                 print(
                     f"🎉 Cross-indexing completed successfully in {iteration} iterations"
@@ -993,19 +859,6 @@ def handle_cross_indexing_command(args) -> None:
                 print(f"   ⬇️  Incoming connections: {incoming_count}")
                 print(f"   ⬆️  Outgoing connections: {outgoing_count}")
                 break
-
-            elif update_type == "tool_error":
-                error = update.get("error", "Unknown error")
-                print(f"⚠️  Tool error: {error}")
-
-            elif update_type == "iteration_error":
-                error = update.get("error", "Unknown error")
-                iteration = update.get("iteration", 0)
-                print(f"⚠️  Error in iteration {iteration}: {error}")
-
-            elif update_type == "analysis_error":
-                error = update.get("error", "Unknown error")
-                print(f"⚠️  Analysis error: {error}, retrying...")
 
             elif update_type == "cross_index_failure":
                 error = update.get("error", "Analysis failed")
@@ -1029,6 +882,122 @@ def handle_cross_indexing_command(args) -> None:
 
     except Exception as e:
         logger.error(f"Error during cross-indexing: {e}")
+        print(f"❌ Unexpected error: {e}")
+
+
+def handle_run_phase5_command(args) -> None:
+    """Handle run-phase5 command to directly run Phase 5 connection matching."""
+    try:
+        print("🔗 SUTRA PHASE 5 - Connection Matching Analysis")
+        print("=" * 80)
+
+        # Validate project path
+        project_path = Path(args.directory).absolute()
+        if not project_path.exists():
+            print(f"❌ Project path does not exist: {project_path}")
+            return
+
+        if not project_path.is_dir():
+            print(f"❌ Project path is not a directory: {project_path}")
+            return
+
+        print(f"📁 Analyzing project at: {project_path}")
+
+        # Initialize required components
+        project_manager = ProjectManager()
+        from src.graph.graph_operations import GraphOperations
+
+        graph_ops = GraphOperations()
+
+        # Get or create project first to determine project name
+        project_name = (
+            args.project_name
+            if args.project_name
+            else project_manager.determine_project_name(project_path)
+        )
+
+        project_id = project_manager.get_or_create_project_id(
+            project_name, project_path
+        )
+
+        print(f"✅ Project: {project_name} (ID: {project_id})")
+        print("-" * 40)
+
+        # Check if cross-indexing data exists
+        # Instead of checking for a specific flag, check if we have connections data
+        available_tech_types = graph_ops.get_available_technology_types()
+        if not available_tech_types:
+            # Try to check if there are any connections at all
+            sample_connections = graph_ops.fetch_connections_by_technology("Unknown")
+            if (
+                not sample_connections["incoming"]
+                and not sample_connections["outgoing"]
+            ):
+                print("❌ No cross-indexing data found for this project")
+                print("💡 Please run full cross-indexing analysis first using:")
+                print(f"   python3 main.py cross-indexing --directory '{project_path}'")
+                return
+
+        # Initialize cross-index system
+        from services.cross_indexing.core.cross_index_system import CrossIndexSystem
+
+        cross_index_system = CrossIndexSystem(
+            project_manager, project_name=project_name
+        )
+        cross_index_service = cross_index_system.cross_index_service
+
+        print("🔍 Starting Phase 5: Connection Matching Analysis...")
+        print("-" * 40)
+
+        try:
+            # Execute only Phase 5 - Connection Matching
+            phase5_result = cross_index_service._execute_phase_5({}, project_id)
+
+            if phase5_result.get("success"):
+                matching_result = phase5_result.get("matching_result", {})
+                matches = matching_result.get("matches", [])
+
+                print(f"🎉 Phase 5 completed successfully!")
+                print(f"📊 Connection Matching Results:")
+                print(f"   🔗 Total matches found: {len(matches)}")
+
+                if matches:
+                    print(
+                        f"   💾 Stored {len(matches)} connection mappings in database"
+                    )
+
+                    # Display some sample matches
+                    sample_count = min(5, len(matches))
+                    if sample_count > 0:
+                        print(
+                            f"\n📋 Sample matches (showing {sample_count} of {len(matches)}):"
+                        )
+                        for i, match in enumerate(matches[:sample_count]):
+                            confidence = match.get("match_confidence", "unknown")
+                            reason = match.get("match_reason", "No reason provided")
+                            print(f"   {i+1}. Confidence: {confidence}")
+                            print(f"      Reason: {reason}")
+                            print()
+                else:
+                    print("   ℹ️  No connection matches found")
+
+                storage_result = phase5_result.get("storage_result", {})
+                if storage_result.get("success"):
+                    print("✅ Results stored in database successfully")
+
+            else:
+                error = phase5_result.get("error", "Unknown error")
+                print(f"❌ Phase 5 failed: {error}")
+
+        except Exception as phase_error:
+            logger.error(f"Phase 5 execution error: {phase_error}")
+            print(f"❌ Phase 5 execution failed: {phase_error}")
+
+        print("\n🎉 Phase 5 Analysis Completed!")
+        print("=" * 80)
+
+    except Exception as e:
+        logger.error(f"Error during Phase 5 execution: {e}")
         print(f"❌ Unexpected error: {e}")
 
 

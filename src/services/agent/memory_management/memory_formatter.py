@@ -79,7 +79,7 @@ class MemoryFormatter:
             content.append("")
 
         # Recent history (last 20 entries)
-        recent_history = self.memory_ops.get_recent_history(20)
+        recent_history = self.memory_ops.get_recent_history()
         if recent_history:
             content.extend(["RECENT HISTORY:", ""])
             for i, entry in enumerate(reversed(recent_history), 1):

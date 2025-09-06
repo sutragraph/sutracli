@@ -66,13 +66,3 @@ class HistoryEntry:
     def __post_init__(self):
         if self.iteration_id is None:
             self.iteration_id = str(int(self.timestamp.timestamp()))
-
-
-@dataclass
-class ReasoningContext:
-    """Reasoning context for tool execution"""
-    
-    user_query: str
-    tool_history: list
-    validation_results: list
-    created_at: datetime = field(default_factory=datetime.now)

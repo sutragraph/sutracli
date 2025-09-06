@@ -18,6 +18,7 @@ from rich.progress import (
 
 from models.schema import CodeBlock, FileData
 from embeddings.vector_store import get_vector_store
+from config import config
 
 
 class EmbeddingEngine:
@@ -31,10 +32,10 @@ class EmbeddingEngine:
     4. Provide fallback file embedding when block extraction fails
     """
 
-    def __init__(self, max_tokens: int = 150, overlap_tokens: int = 25):
+    def __init__(self):
         """Initialize the embedding engine with chunking parameters."""
-        self.max_tokens = max_tokens
-        self.overlap_tokens = overlap_tokens
+        self.max_tokens = config.embedding.max_tokens
+        self.overlap_tokens = config.embedding.overlap_tokens
         self.vector_store = get_vector_store()
 
     def _should_embed_block(self, block: CodeBlock) -> bool:
@@ -663,11 +664,9 @@ def parse_entity_id(prefixed_id: str) -> tuple[str, str]:
 _embedding_engine = None
 
 
-def get_embedding_engine(
-    max_tokens: int = 240, overlap_tokens: int = 25
-) -> EmbeddingEngine:
+def get_embedding_engine() -> EmbeddingEngine:
     """Return singleton instance of EmbeddingEngine."""
     global _embedding_engine
     if _embedding_engine is None:
-        _embedding_engine = EmbeddingEngine(max_tokens, overlap_tokens)
+        _embedding_engine = EmbeddingEngine()
     return _embedding_engine

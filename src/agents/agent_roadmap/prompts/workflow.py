@@ -72,5 +72,4 @@ Document for EACH project:
 
 **Integration**: [cross-project data contracts]
 **Deploy**: [sequence requirements]
-
-This workflow ensures comprehensive ecosystem analysis and prevents the tunnel vision of single-project fixation."""
+"""

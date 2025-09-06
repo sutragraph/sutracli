@@ -295,7 +295,7 @@ class WebSearch:
         # Build URL
         url = cls._build_search_url(search_type)
 
-        logger.info(
+        print(
             f"Searching for: '{query}' (type: {search_type.value}, filter: {time_filter.value if time_filter else 'none'})"
         )
 
@@ -428,7 +428,7 @@ def execute_web_search_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
             }
             return
 
-        logger.info(f"Executing web search for query: '{query}'")
+        print(f"Executing web search for query: '{query}'")
 
         search_response = WebSearch.search(
             query=query,

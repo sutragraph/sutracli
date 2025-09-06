@@ -111,43 +111,6 @@ class AgentService:
         except Exception as e:
             logger.error(f"Error updating session memory: {e}")
 
-    def _is_critical_tool_failure(self, event: Dict[str, Any]) -> bool:
-        """Determine if a tool failure is critical enough to stop execution."""
-        tool_name = event.get("tool_name", "")
-        error_msg = event.get("error", event.get("message", "")).lower()
-
-        # Critical tool failures that should stop execution
-        critical_tools = ["write_to_file", "apply_diff", "execute_command"]
-        critical_errors = [
-            "permission denied",
-            "file not found",
-            "directory not found",
-            "invalid path",
-            "access denied",
-            "command not found",
-            "syntax error",
-            "compilation error",
-        ]
-
-        # Stop if critical tool fails
-        if tool_name in critical_tools:
-            return True
-
-        # Stop if error message indicates critical failure
-        for critical_error in critical_errors:
-            if critical_error in error_msg:
-                return True
-
-        # Stop if multiple consecutive failures (indicates systemic issue)
-        if hasattr(self, "_consecutive_failures"):
-            self._consecutive_failures += 1
-            if self._consecutive_failures >= 3:
-                return True
-        else:
-            self._consecutive_failures = 1
-
-        return False
-
     def _detect_simple_completion(self, event: Dict[str, Any], user_query: str) -> bool:
         """Detect if a simple task has been completed successfully."""
         tool_name = event.get("tool_name", "")
@@ -182,9 +145,6 @@ class AgentService:
         yield from self._perform_incremental_indexing()
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
-
-        # Set reasoning context in memory manager
-        self.memory_manager.set_reasoning_context(problem_query)
 
         # Add user query to sutra memory at the start
         # Get rich memory from memory manager
@@ -226,9 +186,6 @@ class AgentService:
         # Clear error handler and result verifier history
         self.error_handler.clear_history()
         self.result_verifier.clear_history()
-
-        # Set new reasoning context for continuation
-        self.memory_manager.set_reasoning_context(query)
 
         # Add user query to sutra memory for continuation
         # Get rich memory from memory manager
@@ -379,17 +336,6 @@ class AgentService:
                                     f"📝 Recommendations: {verification_result['recommendations']}"
                                 )
 
-                        # # Show data preview for successful tool use
-                        # if event_type == "tool_use" and "data" in event:
-                        #     data_preview = str(event["data"])[:200]
-                        #     print(f"   Result: {data_preview}...")
-                        # elif "results" in event:
-                        #     results_preview = str(event["results"])[:200]
-                        #     print(f"   Result: {results_preview}...")
-                        # elif "output" in event:
-                        #     output_preview = str(event["output"])[:200]
-                        #     print(f"   Output: {output_preview}...")
-
                         # Check for tool failures and stop if critical
                         if (
                             event.get("type") == "error"
@@ -402,16 +348,6 @@ class AgentService:
                             logger.error(f"Tool {tool_name} failed: {error_msg}")
                             print(f"Error: Tool {tool_name} failed: {error_msg}")
 
-                            # Stop on critical tool failures
-                            if self._is_critical_tool_failure(event):
-                                tool_failed = True
-                                yield {
-                                    "type": "critical_error",
-                                    "message": f"Critical tool failure: {error_msg}",
-                                    "tool": tool_name,
-                                    "iteration": current_iteration,
-                                }
-                                break
                         else:
                             # Reset consecutive failures on success
                             self._consecutive_failures = 0
@@ -494,9 +430,7 @@ class AgentService:
                     break
 
             except UserCancelledException as e:
-                logger.info(
-                    f"User cancelled operation in iteration {current_iteration}"
-                )
+                print(f"User cancelled operation in iteration {current_iteration}")
                 yield {
                     "type": "user_cancelled",
                     "message": str(e),
@@ -533,7 +467,7 @@ class AgentService:
     ) -> Union[List[Dict[str, Any]], str, Dict[str, Any]]:
         """Get XML response from LLM using the new prompt system with retry on XML parsing failures."""
         if not get_user_confirmation_for_llm_call():
-            logger.info("User cancelled Agent LLM call in debug mode")
+            print("User cancelled Agent LLM call in debug mode")
             raise UserCancelledException("User cancelled the operation in debug mode")
 
         max_retries = 5
@@ -541,8 +475,8 @@ class AgentService:
 
         while retry_count < max_retries:
             try:
-                # Get base system prompt
-                system_prompt = get_agent_system_prompt(AgentName.ROADMAP)
+                # Get complete system prompt with dynamic context
+                system_prompt = get_agent_system_prompt(AgentName.ROADMAP, user_query)
 
                 # Build tool status from last tool result -
                 tool_status = self._build_tool_status(self.last_tool_result)
@@ -646,7 +580,7 @@ class AgentService:
                         f"XML parsing failed after {max_retries} attempts: {xml_error.message}"
                     )
                 else:
-                    logger.info(
+                    print(
                         f"Retrying LLM call due to XML parsing failure (attempt {retry_count + 1}/{max_retries})"
                     )
                     continue
@@ -740,7 +674,7 @@ class AgentService:
             cleaned_data = self._remove_duplicate_guidance_messages(data)
             status += f"Results:\n{cleaned_data}"
 
-        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
 
         return status.rstrip()
 
@@ -781,7 +715,7 @@ class AgentService:
         status = "Tool: semantic_search\n"
 
         query = result.get("query")
-        if query and query != "fetch_next_code":
+        if query and query != "fetch_next_chunk":
             status += f"Query: '{query}'\n"
 
         count = result.get("count") or result.get("total_nodes")
@@ -807,7 +741,7 @@ class AgentService:
         if data:
             status += f"Results:\n{data}"
 
-        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or want this code for later use, as search results will not persist to next iteration."
+        status += "\n\nNOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
 
         return status.rstrip()
 
@@ -1080,7 +1014,7 @@ class AgentService:
     def log_token_usage_summary(self) -> None:
         """Log a summary of token usage for the current session."""
         summary = self.get_token_usage_summary()
-        logger.info(
+        print(
             f"Stats Token Usage Summary - "
             f"Calls: {summary['llm_call_count']}, "
             f"Total: {summary['total_tokens_used']} tokens "

@@ -9,7 +9,7 @@ from loguru import logger
 
 from graph import SQLiteConnection, GraphOperations
 from models.schema import Project, ExtractionData
-from utils import load_json_file
+from src.utils import load_json_file
 
 
 class ASTToSqliteConverter:
@@ -74,6 +74,7 @@ class ASTToSqliteConverter:
                 path=str(
                     project_path.absolute()
                 ),  # Use the actual project directory path
+                description="",
                 created_at=current_time,
                 updated_at=current_time,
             )

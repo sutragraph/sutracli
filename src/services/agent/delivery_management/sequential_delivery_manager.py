@@ -61,22 +61,27 @@ class DeliveryManager:
 
         query_signature = self._generate_query_signature(action_type, parameters)
         logger.debug(f"🔍 TRACE MANAGER: Generated signature: {query_signature}")
-
         logger.debug(f"🔍 TRACE MANAGER: Last signature: {self._last_query_signature}")
+        
+        # Simple logic: if signature changes, clear old data
         if self._last_query_signature and self._last_query_signature != query_signature:
-            logger.debug(
-                f"📦 Query changed from {self._last_query_signature} to {query_signature} - clearing old data"
-            )
+            logger.debug(f"📦 Query changed - clearing old data")
             self.clear_all_queues()
-
-        logger.debug(f"🔍 TRACE MANAGER: Setting last query signature to: {query_signature}")
+        
+        # Update last query signature
         self._last_query_signature = query_signature
+        logger.debug(f"🔍 TRACE MANAGER: Setting last query signature to: {query_signature}")
+
+        # If queue already exists for same signature, skip duplicate registration
+        if query_signature in self._delivery_queues:
+            existing_size = len(self._delivery_queues[query_signature])
+            if existing_size >= len(items):
+                logger.debug(f"📦 Skipping duplicate registration - existing queue has {existing_size} items")
+                return query_signature
 
         delivery_items = []
 
         for i, item in enumerate(items):
-            chunk_info = item.get("chunk_info", {})
-
             delivery_item = DeliveryItem(
                 item_id=str(uuid.uuid4()),
                 item_type=f"{action_type}_item",
@@ -88,39 +93,11 @@ class DeliveryManager:
             )
             delivery_items.append(delivery_item)
 
-        if query_signature in self._delivery_queues:
-            existing_queue_length = len(self._delivery_queues[query_signature])
-            new_queue_length = len(delivery_items)
-
-            existing_has_chunks = any(
-                item.data.get("chunk_info", {}).get("total_chunks", 1) > 1
-                for item in self._delivery_queues[query_signature]
-            )
-
-            new_has_chunks = any(
-                item.get("chunk_info", {}).get("total_chunks", 1) > 1
-                for item in items
-            )
-
-            if existing_has_chunks and (new_queue_length < existing_queue_length or not new_has_chunks):
-                self._last_query_signature = query_signature
-                current_pos = self._queue_positions[query_signature]
-                is_complete = self._completed_deliveries[query_signature]
-                logger.debug(f"📦 Preserved existing queue for {query_signature} - current position: {current_pos}, complete: {is_complete}")
-                return query_signature
-
+        # Since we cleared old data if query changed, we can simply register the new queue
         self._delivery_queues[query_signature] = delivery_items
-
-        if query_signature not in self._queue_positions:
-            self._queue_positions[query_signature] = 0
-            self._completed_deliveries[query_signature] = False
-            logger.debug(f"📦 NEW queue registered for {query_signature}")
-        else:
-            current_pos = self._queue_positions[query_signature]
-            is_complete = self._completed_deliveries[query_signature]
-            logger.debug(f"📦 EXISTING queue re-registered for {query_signature} - preserving position {current_pos}, complete: {is_complete}")
-            if is_complete and current_pos < len(delivery_items):
-                self._completed_deliveries[query_signature] = False
+        self._queue_positions[query_signature] = 0
+        self._completed_deliveries[query_signature] = False
+        logger.debug(f"📦 Registered new queue for {query_signature}")
 
         final_position = self._queue_positions[query_signature]
         final_complete = self._completed_deliveries[query_signature]
@@ -163,7 +140,7 @@ class DeliveryManager:
         new_position = current_pos + 1
         self._queue_positions[query_signature] = new_position
         logger.debug(f"📦 Advanced position from {current_pos} to {new_position} (queue length: {len(queue)})")
-        
+
         if new_position >= len(queue):
             self._completed_deliveries[query_signature] = True
             logger.debug(f"📦 MARKING COMPLETE: Queue complete after delivering item {current_pos + 1}/{len(queue)}")
@@ -204,14 +181,11 @@ class DeliveryManager:
         queue = self._delivery_queues[query_signature]
         is_complete = self._completed_deliveries.get(query_signature, False)
 
-        if is_complete and current_pos >= len(queue):
+        if is_complete:
             logger.debug(
                 f"📦 Delivery already complete for {query_signature} - position: {current_pos}, queue_length: {len(queue)}"
             )
             return None
-        elif is_complete and current_pos < len(queue):
-            self._completed_deliveries[query_signature] = False
-
 
         if current_pos >= len(queue):
             logger.debug(f"📦 No more items - position {current_pos} >= queue length {len(queue)}")
@@ -222,7 +196,7 @@ class DeliveryManager:
         new_position = current_pos + 1
         self._queue_positions[query_signature] = new_position
         logger.debug(f"📦 Advanced position from {current_pos} to {new_position} (queue length: {len(queue)})")
-        
+
         if new_position >= len(queue):
             self._completed_deliveries[query_signature] = True
             logger.debug(f"📦 MARKING COMPLETE: Queue complete after delivering item {current_pos + 1}/{len(queue)}")

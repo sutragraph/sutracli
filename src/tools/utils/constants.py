@@ -11,7 +11,7 @@ SEARCH_CONFIG = {
 # Semantic search specific configuration
 SEMANTIC_SEARCH_CONFIG = {
     "total_nodes_limit": 30,  # Always fetch 30 nodes with code snippets
-    "similarity_threshold": 0.1,
+    "similarity_threshold": 0.0,
     "delivery_batch_size": 15,  # Serve 15 nodes at a time via delivery queue
     "block_chunk_threshold": 50,
     **SEARCH_CONFIG,
@@ -53,7 +53,7 @@ DATABASE_ERROR_GUIDANCE = {
 
 # Guidance message templates
 GUIDANCE_MESSAGES = {
-    "FETCH_NEXT_CODE_NOTE": "\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query.",
-    "NO_RESULTS_FOUND": "No results found for {search_type} search. Try different search terms or methods.",
+    "fetch_next_chunk_NOTE": """\nNOTE: There are more results available. Use `"fetch_next_chunk" : true` to get next codes for your current query.""",
+    "NO_RESULTS_FOUND": "No results found for {search_type} search. Try different search terms or methods. Verify parameters and query",
     "NODE_MISSING_CODE": "Node found but code content is not available.",
 }

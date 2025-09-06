@@ -7,7 +7,7 @@ import sys
 import json
 from pathlib import Path
 from typing import Dict, Any
-from rich.console import Console
+from utils.console import console
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.table import Table
@@ -22,7 +22,10 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 
-from cli.agent_config import get_agent_registry, get_agent_checker
+from src.agent_management.prerequisites.agent_config import (
+    get_agent_registry,
+)
+from src.agents_new import Agent
 from cli.utils import setup_logging
 from config.settings import reload_config
 
@@ -38,10 +41,8 @@ class ModernSutraKit:
 
     def __init__(self, log_level: str = "INFO"):
         """Initialize the modern CLI."""
-        self.console = Console()
         self.config_path = Path.home() / ".sutra" / "config" / "system.json"
         self.agent_registry = get_agent_registry()
-        self.agent_checker = get_agent_checker()
         self.log_level = log_level
 
         # Setup logging with the specified level (default: INFO)
@@ -64,7 +65,7 @@ class ModernSutraKit:
             subtitle="AI-Powered Code Analysis & Automation",
             border_style="bright_blue"
         )
-        self.console.print(panel)
+        console.print(panel)
 
     def check_llm_provider_configured(self) -> bool:
         """Check if LLM provider is already configured."""
@@ -105,10 +106,11 @@ class ModernSutraKit:
 
     def setup_llm_provider(self):
         """Interactive LLM provider setup with arrow keys."""
-        self.console.print("[bold yellow]⚙️  LLM Provider Setup[/bold yellow]")
+        console.info("LLM Provider Setup")
 
         providers = [
-            {"name": "Anthropic (Claude)", "key": "anthropic", "description": "Claude models (claude-3.5-sonnet, etc.)"},
+            {"name": "Anthropic (Claude)", "key": "anthropic",
+             "description": "Claude models (claude-3.5-sonnet, etc.)"},
             {"name": "AWS Bedrock", "key": "aws", "description": "AWS managed AI services"},
             {"name": "Google Gemini", "key": "gcp", "description": "Google's Gemini models"},
             {"name": "OpenAI (ChatGPT)", "key": "openai", "description": "GPT models via OpenAI API"}
@@ -121,16 +123,16 @@ class ModernSutraKit:
         for provider in providers:
             table.add_row(provider["name"], provider["description"])
 
-        self.console.print(table)
-        self.console.print()
+        console.print(table)
+        console.print()
 
         selected_provider = self._arrow_key_select_provider(providers)
         if not selected_provider:
-            self.console.print("[red]❌ No provider selected. Exiting.[/red]")
+            console.error("No provider selected. Exiting.")
             sys.exit(1)
 
         provider_key = selected_provider["key"]
-        self.console.print(f"[green]✅ Selected: {selected_provider['name']}[/green]\n")
+        console.success(f"Selected: {selected_provider['name']}")
 
         # Collect provider-specific configuration
         config_data = self._get_provider_config(provider_key)
@@ -141,7 +143,7 @@ class ModernSutraKit:
         # Save configuration
         self._save_config(full_config)
 
-        self.console.print("[green]✅ Configuration saved successfully![/green]\n")
+        console.success("Configuration saved successfully!")
 
     def _get_provider_config(self, provider: str) -> Dict[str, Any]:
         """Get configuration for specific provider."""
@@ -158,7 +160,7 @@ class ModernSutraKit:
 
     def _get_aws_config(self) -> Dict[str, Any]:
         """Get AWS Bedrock configuration."""
-        self.console.print("[bold blue]🔧 AWS Bedrock Configuration[/bold blue]")
+        console.info("AWS Bedrock Configuration")
         access_key = Prompt.ask("AWS Access Key ID", password=False)
         secret_key = prompt("AWS Secret Access Key: ", is_password=True)
         region = Prompt.ask("AWS Region", default="us-east-2")
@@ -173,7 +175,7 @@ class ModernSutraKit:
 
     def _get_anthropic_config(self) -> Dict[str, Any]:
         """Get Anthropic configuration."""
-        self.console.print("[bold blue]🔧 Anthropic Configuration[/bold blue]")
+        console.info("Anthropic Configuration")
         api_key = prompt("Anthropic API Key: ", is_password=True)
         model_id = Prompt.ask("Model ID", default="claude-3-5-sonnet-20241022")
 
@@ -184,7 +186,7 @@ class ModernSutraKit:
 
     def _get_gcp_config(self) -> Dict[str, Any]:
         """Get Google Cloud configuration."""
-        self.console.print("[bold blue]🔧 Google Cloud Configuration[/bold blue]")
+        console.info("Google Cloud Configuration")
         api_key = prompt("Google API Key: ", is_password=True)
         project_id = Prompt.ask("Project ID")
         location = Prompt.ask("Location", default="us-central1")
@@ -199,7 +201,7 @@ class ModernSutraKit:
 
     def _get_openai_config(self) -> Dict[str, Any]:
         """Get OpenAI configuration."""
-        self.console.print("[bold blue]🔧 OpenAI Configuration[/bold blue]")
+        console.info("OpenAI Configuration")
         api_key = prompt("OpenAI API Key: ", is_password=True)
         model_id = Prompt.ask("Model ID", default="gpt-4o")
 
@@ -228,12 +230,10 @@ class ModernSutraKit:
                 "models_dir": "~/.sutra/models"
             },
             "embedding": {
-                "model_name": "all-MiniLM-L12-v2",
                 "model_path": "~/.sutra/models/all-MiniLM-L12-v2",
+                "tokenizer_max_length": 256,
                 "max_tokens": 240,
-                "overlap_tokens": 30,
-                "similarity_threshold": 0.2,
-                "enable_optimization": False
+                "overlap_tokens": 30
             },
             "parser": {
                 "config_file": "~/.sutra/config/parsers.json",
@@ -288,11 +288,11 @@ class ModernSutraKit:
         # Reload the configuration to update the in-memory instance
         reload_config()
 
-    def select_agent(self) -> str:
+    def select_agent(self) -> Agent:
         """Interactive agent selection with arrow keys."""
         available_agents = self.agent_registry.get_available_agents()
 
-        self.console.print("[bold yellow]🤖 Agent Selection[/bold yellow]")
+        console.info("Agent Selection")
 
         # Show available agents table
         if available_agents:
@@ -303,20 +303,20 @@ class ModernSutraKit:
             for agent in available_agents:
                 table.add_row(agent.name, agent.description)
 
-            self.console.print(table)
+            console.print(table)
 
-        self.console.print()
+        console.print()
 
         if not available_agents:
-            self.console.print("[red]❌ No agents available[/red]")
-            return "roadmap"
+            console.error("No agents available")
+            return Agent.ROADMAP
 
         # Use arrow key selection
         selected_agent = self._arrow_key_select_agents(available_agents)
         if selected_agent:
             return selected_agent.key
         else:
-            self.console.print("[red]❌ No agent selected. Exiting.[/red]")
+            console.error("No agent selected. Exiting.")
             sys.exit(1)
 
     def _arrow_key_select_provider(self, providers):
@@ -431,44 +431,35 @@ class ModernSutraKit:
         # Run the application
         return application.run()
 
-    def show_agent_prerequisites(self, agent_key: str):
+    def show_agent_prerequisites(self, agent_enum: Agent):
         """Show prerequisites for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_key)
+        agent_config = self.agent_registry.get_agent(agent_enum)
         if not agent_config:
             return
 
-        self.console.print(f"[bold green]✅ Selected: {agent_config.name}[/bold green]")
-        self.console.print(f"[dim]{agent_config.description}[/dim]")
+        console.success(f"Selected: {agent_config.name}")
+        console.dim(agent_config.description)
 
         table = Table(show_header=False, box=None)
         table.add_column("Status", style="", width=3)
         table.add_column("Requirement", style="")
         table.add_column("Description", style="dim")
 
-        self.console.print(table)
-        self.console.print()
+        console.print(table)
+        console.print()
 
-    def run_agent_workflow(self, agent_key: str, current_dir: Path):
+    def run_agent_workflow(self, agent_enum: Agent, current_dir: Path):
         """Run the workflow for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_key)
+        agent_config = self.agent_registry.get_agent(agent_enum)
         if not agent_config:
-            self.console.print(f"[red]❌ Agent '{agent_key}' not found.[/red]")
+            console.error(f"Agent '{agent_enum}' not found.")
             return
 
         # Check if agent is available (implemented)
         available_agents = self.agent_registry.get_available_agents()
         if agent_config not in available_agents:
-            self.console.print(f"[yellow]🚧 Agent '{agent_config.name}' is not yet implemented.[/yellow]")
+            console.warning(f"Agent '{agent_config.name}' is not yet implemented.")
             return
-
-        if agent_key == "roadmap":
-            self._run_roadmap_agent(current_dir, agent_config)
-        else:
-            self.console.print(f"[red]❌ Agent '{agent_key}' not implemented yet.[/red]")
-
-    def _run_roadmap_agent(self, current_dir: Path, agent_config):
-        """Run the roadmap agent workflow."""
-        self.console.print("[bold blue]🚀 Starting Roadmap Agent Workflow[/bold blue]\n")
 
         try:
             # Check if indexing is required
@@ -480,21 +471,22 @@ class ModernSutraKit:
                 self._run_cross_indexing(current_dir)
 
             # Run the actual agent
-            self._execute_agent(current_dir, agent_config)
+            if agent_enum.value == "ROADMAP":
+                self._execute_agent(current_dir, agent_enum, agent_config)
+            else:
+                console.error(f"Agent '{agent_enum}' not implemented yet.")
 
         except UserCancelledError:
-            self.console.print("[yellow]👋 Workflow stopped by user choice.[/yellow]")
-            self.console.print(
-                "[dim]You can restart the workflow anytime when ready.[/dim]"
-            )
+            console.warning("Workflow stopped by user choice.")
+            console.dim("You can restart the workflow anytime when ready.")
             return
 
     def _run_indexing(self, project_dir: Path):
         """Run normal indexing for the project."""
-        self.console.print(f"[blue]📁 Starting indexing for:[/blue] {project_dir}")
-        self.console.print("[dim]   • Analyzing code structure and relationships[/dim]")
-        self.console.print("[dim]   • Generating embeddings for semantic search[/dim]")
-        self.console.print()
+        console.info(f"Starting indexing for: {project_dir}")
+        console.dim("   • Analyzing code structure and relationships")
+        console.dim("   • Generating embeddings for semantic search")
+        console.print()
 
         try:
             # Import and run indexing
@@ -511,10 +503,10 @@ class ModernSutraKit:
             args = Args()
             handle_index_command(args)
 
-            self.console.print("[green]✅ Normal indexing completed successfully![/green]\n")
+            console.success("Normal indexing completed successfully!")
 
         except Exception as e:
-            self.console.print(f"[red]❌ Indexing failed: {e}[/red]\n")
+            console.error(f"Indexing failed: {e}")
             raise
 
     def _run_cross_indexing(self, project_dir: Path):
@@ -531,19 +523,13 @@ class ModernSutraKit:
             project_name = project_manager.determine_project_name(project_dir)
 
             if graph_ops.is_cross_indexing_done(project_name):
-                self.console.print(
-                    f"[green]✅ Cross-indexing already completed for project '{project_name}'[/green]"
-                )
-                self.console.print(
-                    "[dim]📊 Skipping analysis - project already fully analyzed[/dim]\n"
-                )
+                console.success(f"Cross-indexing already completed for project '{project_name}'")
+                console.dim("📊 Skipping analysis - project already fully analyzed")
                 return
 
         except Exception as e:
             # If we can't check, proceed with the normal flow
-            self.console.print(
-                f"[dim]⚠️ Could not verify cross-indexing status: {e}[/dim]"
-            )
+            console.dim(f"⚠️ Could not verify cross-indexing status: {e}")
 
         warning_text = """
 • ⏱️  Time: May take 5-30 minutes based on codebase size
@@ -563,8 +549,8 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             title_align="left",
         )
 
-        self.console.print(warning_panel)
-        self.console.print()
+        console.print(warning_panel)
+        console.print()
 
         # Ask for user confirmation
         proceed = Confirm.ask(
@@ -573,18 +559,14 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
         )
 
         if not proceed:
-            self.console.print("[yellow]🛑 Cross-indexing declined by user.[/yellow]")
-            self.console.print(
-                "[dim]💡 Tip: You can run this later when you're ready to spend the time and tokens.[/dim]"
-            )
-            self.console.print(
-                "[dim]📝 To continue later, simply run the same command again.[/dim]\n"
-            )
+            console.warning("Cross-indexing declined by user.")
+            console.dim("💡 Tip: You can run this later when you're ready to spend the time and tokens.")
+            console.dim("📝 To continue later, simply run the same command again.")
             # Raise a custom exception to stop the workflow
             raise UserCancelledError("User declined cross-indexing analysis")
 
         # Use a simpler approach that doesn't conflict with the command's own output
-        self.console.print("[cyan]🔄 Starting cross-indexing analysis...[/cyan]")
+        console.process("Starting cross-indexing analysis...")
 
         try:
             # Import and run cross-indexing
@@ -600,45 +582,52 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             args = Args()
             handle_cross_indexing_command(args)
 
-            self.console.print(
-                "[green]✅ Cross-indexing completed successfully![/green]\n"
-            )
+            console.success("Cross-indexing completed successfully!")
 
         except Exception as e:
-            self.console.print(f"[red]❌ Cross-indexing failed: {e}[/red]\n")
+            console.error(f"Cross-indexing failed: {e}")
 
-    def _execute_agent(self, project_dir: Path, agent_config):
+    def _execute_agent(self, project_dir: Path, agent_name: Agent, agent_config):
         """Execute the actual agent."""
-        self.console.print(f"[bold green]🎯 Executing {agent_config.name}[/bold green]")
+        console.highlight(f"Executing {agent_config.name}")
 
         try:
             from cli.commands import handle_agent_command
+            from src.agent_management.post_requisites.handlers import get_agent_handler
 
-            # Get query from user
-            user_query = Prompt.ask(
-                "[bold cyan]💭 Enter your query for the Roadmap Agent[/bold cyan]",
-                default="Analyze this codebase and provide development insights",
-            )
+            # Execute the agent and capture result
+            agent_result = handle_agent_command(agent_name=agent_name, project_path=project_dir)
 
-            # Mock args object for agent execution
-            class Args:
+            # Handle post-requisites if agent returned results
+            if not agent_result:
+                return
 
-                def __init__(self):
-                    self.agent_type = agent_config.key
-                    self.project_path = project_dir
-                    self.directory = str(project_dir)
-                    self.project_name = None
-                    self.problem_query = user_query
-                    self.project_id = None
-                    self.log_level = "INFO"
+            console.process(f"Processing {agent_config.name} results...")
 
-            args = Args()
-            handle_agent_command(args)
+            # Get appropriate handler for this agent and process results directly
+            handler = get_agent_handler(agent_name)
 
-            self.console.print(f"[green]✅ {agent_config.name} completed successfully![/green]")
+            # Process the agent result directly - no wrapper needed
+            post_result = handler.process_agent_result_direct(agent_result)
+
+            if post_result.get("success"):
+                console.success("Post-processing completed successfully!")
+
+                # Show details if available
+                processed_actions = post_result.get("processed_actions", [])
+                if processed_actions:
+                    console.dim(f"Processed {len(processed_actions)} post-requisite actions")
+                    for action in processed_actions:
+                        if action.get("success"):
+                            console.success(f"  ✓ {action['action']}: {action.get('message', 'Success')}")
+                        else:
+                            console.error(f"  ✗ {action['action']}: {action.get('error', 'Failed')}")
+            else:
+                console.warning(
+                    f"Post-processing completed with issues: {post_result.get('message', 'Unknown error')}")
 
         except Exception as e:
-            self.console.print(f"[red]❌ Agent execution failed: {e}[/red]")
+            console.error(f"Agent execution failed: {e}")
 
     def run(self):
         """Main CLI execution flow."""
@@ -649,7 +638,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
         if not self.check_llm_provider_configured():
             self.setup_llm_provider()
         else:
-            self.console.print("[green]✅ LLM Provider already configured![/green]\n")
+            console.success("LLM Provider already configured!")
 
         # Select agent
         selected_agent = self.select_agent()
@@ -661,7 +650,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
         proceed = Confirm.ask("Ready to proceed with the agent workflow?", default=True)
 
         if not proceed:
-            self.console.print("[yellow]👋 Goodbye![/yellow]")
+            console.warning("Goodbye!")
             return
 
         # Get current directory
@@ -670,10 +659,8 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
         # Run agent workflow
         try:
             self.run_agent_workflow(selected_agent, current_dir)
-            self.console.print(
-                "\n[bold green]🎉 SutraGraph workflow completed![/bold green]"
-            )
-            self.console.print("[dim]Thank you for using SutraGraph![/dim]")
+            console.success("🎉 SutraGraph workflow completed!")
+            console.dim("Thank you for using SutraGraph!")
         except UserCancelledError:
             # This should already be handled in _run_roadmap_agent, but just in case
             pass
@@ -685,12 +672,10 @@ def main():
         cli = ModernSutraKit("INFO")
         cli.run()
     except KeyboardInterrupt:
-        console = Console()
-        console.print("\n[yellow]👋 Operation interrupted. Goodbye![/yellow]")
+        console.warning("Operation interrupted. Goodbye!")
         sys.exit(0)
     except Exception as e:
-        console = Console()
-        console.print(f"\n[red]❌ An error occurred: {e}[/red]")
+        console.error(f"An error occurred: {e}")
         sys.exit(1)
 
 

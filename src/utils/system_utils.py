@@ -30,6 +30,12 @@ def get_current_directory():
     """Get the current working directory."""
     return os.getcwd()
 
+
+def get_home_and_current_directories() -> dict:
+    """Get both home and current working directories."""
+    return {"home": get_home_directory(), "current_dir": get_current_directory()}
+
+
 def get_workspace_structure() -> str:
     """
     Get a tree-like structure of folders in the current directory.

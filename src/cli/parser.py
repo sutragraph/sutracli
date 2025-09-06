@@ -368,13 +368,24 @@ def setup_argument_parser() -> argparse.ArgumentParser:
 
     # Run Phase 5 command
     phase5_parser = subparsers.add_parser(
-        "run-phase5", help="Run Phase 5 connection matching from database data"
+        "run-phase5",
+        help="Run Phase 5 (Connection Matching) of cross-indexing directly",
+    )
+    phase5_parser.add_argument(
+        "--directory",
+        "-d",
+        default=".",
+        help="Directory to analyze (default: current directory)",
+    )
+    phase5_parser.add_argument(
+        "--project-name",
+        help="Custom project name (default: directory name)",
     )
     phase5_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Set the logging level"
+        help="Set the logging level",
     )
 
     # Version command

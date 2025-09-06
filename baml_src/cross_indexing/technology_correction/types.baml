@@ -6,5 +6,5 @@ class TechnologyCorrection {
 }
 
 class TechnologyCorrectionResponse {
-  corrections TechnologyCorrection[]
+  corrections TechnologyCorrection[]?
 }
