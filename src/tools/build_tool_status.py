@@ -6,24 +6,24 @@ from rich.console import Group
 from baml_client.types import Agent, ImpactLevel
 
 
-def build_tool_status(tool_name: str, event: Dict[str, Any], agent: Agent) -> str:
+def build_tool_status(tool_name: str, event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
     """Helper to build tool status dictionary."""
     match tool_name:
         case "database":
-            return _build_database_status(event, agent)
+            return _build_database_status(event, agent, tool_params)
         case "semantic_search":
-            return _build_semantic_search_status(event, agent)
+            return _build_semantic_search_status(event, agent, tool_params)
         case "list_files":
-            return _build_list_files_status(event, agent)
+            return _build_list_files_status(event, agent, tool_params)
         case "search_keyword":
-            return _build_search_keyword_status(event, agent)
+            return _build_search_keyword_status(event, agent, tool_params)
         case "attempt_completion":
-            return _build_completion_status(event, agent)
+            return _build_completion_status(event, agent, tool_params)
         case _:
-            return f"Unknown tool name '{tool_name}'"
+            return f"Unknown tool name '{tool_name}' with parameters {tool_params}"
 
 
-def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
+def _build_database_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
     """Helper to build database status dictionary."""
     query_name = event.get("query_name")
     query = event.get("query")
@@ -60,6 +60,8 @@ def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
     if data:
         status_parts.extend(["Results:", str(data)])
 
+    status_parts.append(f"Parameters used: {tool_params}")
+
     status_parts.append("")
 
     # Add agent-specific notes
@@ -73,7 +75,7 @@ def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
     return "\n".join(status_parts).rstrip()
 
 
-def _build_semantic_search_status(event: Dict[str, Any], agent: Agent) -> str:
+def _build_semantic_search_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
     """Build status for semantic search tool."""
     query = event.get("query")
     count = event.get("count") or event.get("total_nodes")
@@ -128,6 +130,8 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent) -> str:
     if data:
         status_parts.extend(["Results:", str(data)])
 
+    status_parts.append(f"Parameters used: {tool_params}")
+
     status_parts.append("")
 
     # Add agent-specific notes
@@ -141,7 +145,7 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent) -> str:
     return "\n".join(status_parts).rstrip()
 
 
-def _build_list_files_status(event: Dict[str, Any], agent: Agent) -> str:
+def _build_list_files_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
     """Build status for list_files tool."""
     directory = event.get("directory")
     count = event.get("count")
@@ -175,6 +179,7 @@ def _build_list_files_status(event: Dict[str, Any], agent: Agent) -> str:
     if data:
         status_parts.extend(["Results:", str(data)])
 
+    status_parts.append(f"Parameters used: {tool_params}")
     # Add agent-specific notes for list_files
     if agent == Agent.CrossIndexing:
         status_parts.append(
@@ -184,7 +189,7 @@ def _build_list_files_status(event: Dict[str, Any], agent: Agent) -> str:
     return "\n".join(status_parts).rstrip()
 
 
-def _build_search_keyword_status(event: Dict[str, Any], agent: Agent) -> str:
+def _build_search_keyword_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
     """Build status for search_keyword tool."""
     keyword = event.get("keyword")
     file_paths = event.get("file_paths")
@@ -229,6 +234,8 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent) -> str:
     if data:
         status_parts.extend(["Results:", str(data)])
 
+    status_parts.append(f"Parameters used: {tool_params}")
+
     # Add agent-specific notes for search_keyword
     if agent == Agent.CrossIndexing:
         status_parts.append("")
@@ -240,7 +247,7 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent) -> str:
     return "\n".join(status_parts).rstrip()
 
 
-def _build_completion_status(event: Dict[str, Any], agent: Agent) -> str:
+def _build_completion_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
     """Build status for completion tool based on agent_name."""
     error = event.get("error")
     is_simple = event.get("simple", False)

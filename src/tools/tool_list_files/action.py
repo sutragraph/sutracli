@@ -328,7 +328,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
     except Exception as e:
         yield {
             "type": "tool_error",
-            "error": f"Failed to list files: {str(e)}\nParameters used:\n {action.parameters}",
+            "error": f"Failed to list files: {str(e)}",
             "tool_name": "list_files",
             "project_name": action.parameters.get("project_name"),
         }

@@ -532,7 +532,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
     except Exception as e:
         yield {
             "type": "tool_error",
-            "error": f"Failed to search keyword: {str(e)}\nParameters used:\n {action.parameters}",
+            "error": f"Failed to search keyword: {str(e)}",
             "tool_name": "search_keyword",
             "project_name": action.parameters.get("project_name"),
         }
