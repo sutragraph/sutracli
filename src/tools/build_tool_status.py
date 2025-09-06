@@ -45,6 +45,8 @@ def _build_database_status(event: Dict[str, Any], agent: Agent, tool_params: Dic
 
     # Build status string for return
     status_parts = ["Tool: database"]
+    status_parts.append(f"Parameters used: {tool_params}")
+
     if query_name:
         status_parts.append(f"Query Name: {query_name}")
     if query:
@@ -59,8 +61,6 @@ def _build_database_status(event: Dict[str, Any], agent: Agent, tool_params: Dic
 
     if data:
         status_parts.extend(["Results:", str(data)])
-
-    status_parts.append(f"Parameters used: {tool_params}")
 
     status_parts.append("")
 
@@ -108,6 +108,7 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent, tool_para
 
     # Build status string for return
     status_parts = ["Tool: semantic_search"]
+    status_parts.append(f"Parameters used: {tool_params}")
 
     if query and query != "fetch_next_chunk":
         status_parts.append(f"Query: '{query}'")
@@ -129,8 +130,6 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent, tool_para
 
     if data:
         status_parts.extend(["Results:", str(data)])
-
-    status_parts.append(f"Parameters used: {tool_params}")
 
     status_parts.append("")
 
@@ -169,6 +168,7 @@ def _build_list_files_status(event: Dict[str, Any], agent: Agent, tool_params: D
 
     # Build status string for return
     status_parts = ["Tool: list_files"]
+    status_parts.append(f"Parameters used:\n {tool_params}")
 
     if directory:
         status_parts.append(f"Directory: {directory}")
@@ -179,7 +179,6 @@ def _build_list_files_status(event: Dict[str, Any], agent: Agent, tool_params: D
     if data:
         status_parts.extend(["Results:", str(data)])
 
-    status_parts.append(f"Parameters used: {tool_params}")
     # Add agent-specific notes for list_files
     if agent == Agent.CrossIndexing:
         status_parts.append(
@@ -217,6 +216,7 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent, tool_param
 
     # Build status string for return
     status_parts = ["Tool: search_keyword"]
+    status_parts.append(f"Parameters used:\n {tool_params}")
 
     if keyword:
         status_parts.append(f"Keyword: '{keyword}'")
@@ -233,8 +233,6 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent, tool_param
         status_parts.append(f"ERROR: {error}")
     if data:
         status_parts.extend(["Results:", str(data)])
-
-    status_parts.append(f"Parameters used: {tool_params}")
 
     # Add agent-specific notes for search_keyword
     if agent == Agent.CrossIndexing:
