@@ -23,7 +23,8 @@ template_string SearchKeywordToolWithoutProjectNameTemplate() #"
     - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
     - For multiple patterns, use "pattern1|pattern2" with regex=true
     - Use \\b for word boundaries in regex patterns
-
+    - When results return `No results found for keyword search.`, check the history section for previous search attempts. If you see 3-4 failed search attempts with different keywords/patterns, then mark the task complete. However, don't give up after just 1 failed attempt - try different variations of keywords, patterns, or search parameters before concluding no results exist.
+    
     Usage:
     "tool_call": {
       "tool_name": "search_keyword",

@@ -164,7 +164,12 @@ Write in plain text. Example: "This is an order processing service that handles 
 
 ## OUTPUT FORMAT
 
-Return ONLY a valid JSON response with this exact structure:
+Before you answer, please explain your reasoning step-by-step.
+
+For example:
+"I analyzed all the connection data systematically. I found 34 incoming HTTP/HTTPS connections across 8 files including REST API endpoints, route handlers, and server configurations. I identified 20 incoming WebSocket connections for real-time event handling. I discovered 12 outgoing HTTP/HTTPS connections for external API calls and microservice communication. I found 8 outgoing MessageQueue connections for asynchronous processing. I processed each connection individually, extracted specific line numbers, resolved environment variables where applicable, and classified each by technology type and data flow direction."
+
+Therefore the output is:
 
 ```json
 {
@@ -236,6 +241,10 @@ src/api/client.js:45: makeApiCall('/api/orders', 'GET', params)
 ```
 
 CORRECT Splitting:
+
+Step-by-step Analysis:
+"I analyzed the HTTP API connection data systematically. I found 4 outgoing HTTP/HTTPS connections in src/api/client.js file. These include 2 direct axios calls (POST to /admin/users on line 15, GET to /api/orders on line 23) and 2 wrapper function calls using makeApiCall (POST to /admin/users on line 31, GET to /api/orders on line 45). Each connection targets specific endpoints and uses distinct HTTP methods. All connections are outgoing since this service is making calls to external endpoints for user management and order processing."
+
 ```json
 {
   "outgoing_connections": {
@@ -281,6 +290,10 @@ QUEUE_NAME=user-processing
 ```
 
 CORRECT Splitting:
+
+Step-by-step Analysis:
+"I analyzed the connection data and identified environment variable usage. I found 2 outgoing HTTP/HTTPS connections and 1 MessageQueue configuration. For src/config/api.js line 12, I resolved the environment variable API_BASE_URL=http://localhost:3001 from the provided env file to create the full endpoint. For src/config/queue.js line 8, I resolved QUEUE_NAME=user-processing. The static API URL on line 20 doesn't use environment variables. I classified the HTTP calls as outgoing connections and the queue configuration as outgoing MessageQueue setup."
+
 ```json
 {
   "outgoing_connections": {
@@ -326,6 +339,10 @@ File: src/queue/consumer.js```
 42 | queue.consume('order-processing', handler)
 
 CORRECT Splitting:
+
+Step-by-step Analysis:
+"I analyzed the WebSocket and message queue connection data systematically. I found 2 outgoing WebSocket connections in src/socket/handlers.js (emit events on lines 15 and 23), 2 incoming WebSocket connections in src/socket/server.js (event listeners on lines 30 and 35), and 1 incoming MessageQueue connection in src/queue/consumer.js (consumer on line 42). The emit operations are outgoing since they send data to clients, the event listeners are incoming since they receive data from clients, and the queue consumer is incoming since it receives messages from the queue system."
+
 ```json
 {
   "outgoing_connections": {
@@ -380,6 +397,10 @@ src/routes/orders.js:12: router.put('/orders/:id', updateOrderHandler)
 ```
 
 CORRECT Splitting:
+
+Step-by-step Analysis:
+"I analyzed the Express route handler connection data systematically. I found 4 incoming HTTP/HTTPS connections across 2 files. In src/routes/users.js, I identified 2 route definitions (GET /api/users on line 10, POST /api/users on line 15). In src/routes/orders.js, I found 2 more route definitions (GET /orders/:id on line 8, PUT /orders/:id on line 12). All connections are incoming since they define endpoints that accept requests from external clients. Each route handler serves a specific HTTP method and endpoint combination for REST API functionality."
+
 ```json
 {
   "incoming_connections": {
@@ -425,6 +446,10 @@ File: src/services/api.js
 ```
 
 CORRECT Splitting:
+
+Step-by-step Analysis:
+"I analyzed the wrapper function connection data systematically. I found 4 outgoing connections across 2 files using wrapper functions. In src/services/notification.js, I identified 2 MessageQueue connections using publishMessage wrapper (user-notifications queue on line 25, order-updates queue on line 30). In src/services/api.js, I found 2 HTTP/HTTPS connections using makeApiCall wrapper (POST /admin/users on line 18, GET /api/orders on line 22). All connections are outgoing since the wrapper functions are being called to send data to external systems. Each wrapper call has specific identifiers for queues or endpoints."
+
 ```json
 {
   "outgoing_connections": {
@@ -487,6 +512,10 @@ src/handlers/event.js:30: }
 ```
 
 CORRECT Splitting:
+
+Step-by-step Analysis:
+"I analyzed the switch statement connection data systematically. I found 6 outgoing connections across 2 files within switch case structures. In src/handlers/message.js, I identified 3 HTTP/HTTPS connections for different message types (USER_CREATED POST on line 47, ORDER_PLACED POST on line 50, PAYMENT_RECEIVED PUT on line 53). In src/handlers/event.js, I found 3 WebSocket connections for different event types (data_sync emit on line 22, data_update emit on line 25, data_delete emit on line 28). I focused only on the actual connection operation lines, not the switch structure lines. Each case represents a distinct connection with specific parameters and target services."
+
 ```json
 {
   "outgoing_connections": {
@@ -628,38 +657,31 @@ Why Included: These show actual connection usage with specific identifiers or en
 
 ## STEP-BY-STEP ANALYSIS PROCESS
 
-1. Check for duplicates: First scan all input for repeating content - same file paths with same line numbers appearing multiple times
-2. Identify env files: Look for environment file code blocks that contain variable definitions
-3. Identify all connections: Scan through all code snippets and identify every individual connection
-4. Resolve env variables: For each connection using environment variables, find corresponding values from env file blocks
-5. Separate each connection: For each connection found, create a separate JSON entry (excluding duplicates)
-6. Extract precise details: Get exact line numbers and specific details for each connection
-7. Write specific descriptions: Each description must be about ONE specific connection with resolved env values when available
-8. Analyze project comprehensively: Review all connections, patterns, and code structure to understand the complete project functionality
-9. Generate detailed summary: Create a comprehensive project description covering purpose, architecture, integrations, and business domain
+1. Identify env files: Look for environment file code blocks that contain variable definitions
+2. Identify all connections: Scan through all code snippets and identify every individual connection
+3. Resolve env variables: For each connection using environment variables, find corresponding values from env file blocks
+4. Separate each connection: For each connection found, create a separate JSON entry (excluding duplicates)
+5. Extract precise details: Get exact line numbers and specific details for each connection
+6. Write specific descriptions: Each description must be about ONE specific connection with resolved env values when available
+7. Analyze project comprehensively: Review all connections, patterns, and code structure to understand the complete project functionality
+8. Generate detailed summary: Create a comprehensive project description covering purpose, architecture, integrations, and business domain
 
-## CRITICAL REQUIREMENTS
+## REQUIREMENTS
 
-1. Process all connections - never skip or sample connections
-2. Separate all connections - never group multiple connections into one entry
-3. Use exact line numbers - be precise about where each connection is located
-4. Write specific descriptions - each description must be about one connection only
-5. Generate comprehensive summary - analyze all connections to create detailed project description covering purpose, functionality, architecture, and integrations
-6. Return valid JSON only - no additional text or explanations
-7. No phrases like: "including", "multiple", "various", "several", "operations for"
+1. Step-by-step Analysis: Explain your reasoning before providing the JSON response
+2. Connection Counting: Count and categorize all connections by technology type and direction
+3. Complete Processing: Process ALL connections - never skip or sample connections
+4. Individual Separation: Never group multiple connections into one entry
+5. Precise Line Numbers: Use exact line numbers for each connection location
+6. Specific Descriptions: Each description must be about one connection only
+7. Environment Resolution: Resolve environment variables using provided configuration files and include as ENV_VAR=actual_value
+8. Technology Classification: Validate technology type classification for each connection
+9. Comprehensive Summary: Generate detailed project description covering purpose, functionality, architecture, and integrations
+10. Output Format: Start with detailed analysis, then return valid JSON
+11. Grouping Structure: Group by technology and file path as shown in format
+12. Language Restrictions: No phrases like "including", "multiple", "various", "several", "operations for"
+13. Complete Coverage: If you find 86 different connections, create 86 separate JSON entries - No exceptions, No sampling
 
-## RESPONSE REQUIREMENTS
-
-- Return ONLY valid JSON with no additional text
-- Process every single connection from sutra memory data
-- Create separate entries for each individual connection
-- Use precise line numbers for each connection
-- Write specific descriptions for each connection
-- Include environment variable information in descriptions using format ENV_VAR=actual_value when values are provided
-- Generate comprehensive project summary that thoroughly describes purpose, functionality, architecture, and integration patterns
-- Group by technology and file path as shown in format
-
-Remember: If you find 26 different connections, you must create 26 separate JSON entries. No exceptions.
 "#
 
 template_string ConnectionSplittingUserPrompt(memory_context: string) #"

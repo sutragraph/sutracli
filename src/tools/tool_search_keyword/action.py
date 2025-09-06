@@ -458,7 +458,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                         "chunk_info": chunk["chunk_info"],
                     }
         else:
-            no_matches_msg = f"No matches found for '{keyword}'"
+            no_matches_msg = f"No matches found for '{keyword}' trying different keywords or check spelling."
             # Add project header for no matches case if needed
             if project_name:
                 no_matches_msg = f"PROJECT: {project_name}\n{no_matches_msg}"

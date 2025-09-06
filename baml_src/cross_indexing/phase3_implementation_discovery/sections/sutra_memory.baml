@@ -10,6 +10,8 @@ Required Components:
 Optional Components:
 - task: Manage analysis tasks by executing tasks and creating additional tasks when needed
 
+NOTE: `description` is only required for "add" actions do not include description for "move" actions
+
 Usage Format
 
 {

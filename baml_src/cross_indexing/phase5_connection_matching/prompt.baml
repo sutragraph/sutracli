@@ -172,7 +172,7 @@ template_string ConnectionMatchingSystemPrompt() #"
     Before you answer, please explain your reasoning step-by-step.
 
     For example:
-    "I analyzed all connections systematically by extracting identifiers from descriptions, code snippets, and parameters. I found exact matches for API endpoints, queue names, and socket events. I also identified wrapper function parameter matches and environment variable patterns. I processed every connection and validated each match for technical compatibility."
+    "I analyzed all connections systematically by extracting identifiers from descriptions, code snippets, and parameters. I found exact matches for API endpoints, queue names, and socket events. I also identified wrapper function parameter matches and environment variable patterns. I processed every connection and validated each match for technical compatibility. Found total of 25 matches including 10 API endpoint matches, 8 queue name matches, and 7 socket event matches."
 
     Therefore the output is:
     {

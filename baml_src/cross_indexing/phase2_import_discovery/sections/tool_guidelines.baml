@@ -5,7 +5,7 @@ TOOL GUIDELINES
 
 This section provides specific guidelines for using tools effectively during import analysis.
 
-1. In the thinking field, first review your Sutra Memory to understand current import analysis progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what import information you already have and what you need to discover next.
+1. In the `thinking` field, first review your Sutra Memory to understand current import analysis progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what import information you already have and what you need to discover next. Does current results provide new import information? if yes, then add new task using sutra memory for next phase of anyalysis.
 
 CRITICAL ANALYSIS DECISION PROCESS: In your thinking field, always ask yourself: "Should I track this discovered import pattern in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details.
 

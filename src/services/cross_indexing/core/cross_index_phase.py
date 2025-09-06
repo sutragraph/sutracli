@@ -231,14 +231,11 @@ class CrossIndexing:
                     f"   Found {len(unknown_connections['incoming'])} incoming and {len(unknown_connections['outgoing'])} outgoing Unknown connections"
                 )
             else:
-                print("ℹ️ No Unknown connections found, skipping Unknown fetch")
+                print("ℹ️  No Unknown connections found, skipping Unknown fetch")
 
             # Get all distinct technology types (excluding Unknown)
             all_tech_types = self.graph_ops.get_available_technology_types()
 
-            print(
-                f"🔗 Phase 5: Starting connection matching for {len(all_tech_types)} technology types"
-            )
             print(f"📊 Found technology types: {', '.join(sorted(all_tech_types))}")
 
             # Collect all matches from each technology type
