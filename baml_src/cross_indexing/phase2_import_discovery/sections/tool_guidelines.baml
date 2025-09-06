@@ -7,6 +7,14 @@ This section provides specific guidelines for using tools effectively during imp
 
 1. In the `thinking` field, first review your Sutra Memory to understand current import analysis progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what import information you already have and what you need to discover next. Does current results provide new import information? if yes, then add new task using sutra memory for next phase of anyalysis.
 
+CRITICAL THINKING APPROACH: Check your sutra memory history first! If you found ANY results, immediately move to the next task. If the current search approach returned NO results and this is your first try, think: "What different regex pattern, import syntax, or search method should I try to find this import?" However, if you see in your sutra memory history that you've already tried 2-3 similar search_keyword calls for the same package/task with zero results, mark that task as complete and move to the next task rather than repeating the same patterns.
+
+RETRY THINKING EXAMPLES:
+- If 'require\\\\s*\\\\(\\\\s*['\\\"]axios['\\\"]\\\\s*\\\\)' returns no results (1st try), think: "Should I try broader pattern like 'import.*axios' or 'axios.*='?"
+- If initial express pattern fails (1st try), think: "Should I try Router patterns, middleware patterns, or simpler 'express' keyword?"
+- Check sutra memory: If you see 2-3 search attempts with zero results already tried for same package, move to completion
+- Example: "I see in sutra memory I already tried search_keyword with 'require.*axios', 'import.*axios', 'axios' patterns - this task should be marked complete"
+
 CRITICAL ANALYSIS DECISION PROCESS: In your thinking field, always ask yourself: "Should I track this discovered import pattern in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details.
 
 ANALYSIS DECISION CRITERIA:
@@ -25,7 +33,36 @@ Critical: Update your task list in every iteration based on your thinking:
 - Remove tasks that are no longer relevant
 - Update task descriptions with more specific information when available
 
-2. TOOL SELECTION STRATEGY
+1. **STANDARD PROCESS: When results ARE found**
+- If your search finds ANY results (> 0), immediately proceed to process those results
+- Document findings in sutra memory
+- Create implementation tasks for next phase if appropriate
+- Mark current task as completed
+- Move to next task
+- **DO NOT attempt additional search patterns when you already have results**
+
+2. SYSTEMATIC RETRY APPROACH FOR IMPORT SEARCH (**ONLY when NO results are found**)
+
+**IMPORTANT: If you find ANY results, immediately move to the next task. This retry approach is ONLY for when zero results are found.**
+
+**Before Marking Any Task Complete (Only when results = 0):**
+- Check sutra memory history: Have I already tried 2-3 different search patterns for this same package?
+- If YES: Mark task complete and move to next task (avoid repeating same search patterns)
+- If NO and this is 1st try: Attempt alternative search pattern (different regex/syntax)
+- Only after 2-3 documented different search attempts with zero results should you mark task complete
+
+**Import Search Retry Strategy (Only when zero results found):**
+- 1st attempt: Use exact pattern from package discovery task
+- 2nd attempt: Try broader syntax pattern (e.g., 'require.*axios' → 'import.*axios' → 'axios') - ONLY if 1st attempt found 0 results
+- 3rd attempt: Try simplified keyword search or different import variations - ONLY if 2nd attempt found 0 results
+- After 3 attempts with zero results: Mark complete and move to next task
+
+**Pattern Evolution Strategy:**
+- Start specific → go broader → try alternatives
+- Exact syntax → common variations → keyword matching
+- Document all attempts in sutra memory history
+
+3. TOOL SELECTION STRATEGY
 
 **SEARCH_KEYWORD TOOL**
 - Primary tool for finding import statements based on previous analysis tasks
@@ -39,7 +76,7 @@ Critical: Update your task list in every iteration based on your thinking:
 - Helpful for examining import structures in detail
 - Use sparingly, prefer search_keyword for efficiency
 
-2. IMPORT SEARCH PATTERN EXAMPLES
+4. IMPORT SEARCH PATTERN EXAMPLES
 
 **JavaScript/Node.js Pattern Examples:**
 For Example:
@@ -66,7 +103,7 @@ For Example:
 - import "package"|import package
 - import \\(.*package.*\\)
 
-3. TASK EXECUTION WORKFLOW
+5. TASK EXECUTION WORKFLOW
 
 **Step 1: Review Pending Tasks**
 - Check sutra_memory for pending tasks from package discovery
@@ -89,7 +126,7 @@ For Example:
 - Include specific file paths and usage patterns for implementation analysis
 - ALWAYS create built-in pattern tasks regardless of package findings
 
-4. TASK CREATION GUIDELINES
+6. TASK CREATION GUIDELINES
 
 **Task Format Examples for Implementation Discovery:**
 - Include number of files found with imports and complete context
@@ -128,7 +165,7 @@ For Example:
 - Imported methods and functions for implementation analysis
 - Import aliases and destructuring patterns for context
 
-6. BUILT-IN PATTERN TASK CREATION (ALWAYS REQUIRED)
+7. BUILT-IN PATTERN TASK CREATION (ALWAYS REQUIRED)
 
 **Multi-Language Built-in Pattern Examples:**
 For Example:
@@ -143,7 +180,7 @@ For Example:
 "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\(|XMLHttpRequest|new WebSocket\\(' to find native connection patterns."
 "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\.|http\\.client|socket\\.' to find built-in connection patterns."
 
-7. COMPLETION CRITERIA
+8. COMPLETION CRITERIA
 
 **When to Use attempt_completion:**
 - All package discovery tasks have been executed
@@ -157,7 +194,7 @@ For Example:
 - Number of implementation discovery tasks created
 - Built-in pattern tasks created for implementation analysis
 
-8. ERROR HANDLING
+9. ERROR HANDLING
 
 **Common Issues and Solutions:**
 - No imports found: Verify search patterns match task specifications

@@ -54,12 +54,12 @@ Example 1: Wrapper function analysis
       },
       {
         "action": "move",
-        "id": "3", 
+        "id": "13", 
         "from_status": "current",
         "to_status": "completed",
       }
     ],
-    "add_history": "Used search_keyword to find apiClient wrapper function usage - discovered 18 calls across 6 files with real endpoints and parameters. All wrapper function calls with actual usage analyzed."
+    "add_history": "Used search_keyword with query='apiClient\\\\.' and regex=true - found 18 matches across 6 files with real endpoints and parameters in current iteration. All wrapper function calls with actual usage analyzed."
   }
 }
 
@@ -80,7 +80,7 @@ Example 2: Wrapper function discovery with task creation
         "description": "Use search_keyword to find all apicall( wrapper function usage: apicall\\("
       }
     ],
-    "add_history": "Used database tool to read src/utils/api.js - found wrapper function definition apicall(endpoint, method, data). Created task to search for all usage sites of this wrapper function across codebase."
+    "add_history": "Used database query GET_FILE_BY_PATH with file_path='src/utils/api.js' - found wrapper function definition apicall(endpoint, method, data) in current iteration. Created task to search for all usage sites of this wrapper function across codebase."
   }
 }
 
@@ -101,7 +101,7 @@ Example 3: Custom API client pattern discovery with task creation
         "description": "Use search_keyword to find all httpClient usage patterns: httpClient\\.(get|post|put|delete)\\("
       }
     ],
-    "add_history": "Used database tool to read src/services/client.py - found custom httpClient class with methods. Created task to search for all httpClient method calls across project files."
+    "add_history": "Used database query GET_FILE_BY_PATH with file_path='src/services/client.py' - found custom httpClient class with methods in current iteration. Created task to search for all httpClient method calls across project files."
   }
 }
 
@@ -122,7 +122,7 @@ Example 4: Wrapper function analysis with dynamic parameters
         "description": "Use database tool to read src/utils/apiHelper.js completely to identify function name containing axios.get(url, config) wrapper calls"
       }
     ],
-    "add_history": "Found wrapper function with dynamic url parameter in src/utils/apiHelper.js. Created task to read complete file and identify function name before searching for actual usage patterns with real endpoint values."
+    "add_history": "Used search_keyword with query='axios\\\\.get.*url' and regex=true - found wrapper function with dynamic url parameter in src/utils/apiHelper.js in current iteration. Created task to read complete file and identify function name before searching for actual usage patterns with real endpoint values."
   }
 }
 
@@ -143,7 +143,7 @@ Example 5: Wrapper function usage discovery
         "description": "Use search_keyword to find makeApiCall usage patterns: makeApiCall\\("
       }
     ],
-    "add_history": "Used database tool to read src/utils/apiHelper.js - identified function name makeApiCall() containing axios wrapper calls with dynamic parameters. Created task to search for all makeApiCall usage sites across codebase to find real endpoint values."
+    "add_history": "Used database query GET_FILE_BY_PATH with file_path='src/utils/apiHelper.js' - identified function name makeApiCall() containing axios wrapper calls with dynamic parameters in current iteration. Created task to search for all makeApiCall usage sites across codebase to find real endpoint values."
   }
 }
 
@@ -164,7 +164,7 @@ Example 6: Environment variable analysis with config file discovery
         "description": "Use database tool to read .env file to analyze DATABASE_URL and API_BASE_URL values"
       }
     ],
-    "add_history": "Used list_files to find config files - discovered .env, config/database.yml, and docker-compose.yml. Found environment variables DATABASE_URL and API_BASE_URL used in connection code. Created task to analyze config file contents."
+    "add_history": "Used list_files with path='.' and pattern='*env*|*config*' - found .env, config/database.yml, and docker-compose.yml files in current iteration. Found environment variables DATABASE_URL and API_BASE_URL used in connection code. Created task to analyze config file contents."
   }
 }
 
@@ -179,7 +179,7 @@ Example 7: Task completion scenario
         "to_status": "completed",
       }
     ],
-    "add_history": "Used attempt_completion - provided summary of discovered connection implementations across multiple languages"
+    "add_history": "Used attempt_completion with result='Implementation discovery complete. Analyzed connection usage in 20 files across JavaScript and Python: found 35 HTTP API calls, 18 server routes, 12 WebSocket connections, and 8 message queue operations.'"
   }
 }
 
@@ -190,7 +190,10 @@ In the `thinking` JSON field, assess what implementation information you already
 
 2. Task Execution Protocol
 - Execute pending tasks from import pattern discovery one by one
-- Move tasks from pending to current, then to completed
+- Move tasks from pending to current when starting execution
+- Try 2-3 different approaches/patterns before marking tasks as completed
+- If initial tool approach fails, try alternative methods in same iteration
+- Only mark task as completed after exhausting reasonable analysis variations
 - Use tool selection guidance provided in import pattern discovery tasks
 - Process results after each tool call
 
@@ -207,11 +210,14 @@ In the `thinking` JSON field, assess what implementation information you already
 - Use descriptive task names with clear analysis objectives
 
 5. History Best Practices
-- Be specific about tools used and connection implementations found
-- Mention processing and analysis results
-- Note number of connections found and their types
-- Include complete file paths and connection details when relevant
-- Track comprehensive implementation information and analysis results
+- Be specific about tools used and connection implementations found in current iteration
+- Mention all tool attempts made in current iteration with specific approaches
+- If analysis approach failed, mention the failed method and any alternatives tried
+- Note number of connections found and their types from current iteration
+- Include complete file paths and connection details when relevant from current tool results
+- Track comprehensive implementation information and analysis results from current iteration
+- Example: "Used database query GET_FILE_BY_PATH with file_path='src/api/client.js' - found 0 axios calls, then used search_keyword with query='axios\\\\.' and regex=true - found 5 usage sites in current iteration"
+- Example: "Used search_keyword with query='fetch\\\\s*\\\\(' and regex=true in current iteration - discovered 12 native fetch calls across 4 files"
 
 6. Critical Rules
 - Sutra Memory MUST be updated in every implementation discovery response alongside exactly one tool call

@@ -49,7 +49,7 @@ Example 1: Starting package discovery
 ```json
 {
   "sutra_memory": {
-    "add_history": "Used list_files to explore project structure. Found Server/pom.xml and Frontend/package.json files in current project"
+    "add_history": "Used list_files with path='.' and max_depth=2 - found 15 files including package.json and requirements.txt in current iteration"
   }
 }
 ```
@@ -63,15 +63,32 @@ Example 2: Package file analysis
         "action": "add",
         "id": "2",
         "to_status": "pending",
-        "description": "Use search_keyword tool with pattern 'require\\('axios'\\)|import.*from.*'axios'|import.*axios|axios' and regex=true to find axios import statements. Look for HTTP client library imports enabling requests to other services."
+        "description": "Use search_keyword tool with pattern 'require\\\\s*\\\\(\\\\s*['\\\"]axios['\\\"]\\\\s*\\\\)|import.*axios' and regex=true to find axios import statements. Look for HTTP client library imports enabling requests to other services."
       }
     ],
-    "add_history": "Found package.json file and it contains axios package which is an HTTP client library."
+    "add_history": "Used database query GET_FILE_BY_PATH with file_path='package.json' - found axios, express, socket.io packages in dependencies section. Discovered 3 connection packages for import analysis."
   }
 }
 ```
 
-Example 3: Task completion scenario (only mark as completed when it is fully executed)
+Example 3: Multiple package files analysis
+```json
+{
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "add",
+        "id": "3",
+        "to_status": "pending", 
+        "description": "Use search_keyword tool with pattern '^\\\\s*import\\\\s+requests|^\\\\s*from\\\\s+requests\\\\s+import' and regex=true to find requests import statements in Python files"
+      }
+    ],
+    "add_history": "Used database query GET_FILE_BY_PATH with file_path='requirements.txt' - found requests, flask, celery packages. Combined with previous package.json analysis, total 6 connection packages discovered across JavaScript and Python."
+  }
+}
+```
+
+Example 4: Task completion scenario (only mark as completed when it is fully executed)
 ```json
 {
   "sutra_memory": {
@@ -83,7 +100,7 @@ Example 3: Task completion scenario (only mark as completed when it is fully exe
         "to_status": "completed",
       }
     ],
-    "add_history": "Used attempt_completion - provided summary of discovered packages and created tasks for subsequent import analysis"
+    "add_history": "Used attempt_completion with result='Package discovery complete. Found 6 connection packages (axios, express, socket.io, requests, flask, celery) across 2 package files. Created 4 import discovery tasks for next phase.'"
   }
 }
 ```
@@ -111,13 +128,15 @@ In the thinking field, assess what package information you already have and what
 - Use descriptive task names with clear objectives
 
 5. History Best Practices
-- Be specific about tools used and package files analyzed
-- Mention key package discoveries and findings
-- Note any failures or missing package files
-- Include complete package names and file paths
+- Be specific about tools used and package files analyzed in current iteration
+- Mention key package discoveries and findings from current tool calls
+- Note any failures or missing package files encountered in this iteration
+- Include complete package names and file paths discovered
 - Track comprehensive package information for import discovery
-- Write only what you did/found in the current iteration
-- Do not mention specific task and IDs in history - focus on actions and discoveries made
+- Write only what you did/found in the current iteration with specific tool and query details
+- Example: "Used list_files with path='.' and max_depth=2 - found 15 files including package.json in current iteration"
+- Example: "Used database query GET_FILE_BY_PATH with file_path='package.json' - found axios, express packages in dependencies section in current iteration"
+- Do not mention specific task IDs in history - focus on actions and discoveries made
 
 6. Critical Rules
 - Sutra Memory MUST be updated in every package discovery response alongside exactly one tool call

@@ -43,10 +43,13 @@ Example 3: Java package analysis
 **COMPREHENSIVE TASK CREATION**
 
 Example 1: After finding axios package in package.json
-Create task(Add): "Use search_keyword tool with pattern 'require\\('axios'\\)|import.*from.*'axios'|import.*axios|axios' and regex=true to find all axios import statements. This HTTP client library is used for making requests to other services. Search across all JavaScript/TypeScript files."
+Create task(Add): "Use search_keyword tool with pattern 'require\\s*\\(\\s*['\"]axios['\"]\\s*\\)|import\\s+axios\\s+from\\s+['\"]axios['\"]|import\\s*\\{[^}]*\\}\\s*from\\s*['\"]axios['\"]' and regex=true to find all axios import statements. This HTTP client library is used for making requests to other services. Search across all JavaScript/TypeScript files."
 
-Example 2: After finding express package in package.json
-Create task(Add): "Use search_keyword tool with pattern 'require\\('express'\\)|import.*from.*'express'|import.*express' and regex=true to find all express import statements. This server framework is used for receiving requests from other services. Search across all JavaScript/TypeScript files."
+Example 2: After finding express package in package.json  
+Create task(Add): "Use search_keyword tool with pattern 'require\\s*\\(\\s*['\"]express['\"]\\s*\\)|import\\s+express\\s+from\\s+['\"]express['\"]|import\\s*\\{[^}]*Router[^}]*\\}\\s*from\\s*['\"]express['\"]' and regex=true to find all express import statements. This server framework is used for receiving requests from other services. Search across all JavaScript/TypeScript files."
+
+Example 3: After finding requests package in requirements.txt
+Create task(Add): "Use search_keyword tool with pattern '^\\s*import\\s+requests|^\\s*from\\s+requests\\s+import' and regex=true to find all requests import statements. This HTTP client library is used for making requests to other services. Search across all Python files."
 
 4. COMPLETION EXAMPLES
 

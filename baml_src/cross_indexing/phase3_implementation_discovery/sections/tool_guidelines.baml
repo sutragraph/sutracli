@@ -7,6 +7,14 @@ This section provides specific guidelines for using tools effectively during imp
 
 1. In the `thinking` JSON field, first review your Sutra Memory to understand current implementation discovery progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what implementation information you already have and what you need to discover next.
 
+CRITICAL THINKING APPROACH: Check your sutra memory history first! If you found ANY results, immediately move to the next task. If the current analysis approach returned NO results and this is your first try, think: "What different search pattern, analysis method, or tool approach should I try to find this implementation?" However, if you see in your sutra memory history that you've already tried 2-3 similar tool calls for the same file/pattern with zero results, mark that task as complete and move to the next task rather than repeating the same approaches.
+
+RETRY THINKING EXAMPLES:
+- If database tool shows no axios usage in a file (1st try), think: "Should I try search_keyword with 'axios\\\\.' pattern across files?"
+- If search_keyword for 'app\\\\.get' returns no results (1st try), think: "Should I try 'router\\\\.', 'express\\\\(\\\\)', or broader patterns?"
+- Check sutra memory: If you see 2-3 analysis attempts with zero results already tried for same objective, move to completion
+- Example: "I see in sutra memory I already tried database tool on file1, search_keyword with pattern1, search_keyword with pattern2 - this task should be marked complete"
+
 CRITICAL ANALYSIS DECISION PROCESS: In your `thinking` field, always ask yourself: "Should I track this discovered implementation pattern in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details.
 
 ANALYSIS DECISION CRITERIA:
@@ -24,7 +32,36 @@ Critical: Update your task list in every iteration based on your thinking:
 - Remove tasks that are no longer relevant
 - Update task descriptions with more specific information when available
 
-2. TOOL SELECTION STRATEGY
+1. **STANDARD PROCESS: When results ARE found**
+- If your analysis finds ANY results (> 0), immediately proceed to process those results
+- Document findings in sutra memory
+- Extract connection details for data splitting phase
+- Mark current task as completed
+- Move to next task
+- **DO NOT attempt additional analysis approaches when you already have results**
+
+2. SYSTEMATIC RETRY APPROACH FOR IMPLEMENTATION DISCOVERY (**ONLY when NO results are found**)
+
+**IMPORTANT: If you find ANY results, immediately move to the next task. This retry approach is ONLY for when zero results are found.**
+
+**Before Marking Any Task Complete (Only when results = 0):**
+- Check sutra memory history: Have I already tried 2-3 different analysis approaches for this same objective?
+- If YES: Mark task complete and move to next task (avoid repeating same tool calls)
+- If NO and this is 1st try: Attempt alternative approach (different tool/pattern/method)
+- Only after 2-3 documented different attempts with zero results should you mark task complete
+
+**Implementation Discovery Retry Strategy (Only when zero results found):**
+- 1st attempt: Use primary tool approach as specified in import discovery task  
+- 2nd attempt: Try alternative tool or broader search pattern - ONLY if 1st attempt found 0 results
+- 3rd attempt: Try different analysis method or alternative file approaches - ONLY if 2nd attempt found 0 results
+- After 3 attempts with zero results: Mark complete and move to next task
+
+**Analysis Evolution Strategy:**
+- Start specific (exact file) → go broader (multiple files) → try alternatives (different patterns)
+- Precise patterns → common variations → broader matching
+- Document all attempts in sutra memory history
+
+3. TOOL SELECTION STRATEGY
 
 **DATABASE TOOL USAGE**
 - Use when import discovery found few files (2-3) with specific imports
@@ -40,7 +77,7 @@ Critical: Update your task list in every iteration based on your thinking:
 - Essential for built-in language patterns that don't require imports
 - Include appropriate context lines (after_lines=2-3) to capture complete usage
 
-2. TASK EXECUTION WORKFLOW
+4. TASK EXECUTION WORKFLOW
 
 **Step 1: Review Pending Tasks**
 - Check sutra_memory for pending tasks from import pattern discovery
@@ -59,7 +96,7 @@ Critical: Update your task list in every iteration based on your thinking:
 - Create tasks for environment variable resolution with specific tool guidance
 - Add tasks for complex connection patterns requiring deeper analysis
 
-3. WHAT TO ANALYZE AND FIND
+5. WHAT TO ANALYZE AND FIND
 
 **FIND THESE (Actual usage with real values):**
 - API calls with actual endpoints and parameters that connect to other services
@@ -76,7 +113,7 @@ Critical: Update your task list in every iteration based on your thinking:
 - Utility functions without actual connections to other services
 - Test code, mock implementations, and development debugging code
 
-4. WRAPPER FUNCTION ANALYSIS GUIDELINES
+6. WRAPPER FUNCTION ANALYSIS GUIDELINES
 
 **Critical Workflow for Dynamic Parameters:**
 - When you find wrapper functions with dynamic parameters (url, endpoint variables), MUST read complete file first with database tool
@@ -89,7 +126,7 @@ Critical: Update your task list in every iteration based on your thinking:
 - "Found apiCallFunction() wrapper with url parameter. Use search_keyword to find apiCallFunction usage patterns: apiCallFunction\\("
 - "Found makeRequest() function with dynamic endpoint. Use search_keyword to find makeRequest calls: makeRequest\\("
 
-5. COMPLETION CRITERIA
+7. COMPLETION CRITERIA
 
 **When to Use attempt_completion:**
 - All import pattern discovery tasks have been executed systematically
@@ -103,7 +140,7 @@ Critical: Update your task list in every iteration based on your thinking:
 - Files analyzed and connection code found
 - Summary of connection patterns found with service communication context
 
-6. ERROR HANDLING AND TROUBLESHOOTING
+8. ERROR HANDLING AND TROUBLESHOOTING
 
 **Common Issues and Solutions:**
 - No usage found: Verify search patterns match actual imports and try pattern variations

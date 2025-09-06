@@ -132,7 +132,16 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         target_phase: Optional[int] = None,
     ) -> bool:
         """Add task with phase metadata (task_id is ignored, counter+1 used instead)."""
-        success = super().add_task(task_id, description, status)
+        # For phases 1 and 2, force status to PENDING to ensure proper phase transitions
+        if self.current_phase in [1, 2]:
+            actual_status = TaskStatus.PENDING
+            logger.debug(
+                f"Forcing task status to PENDING in phase {self.current_phase} (original status: {status})"
+            )
+        else:
+            actual_status = status
+
+        success = super().add_task(task_id, description, actual_status)
 
         if success:
             # Get the actual counter-based ID that was assigned by parent class
@@ -160,7 +169,8 @@ class CrossIndexingTaskManager(SutraMemoryManager):
             }
 
             logger.debug(
-                f"Added task {actual_task_id} in Phase {self.current_phase} targeting Phase {actual_target_phase} (LLM ID {task_id} ignored)"
+                f"Added task {actual_task_id} in Phase {self.current_phase} targeting Phase {actual_target_phase} "
+                f"with status {actual_status} (LLM ID {task_id} ignored)"
             )
 
         return success

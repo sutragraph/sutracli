@@ -24,22 +24,28 @@ Example 2: Python - Requests usage analysis in specific files
 **SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions)**
 
 Example 1: JavaScript - Express usage across many files
-- search_keyword("app\\.(get|post|put|delete)\\(|router\\.(get|post|put|delete)\\(", regex=true, after_lines=2)
+- search_keyword("(app|router)\\.(get|post|put|delete|patch)\\s*\\(", regex=true, after_lines=2)
 - Purpose: Find express route definitions across multiple files efficiently
 - Look for: Route definitions with actual endpoint paths
 - Find: All route definitions found with real endpoints
 
 Example 2: Python - Flask usage across many files
-- search_keyword("@app\\.route\\(|@bp\\.route\\(", regex=true, after_lines=2)
+- search_keyword("@(app|bp)\\.route\\s*\\(\\s*['\"][^'\"]*['\"]", regex=true, after_lines=2)
 - Purpose: Find Flask route definitions across multiple files efficiently
 - Look for: Route decorators with actual endpoint paths
 - Find: All route definitions found with real endpoints
 
 Example 3: Multi-language - Wrapper function usage analysis
-- search_keyword("makeApiCall\\(|apiClient\\.|sendRequest\\(", regex=true, after_lines=3)
+- search_keyword("(makeApiCall|apiClient\\.|sendRequest)\\s*\\(", regex=true, after_lines=3)
 - Purpose: Find all usage sites of wrapper functions across the codebase
 - Look for: Wrapper function calls with actual parameters
 - Find: Wrapper function calls with real endpoints and data
+
+Example 4: HTTP calls with improved quote handling
+- search_keyword("axios\\.(get|post|put|delete)\\s*\\(\\s*['\"][^'\"]*['\"]", regex=true, after_lines=2)
+- Purpose: Find axios HTTP calls with actual endpoint URLs
+- Handles both single and double quotes in endpoint strings
+- Look for: HTTP method calls with real URLs and parameters
 
 2. CONNECTION CODE ANALYSIS
 
@@ -55,6 +61,12 @@ const result = await fetch(`${process.env.SERVICE_URL}/api/data`, {
   method: 'POST',
   body: JSON.stringify(data)
 })
+
+// FIND THIS - with single quotes
+const data = await axios.post('/api/users', userData)
+
+// FIND THIS - with double quotes  
+const info = await fetch("/api/orders", { method: 'GET' })
 ```
 
 Example 2: Python - HTTP API calls with real endpoints
@@ -64,6 +76,12 @@ response = requests.get(f"{os.getenv('API_BASE_URL')}/users/{user_id}")
 
 # FIND THIS - actual API call with environment variable
 result = requests.post(f"{os.getenv('SERVICE_URL')}/api/data", json=data)
+
+# FIND THIS - with single quotes
+data = requests.get('/api/users')
+
+# FIND THIS - with double quotes
+info = requests.post("/api/orders", json=order_data)
 ```
 
 Example 3: JavaScript - Server routes with real endpoints
@@ -77,6 +95,12 @@ app.get('/api/users/:id', (req, res) => {
 router.post('/admin/users', authenticateAdmin, (req, res) => {
   // handler code
 })
+
+// FIND THIS - with single quotes
+app.put('/api/orders/:orderId', updateOrder)
+
+// FIND THIS - with double quotes
+router.delete("/api/products/:id", deleteProduct)
 ```
 
 Example 4: Python - Server routes with real endpoints
@@ -90,6 +114,33 @@ def get_user(user_id):
 @bp.route('/admin/users', methods=['POST'])
 def create_user():
     # handler code
+
+# FIND THIS - with single quotes
+@app.route('/api/orders', methods=['POST'])
+def create_order():
+    # handler code
+
+# FIND THIS - with double quotes
+@bp.route("/api/products/<int:product_id>", methods=['DELETE'])
+def delete_product(product_id):
+    # handler code
+```
+
+Example 5: WebSocket and Queue operations with quote variations
+```javascript
+// FIND THIS - WebSocket events with single quotes
+socket.emit('user_joined', { userId, roomId })
+io.on('connection', handleConnection)
+
+// FIND THIS - WebSocket events with double quotes
+socket.emit("message_sent", messageData)
+io.on("disconnect", handleDisconnect)
+
+// FIND THIS - Queue operations with single quotes
+channel.sendToQueue('user-notifications', Buffer.from(message))
+
+// FIND THIS - Queue operations with double quotes
+producer.send("email-queue", emailData)
 ```
 
 **WHAT NOT TO FOCUS ON (GENERIC DEFINITIONS)**
@@ -201,7 +252,7 @@ IMMEDIATE ACTION:
         "action": "add",
         "id": "21", 
         "to_status": "current",
-        "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\\("
+        "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\\s*\\(\\s*['\"][^'\"]*['\"]"
       }
     ]
   }
@@ -224,7 +275,7 @@ IMMEDIATE ACTION:
         "action": "add",
         "id": "22",
         "to_status": "current", 
-        "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\\("
+        "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\\s*\\(\\s*['\"][^'\"]*['\"]"
       }
     ]
   }
@@ -245,7 +296,7 @@ CREATE TASK: {
         "action": "add",
         "id": "22",
         "to_status": "current",
-        "description": "Use search_keyword to find all publish_message( wrapper function usage: publish_message\\("
+        "description": "Use search_keyword to find all publish_message( wrapper function usage: publish_message\\s*\\(\\s*['\"][^'\"]*['\"]"
       }
     ]
   }
@@ -267,7 +318,7 @@ CREATE TASK: {
         "action": "add",
         "id": "23",
         "to_status": "current",
-        "description": "Use search_keyword to find all emitEvent( wrapper function calls: emitEvent\\("
+        "description": "Use search_keyword to find all emitEvent( wrapper function calls: emitEvent\\s*\\(\\s*['\"][^'\"]*['\"]"
       }
     ]
   }
@@ -289,7 +340,7 @@ CREATE TASK: {
         "action": "add",
         "id": "24",
         "to_status": "current",
-        "description": "Use search_keyword to find all serviceClient usage patterns: serviceClient\\.(send_request|subscribe_to_events)\\("
+        "description": "Use search_keyword to find all serviceClient usage patterns: serviceClient\\.(send_request|subscribe_to_events)\\s*\\("
       }
     ]
   }
@@ -304,14 +355,17 @@ When you find direct connection calls with real parameters:
 // Direct HTTP calls with actual endpoints
 const result = await axios.get('/api/users', config)
 const response = await fetch('https://api.service.com/data', options)
+const data = await axios.post("/api/orders", orderData)
 
 // Direct queue operations with actual queue names
 channel.sendToQueue('user-notifications', Buffer.from(message))
 producer.send('email-queue', emailData)
+channel.sendToQueue("order-processing", Buffer.from(orderData))
 
 // Direct socket operations with actual event names
 socket.emit('user-joined', { userId, roomId })
 io.emit('status-update', statusData)
+socket.emit("message-sent", messageData)
 ```
 THINKING: "These are direct connection calls with hardcoded connection details (actual endpoints, queue names, event names). This IS the actual connection code I need to collect."
 DON'T CREATE TASK: This is already actual connection code with real values - collect this data immediately
@@ -330,6 +384,7 @@ When you find actual socket calls with real event names:
 ```javascript
 emitEvent('room_joined', { userId, roomId })
 emitEvent('message_sent', messageData)
+emitEvent("user_status_update", statusData)
 ```
 THINKING: "These are actual socket emit calls with real event names and data. This is the connection code I need to collect."
 DON'T CREATE TASK: This is already actual connection code showing real socket events
