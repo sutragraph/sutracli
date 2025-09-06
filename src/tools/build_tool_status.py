@@ -38,7 +38,7 @@ def _build_database_status(event: Dict[str, Any], agent: Agent, tool_params: Dic
         status_parts.append(f"[value]{query_name}[/value]")
 
     if error:
-        status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"[error]Error:[/error]")
         status_parts.append(f"{error}")
 
     console.print(f"🗄️  [bold]Database Tool[/bold] → {' → '.join(status_parts)}")
@@ -101,7 +101,7 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent, tool_para
                 status_parts.append(f"[warning]{count} nodes found[/warning]")
 
     if error:
-        status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"[error]Error:[/error]")
         status_parts.append(f"{error}")
 
     console.print(f"🧠 [bold]Semantic Search[/bold] → {' → '.join(status_parts)}")
@@ -162,7 +162,7 @@ def _build_list_files_status(event: Dict[str, Any], agent: Agent, tool_params: D
             status_parts.append(f"[warning]{count} files found[/warning]")
 
     if error:
-        status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"[error]Error:[/error]")
         status_parts.append(f"{error}")
 
     console.print(f"📁 [bold]List Files[/bold] → {' → '.join(status_parts)}")
@@ -210,7 +210,7 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent, tool_param
             status_parts.append(f"[warning]No matches[/warning]")
 
     if error:
-        status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"[error]Error:[/error]")
         status_parts.append(f"{error}")
 
     console.print(f"🔍 [bold]Keyword Search[/bold] → {' → '.join(status_parts)}")
