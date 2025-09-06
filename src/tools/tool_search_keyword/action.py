@@ -28,33 +28,85 @@ def group_matches_by_file(ripgrep_output: str) -> str:
     # Dictionary to store matches grouped by file
     file_matches = {}
 
-    for line in ripgrep_output.split('\n'):
+    lines = ripgrep_output.split('\n')
+    logger.debug(f"🔍 Processing {len(lines)} lines from ripgrep output")
+
+    for i, line in enumerate(lines):
+        logger.debug(f"🔍 Line {i}: '{line}'")
+
         if not line.strip():
             continue
 
         # Handle ripgrep separator lines between match groups
         if line == '--':
-            # Add spacing between match groups
+            # Add spacing between match groups - find the last file that had content
             if file_matches:
                 last_file = list(file_matches.keys())[-1]
                 file_matches[last_file].append("")
             continue
 
-        # Parse ripgrep output format: file:line:content or file-line-content
-        separator = ':' if ':' in line else '-' if '-' in line else None
+        # More robust parsing: ripgrep format is always file<separator>line_number<separator>content
+        # where separator is ':' for matches and '-' for context lines
+        # We need to find the SECOND occurrence of the separator (after line number)
 
-        if separator:
-            # Split only on first 2 occurrences to avoid splitting content that contains separators
-            parts = line.split(separator, 2)
+        file_path = None
+        line_number = None
+        content = None
 
-            if len(parts) == 3:
-                file_path, line_number, content = parts
+        # Try matching line format first (file:line:content)
+        if ':' in line:
+            # Find all colon positions
+            colon_indices = [i for i, c in enumerate(line) if c == ':']
+            if len(colon_indices) >= 2:
+                # The line number should be between the first and second colon
+                # and should be all digits
+                for i in range(len(colon_indices) - 1):
+                    potential_file = line[:colon_indices[i]]
+                    potential_line_num = line[colon_indices[i] + 1:colon_indices[i + 1]]
 
-                if line_number.strip() and line_number.strip().isdigit():
-                    if file_path not in file_matches:
-                        file_matches[file_path] = []
-                    formatted_line = f"{line_number.strip()} | {content}"
-                    file_matches[file_path].append(formatted_line)
+                    # Check if this looks like a line number (all digits)
+                    if potential_line_num.strip().isdigit():
+                        file_path = potential_file
+                        line_number = potential_line_num
+                        content = line[colon_indices[i + 1] + 1:]
+                        break
+
+        # Try context line format (file-line-content)
+        if file_path is None and '-' in line:
+            # Find all dash positions
+            dash_indices = [i for i, c in enumerate(line) if c == '-']
+            if len(dash_indices) >= 2:
+                # The line number should be between the first and second dash
+                # and should be all digits
+                for i in range(len(dash_indices) - 1):
+                    potential_file = line[:dash_indices[i]]
+                    potential_line_num = line[dash_indices[i] + 1:dash_indices[i + 1]]
+
+                    # Check if this looks like a line number (all digits)
+                    if potential_line_num.strip().isdigit():
+                        file_path = potential_file
+                        line_number = potential_line_num
+                        content = line[dash_indices[i + 1] + 1:]
+                        break
+
+        # Process if we successfully parsed the line
+        if file_path is not None and line_number is not None and content is not None:
+            logger.debug(f"🔍 Parsed - file: '{file_path}', line: '{line_number}', content: '{content}'")
+
+            # Initialize file entry if it doesn't exist
+            if file_path not in file_matches:
+                file_matches[file_path] = []
+
+            # Format the line
+            formatted_line = f"{line_number.strip()} | {content}"
+            file_matches[file_path].append(formatted_line)
+            logger.debug(f"🔍 Added line to {file_path}: {formatted_line}")
+        else:
+            logger.debug(f"🔍 Failed to parse line: '{line}'")
+
+    logger.debug(f"🔍 Final file_matches keys: {list(file_matches.keys())}")
+    for file_path, matches in file_matches.items():
+        logger.debug(f"🔍 {file_path} has {len(matches)} matches")
 
     # Format grouped output
     grouped_lines = []
@@ -205,8 +257,8 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         before_lines_param = action.parameters.get("before_lines", 0)
         after_lines_param = action.parameters.get("after_lines", 5)
 
-        before_lines = int(before_lines_param) if before_lines_param is not None else 0
-        after_lines = int(after_lines_param) if after_lines_param is not None else 10
+        before_lines = int(before_lines_param)
+        after_lines = int(after_lines_param)
 
         logger.debug(
             f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={
@@ -321,7 +373,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             """Build base ripgrep command with common options."""
             cmd = ["rg"]
 
-            # Add context lines
+            # Add context lines - Fix: Always add these parameters properly
             if before_lines > 0:
                 cmd.extend(["-B", str(before_lines)])
             if after_lines > 0:
@@ -331,8 +383,9 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             if not case_sensitive:
                 cmd.append("-i")
 
-            # Line numbers
-            cmd.append("-n")
+            # Line numbers and show file names
+            cmd.extend(["-n", "-H"])
+            cmd.append("--hidden")
 
             # Add keyword
             if use_regex:
@@ -346,7 +399,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         all_results = []
         commands_run = []
 
-        # Search in normal files (respects .gitignore)
+        # Search in specified files/directories
         cmd1 = build_base_cmd()
         if file_paths:
             # Add each file path to the command
@@ -458,7 +511,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                         "chunk_info": chunk["chunk_info"],
                     }
         else:
-            no_matches_msg = f"No matches found for '{keyword}' trying different keywords or check spelling."
+            no_matches_msg = f"No matches found for '{keyword}' - try different keywords or check spelling."
             # Add project header for no matches case if needed
             if project_name:
                 no_matches_msg = f"PROJECT: {project_name}\n{no_matches_msg}"
