@@ -254,17 +254,18 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         keyword = action.parameters.get("keyword", "")
         file_paths_str = action.parameters.get("file_paths", "")
         # Handle None values properly for before_lines and after_lines
-        before_lines_param = action.parameters.get("before_lines", 0)
-        after_lines_param = action.parameters.get("after_lines", 5)
+        before_lines_param = action.parameters.get("before_lines")
+        after_lines_param = action.parameters.get("after_lines")
 
-        before_lines = int(before_lines_param)
-        after_lines = int(after_lines_param)
+        before_lines = int(before_lines_param) if before_lines_param is not None else 0
+        after_lines = int(after_lines_param) if after_lines_param is not None else 5
 
         logger.debug(
             f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={
                 action.parameters.get(
                     'regex',
-                    'false')}")
+                    'false')}"
+        )
         case_sensitive = (
             str(action.parameters.get("case_sensitive", "false")).lower() == "true"
         )
