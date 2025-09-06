@@ -39,6 +39,7 @@ def _build_database_status(event: Dict[str, Any], agent: Agent) -> str:
 
     if error:
         status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"{error}")
 
     console.print(f"🗄️  [bold]Database Tool[/bold] → {' → '.join(status_parts)}")
 
@@ -99,6 +100,7 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent) -> str:
 
     if error:
         status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"{error}")
 
     console.print(f"🧠 [bold]Semantic Search[/bold] → {' → '.join(status_parts)}")
 
@@ -157,6 +159,7 @@ def _build_list_files_status(event: Dict[str, Any], agent: Agent) -> str:
 
     if error:
         status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"{error}")
 
     console.print(f"📁 [bold]List Files[/bold] → {' → '.join(status_parts)}")
 
@@ -203,6 +206,7 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent) -> str:
 
     if error:
         status_parts.append(f"[error]Error[/error]")
+        status_parts.append(f"{error}")
 
     console.print(f"🔍 [bold]Keyword Search[/bold] → {' → '.join(status_parts)}")
 
