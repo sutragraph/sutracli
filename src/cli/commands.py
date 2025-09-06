@@ -885,6 +885,122 @@ def handle_cross_indexing_command(args) -> None:
         print(f"❌ Unexpected error: {e}")
 
 
+def handle_run_phase5_command(args) -> None:
+    """Handle run-phase5 command to directly run Phase 5 connection matching."""
+    try:
+        print("🔗 SUTRA PHASE 5 - Connection Matching Analysis")
+        print("=" * 80)
+
+        # Validate project path
+        project_path = Path(args.directory).absolute()
+        if not project_path.exists():
+            print(f"❌ Project path does not exist: {project_path}")
+            return
+
+        if not project_path.is_dir():
+            print(f"❌ Project path is not a directory: {project_path}")
+            return
+
+        print(f"📁 Analyzing project at: {project_path}")
+
+        # Initialize required components
+        project_manager = ProjectManager()
+        from src.graph.graph_operations import GraphOperations
+
+        graph_ops = GraphOperations()
+
+        # Get or create project first to determine project name
+        project_name = (
+            args.project_name
+            if args.project_name
+            else project_manager.determine_project_name(project_path)
+        )
+
+        project_id = project_manager.get_or_create_project_id(
+            project_name, project_path
+        )
+
+        print(f"✅ Project: {project_name} (ID: {project_id})")
+        print("-" * 40)
+
+        # Check if cross-indexing data exists
+        # Instead of checking for a specific flag, check if we have connections data
+        available_tech_types = graph_ops.get_available_technology_types()
+        if not available_tech_types:
+            # Try to check if there are any connections at all
+            sample_connections = graph_ops.fetch_connections_by_technology("Unknown")
+            if (
+                not sample_connections["incoming"]
+                and not sample_connections["outgoing"]
+            ):
+                print("❌ No cross-indexing data found for this project")
+                print("💡 Please run full cross-indexing analysis first using:")
+                print(f"   python3 main.py cross-indexing --directory '{project_path}'")
+                return
+
+        # Initialize cross-index system
+        from services.cross_indexing.core.cross_index_system import CrossIndexSystem
+
+        cross_index_system = CrossIndexSystem(
+            project_manager, project_name=project_name
+        )
+        cross_index_service = cross_index_system.cross_index_service
+
+        print("🔍 Starting Phase 5: Connection Matching Analysis...")
+        print("-" * 40)
+
+        try:
+            # Execute only Phase 5 - Connection Matching
+            phase5_result = cross_index_service._execute_phase_5({}, project_id)
+
+            if phase5_result.get("success"):
+                matching_result = phase5_result.get("matching_result", {})
+                matches = matching_result.get("matches", [])
+
+                print(f"🎉 Phase 5 completed successfully!")
+                print(f"📊 Connection Matching Results:")
+                print(f"   🔗 Total matches found: {len(matches)}")
+
+                if matches:
+                    print(
+                        f"   💾 Stored {len(matches)} connection mappings in database"
+                    )
+
+                    # Display some sample matches
+                    sample_count = min(5, len(matches))
+                    if sample_count > 0:
+                        print(
+                            f"\n📋 Sample matches (showing {sample_count} of {len(matches)}):"
+                        )
+                        for i, match in enumerate(matches[:sample_count]):
+                            confidence = match.get("match_confidence", "unknown")
+                            reason = match.get("match_reason", "No reason provided")
+                            print(f"   {i+1}. Confidence: {confidence}")
+                            print(f"      Reason: {reason}")
+                            print()
+                else:
+                    print("   ℹ️  No connection matches found")
+
+                storage_result = phase5_result.get("storage_result", {})
+                if storage_result.get("success"):
+                    print("✅ Results stored in database successfully")
+
+            else:
+                error = phase5_result.get("error", "Unknown error")
+                print(f"❌ Phase 5 failed: {error}")
+
+        except Exception as phase_error:
+            logger.error(f"Phase 5 execution error: {phase_error}")
+            print(f"❌ Phase 5 execution failed: {phase_error}")
+
+        print("\n🎉 Phase 5 Analysis Completed!")
+        print("=" * 80)
+
+    except Exception as e:
+        logger.error(f"Error during Phase 5 execution: {e}")
+        print(f"❌ Unexpected error: {e}")
+
+
 def handle_version_command(args) -> None:
     """Handle version command to show version information."""
     try:
