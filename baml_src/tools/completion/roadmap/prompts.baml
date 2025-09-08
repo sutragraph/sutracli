@@ -9,13 +9,6 @@ template_string RoadmapCompletionToolTemplate() #"
     - `projects`: A list of project roadmaps, each with file-level change instructions.
     - `summary`: A brief executive summary of the overall roadmap strategy.
 
-    ---
-
-    Of course. Here are the updated examples for your tool, converted to Markdown for better readability and clarity.
-
-    Of course. Here is the updated `### Project Parameters` section, ensuring it comprehensively lists every field from your provided type definitions.
-
-
     ### Project Parameters (for each project in the `projects` array)
 
     -   `project_name` (string): A human-readable name for the project.
