@@ -358,6 +358,9 @@ class AgentService:
         """Parse roadmap response and return True if completion occurred."""
         is_completion = False
 
+        if content.sutra_memory:
+            self._parse_sutra_memory(content.sutra_memory)
+
         if content.thinking and content.thinking.strip():
             self._parse_thinking(content.thinking)
 
@@ -377,9 +380,6 @@ class AgentService:
                 tool_name,
                 tool_params
             )
-
-        if content.sutra_memory:
-            self._parse_sutra_memory(content.sutra_memory)
 
         return is_completion
 
