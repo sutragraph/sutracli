@@ -9,6 +9,7 @@ from tools.utils.project_utils import (
     resolve_project_base_path,
 )
 from tools.utils.constants import SEARCH_CONFIG
+from utils.ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
 
 
 def group_matches_by_file(ripgrep_output: str) -> str:
@@ -377,6 +378,13 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             # Line numbers and show file names
             cmd.extend(["-n", "-H"])
             cmd.append("--hidden")
+
+            # Add ignore patterns for files and directories
+            for pattern in IGNORE_FILE_PATTERNS:
+                cmd.extend(["--glob", f"!{pattern}"])
+
+            for pattern in IGNORE_DIRECTORY_PATTERNS:
+                cmd.extend(["--glob", f"!{pattern}/**"])
 
             # Add keyword
             if use_regex:
