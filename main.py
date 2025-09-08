@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 """Main entry point for the Sutra Knowledge application."""
 
-import sys
-import os
-from pathlib import Path
-
-# Set tokenizers parallelism before any imports to avoid warnings
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-# Add src to path for development/direct execution
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from cli.parser import setup_argument_parser
-from cli.utils import setup_logging
+from loguru import logger
+from cli.utils import (
+    process_multiple_projects,
+    load_project_config,
+    list_projects,
+    clear_database_data,
+    show_database_stats,
+)
 from cli.commands import (
     handle_single_command,
     handle_multi_command,
@@ -22,22 +18,23 @@ from cli.commands import (
     handle_agent_command,
     handle_parse_command,
     handle_search_command,
-    handle_auth_command,
     handle_web_search_command,
     handle_web_scrap_command,
     handle_version_command,
     handle_cross_indexing_command,
     handle_run_phase5_command,
 )
-from cli.utils import (
-    process_multiple_projects,
-    load_project_config,
-    list_projects,
-    clear_database_data,
-    show_database_stats,
-)
+from cli.utils import setup_logging
+from cli.parser import setup_argument_parser
+import sys
+import os
+from pathlib import Path
 
-from loguru import logger
+# Set tokenizers parallelism before any imports to avoid warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+# Add src to path for development/direct execution
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 
 def main():
@@ -80,16 +77,12 @@ def main():
         elif args.command == "stats":
             handle_stats_command(args, show_database_stats)
 
-        elif args.command == "agent":
-            handle_agent_command(args)
-
         elif args.command == "parse":
             result_path = handle_parse_command(args)
 
         elif args.command == "search":
             handle_search_command(args)
-        elif args.command == "auth":
-            handle_auth_command(args)
+
         elif args.command == "web_search":
             handle_web_search_command(args)
         elif args.command == "web_scrap":

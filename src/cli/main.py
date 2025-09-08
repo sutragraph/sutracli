@@ -1,6 +1,32 @@
 #!/usr/bin/env python3
 """Main entry point for the Sutra Knowledge application."""
 
+from loguru import logger
+from cli.utils import (
+    process_multiple_projects,
+    load_project_config,
+    list_projects,
+    clear_database_data,
+    show_database_stats,
+)
+from cli.commands import (
+    handle_single_command,
+    handle_multi_command,
+    handle_list_command,
+    handle_clear_command,
+    handle_stats_command,
+    handle_agent_command,
+    handle_parse_command,
+    handle_index_command,
+    handle_search_command,
+    handle_web_search_command,
+    handle_web_scrap_command,
+    handle_version_command,
+    handle_cross_indexing_command,
+    handle_run_phase5_command,
+)
+from cli.utils import setup_logging
+from cli.parser import setup_argument_parser
 import os
 import sys
 from pathlib import Path
@@ -12,6 +38,8 @@ root_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root_dir))
 
 # Set up environment configuration
+
+
 def setup_environment():
     """Set up environment configuration based on installation type."""
     # Check if we're in an installed environment
@@ -24,6 +52,7 @@ def setup_environment():
         local_config = root_dir / "configs" / "local.json"
         if local_config.exists():
             os.environ["SUTRAKNOWLEDGE_CONFIG"] = str(local_config)
+
 
 def setup_baml_environment():
     """Set up BAML environment variables from config at module level."""
@@ -78,38 +107,10 @@ def setup_baml_environment():
         # Silent fail - don't break CLI if environment setup fails
         pass
 
+
 # Set up environment before importing other modules
 setup_environment()
 setup_baml_environment()
-
-from cli.parser import setup_argument_parser
-from cli.utils import setup_logging
-from cli.commands import (
-    handle_single_command,
-    handle_multi_command,
-    handle_list_command,
-    handle_clear_command,
-    handle_stats_command,
-    handle_agent_command,
-    handle_parse_command,
-    handle_index_command,
-    handle_search_command,
-    handle_auth_command,
-    handle_web_search_command,
-    handle_web_scrap_command,
-    handle_version_command,
-    handle_cross_indexing_command,
-    handle_run_phase5_command,
-)
-from cli.utils import (
-    process_multiple_projects,
-    load_project_config,
-    list_projects,
-    clear_database_data,
-    show_database_stats,
-)
-
-from loguru import logger
 
 
 def main():
@@ -132,7 +133,7 @@ def main():
     args = parser.parse_args()
 
     if args.command is None:
-        if len(sys.argv)> 1 and sys.argv[1].endswith(".json"):
+        if len(sys.argv) > 1 and sys.argv[1].endswith(".json"):
             args = parser.parse_args(["single"] + sys.argv[1:])
         else:
             parser.print_help()
@@ -177,8 +178,7 @@ def main():
 
         elif args.command == "search":
             handle_search_command(args)
-        elif args.command == "auth":
-            handle_auth_command(args)
+
         elif args.command == "web_search":
             handle_web_search_command(args)
         elif args.command == "web_scrap":

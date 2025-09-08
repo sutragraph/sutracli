@@ -2,7 +2,6 @@
 Tool Delivery Actions Factory
 
 - Pattern: per-tool subclasses implement delivery batch functionality
-- Usage: ActionExecutor asks factory for a delivery handler by tool name
 - Centralizes all fetch_next_chunk and batch delivery logic
 """
 
@@ -465,7 +464,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 **base_response,
             }
 
-
             return event
         else:
             logger.debug("🔍 TRACE FETCH: ❌ *** NO NEXT ITEM AVAILABLE ***")
@@ -576,8 +574,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
 
 class ListFilesDeliveryAction(BaseDeliveryAction):
     """Delivery action for list_files tool."""
-
-
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
         """Handle fetch_next_chunk requests for list_files."""

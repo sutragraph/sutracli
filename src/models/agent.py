@@ -1,7 +1,7 @@
 """Agent data models for agentic operations."""
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
 @dataclass
@@ -14,13 +14,3 @@ class AgentAction:
 
     description: str
     parameters: Dict[str, Any] = field(default_factory=dict)  # Primary source for XML-parsed tool parameters
-
-
-@dataclass
-class AgentThought:
-    """Represents a single thought in the agent's reasoning process."""
-
-    thought_id: str
-    analysis: str  # What was discovered/understood (from LLM summary)
-    user_message: Optional[str]  # User-friendly message (from LLM user_message)
-    timestamp: float

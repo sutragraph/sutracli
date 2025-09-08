@@ -21,7 +21,6 @@ from .sutra_memory_manager import (
 
 from .models import TaskStatus, Task, CodeSnippet, FileChange, HistoryEntry
 from .memory_operations import MemoryOperations
-from .xml_processor import XMLProcessor
 from .state_persistence import StatePersistence
 from .memory_formatter import MemoryFormatter, clean_sutra_memory_content
 from .code_fetcher import CodeFetcher
@@ -38,7 +37,6 @@ __all__ = [
     "HistoryEntry",
     # Individual components (for advanced usage)
     "MemoryOperations",
-    "XMLProcessor",
     "StatePersistence",
     "MemoryFormatter",
     "CodeFetcher",

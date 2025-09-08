@@ -12,7 +12,6 @@ from services.project_manager import ProjectManager
 from services.cross_indexing.core.cross_index_system import CrossIndexSystem
 from graph import ASTToSqliteConverter
 from services.agent_service_new import AgentService
-from services.auth.token_manager import get_token_manager
 from config import config
 from utils.console import console
 from embeddings import get_vector_store
@@ -68,12 +67,24 @@ def handle_single_command(args) -> None:
             print("✅ Conversion completed successfully!")
             print(f"Project: {result.project_name} (ID: {result.project_id})")
             print(
-                f"Processed {result.files_processed} files, {result.blocks_processed} code blocks, and {result.relationships_processed} relationships"
+                f"Processed {
+                    result.files_processed} files, {
+                    result.blocks_processed} code blocks, and {
+                    result.relationships_processed} relationships"
             )
 
             stats = result.database_stats
             print(
-                f"Database now contains {stats.get('total_files', 0)} files, {stats.get('total_blocks', 0)} code blocks and {stats.get('total_relationships', 0)} relationships"
+                f"Database now contains {
+                    stats.get(
+                        'total_files',
+                        0)} files, {
+                    stats.get(
+                        'total_blocks',
+                        0)} code blocks and {
+                    stats.get(
+                        'total_relationships',
+                        0)} relationships"
             )
         else:
             logger.error("❌ Conversion failed")
@@ -129,7 +140,11 @@ def handle_clear_command(args, clear_database_data_func) -> None:
             )
         else:
             print(
-                f"✅ Successfully cleared entire database ({result['nodes_deleted']} nodes, {result.get('relationships_deleted', 0)} relationships)"
+                f"✅ Successfully cleared entire database ({
+                    result['nodes_deleted']} nodes, {
+                    result.get(
+                        'relationships_deleted',
+                        0)} relationships)"
             )
     elif result["status"] == "no_data":
         logger.warning(f"No data found for project '{result['project_name']}'")
@@ -415,9 +430,9 @@ def handle_search_command(args) -> None:
             similarity_percent = chunk["similarity"] * 100
 
             # Header with chunk info
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
             print(f"CHUNK {i}/{len(chunks)} - Similarity: {similarity_percent:.1f}%")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
 
             # Metadata
             print(f"📁 File: {chunk['file_path']}")
@@ -467,233 +482,6 @@ def handle_incremental_parse_command(args) -> str:
 
     # Call the regular parse command with the incremental flag set
     return handle_parse_command(args)
-
-
-def handle_auth_command(args) -> None:
-    """Handle authentication commands."""
-    if not hasattr(args, "auth_command") or args.auth_command is None:
-        print(
-            "❌ No auth subcommand specified. Use 'sutra auth --help' for available commands."
-        )
-        sys.exit(1)
-
-    if args.auth_command == "login":
-        _handle_auth_login(args)
-    elif args.auth_command == "status":
-        _handle_auth_status(args)
-    elif args.auth_command == "logout":
-        _handle_auth_logout(args)
-    elif args.auth_command == "test":
-        _handle_auth_test(args)
-    elif args.auth_command == "clear":
-        _handle_auth_clear(args)
-    else:
-        print(f"❌ Unknown auth command: {args.auth_command}")
-        sys.exit(1)
-
-
-def _handle_auth_login(args) -> None:
-    """Handle auth login command."""
-    provider = args.provider
-    token = args.token
-    api_endpoint = args.api_endpoint
-    web_url = args.web_url
-    auto_open = args.auto_open
-
-    print(f"🔐 Authenticating with {provider.upper()}")
-    print("=" * 50)
-
-    # Open web interface if requested
-    if auto_open:
-        print(f"🌐 Opening SuperLLM web interface: {web_url}")
-        try:
-            webbrowser.open(web_url)
-        except Exception as e:
-            print(f"⚠️  Could not open browser: {e}")
-            print(f"   Please manually open: {web_url}")
-    else:
-        print(f"📱 Please open the SuperLLM web interface: {web_url}")
-
-    print("\n📋 Steps to get your token:")
-    print("   1. Sign in or create an account")
-    print("   2. Copy the Firebase authentication token")
-    print("   3. Paste it below")
-
-    # Get token from user if not provided
-    if not token:
-        print("-" * 40)
-        token = input("🔑 Enter your Firebase token: ").strip()
-
-    if not token:
-        print("❌ No token provided. Exiting.")
-        sys.exit(1)
-
-    # Validate token by making a test API call
-    print("\n🔍 Validating token...")
-
-    if _validate_token(token, api_endpoint):
-        # Store the token
-        token_manager = get_token_manager()
-        metadata = {
-            "api_endpoint": api_endpoint,
-            "web_url": web_url,
-            "validated_at": None,  # Will be set by token manager
-        }
-
-        token_manager.store_token(provider, token, metadata)
-
-        print("✅ Token validated and stored successfully!")
-        print(f"   Provider: {provider}")
-        print(f"   API Endpoint: {api_endpoint}")
-        print("\n🎉 You can now use SutraKnowledge with SuperLLM!")
-        print("   Set your provider to 'superllm' in the configuration.")
-
-    else:
-        print("❌ Token validation failed.")
-        print("   Please check:")
-        print("   • Token is correct and not expired")
-        print("   • SuperLLM server is running")
-        print(f"   • API endpoint is correct: {api_endpoint}")
-        sys.exit(1)
-
-
-def _handle_auth_status(args) -> None:
-    """Handle auth status command."""
-    provider = args.provider
-    token_manager = get_token_manager()
-    providers = token_manager.list_providers()
-
-    if not providers:
-        print("🔓 No authentication tokens stored.")
-        return
-
-    print("🔐 Authentication Status")
-    print("=" * 50)
-
-    for prov_name, info in providers.items():
-        if provider and prov_name != provider:
-            continue
-
-        print(f"\n📡 Provider: {prov_name}")
-        print(
-            f"   Status: {'✅ Authenticated' if info['has_token'] else '❌ No token'}"
-        )
-
-        if info["stored_at"]:
-            print(f"   Stored: {info['stored_at']}")
-
-        if info["metadata"]:
-            metadata = info["metadata"]
-            if "api_endpoint" in metadata:
-                print(f"   Endpoint: {metadata['api_endpoint']}")
-            if "web_url" in metadata:
-                print(f"   Web URL: {metadata['web_url']}")
-
-
-def _handle_auth_logout(args) -> None:
-    """Handle auth logout command."""
-    provider = args.provider
-    force = args.force
-
-    if not force:
-        response = input(
-            f"Are you sure you want to remove the authentication token for {provider}? (y/N): "
-        )
-        if response.lower() not in ["y", "yes"]:
-            print("Logout cancelled.")
-            return
-
-    token_manager = get_token_manager()
-
-    if token_manager.remove_token(provider):
-        print(f"✅ Logged out from {provider}")
-    else:
-        print(f"⚠️  No token found for {provider}")
-
-
-def _handle_auth_test(args) -> None:
-    """Handle auth test command."""
-    provider = args.provider
-    api_endpoint = args.api_endpoint
-
-    token_manager = get_token_manager()
-    token = token_manager.get_token(provider)
-
-    if not token:
-        print(f"❌ No token found for {provider}")
-        print(f"   Run 'sutra auth login --provider {provider}' first")
-        return
-
-    # Get API endpoint
-    if not api_endpoint:
-        providers = token_manager.list_providers()
-        if provider in providers and "api_endpoint" in providers[provider]["metadata"]:
-            api_endpoint = providers[provider]["metadata"]["api_endpoint"]
-        else:
-            api_endpoint = "http://localhost:8000"  # Default
-
-    print(f"🧪 Testing authentication with {provider}")
-    print(f"   Endpoint: {api_endpoint}")
-
-    if _validate_token(token, api_endpoint):
-        print("✅ Authentication test successful!")
-    else:
-        print("❌ Authentication test failed!")
-        print("   Token may be expired or invalid.")
-        print(f"   Try: sutra auth login --provider {provider}")
-
-
-def _handle_auth_clear(args) -> None:
-    """Handle auth clear command."""
-    force = args.force
-
-    if not force:
-        response = input(
-            "Are you sure you want to clear ALL authentication tokens? (y/N): "
-        )
-        if response.lower() not in ["y", "yes"]:
-            print("Clear operation cancelled.")
-            return
-
-    token_manager = get_token_manager()
-    token_manager.clear_all_tokens()
-    print("✅ All authentication tokens cleared")
-
-
-def _validate_token(token: str, api_endpoint: str) -> bool:
-    """
-    Validate a Firebase token by making a test API call.
-
-    Args:
-        token: Firebase token to validate
-        api_endpoint: SuperLLM API endpoint
-
-    Returns:
-        True if token is valid, False otherwise
-    """
-    try:
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-
-        # Try to get models list (lightweight endpoint)
-        response = requests.get(
-            f"{api_endpoint}/api/v1/models", headers=headers, timeout=10
-        )
-
-        return response.status_code == 200
-
-    except requests.exceptions.ConnectionError:
-        print(f"⚠️  Could not connect to {api_endpoint}")
-        print("   Make sure SuperLLM server is running")
-        return False
-    except requests.exceptions.Timeout:
-        print("⚠️  Request timed out")
-        return False
-    except Exception as e:
-        logger.debug(f"Token validation error: {e}")
-        return False
 
 
 def handle_web_search_command(args) -> None:
@@ -954,7 +742,7 @@ def handle_run_phase5_command(args) -> None:
                         for i, match in enumerate(matches[:sample_count]):
                             confidence = match.get("match_confidence", "unknown")
                             reason = match.get("match_reason", "No reason provided")
-                            print(f"   {i+1}. Confidence: {confidence}")
+                            print(f"   {i + 1}. Confidence: {confidence}")
                             print(f"      Reason: {reason}")
                             print()
                 else:

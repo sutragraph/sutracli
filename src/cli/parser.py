@@ -85,43 +85,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Set the logging level",
     )
 
-    # Agent analysis command (intelligent agent-based analysis)
-    agent_parser = subparsers.add_parser(
-        "agent",
-        help="Enter interactive Sutra Agent mode for coding assistance",
-    )
-    agent_parser.add_argument(
-        "problem_query",
-        nargs="?",  # Make it optional
-        help="Optional initial problem description (if not provided, will enter interactive mode)",
-    )
-    agent_parser.add_argument(
-        "--directory",
-        "-d",
-        help="Directory to analyze (default: current directory)",
-    )
-    agent_parser.add_argument(
-        "--project-id", type=int, help="Limit analysis to specific project ID"
-    )
-    agent_parser.add_argument(
-        "--max-iterations",
-        type=int,
-        default=5,
-        help="Maximum analysis iterations (default: 5)",
-    )
-    agent_parser.add_argument(
-        "--confidence-threshold",
-        type=float,
-        default=0.8,
-        help="Confidence threshold to stop analysis early (default: 0.8)",
-    )
-    agent_parser.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default=default_log_level,
-        help="Set the logging level",
-    )
-
     # Parse command for code analysis
     parse_parser = subparsers.add_parser(
         "parse", help="Parse and analyze code repository"
@@ -189,66 +152,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default=default_log_level,
         help="Set the logging level",
-    )
-
-    # Auth command for authentication management
-    auth_parser = subparsers.add_parser(
-        "auth", help="Authentication management for LLM providers"
-    )
-    auth_subparsers = auth_parser.add_subparsers(
-        dest="auth_command", help="Authentication commands"
-    )
-
-    # Auth login command
-    login_parser = auth_subparsers.add_parser(
-        "login", help="Authenticate with SuperLLM"
-    )
-    login_parser.add_argument(
-        "--provider", default="superllm", help="Provider name (default: superllm)"
-    )
-    login_parser.add_argument(
-        "--token", help="Firebase token (if not provided, will prompt)"
-    )
-    login_parser.add_argument(
-        "--api-endpoint", default="http://localhost:8000", help="SuperLLM API endpoint"
-    )
-    login_parser.add_argument(
-        "--web-url", default="http://localhost:3000", help="SuperLLM web interface URL"
-    )
-    login_parser.add_argument(
-        "--auto-open", action="store_true", help="Automatically open web interface"
-    )
-
-    # Auth status command
-    status_parser = auth_subparsers.add_parser(
-        "status", help="Check authentication status"
-    )
-    status_parser.add_argument(
-        "--provider", help="Specific provider to check (default: all)"
-    )
-
-    # Auth logout command
-    logout_parser = auth_subparsers.add_parser(
-        "logout", help="Remove authentication token"
-    )
-    logout_parser.add_argument(
-        "--provider", default="superllm", help="Provider to logout from"
-    )
-    logout_parser.add_argument(
-        "--force", action="store_true", help="Skip confirmation prompt"
-    )
-
-    # Auth test command
-    test_parser = auth_subparsers.add_parser("test", help="Test authentication")
-    test_parser.add_argument("--provider", default="superllm", help="Provider to test")
-    test_parser.add_argument("--api-endpoint", help="Override API endpoint for testing")
-
-    # Auth clear command
-    clear_auth_parser = auth_subparsers.add_parser(
-        "clear", help="Clear all authentication tokens"
-    )
-    clear_auth_parser.add_argument(
-        "--force", action="store_true", help="Skip confirmation prompt"
     )
 
     web_search_parser = subparsers.add_parser(
