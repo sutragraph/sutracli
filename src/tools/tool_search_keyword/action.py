@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Iterator, Dict, Any, List
 from loguru import logger
 from models.agent import AgentAction
-from graph.sqlite_client import SQLiteConnection
 from tools.utils.project_utils import (
     auto_detect_project_from_paths,
     resolve_project_base_path,
