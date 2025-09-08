@@ -278,12 +278,24 @@ class RoadmapAgentHandler:
     def _spawn_external_agents(self, project_prompts: list) -> Dict[str, Any]:
         """Spawn external agents for each project with prompts."""
         # Display all generated prompts to the user first
-        if not self._get_confirmation(project_prompts):
-            return {
-                "success": False,
-                "error": "User declined to proceed with the roadmap",
-                "processed_actions": [],
-            }
+        confirmation_result = self._get_confirmation(project_prompts)
+
+        if not confirmation_result["proceed"]:
+            # Check if user provided feedback for improvement
+            if "feedback" in confirmation_result:
+                return {
+                    "success": False,
+                    "error": "User requested roadmap improvement",
+                    "feedback": confirmation_result["feedback"],
+                    "continue_roadmap": True,
+                    "processed_actions": [],
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "User declined to proceed with the roadmap",
+                    "processed_actions": [],
+                }
 
         # Check if provider is selected, if not prompt user to select one
         selected_provider = self.provider_manager.config_manager.get_selected_provider()
@@ -347,20 +359,20 @@ class RoadmapAgentHandler:
             }]
         }
 
-    def _get_confirmation(self, project_prompts: list) -> bool:
+    def _get_confirmation(self, project_prompts: list) -> Dict[str, Any]:
         """Display all generated prompts to the user and get confirmation to proceed.
 
         Args:
             project_prompts: List of project prompts with prompt
 
         Returns:
-            bool: True if user wants to continue, False otherwise
+            Dict: Contains 'proceed' (bool) and optionally 'feedback' (str) for improvement
         """
         # Create confirmation panel
         confirmation_text = Text()
         confirmation_text.append("🤔 CONFIRMATION REQUIRED", style="bold yellow")
         confirmation_text.append(
-            "\n\nDo you want to continue with this roadmap and spawn external agents?\n\n",
+            "\n\nIs this the correct roadmap for your query?\n\n",
             style="white",
         )
         confirmation_text.append("• ", style="green")
@@ -368,7 +380,9 @@ class RoadmapAgentHandler:
         confirmation_text.append(" - Proceed with agent spawning\n", style="white")
         confirmation_text.append("• ", style="red")
         confirmation_text.append("No", style="bold red")
-        confirmation_text.append(" - Cancel and stop the process", style="white")
+        confirmation_text.append(
+            " - Provide feedback to improve the roadmap", style="white"
+        )
 
         confirmation_panel = Panel(
             confirmation_text, border_style="yellow", padding=(1, 2)
@@ -386,21 +400,39 @@ class RoadmapAgentHandler:
                 console.print(
                     "\n[bold green]✅ Proceeding with roadmap execution...[/bold green]"
                 )
-                return True
+                return {"proceed": True}
             else:
+                # Ask for user feedback instead of cancelling
                 console.print(
-                    "\n[bold red]❌ Roadmap execution cancelled by user.[/bold red]"
+                    "\n[bold yellow]📝 Please provide feedback to improve the roadmap:[/bold yellow]"
                 )
-                return False
+
+                from rich.prompt import Prompt
+
+                feedback = Prompt.ask(
+                    "[cyan]What would you like to change or improve in this roadmap?[/cyan]",
+                    default="",
+                )
+
+                if feedback.strip():
+                    console.print(
+                        "\n[bold yellow]🔄 Continuing roadmap agent loop with your feedback...[/bold yellow]"
+                    )
+                    return {"proceed": False, "feedback": feedback.strip()}
+                else:
+                    console.print(
+                        "\n[bold red]❌ No feedback provided. Roadmap execution cancelled.[/bold red]"
+                    )
+                    return {"proceed": False}
 
         except KeyboardInterrupt:
             console.print(
                 "\n\n[bold red]❌ Operation cancelled by user (Ctrl+C)[/bold red]"
             )
-            return False
+            return {"proceed": False}
         except EOFError:
             console.print("\n\n[bold red]❌ Operation cancelled (EOF)[/bold red]")
-            return False
+            return {"proceed": False}
 
 
 class BaseAgentHandler:

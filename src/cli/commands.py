@@ -837,44 +837,23 @@ def handle_cross_indexing_command(args) -> None:
         # Use cross-indexing service for analysis with streaming updates
         cross_index_service = cross_index_system.cross_index_service
 
-        analysis_result = None
-
         for update in cross_index_service.analyze_project_connections(
             str(project_path), project_id
         ):
             update_type = update.get("type", "unknown")
 
-            if update_type == "cross_index_success":
-                analysis_result = update.get("analysis_result")
-                iteration = update.get("iteration", 0)
-                print(
-                    f"🎉 Cross-indexing completed successfully in {iteration} iterations"
-                )
-
-                # Display results
-                incoming_count = len(analysis_result.get("incoming_connections", []))
-                outgoing_count = len(analysis_result.get("outgoing_connections", []))
-
-                print(f"📊 Analysis Results:")
-                print(f"   ⬇️  Incoming connections: {incoming_count}")
-                print(f"   ⬆️  Outgoing connections: {outgoing_count}")
-                break
-
-            elif update_type == "cross_index_failure":
+            if update_type == "cross_index_failure":
                 error = update.get("error", "Analysis failed")
                 print(f"❌ Cross-indexing failed: {error}")
-                analysis_result = None
                 break
 
             elif update_type == "user_cancelled":
                 print(f"❌ User cancelled the operation")
-                analysis_result = None
                 break
 
             elif update_type == "cross_index_error":
                 error = update.get("error", "Critical error")
                 print(f"❌ Critical error: {error}")
-                analysis_result = None
                 break
 
         print("\n🎉 Cross-Index Analysis Completed!")

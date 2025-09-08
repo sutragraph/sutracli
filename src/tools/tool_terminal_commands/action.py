@@ -605,7 +605,9 @@ class TerminalSession:
             )
             return False
 
-    def execute_command(self, command: str, timeout: int = 30, is_long_running: bool = False) -> Dict[str, Any]:
+    def execute_command(
+        self, command: str, timeout: int = 1200, is_long_running: bool = False
+    ) -> Dict[str, Any]:
         """Execute a command in the terminal session.
 
         Args:

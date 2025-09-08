@@ -30,9 +30,10 @@ class SutraMemoryManager:
     but uses separated, modular components internally.
     """
 
-    def __init__(self):
+    def __init__(self, session_manager=None):
         # Initialize core components
         self.memory_ops = MemoryOperations()
+        # session_manager kept for backward compatibility but not used
         self._init_components()
 
     def _init_components(self):
@@ -292,3 +293,16 @@ class SutraMemoryManager:
         return self.memory_updater.update_memory_for_file_changes(
             changed_files, deleted_files, project_id
         )
+
+    # Feedback Management Methods
+    def set_feedback_section(self, feedback_content: str) -> bool:
+        """Set feedback section content in memory operations"""
+        return self.memory_ops.set_feedback_section(feedback_content)
+
+    def get_feedback_section(self) -> Optional[str]:
+        """Get feedback section content from memory operations"""
+        return self.memory_ops.get_feedback_section()
+
+    def clear_feedback_section(self) -> bool:
+        """Clear feedback section content from memory operations"""
+        return self.memory_ops.clear_feedback_section()

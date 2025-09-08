@@ -31,8 +31,6 @@ def group_matches_by_file(ripgrep_output: str) -> str:
     logger.debug(f"🔍 Processing {len(lines)} lines from ripgrep output")
 
     for i, line in enumerate(lines):
-        logger.debug(f"🔍 Line {i}: '{line}'")
-
         if not line.strip():
             continue
 
@@ -90,8 +88,6 @@ def group_matches_by_file(ripgrep_output: str) -> str:
 
         # Process if we successfully parsed the line
         if file_path is not None and line_number is not None and content is not None:
-            logger.debug(f"🔍 Parsed - file: '{file_path}', line: '{line_number}', content: '{content}'")
-
             # Initialize file entry if it doesn't exist
             if file_path not in file_matches:
                 file_matches[file_path] = []
@@ -99,13 +95,8 @@ def group_matches_by_file(ripgrep_output: str) -> str:
             # Format the line
             formatted_line = f"{line_number.strip()} | {content}"
             file_matches[file_path].append(formatted_line)
-            logger.debug(f"🔍 Added line to {file_path}: {formatted_line}")
         else:
             logger.debug(f"🔍 Failed to parse line: '{line}'")
-
-    logger.debug(f"🔍 Final file_matches keys: {list(file_matches.keys())}")
-    for file_path, matches in file_matches.items():
-        logger.debug(f"🔍 {file_path} has {len(matches)} matches")
 
     # Format grouped output
     grouped_lines = []

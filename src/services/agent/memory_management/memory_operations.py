@@ -26,6 +26,7 @@ class MemoryOperations:
         self.code_id_counter = 0
         self.max_history_entries = 40
         self.code_fetcher = CodeFetcher()
+        self.feedback_section: Optional[str] = None  # Store feedback section
 
     def get_next_task_id(self) -> str:
         """Generate next unique task ID"""
@@ -337,6 +338,41 @@ class MemoryOperations:
             else self.history
         )
 
+    # Feedback Management Methods
+    def set_feedback_section(self, feedback_content: str) -> bool:
+        """
+        Set feedback section content.
+
+        Args:
+            feedback_content: Complete feedback section content
+
+        Returns:
+            bool: True if feedback was set successfully
+        """
+        self.feedback_section = feedback_content
+        logger.debug("Feedback section set in memory operations")
+        return True
+
+    def get_feedback_section(self) -> Optional[str]:
+        """
+        Get feedback section content.
+
+        Returns:
+            str or None: Feedback section content if available
+        """
+        return self.feedback_section
+
+    def clear_feedback_section(self) -> bool:
+        """
+        Clear feedback section content.
+
+        Returns:
+            bool: True if feedback was cleared successfully
+        """
+        self.feedback_section = None
+        logger.debug("Feedback section cleared from memory operations")
+        return True
+
     # Memory State Methods
     def get_memory_summary(self) -> Dict[str, Any]:
         """
@@ -424,4 +460,5 @@ class MemoryOperations:
         self.file_changes.clear()
         self.task_id_counter = 0
         self.code_id_counter = 0
+        self.feedback_section = None
         return True

@@ -594,41 +594,18 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
 
         try:
             from cli.commands import handle_agent_command
-            from src.agent_management.post_requisites.handlers import get_agent_handler
 
-            # Execute the agent and capture result
+            # Execute the agent - post-processing is handled internally by the agent service
             agent_result = handle_agent_command(agent_name=agent_name, project_path=project_dir)
 
-            # Handle post-requisites if agent returned results
-            if not agent_result:
-                return
-
-            console.process(f"Processing {agent_config.name} results...")
-
-            # Get appropriate handler for this agent and process results directly
-            handler = get_agent_handler(agent_name)
-
-            # Process the agent result directly - no wrapper needed
-            post_result = handler.process_agent_result_direct(agent_result)
-
-            if post_result.get("success"):
-                console.success("Post-processing completed successfully!")
-
-                # Show details if available
-                processed_actions = post_result.get("processed_actions", [])
-                if processed_actions:
-                    console.dim(f"Processed {len(processed_actions)} post-requisite actions")
-                    for action in processed_actions:
-                        if action.get("success"):
-                            console.success(f"  ✓ {action['action']}: {action.get('message', 'Success')}")
-                        else:
-                            console.error(f"  ✗ {action['action']}: {action.get('error', 'Failed')}")
+            if agent_result:
+                console.success("Agent execution completed successfully!")
             else:
-                console.warning(
-                    f"Post-processing completed with issues: {post_result.get('message', 'Unknown error')}")
+                console.warning("Agent execution completed with no result")
 
         except Exception as e:
             console.error(f"Agent execution failed: {e}")
+
 
     def run(self):
         """Main CLI execution flow."""

@@ -1,7 +1,7 @@
 """Agent Service with unified tool status handling."""
 
 
-from typing import Optional
+from typing import Optional, Dict, Any
 from loguru import logger
 from rich.prompt import Confirm
 from rich.panel import Panel
@@ -139,21 +139,29 @@ class AgentService:
         print("🚀 Welcome to Sutra Agent!")
         print("   I'm here to help you with coding, debugging, and knowledge sharing.")
         print("\n💬 How can I help you? Type your questions or requests below.")
+        print("💡 Tip: Type 'exit', 'quit', 'bye', or 'goodbye' to end the session")
 
         # Get user input
         while True:
-            user_input = console.input("\n👤 You: ", multiline=True)
-            print("-" * 40)
+            try:
+                user_input = input("\n👤 You: ").strip()
+                print("-" * 40)
 
-            if not user_input:
-                continue
+                if not user_input:
+                    continue
 
-            if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
-                print("\n👋 Goodbye! Session ended.")
+                if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
+                    print("\n👋 Goodbye! Session ended.")
+                    return None
+
+                # Got valid input, break out of input loop
+                break
+            except KeyboardInterrupt:
+                print("\n\n👋 Goodbye! Session ended.")
                 return None
-
-            # Got valid input, break out of input loop
-            break
+            except EOFError:
+                print("\n\n👋 Goodbye! Session ended.")
+                return None
 
         # Run agent session with the input
         print("🚀 Starting agent session...")
@@ -206,6 +214,36 @@ class AgentService:
                 is_completion = self._parse_agent_response(agent_response)
 
                 if is_completion:
+                    # Check if this is a roadmap agent and if post-processing requests continuation
+                    if self.agent_name == Agent.ROADMAP and self.result:
+                        post_result = self._handle_roadmap_post_processing()
+
+                        # If user provided feedback, continue the loop with that feedback
+                        if (
+                            post_result
+                            and post_result.get("continue_roadmap")
+                            and post_result.get("feedback")
+                        ):
+                            console.info(
+                                "🔄 Continuing roadmap agent loop with user feedback..."
+                            )
+
+                            # Store the formatted roadmap prompts in sutra memory feedback section
+                            feedback = post_result.get("feedback")
+                            self._store_feedback_in_sutra_memory(feedback)
+
+                            # Set feedback tool status for next iteration
+                            self._set_feedback_tool_status(feedback)
+
+                            # Continue the loop instead of returning - this preserves the session
+                            console.info(
+                                "📋 Roadmap agent will now improve the prompts based on your feedback..."
+                            )
+                            console.dim(
+                                "🧠 Previous roadmap results are preserved in sutra memory"
+                            )
+                            continue
+
                     return self.result
 
         except KeyboardInterrupt:
@@ -214,6 +252,72 @@ class AgentService:
             return None
 
         return None
+
+    def _handle_roadmap_post_processing(self) -> Optional[Dict[str, Any]]:
+        """Handle roadmap post-processing and return continuation info if needed."""
+        try:
+            from src.agent_management.post_requisites.handlers import get_agent_handler
+
+            handler = get_agent_handler(self.agent_name)
+            post_result = handler.process_agent_result_direct(self.result)
+
+            return post_result
+
+        except Exception as e:
+            logger.error(f"Error in roadmap post-processing: {e}")
+            return None
+
+    def _store_feedback_in_sutra_memory(self, feedback: str) -> None:
+        """Store user feedback and roadmap prompts in a dedicated FEEDBACK section in sutra memory."""
+        try:
+            # Get the formatted project prompts from the post-processing handlers
+            from src.agent_management.post_requisites.handlers import (
+                RoadmapAgentHandler,
+            )
+
+            handler = RoadmapAgentHandler()
+            project_prompts = handler._convert_roadmap_to_prompts(
+                self.result.model_dump()
+            )
+
+            # Create FEEDBACK section in sutra memory
+            feedback_section += "FEEDBACK SECTION: \n"
+            feedback_section += f"USER FEEDBACK: {feedback}\n\n"
+            feedback_section += f"ROADMAP PROMPTS CREATED BY AGENT ({len(project_prompts)} projects):\n\n"
+
+            for i, project_prompt in enumerate(project_prompts, 1):
+                feedback_section += f"=== PROJECT {i} ROADMAP ===\n"
+                feedback_section += (
+                    f"Project Path: {project_prompt.get('project_path', 'Unknown')}\n\n"
+                )
+                feedback_section += project_prompt.get("prompt", "No prompt available")
+
+            self.memory_manager.set_feedback_section(feedback_section)
+
+            logger.debug(
+                f"Stored feedback and {len(project_prompts)} roadmap prompts in FEEDBACK section"
+            )
+
+        except Exception as e:
+            logger.error(f"Error storing feedback in sutra memory: {e}")
+
+    def _set_feedback_tool_status(self, user_feedback) -> None:
+        """Set tool status to show feedback information instead of attempt_completion."""
+        try:
+            # Simple feedback tool status as requested
+            feedback_status = "Tool: feedback_received\n"
+            feedback_status += "Status: User provided feedback for roadmap improvement create new task for this improvements and work on it"
+            feedback_status += f"\nFeedback: {user_feedback}"
+
+            # Set this as the last tool result
+            self.last_tool_result = feedback_status
+
+            logger.debug("Set simple feedback tool status")
+
+        except Exception as e:
+            logger.error(f"Error setting feedback tool status: {e}")
+            # Fallback to simple feedback status
+            self.last_tool_result = "Tool: feedback_received\nStatus: User provided feedback for roadmap improvement create new task for this improvements and work on it"
 
     def _build_user_message(self, problem_query: str, current_iteration: int) -> str:
         user_message = []
@@ -238,8 +342,9 @@ class AgentService:
             return f"\nSUTRA MEMORY STATUS\n\n{memory_status}"
         else:
             sutra_memory_rich = self.memory_manager.get_memory_for_llm()
+
             if sutra_memory_rich and sutra_memory_rich.strip():
-                logger.debug("Agent: Using existing Sutra memory from previous iterations")
+                logger.debug("Agent: Using Sutra memory from memory manager")
                 return f"\nSUTRA MEMORY STATUS\n\n{sutra_memory_rich}\n"
             else:
                 memory_status = "No previous memory available."
