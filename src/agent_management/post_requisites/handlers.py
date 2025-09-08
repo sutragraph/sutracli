@@ -261,6 +261,12 @@ class RoadmapAgentHandler:
             prompt_parts.append(
                 "For contracts marked as 'provider', implement the interface. For contracts marked as 'consumer', integrate with the existing interface."
             )
+            
+            # Add the important consistency instruction
+            prompt_parts.append("")
+            prompt_parts.append(
+                "**Important**: Maintain strict naming consistency - use the exact same function names, API endpoints, contract identifiers, variable names, and method signatures as specified in the original query and requirements above."
+            )
 
             # Join all parts into a single prompt
             full_prompt = "\n".join(prompt_parts)
