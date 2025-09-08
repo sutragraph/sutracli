@@ -5,6 +5,7 @@ Rovodev CLI agent provider implementation.
 import subprocess
 import os
 import time
+import shlex
 from typing import Dict, Any
 from .config import AgentProviderConfig
 from src.tools.tool_terminal_commands.action import TerminalSessionManager
@@ -46,7 +47,7 @@ class RovodevProvider:
         formatted_prompt = prompt.replace("\n", "\\n")
         # Escape hash/pound characters to prevent shell comment interpretation
         formatted_prompt = formatted_prompt.replace("#", "\\#")
-        return formatted_prompt
+        return shlex.quote(formatted_prompt)
 
     def execute_prompt(
         self, project_path: str, prompt: str, session_description: str = None
@@ -82,7 +83,7 @@ class RovodevProvider:
 
             # Build the command to execute with properly formatted prompt
             formatted_prompt = self._format_prompt_for_command(prompt)
-            cmd = f"acli rovodev '{formatted_prompt}'"
+            cmd = f"acli rovodev {formatted_prompt}"
 
             # Execute the command in the new terminal session as a long-running process
             # This allows the user to see the agent working in real-time in a separate terminal

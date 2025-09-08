@@ -5,6 +5,7 @@ Gemini CLI agent provider implementation.
 import subprocess
 import os
 import time
+import shlex
 from typing import Dict, Any
 from .config import AgentProviderConfig
 from tools.tool_terminal_commands.action import TerminalSessionManager
@@ -44,7 +45,7 @@ class GeminiProvider:
         """Format prompt for command line execution by escaping special characters."""
         # Replace newlines with literal \n for proper command line handling
         formatted_prompt = prompt.replace("\n", "\\n")
-        return formatted_prompt
+        return shlex.quote(formatted_prompt)
 
     def execute_prompt(
         self, project_path: str, prompt: str, session_description: str = None
@@ -80,7 +81,7 @@ class GeminiProvider:
 
             # Build the command to execute with properly formatted prompt
             formatted_prompt = self._format_prompt_for_command(prompt)
-            cmd = f"gemini -p '{formatted_prompt}'"
+            cmd = f"gemini -p {formatted_prompt}"
 
             # Execute the command in the new terminal session as a long-running process
             # This allows the user to see the agent working in real-time in a separate terminal

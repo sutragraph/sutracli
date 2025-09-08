@@ -46,7 +46,7 @@ def get_version_from_init():
                     return version_match.group(1)
     except Exception:
         pass
-    return "0.1.5"  # fallback
+    return "0.1.5"
 
 
 def handle_single_command(args) -> None:
