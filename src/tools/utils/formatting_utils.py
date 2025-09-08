@@ -4,6 +4,8 @@ Formatting utility functions for beautifying node results and output.
 
 import json
 
+from loguru import logger
+
 
 def beautify_node_result(
     node, idx=None, include_code=True, total_nodes=None, chunk_info=None
@@ -179,7 +181,7 @@ def beautify_node_result(
                 try:
                     if sender_snippet_lines:
                         sender_lines = json.loads(sender_snippet_lines)
-                except:
+                except BaseException:
                     pass
 
                 code_lines = sender_code_snippet.strip().split("\n")
@@ -209,7 +211,7 @@ def beautify_node_result(
                     try:
                         if receiver_snippet_lines:
                             receiver_lines = json.loads(receiver_snippet_lines)
-                    except:
+                    except BaseException:
                         pass
 
                     code_lines = receiver_code_snippet.strip().split("\n")
@@ -241,6 +243,8 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
         idx: Node index number
         total_nodes: Total number of nodes being sent (for guidance)
     """
+
+    logger.debug("Node: {}", node)
     # Handle dependency scope single-node formatting
     dependency_scope = node.get("dependency_scope")
     if dependency_scope:
@@ -378,11 +382,10 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
             start_end_str = "unknown"
 
     # Only show block info for actual blocks
-    block_id = node.get("block_id")
-    if block_id and node.get("type"):  # Block details result
-        # Prefer explicit block_* keys
-        block_type = node.get("block_type", node.get("type", "unknown"))
-        block_name = node.get("block_name", node.get("name", "unnamed"))
+    block_id = node.get("block_id") or node.get("id")
+    if block_id:
+        block_type = node.get("type", "unknown")
+        block_name = node.get("name", "unnamed")
     else:
         block_type = "file"
         block_name = "unknown"

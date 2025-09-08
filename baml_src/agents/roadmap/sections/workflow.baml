@@ -13,25 +13,34 @@ template_string RoadmapWorkflow() #"
 ### Phase 2: Pattern Analysis & Reuse Assessment
 **CRITICAL**: Always prioritize reusing and extending existing code over creating new implementations.
 
-1. **MANDATORY Pattern Discovery**: Search for existing implementation patterns, conventions, and architectural structures BEFORE designing new solutions
-2. **Similar Function Analysis**: Search for existing functions that perform similar operations:
+1. **MANDATORY Pattern Discovery**: Search for existing implementation patterns, conventions, and architectural structures BEFORE designing new solutions.
+   - **Utility/Wrapper/Helper Modification Rule**: Only add or modify utility, wrapper, or helper functions if the new functionality requires special handling, or if the existing utility does not already generically support the new use case. If the utility is already generic, do not add redundant or boilerplate functions.
+   - **Schema/Constant/Config Update Requirement**: Any kind of modification in schema, constants, or configuration files must be included in the roadmap with exact file paths and line numbers.
+   - **Implementation Pattern Analysis**: Before creating any new code (such as an API, function, or integration), always search for how similar features are already implemented in the project. For example, if adding a new API call, search for existing usages of common HTTP client functions (like `fetch`, `axios`, or `requests`) using a keyword_search with a context window (e.g., 10 lines after the match) to understand how APIs are typically called and handled. Apply this approach generically for any feature—always follow established patterns for error handling, authentication, data access, etc., to ensure consistency with the existing codebase.
+2. **Connection-Driven Hopping**: When search results contain connection information (e.g., an API call from one project to another), you MUST use this as the primary method for navigating between projects.
+   - **Trace Dependencies**: Follow these explicit connections to understand the flow of data and control. Always trace the full call chain for any new integration, ensuring that each project communicates with the correct intermediary (e.g., if the established flow is Project X → Project Y → Project Z, do not skip Project Y). For example, if one project needs to update data in another, and an intermediary project is the established communication layer, your roadmap must require the initiating project to call the intermediary, and the intermediary to call the target, never allowing direct calls that bypass the intended architecture.
+   - **Validate Hopping**: Do not guess or assume connections. Use the provided connection data to "hop" from a source project to a target project, and ensure all intermediary layers are included as required by the existing architecture.
+   - **Analyze Both Sides**: When a connection is found, analyze both the calling code (source) and the receiving code (target) to understand the full context of the interaction. If a new endpoint or proxy is needed in an intermediary project, the roadmap must explicitly require its creation and usage.
+3. **Similar Function Analysis**: Search for existing functions that perform similar operations:
    - Find functions with similar names or purposes using semantic search or keyword search
    - Analyze if existing functions can be reused with minimal or no modifications
    - Check if existing functions can be extended rather than duplicated
-3. **Dependency Analysis**: Before introducing new dependencies:
+4. **Dependency Analysis**: Before introducing new dependencies:
    - Search existing dependency management files (package.json, requirements.txt, Cargo.toml, etc.)
    - Verify if required libraries are already available in the project
    - Check existing import patterns and library usage conventions
    - Reuse existing dependency versions and patterns
-4. **Architecture Pattern Matching**: Before creating new components:
+5. **Architecture Pattern Matching**: Before creating new components:
    - Search for similar implementations (endpoints, data access, services, etc.)
    - Check existing structures, naming conventions, and response formats
    - Analyze existing authentication, error handling, and integration patterns
-5. **Code Reuse Validation**: For each identified similar function:
+6. **Code Reuse Validation**: For each identified similar function:
    - Analyze compatibility of input/output parameters
    - Check if minimal modifications can accommodate new requirements
    - Verify integration compatibility with existing patterns
-6. **Technical Analysis Execution**:
+7  **Universal Prefix/Address Rule**
+    - When referencing any external resource, endpoint, or service (API, database, microservice, etc.), always search for and use the existing variable, constant, or configuration that defines the domain, prefix, or address. Never hardcode these values. Always reference the actual variable or constant name as used in the codebase for each call or connection.   
+8. **Technical Analysis Execution**:
    - Use semantic_search with `project_name` for targeted project analysis
    - Use search_keyword with `project_name` for specific symbols and function names
    - Use ecosystem-wide searches (no project_name) for cross-project patterns
@@ -55,7 +64,9 @@ Document for EACH project:
 3. **Validate Contract Completeness**: Ensure each project has all contracts it needs to implement
 4. **Cross-Reference Dependencies**: Verify contracts match on both sides of integration
 
+
 ### Phase 5: Roadmap Generation
+**FILE SELECTION RULE**: For every required change, always select the most relevant existing file (e.g., controller, service, model, etc.) based on actual usage, naming, and established project structure. Only create a new file if no suitable file exists for the required change. Never add new features to unrelated files.
 1. Generate roadmaps ONLY for projects requiring changes
 2. Include exact file paths, line numbers, and numbered steps
 3. **MANDATORY**: Include all relevant contracts in each project roadmap

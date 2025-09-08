@@ -15,6 +15,7 @@ enum ImpactLevel {
 enum ContractRole {
   Provider @alias("provider")     // This project implements this contract
   Consumer @alias("consumer")     // This project uses this contract
+  Both @alias("both")             // This project acts as both consumer and provider (e.g., proxy/middleware)
 }
 
 class ContractField {
@@ -31,7 +32,7 @@ class Contract {
   contract_type string            // api, function, database, event
   name string
   description string              // One clear sentence
-  role ContractRole
+  role ContractRole               // Can be provider, consumer, or both (for intermediary/proxy projects)
   
   // Core interface
   interface map<string, string>   // Essential details only
@@ -48,7 +49,7 @@ class Contract {
   examples string                 // Success + Error examples with real data
   
   // Brief implementation guidance
-  implementation_notes string?
+  instructions string?
 }
 
 class ChangeInstruction {
@@ -73,7 +74,7 @@ class ProjectRoadmap {
   reasoning string                 // Why changes are needed for this project
   changes FileChange[]?            // List of files and their change instructions
   contracts Contract[]?            // Contracts this project must implement/follow
-  implementation_notes string?     // Any additional context or gotchas for this project
+  instructions string?     // Any additional context or gotchas for this project
 }
 
 class RoadmapCompletionParams {

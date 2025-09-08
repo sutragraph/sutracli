@@ -30,7 +30,7 @@ template_string RoadmapCompletionToolTemplate() #"
         * `contract_type`: The type of contract (`api`, `function`, `database`, `event`).
         * `name`: A human-readable name for the contract.
         * `description`: A clear, one-sentence summary of the contract's purpose.
-        * `role`: The project's role concerning this contract, using the `ContractRole` enum (`provider` if it implements the contract, `consumer` if it uses it).
+    * `role`: The project's role concerning this contract, using the `ContractRole` enum (`provider` if it implements the contract, `consumer` if it uses it, `both` if it acts as both for this contract, e.g., as a proxy or intermediary).
         * `interface`: A map of essential details (e.g., `{"endpoint": "/api/v1/login", "method": "POST"}`).
         * `input_format`, `output_format`: (Optional) Arrays of `ContractField` objects that define the data structure. Each field has:
             - `name`, `type`, `required` (boolean).
@@ -40,8 +40,8 @@ template_string RoadmapCompletionToolTemplate() #"
         * `error_codes`: (Optional) An array of possible error strings (e.g., `["invalid_credentials", "server_error"]`).
         * `authentication_required`: (Optional) A boolean indicating if the contract requires authentication to use.
         * `examples`: A string containing complete, realistic examples for both success and error cases, including nested data.
-        * `implementation_notes`: (Optional) Brief guidance or important details for implementing or consuming the contract.
-    - `implementation_notes`: (Optional) Any additional high-level context or gotchas for the project as a whole.
+    * `instructions`: (Optional) Step-by-step, imperative instructions for implementing or consuming the contract. Use direct, actionable language.
+    - `instructions`: (Optional) Project-level step-by-step commands or imperative instructions for the project as a whole. Use direct, actionable language (e.g., 'Update X to do Y', 'Add field Z to schema', 'Remove deprecated method').
 
     ---
 
@@ -79,7 +79,7 @@ template_string RoadmapCompletionToolTemplate() #"
             "error_codes": ["invalid_credentials", "server_error"],
             "authentication_required": false,
             "examples": "Success: {\"token\": \"jwt123...\", \"user\": {\"id\": \"user-abc-123\", \"email\": \"test@example.com\"}}; Error: {\"error\": \"invalid_credentials\", \"message\": \"Email or password incorrect.\"}",
-            "implementation_notes": "Use bcrypt for password hashing and comparison. The token should have a 24-hour expiry."
+            "instructions": ["Hash passwords using bcrypt.", "Set token expiry to 24 hours."]
         }]
         }]
         ```
@@ -90,7 +90,7 @@ template_string RoadmapCompletionToolTemplate() #"
     -   Each project roadmap is **completely standalone**; sub-agents will only see the roadmap for their assigned project.
     -   Provide detailed, atomic instructions in the `instructions` field for each file change. Include specifics like function signatures, logic, and configuration values.
     -   Cover all types of changes required: source code, configuration files, database migrations, tests, and documentation.
-    -   Use the `role` field in contracts to clearly define whether a project is a `provider` (implements the contract) or a `consumer` (uses the contract).
+    -   Use the `role` field in contracts to clearly define whether a project is a `provider` (implements the contract), a `consumer` (uses the contract), or `both` (acts as both, such as a proxy or middleware for the contract).
     -   When multiple projects are involved, include `contracts` to define the critical integration points between them.
     -   Ensure `examples` in contracts are complete and show realistic data structures for both success and error scenarios.
 "#

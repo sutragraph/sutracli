@@ -12,6 +12,7 @@
     "sessions_dir": "data/sessions",
     "file_changes_dir": "data/file_changes",
     "file_edits_dir": "data/edits",
+    "session_logs_dir": "data/session_logs",
     "parser_results_dir": "data/parser_results",
     "models_dir": "models"
   },

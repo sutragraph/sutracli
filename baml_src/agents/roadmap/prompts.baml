@@ -37,11 +37,11 @@ Remember: You are generating strategic roadmaps, not implementing code.
 function AwsRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client AwsClaudeSonnet4
   prompt #"
-    {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-
+    {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params.prompt_params) }}
 
     {{RoadmapUserPrompt(params.context)}}
+    {{ _.role("system", cache_control={"type": "ephemeral"}) }}
   "#
 }
 

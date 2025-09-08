@@ -47,15 +47,6 @@ def _build_database_status(event: Dict[str, Any], agent: Agent, tool_params: Dic
     status_parts = ["Tool: database"]
     status_parts.append(f"Parameters used: {tool_params}")
 
-    if query_name:
-        status_parts.append(f"Query Name: {query_name}")
-    if query:
-        if isinstance(query, dict):
-            query_copy = query.copy()
-            query_copy.pop("project_id", None)
-            status_parts.append(f"Query: {query_copy}")
-        else:
-            status_parts.append(f"Query: '{query}'")
     if error:
         status_parts.append(f"ERROR: {error}")
 
@@ -310,7 +301,7 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         impact_level = project.get("impact_level", "Unknown")
         reasoning = project.get("reasoning", "")
         changes = project.get("changes", [])
-        impl_notes = project.get("implementation_notes", "")
+        impl_notes = project.get("instructions", "")
 
         # Impact level styling
         impact_colors = {
@@ -459,8 +450,19 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                 id_text.append(contract_id, style="magenta")
                 if role:
                     id_text.append(" | Role: ", style="bold")
-                    role_color = "green" if role == "provider" else "blue"
-                    id_text.append(role.upper(), style=f"bold {role_color}")
+                    if role == "provider":
+                        role_color = "green"
+                        role_label = "PROVIDER"
+                    elif role == "consumer":
+                        role_color = "blue"
+                        role_label = "CONSUMER"
+                    elif role == "both":
+                        role_color = "yellow"
+                        role_label = "BOTH (Proxy/Intermediary)"
+                    else:
+                        role_color = "white"
+                        role_label = role.upper()
+                    id_text.append(role_label, style=f"bold {role_color}")
                 content_elements.append(id_text)
 
                 # Description

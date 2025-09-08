@@ -11,6 +11,7 @@ Produce precise roadmap guidance for ALL RELEVANT PROJECTS by discovering exact 
 
 **SIMPLICITY FIRST**: Always choose the simplest solution that meets requirements.
 - Find exact files/functions requiring changes across ALL projects in ecosystem
+- **Connection-Driven Hopping**: Use explicit connection data from search results to trace dependencies and navigate between projects.
 - Identify integration points between projects that need coordination
 - Specify minimal changes: extend existing code before creating new files
 - Provide standalone instructions that follow-up agents can execute independently

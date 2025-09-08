@@ -12,6 +12,7 @@
     "sessions_dir": "~/.sutra/data/sessions",
     "file_changes_dir": "~/.sutra/data/file_changes",
     "file_edits_dir": "~/.sutra/data/edits",
+    "session_logs_dir": "~/.sutra/data/session_logs",
     "parser_results_dir": "~/.sutra/parser_results",
     "models_dir": "~/.sutra/models"
   },

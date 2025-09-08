@@ -61,7 +61,7 @@ class RoadmapAgentHandler:
             reasoning = project.get("reasoning", "")
             changes = project.get("changes", [])
             contracts = project.get("contracts", [])
-            implementation_notes = project.get("implementation_notes", "")
+            instructions = project.get("instructions", "")
 
             # Build the prompt string
             prompt_parts = []
@@ -149,15 +149,22 @@ class RoadmapAgentHandler:
                     error_codes = contract.get("error_codes", [])
                     authentication_required = contract.get("authentication_required", False)
                     examples = contract.get("examples", "")
-                    implementation_notes_contract = contract.get("implementation_notes", "")
+                    instructions_contract = contract.get("instructions", "")
 
                     prompt_parts.append(f"### {i}. {contract_name}")
                     prompt_parts.append(f"**Contract ID:** {contract_id}")
                     prompt_parts.append(f"**Type:** {contract_type}")
 
                     if role:
-                        role_desc = "You implement this contract" if role == "provider" else "You consume this contract"
-                        prompt_parts.append(f"**Your Role:** {role} ({role_desc})")
+                        if role == "provider":
+                            role_desc = "Implements this contract"
+                        elif role == "consumer":
+                            role_desc = "Consumes this contract"
+                        elif role == "both":
+                            role_desc = "Acts as both provider and consumer for this contract (proxy/intermediary)"
+                        else:
+                            role_desc = f"Role: {role}"
+                        prompt_parts.append(f"**Role:** {role} ({role_desc})")
 
                     prompt_parts.append("")
 
@@ -231,16 +238,16 @@ class RoadmapAgentHandler:
                         prompt_parts.append("```")
                         prompt_parts.append("")
 
-                    if implementation_notes_contract:
-                        prompt_parts.append(f"**Implementation Notes:** {implementation_notes_contract}")
+                    if instructions_contract:
+                        prompt_parts.append(f"**Implementation Notes:** {instructions_contract}")
                         prompt_parts.append("")
 
                     prompt_parts.append("")
 
             # Add implementation notes
-            if implementation_notes:
+            if instructions:
                 prompt_parts.append("## Implementation Notes")
-                prompt_parts.append(implementation_notes)
+                prompt_parts.append(instructions)
                 prompt_parts.append("")
 
             # Add final instructions
