@@ -281,7 +281,7 @@ class AgentService:
             )
 
             # Create FEEDBACK section in sutra memory
-            feedback_section += "FEEDBACK SECTION: \n"
+            feedback_section = "FEEDBACK SECTION: \n"
             feedback_section += f"USER FEEDBACK: {feedback}\n\n"
             feedback_section += f"ROADMAP PROMPTS CREATED BY AGENT ({len(project_prompts)} projects):\n\n"
 
