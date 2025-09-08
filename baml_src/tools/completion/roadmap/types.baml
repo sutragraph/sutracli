@@ -72,9 +72,10 @@ class ProjectRoadmap {
   project_path string
   impact_level ImpactLevel         // Impact level of changes needed
   reasoning string                 // Why changes are needed for this project
+  implementation_plan string[]
   changes FileChange[]?            // List of files and their change instructions
   contracts Contract[]?            // Contracts this project must implement/follow
-  instructions string?     // Any additional context or gotchas for this project
+
 }
 
 class RoadmapCompletionParams {

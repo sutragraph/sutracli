@@ -301,7 +301,7 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         impact_level = project.get("impact_level", "Unknown")
         reasoning = project.get("reasoning", "")
         changes = project.get("changes", [])
-        impl_notes = project.get("instructions", "")
+        implementation_plan = project.get("implementation_plan", [])
 
         # Impact level styling
         impact_colors = {
@@ -331,10 +331,11 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
             content_elements.append(Text())
 
         # Implementation notes
-        if impl_notes:
+        if len(implementation_plan):
             impl_text = Text()
-            impl_text.append("Implementation Notes: ", style="bold")
-            impl_text.append(impl_notes)
+            impl_text.append("Implementation Plan: ", style="bold")
+            for idx, item in enumerate(implementation_plan, 1):
+                impl_text.append(f"\n   {idx}. {item}")
             content_elements.append(impl_text)
             content_elements.append(Text())
 

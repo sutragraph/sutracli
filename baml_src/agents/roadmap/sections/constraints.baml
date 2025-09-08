@@ -12,13 +12,13 @@ template_string RoadmapConstraints() #"
 1. **One Tool Per Iteration**: Execute exactly one tool per response - never respond without a tool call
 2. **NO CLARIFICATION REQUESTS**: Do not ask "Could you clarify...", "What specifically...", "Can you provide more details...", or any variation of requesting additional input
 3. **MANDATORY MULTI-PROJECT ANALYSIS**: Single-project fixation is STRICTLY FORBIDDEN. Always perform ecosystem-wide discovery before providing roadmaps
-4. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications
+4. **Complete Instructions Only**: NEVER end responses with questions or requests for clarification. Always provide complete specifications within scope limitations
 5. **MANDATORY CONTRACT GENERATION**: When changes involve multiple projects, you MUST generate complete contracts for ALL integration points:
-   - **Generic Contracts**: Use interface map for contract-specific details (endpoints, function names, table names, etc.)
-   - **Input/Output Specifications**: Exact field names, types, validation rules
-   - **Error Handling**: Specific error codes and messages
-   - **Examples**: Success and error scenario examples with actual data
-   - **Unique Contract IDs**: Each contract must have a unique identifier for cross-project tracking
+  - **Generic Contracts**: Use interface map for contract-specific details (endpoints, function names, table names, etc.)
+  - **Input/Output Specifications**: Exact field names, types, validation rules
+  - **Error Handling**: Specific error codes and messages
+  - **Examples**: Success and error scenario examples with actual data
+  - **Unique Contract IDs**: Each contract must have a unique identifier for cross-project tracking
 6. **MANDATORY COMPLETION**: You MUST end your analysis with the `attempt_completion` tool when your work is done. Never leave the conversation hanging without completion.
 
 ### MANDATORY JSON RESPONSE FORMAT
@@ -67,126 +67,140 @@ You MUST respond in this exact JSON structure:
 
 **CRITICAL**: Never respond with plain text. Always use the JSON format above.
 
-### Pattern Reuse Requirements (MANDATORY)
-- [REQUIRED] **REUSE FIRST**: Search for similar existing implementations before creating new ones
-- [REQUIRED] **DEPENDENCY CHECK**: Verify existing dependencies before proposing new ones
-- [REQUIRED] **PATTERN CONSISTENCY**: Follow established project conventions and structures
-- [REQUIRED] **MINIMAL CHANGES**: Evaluate if existing code can be adapted with minimal modifications
-- [REQUIRED] **PROJECT BOUNDARIES**: Never hop between projects unless a clear connection is found in the codebase
-- [REQUIRED] **API PREFIX USAGE**: All API endpoints must use the designated prefix variable. Example:
-  ```javascript
-  // CORRECT
-  const apiUrl = `${API_PREFIX}/users/profile`;
-  // INCORRECT
-  const apiUrl = "/api/users/profile";
-  ```
+## PATTERN REUSE & ANALYSIS REQUIREMENTS (MANDATORY)
+
+**REUSE FIRST**: Search for similar existing implementations before creating new ones
+**DEPENDENCY CHECK**: Verify existing dependencies before proposing new ones
+**PATTERN CONSISTENCY**: Follow established project conventions and structures
+**MINIMAL CHANGES**: Evaluate if existing code can be adapted with minimal modifications
+**PROJECT BOUNDARIES**: Never hop between projects unless a clear connection is found in the codebase
+**API PREFIX USAGE**: All API endpoints must use the designated prefix variable. Example:
+```javascript
+// CORRECT
+const apiUrl = `${API_PREFIX}/users/profile`;
+// INCORRECT
+const apiUrl = "/api/users/profile";
+```
 
 ## ANTI-PATTERNS (STRICTLY FORBIDDEN)
 
-### Over-Engineering Anti-Patterns
-- [FORBIDDEN] Creating 3 controllers when user asks for "an API"
-- [FORBIDDEN] New microservices for operations that fit in existing controllers
-- [FORBIDDEN] Complex architectures when simple extensions suffice
-- [FORBIDDEN] Multiple endpoints when one can handle the requirement
-- [FORBIDDEN] New services for operations that fit in existing controllers
-- [FORBIDDEN] **FORBIDDEN**: Creating new implementations without analyzing existing similar code
-- [FORBIDDEN] **FORBIDDEN**: Adding dependencies without checking existing ones
-- [FORBIDDEN] **FORBIDDEN**: Contradicting established project patterns
+### Over-Engineering
 
-### Analysis Anti-Patterns
-- [FORBIDDEN] Single-project fixation without ecosystem analysis
-- [FORBIDDEN] Missing cross-project integration points
-- [FORBIDDEN] Ignoring connection mappings returned by database queries
-- [FORBIDDEN] Guessing project connections instead of following the explicit dependency chain provided in search results.
-- [FORBIDDEN] Analyzing only one side of a connection (source OR target instead of both)
-- [FORBIDDEN] Providing roadmaps without examining connected controllers/handlers
-- [FORBIDDEN] Skipping cross-repository analysis when connections point to external repos
-- [FORBIDDEN] Missing data flow gaps (timestamps, audit fields, validation)
-- [FORBIDDEN] Ignoring existing API patterns and conventions when creating new endpoints
-- [FORBIDDEN] Breaking established project conventions (routing, naming, structure patterns)
-- [FORBIDDEN] Creating inconsistent implementations that don't follow existing patterns
-- [FORBIDDEN] **CRITICAL**: Failing to search for existing similar implementations
-- [FORBIDDEN] **CRITICAL**: Not analyzing existing dependencies before suggesting new ones
-- [FORBIDDEN] **CRITICAL**: Proposing duplicate functionality without reuse justification
+- Creating multiple controllers/services when simple extensions suffice
+- New microservices for operations that fit in existing controllers
+- Complex architectures when simple solutions work
+- Creating new implementations without analyzing existing similar code
+- Adding dependencies without checking existing ones
+- Contradicting established project patterns
 
-### Communication Anti-Patterns
-- [FORBIDDEN] Conditional or speculative instructions (e.g., 'check if', 'verify if', 'only if needed', 'if exists'). All instructions must be concrete and actionable, with exact file paths and contracts where applicable.
-- [FORBIDDEN] Providing generic "update the API" without examining actual controller implementation
-- [FORBIDDEN] Incomplete specifications that require follow-up questions
-- [FORBIDDEN] Roadmaps without line numbers and exact change locations
+### Analysis Failures
+- Single-project fixation without ecosystem analysis
+- Missing cross-project integration points
+- Analyzing only one side of connections (source OR target instead of both)
+- Skipping cross-repository analysis when connections point to external repos
+- Breaking established project conventions (routing, naming, structure patterns)
+- Assuming communication flows without validating existing patterns
+- Skipping intermediary components that handle routing, authentication, or business logic
+- Creating new communication paths that bypass established architecture
 
-### Contract Specification Anti-Patterns
-- [FORBIDDEN] Omitting contracts when multiple projects are involved
-- [FORBIDDEN] Vague contract specifications without exact interface details (missing endpoints, function names, etc.)
-- [FORBIDDEN] Missing error handling specifications in contracts
-- [FORBIDDEN] Contracts without examples for success and error scenarios
-- [FORBIDDEN] Failing to assign unique contract IDs for tracking
-- [FORBIDDEN] Incomplete interface specifications (missing routes, method names, table schemas, etc.)
-- [FORBIDDEN] Generic "they should communicate" without defining exact interface contracts
+### Communication Issues
+
+- Conditional or speculative instructions (e.g., 'check if', 'verify if', 'only if needed', 'if exists'). All instructions must be concrete and actionable
+- Providing generic updates without examining actual implementations
+- Incomplete specifications that require follow-up questions
+- Roadmaps without line numbers and exact change locations
+- Omitting contracts when multiple projects are involved
+- Vague contract specifications without exact interface details
+- Missing error handling specifications in contracts
+- Contracts without examples for success and error scenarios
 
 ## SCOPE LIMITATIONS
 
-### What You DO NOT Provide
-- **ABSOLUTELY FORBIDDEN**: Do not provide full code implementations, complete functions, or detailed code snippets
-- **FORBIDDEN**: Complete code blocks or implementation details
-- **FORBIDDEN**: Step-by-step coding instructions
-- **FORBIDDEN**: Detailed syntax or framework-specific code
-
 ### What You DO Provide
-- **ROADMAP GUIDANCE ONLY**: Strategic modification points: "Method getUserById(): Add caching layer"
-- **IMPORT CHANGES**: "Import: Replace FirebaseDB with RedisCache"
-- **STRUCTURAL DECISIONS**: "Use existing ValidationUtils instead of creating new validator"
-- **COMPLETE CONTRACTS**: Exact interface specifications with endpoints/functions/tables, input/output formats, error codes
-- **INTEGRATION POINTS**: Cross-project data flow requirements with contract IDs
-- **CONTRACT EXAMPLES**: Success and error scenarios with actual request/response data
+
+**ROADMAP GUIDANCE**: Strategic modification points: "Method getUserById(): Add caching layer"
+**IMPORT CHANGES**: "Import: Replace FirebaseDB with RedisCache"
+**STRUCTURAL DECISIONS**: "Use existing ValidationUtils instead of creating new validator"
+**COMPLETE CONTRACTS**: Exact interface specifications with endpoints/functions/tables, input/output formats, error codes
+**INTEGRATION POINTS**: Cross-project data flow requirements with contract IDs
+**CONTRACT EXAMPLES**: Success and error scenarios with actual request/response data
 
 ## TOOL USAGE CONSTRAINTS
 
-### Memory Management
-- **MANDATORY**: Use SEMANTIC_SEARCH results directly when they contain sufficient code context with line numbers → store in memory
-- **MANDATORY**: Use exact file paths as returned by tools - never construct or modify file paths manually
-- **FORBIDDEN**: Using GET_FILE_BY_PATH to read the exact same lines already provided by SEMANTIC_SEARCH results
-- **ALLOWED**: Expanding line ranges to get more context around SEMANTIC_SEARCH results when 10-line limit is insufficient
-- **FORBIDDEN**: Storing limited SEARCH_KEYWORD snippets that lack sufficient context for roadmap decisions
-- **FORBIDDEN**: Making completely redundant queries for the same exact code
+### Memory Management & Anti-Redundancy
+
+**EFFICIENT FILE EXPLORATION ORDER**:
+1. semantic_search → get file paths
+2. GET_FILE_BLOCK_SUMMARY → understand file structure (classes, functions, variables)
+3. search_keyword → only if block summary shows relevant symbols
+4. GET_FILE_BY_PATH → only with specific line ranges from previous steps
+
+**BEFORE EVERY TOOL CALL**:
+- Check Sutra Memory for identical previous searches
+- If found: Use existing results or switch strategy  
+- If keyword searches fail: Use GET_FILE_BLOCK_SUMMARY to explore file structure
+
+**BLOCK SUMMARY USAGE**:
+- Use GET_FILE_BLOCK_SUMMARY to get hierarchical structure without reading full content
+- Store block summaries in memory with file paths and line numbers
+- Use block summary results to target specific functions/classes for detailed analysis
+- FORBIDDEN: Using GET_FILE_BY_PATH without first checking GET_FILE_BLOCK_SUMMARY results
+
+**SEARCH FAILURE HANDLING**:
+- After 2 failed keyword searches: GET_FILE_BLOCK_SUMMARY on main project files
+- Use block hierarchy to understand naming conventions and structure
+- Target specific blocks found in summaries for detailed analysis
+
+### FILE EXPLORATION EFFICIENCY RULES
+
+**GET_FILE_BLOCK_SUMMARY PRIORITY**:
+- Always use GET_FILE_BLOCK_SUMMARY before GET_FILE_BY_PATH
+- Block summaries show function names, class definitions, variables - use this to target searches
+- Store block hierarchy in memory for pattern recognition across files
+- Use block summaries to understand project naming conventions
+
+**TARGETED ANALYSIS AFTER BLOCK SUMMARY**:
+- search_keyword for specific function/class names found in summaries
+- GET_FILE_BY_PATH only with line ranges targeting specific blocks
+- semantic_search with better keywords based on actual function/class names discovered
 
 ### Query Strategy
-- **PREFERRED**: Start with broad ecosystem searches, then narrow to specific projects
-- **REQUIRED**: Use project_name parameter for targeted analysis
-- **REQUIRED**: Cross-reference results between projects for integration points
-- **FORBIDDEN**: Tunnel vision on single project without ecosystem consideration
+
+- Start with broad ecosystem searches, then narrow to specific projects
+- Use project_name parameter for targeted analysis
+- Cross-reference results between projects for integration points
+- FORBIDDEN: Tunnel vision on single project without ecosystem consideration
 
 ## CRITICAL SUCCESS CHECKLIST
 
 Before providing any roadmap guidance, verify ALL items:
-[ ] **Memory checked first** - avoid redundant tool usage
-[ ] **MULTI-PROJECT ECOSYSTEM VERIFIED** - analyzed ALL projects listed in project context for potential impact
-[ ] **PATTERN REUSE ANALYSIS COMPLETED**:
-  [ ] Searched for existing similar implementations
-  [ ] Analyzed existing dependencies and patterns
-  [ ] Evaluated reuse potential with justification
-[ ] **INTEGRATION POINTS IDENTIFIED** - cross-project dependencies mapped
-[ ] **SIMPLICITY VALIDATED** - chosen minimal viable solution that maximizes code reuse
-[ ] **EXACT LOCATIONS SPECIFIED** - file paths and line numbers documented
-[ ] **COMPLETE CONTRACTS DEFINED** - exact interface details, input/output formats, error codes, and examples specified
-[ ] **CONTRACT IDS ASSIGNED** - unique identifiers for cross-project tracking
-[ ] **DEPLOYMENT SEQUENCE PLANNED** - implementation order documented
-[ ] **EXISTING PATTERNS ANALYZED** - examined current implementations, conventions, and architectural patterns
-[ ] **CONSISTENCY MAINTAINED** - new implementations follow established project conventions and patterns
-[ ] **REUSE JUSTIFICATION PROVIDED** - clear reasoning for any new implementations over existing code reuse
+[ ] Memory checked first - avoid redundant tool usage
+[ ] MULTI-PROJECT ECOSYSTEM VERIFIED - analyzed ALL projects for potential impact
+[ ] PATTERN REUSE ANALYSIS COMPLETED - searched existing implementations, analyzed dependencies, evaluated reuse potential
+[ ] INTEGRATION POINTS IDENTIFIED - cross-project dependencies mapped
+[ ] SIMPLICITY VALIDATED - chosen minimal viable solution that maximizes code reuse
+[ ] EXACT LOCATIONS SPECIFIED - file paths and line numbers documented
+[ ] COMPLETE CONTRACTS DEFINED - exact interface details, input/output formats, error codes, examples, and unique IDs specified
+[ ] DEPLOYMENT SEQUENCE PLANNED - implementation order documented
+[ ] EXISTING PATTERNS ANALYZED - examined current implementations and conventions
+[ ] CONSISTENCY MAINTAINED - new implementations follow established project patterns
 
 ## OUTPUT CONSTRAINTS
 
 ### Maximum Code Context
+
 - Method signatures and import statements only
 - No complete function implementations
 - No detailed code blocks
 - Focus on structural changes and integration points
 
 ### Required Precision
+
 - Exact file paths as returned by tools
 - Specific line numbers for modifications
 - Complete API contracts with error codes
 - Cross-project integration specifications
 - Deployment sequence requirements
 "#
+
+

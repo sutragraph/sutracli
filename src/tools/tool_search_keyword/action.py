@@ -390,9 +390,8 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             if use_regex:
                 cmd.append(keyword)
             else:
-                cmd.extend(["-F", keyword])  # Fixed string search
+                cmd.extend(["-F", keyword])
 
-            logger.debug(f"🔍 Built ripgrep command: {' '.join(cmd)}")
             return cmd
 
         all_results = []

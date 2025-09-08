@@ -12,6 +12,7 @@ from utils.console import console
 from tools import RoadmapCompletionParams
 from loguru import logger
 
+
 class RoadmapAgentHandler:
     """Handler for roadmap agent post-requisites."""
 
@@ -66,7 +67,7 @@ class RoadmapAgentHandler:
             reasoning = project.get("reasoning", "")
             changes = project.get("changes", [])
             contracts = project.get("contracts", [])
-            instructions = project.get("instructions", "")
+            implementation_plan = project.get("implementation_plan", [])
 
             # Build the prompt string
             prompt_parts = []
@@ -254,9 +255,11 @@ class RoadmapAgentHandler:
                     prompt_parts.append("")
 
             # Add implementation notes
-            if instructions:
-                prompt_parts.append("## Implementation Notes")
-                prompt_parts.append(str(instructions))
+            if len(implementation_plan):
+                prompt_parts.append("## Implementation Plan")
+                prompt_parts.append("")
+                for item in implementation_plan:
+                    prompt_parts.append(f"- {item}")
                 prompt_parts.append("")
 
             # Add final instructions

@@ -11,86 +11,162 @@ template_string RoadmapCompletionToolTemplate() #"
 
     ---
 
+    Of course. Here are the updated examples for your tool, converted to Markdown for better readability and clarity.
+
+    Of course. Here is the updated `### Project Parameters` section, ensuring it comprehensively lists every field from your provided type definitions.
+
+
     ### Project Parameters (for each project in the `projects` array)
-    - `project_name`: A human-readable name for the project.
-    - `project_path`: The exact path to the project's root directory.
-    - `impact_level`: The level of impact the changes will have on this project, using the `ImpactLevel` enum (`High`, `Medium`, `Low`, `NoImpact`).
-    - `reasoning`: A detailed explanation of why these changes are necessary for this project and the reasoning behind the assigned impact level.
-    - `changes`: (Optional) An array of `FileChange` objects detailing the modifications.
-        * `file_path`: The path to the file that needs changes, relative to the project path.
-        * `operation`: The action to perform, using the `FileOperation` enum (`create`, `modify`, `delete`).
-        * `instructions`: An array of `ChangeInstruction` objects. Multiple instructions can be provided for a single file.
-            - `description`: What needs to be changed.
-            - `current_state`: The existing implementation (if any).
-            - `target_state`: The desired final implementation.
-            - `start_line`, `end_line`: (Optional) The line numbers for the change.
-            - `additional_notes`: (Optional) Any special considerations or potential issues.
-    - `contracts`: (Optional) An array of `Contract` objects that this project must implement or consume, defining the interface between projects.
-        * `contract_id`: A unique identifier for the contract (e.g., `auth-login-v1`).
-        * `contract_type`: The type of contract (`api`, `function`, `database`, `event`).
-        * `name`: A human-readable name for the contract.
-        * `description`: A clear, one-sentence summary of the contract's purpose.
-    * `role`: The project's role concerning this contract, using the `ContractRole` enum (`provider` if it implements the contract, `consumer` if it uses it, `both` if it acts as both for this contract, e.g., as a proxy or intermediary).
-        * `interface`: A map of essential details (e.g., `{"endpoint": "/api/v1/login", "method": "POST"}`).
-        * `input_format`, `output_format`: (Optional) Arrays of `ContractField` objects that define the data structure. Each field has:
-            - `name`, `type`, `required` (boolean).
-            - `description` (optional).
-            - `validation` (optional string, e.g., `"format:email"` or `"min:8"`).
-            - `nested` (optional array of `ContractField` objects for nested structures).
-        * `error_codes`: (Optional) An array of possible error strings (e.g., `["invalid_credentials", "server_error"]`).
-        * `authentication_required`: (Optional) A boolean indicating if the contract requires authentication to use.
-        * `examples`: A string containing complete, realistic examples for both success and error cases, including nested data.
-    * `instructions`: (Optional) Step-by-step, imperative instructions for implementing or consuming the contract. Use direct, actionable language.
-    - `instructions`: (Optional) Project-level step-by-step commands or imperative instructions for the project as a whole. Use direct, actionable language (e.g., 'Update X to do Y', 'Add field Z to schema', 'Remove deprecated method').
+
+    -   `project_name` (string): A human-readable name for the project.
+    -   `project_path` (string): The exact path to the project's root directory.
+    -   `impact_level` (enum): The level of impact the changes will have on this project.
+        -   *Values*: `High`, `Medium`, `Low`, `None`.
+    -   `reasoning` (string): A clear explanation of why these changes are necessary for this project.
+    -   `project_goal` (string): A concise, single-sentence mission statement for the work to be done on this specific project.
+    -   `implementation_plan` (array): A high-level, numbered list outlining the strategic, step-by-step plan for the project.
+    -   `changes` (array, optional): A list of specific file modifications. Each item in the array contains:
+        -   `file_path` (string): The path to the file, relative to the project root.
+        -   `operation` (enum): The action to perform on the file.
+            -   *Values*: `create`, `modify`, `delete`.
+        -   `instructions` (array): A list of specific instructions for the file change. Each instruction contains:
+            -   `description` (string): What needs to be changed.
+            -   `current_state` (string, optional): The existing implementation.
+            -   `target_state` (string): The desired final implementation.
+            -   `start_line` (integer, optional): The starting line number for the change.
+            -   `end_line` (integer, optional): The ending line number for the change.
+            -   `additional_notes` (string, optional): Any special considerations or potential issues.
+    -   `contracts` (array, optional): A list of contracts defining interfaces between projects. Each item in the array contains:
+        -   `contract_id` (string): A unique identifier for the contract (e.g., `auth-login-v1`).
+        -   `contract_type` (string): The type of contract.
+            -   *Values*: `api`, `function`, `database`, `event`.
+        -   `name` (string): A human-readable name for the contract.
+        -   `description` (string): A clear, one-sentence summary of the contract's purpose.
+        -   `role` (enum): The project's role concerning this contract.
+            -   *Values*: `provider` (implements it), `consumer` (uses it), `both` (proxy/intermediary).
+        -   `interface` (map): A set of key-value pairs with essential details (e.g., `{"endpoint": "/api/v1/login", "method": "POST"}`).
+        -   `input_format` / `output_format` (array, optional): A list of fields defining the data structure. Each field contains:
+            -   `name` (string): The field's name.
+            -   `type` (string): The data type (e.g., `string`, `integer`, `object`).
+            -   `required` (boolean): Whether the field is mandatory.
+            -   `description` (string, optional): A brief explanation of the field.
+            -   `validation` (string, optional): Validation rules (e.g., `"format:email"`, `"min:8"`).
+            -   `nested` (array, optional): A nested list of fields for complex objects or arrays.
+        -   `error_codes` (array, optional): A list of possible error strings (e.g., `["invalid_credentials", "server_error"]`).
+        -   `authentication_required` (boolean, optional): Indicates if the contract requires authentication.
+        -   `examples` (string): Complete, realistic examples for both success and error cases.
+        -   `instructions` (string, optional): Brief, imperative instructions for implementing or consuming the contract.
 
     ---
 
     ### Parameter Examples
-    -   **Create new file**: `changes: [{"file_path": "src/auth/controller.py", "operation": "create", "instructions": [{"description": "Create authentication controller", "target_state": "New file with login endpoint and JWT handling"}]}]`
-    -   **Modify existing file**: `changes: [{"file_path": "src/auth/routes.py", "operation": "modify", "instructions": [{"description": "Add login route", "current_state": "No auth routes", "target_state": "POST /auth/login route", "start_line": 10, "end_line": 15}]}]`
-    -   **Multiple changes in one file**: `changes: [{"file_path": "src/models/user.py", "operation": "modify", "instructions": [{"description": "Add role field", "target_state": "role = models.CharField(max_length=50)", "start_line": 15}, {"description": "Update __str__ method", "current_state": "return self.username", "target_state": "return f'{self.username} ({self.role})'", "start_line": 25}]}]`
-    -   **Delete file**: `changes: [{"file_path": "src/legacy/old_auth.py", "operation": "delete", "instructions": [{"description": "Remove deprecated authentication module", "additional_notes": "Ensure no imports remain"}]}]`
-    -   **High impact project**: `projects: [{"project_name": "Core API", "project_path": "/api", "impact_level": "High", "reasoning": "Critical authentication changes affecting all client applications."}]`
-    -   **With contracts (New Structure)**:
-        ```json
-        "projects": [{
-        "project_name": "Backend API",
-        "project_path": "/backend",
-        "impact_level": "High",
-        "reasoning": "Implementing a new user authentication API required by the frontend project.",
-        "contracts": [{
-            "contract_id": "auth-login-v1",
-            "contract_type": "api",
-            "name": "User Login API",
-            "description": "Authenticates user credentials and returns a session token.",
-            "role": "provider",
-            "interface": {"endpoint": "/api/auth/login", "method": "POST"},
-            "input_format": [
-            {"name": "email", "type": "string", "required": true, "description": "User's email address", "validation": "format:email"},
-            {"name": "password", "type": "string", "required": true, "description": "User's raw password", "validation": "min:8"}
-            ],
-            "output_format": [
-            {"name": "token", "type": "string", "required": true, "description": "JWT for session authentication."},
-            {"name": "user", "type": "object", "required": true, "nested": [
-                {"name": "id", "type": "string", "required": true},
-                {"name": "email", "type": "string", "required": true}
-            ]}
-            ],
-            "error_codes": ["invalid_credentials", "server_error"],
-            "authentication_required": false,
-            "examples": "Success: {\"token\": \"jwt123...\", \"user\": {\"id\": \"user-abc-123\", \"email\": \"test@example.com\"}}; Error: {\"error\": \"invalid_credentials\", \"message\": \"Email or password incorrect.\"}",
-            "instructions": ["Hash passwords using bcrypt.", "Set token expiry to 24 hours."]
-        }]
-        }]
-        ```
+
+    #### **Example 1: Backend Intermediary (Consumer & Provider)**
+
+    This example shows a BFF (Backend-for-Frontend) that consumes an internal `auth-service` API and provides a simplified version for a mobile client. This project has the `role` of **both**.
+
+    -   **`project_name`**: "Mobile API Gateway"
+    -   **`project_path`**: "/mobile-gateway"
+    -   **`impact_level`**: "High"
+    -   **`reasoning`**: "This new gateway will serve as the single entry point for the mobile app, simplifying the client's interaction with our microservices."
+    -   **`project_goal`**: "Create a new login endpoint that consumes the internal authentication service and exposes a simplified, mobile-friendly login API."
+    -   **`implementation_plan`**:
+        1.  "Implement a `POST /mobile/v1/login` endpoint."
+        2.  "From this endpoint, make a server-to-server call to the internal `auth-service` as defined in its contract (`internal-auth-v1`)."
+        3.  "Transform the response from the `auth-service`: remove sensitive user data and return only the JWT and user ID."
+        4.  "Expose this transformed data via the new `mobile-login-v1` contract for the mobile client to consume."
+    -   **`contracts`**:
+        -   **Contract ID**: `internal-auth-v1`
+        -   **Role**: `consumer`
+        -   **Description**: "Consumes the internal microservice to authenticate a user."
+            *(...rest of contract details...)*
+        -   **Contract ID**: `mobile-login-v1`
+        -   **Role**: `provider`
+        -   **Description**: "Provides a simplified login endpoint for mobile clients."
+            *(...rest of contract details...)*
+
+    ---
+
+    #### **Example 2: Client-Side Project (Consumer)**
+
+    This example shows a simple frontend application that needs to call a backend login API. Its role is purely a **consumer**.
+
+    -   **`project_name`**: "Web Frontend App"
+    -   **`project_path`**: "/webapp"
+    -   **`impact_level`**: "High"
+    -   **`reasoning`**: "Implementing user login is a core requirement for the application's upcoming release."
+    -   **`project_goal`**: "Create a login form and corresponding logic to authenticate users by calling the backend's `auth-login-v1` API."
+    -   **`implementation_plan`**:
+        1.  "Build a new login component with email and password input fields."
+        2.  "Create a function to handle form submission that sends a POST request to the `/api/auth/login` endpoint."
+        3.  "Upon a successful response, store the received JWT in local storage."
+        4.  "On failure, display an appropriate error message to the user based on the error code received."
+    -   **`contracts`**:
+        -   **Contract ID**: `auth-login-v1`
+        -   **Name**: "User Login API"
+        -   **Description**: "Authenticates user credentials and returns a session token."
+        -   **Role**: `consumer`
+        -   **Interface**: `endpoint: {API_PREFIX}/api/auth/login`, `method: POST`
+        -   **Instructions**:
+            -   "Call this endpoint when the user submits the login form."
+            -   "Securely store the returned JWT for subsequent authenticated requests."
+            -   "Handle the `invalid_credentials` error by showing a 'Login failed' message."
+
+    #### **Example 3: Delete a File**
+
+    This shows how to remove a deprecated module.
+
+    -   **`project_goal`**: "Remove the legacy authentication module to clean up the codebase."
+    -   **`implementation_plan`**:
+        1.  "Delete the file `src/legacy/old_auth.py`."
+        2.  "Search the codebase for any remaining imports of this file and remove them."
+    -   **`changes`**:
+        -   **File**: `src/legacy/old_auth.py`
+        -   **Operation**: `delete`
+        -   **Instructions**:
+            -   **Description**: "Remove deprecated authentication module."
+            -   **Additional Notes**: "Ensure no imports of this module remain in the project."
+
+    #### **Example 4: High-Impact Project with Contracts**
+
+    This is a complete example for a backend project implementing a new authentication API, which will be consumed by a frontend.
+
+    -   **`project_name`**: "Backend API"
+    -   **`project_path`**: "/backend"
+    -   **`impact_level`**: "High"
+    -   **`reasoning`**: "Implementing a new user authentication API that is a critical dependency for the new frontend project."
+    -   **`project_goal`**: "Implement a secure endpoint for user login that authenticates credentials and returns a JWT session token."
+    -   **`implementation_plan`**:
+        1.  "Implement the API endpoint as specified in the `auth-login-v1` contract."
+        2.  "Ensure password hashing is done using bcrypt."
+        3.  "Set the JWT token expiry to 24 hours."
+    -   **`contracts`**:
+        -   **Contract ID**: `auth-login-v1`
+        -   **Name**: "User Login API"
+        -   **Description**: "Authenticates user credentials and returns a session token."
+        -   **Role**: `provider`
+        -   **Interface**: `endpoint: /api/auth/login`, `method: POST`
+        -   **Input Format**:
+            -   `email` (string, required, validation: "format:email")
+            -   `password` (string, required, validation: "min:8")
+        -   **Output Format**:
+            -   `token` (string, required)
+            -   `user` (object, required) containing:
+                -   `id` (string, required)
+                -   `email` (string, required)
+        -   **Error Codes**: `["invalid_credentials", "server_error"]`
+        -   **Examples**:
+            -   **Success**: `{"token": "jwt123...", "user": {"id": "user-abc-123", "email": "test@example.com"}}`
+            -   **Error**: `{"error": "invalid_credentials", "message": "Email or password incorrect."}`
 
     ---
 
     ### Usage Notes
+
     -   Each project roadmap is **completely standalone**; sub-agents will only see the roadmap for their assigned project.
-    -   Provide detailed, atomic instructions in the `instructions` field for each file change. Include specifics like function signatures, logic, and configuration values.
-    -   Cover all types of changes required: source code, configuration files, database migrations, tests, and documentation.
-    -   Use the `role` field in contracts to clearly define whether a project is a `provider` (implements the contract), a `consumer` (uses the contract), or `both` (acts as both, such as a proxy or middleware for the contract).
+    -   Provide detailed, atomic instructions for each file change. Include specifics like function signatures, logic, and configuration values.
+    -   Use the `role` field in contracts to clearly define whether a project is a `provider` (implements it) or a `consumer` (uses it).
     -   When multiple projects are involved, include `contracts` to define the critical integration points between them.
+    -   Use placeholders for environment-specific values in contracts to ensure flexibility. eg: endpoint: {API_PREFIX}/users/profile
     -   Ensure `examples` in contracts are complete and show realistic data structures for both success and error scenarios.
-"#
+    "#

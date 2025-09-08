@@ -7,7 +7,7 @@ client<llm> AwsClaudeSonnet4 {
     region env.AWS_REGION
     inference_configuration {
       max_tokens 64000
-      temperature 0.0
+      temperature 0.5
     }
     allowed_role_metadata ["cache_control"]
   }
