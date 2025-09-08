@@ -599,13 +599,12 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             agent_result = handle_agent_command(agent_name=agent_name, project_path=project_dir)
 
             if agent_result:
-                console.success("Agent execution completed successfully!")
+                console.success("Agent execution completed successfully!!!")
             else:
                 console.warning("Agent execution completed with no result")
 
         except Exception as e:
             console.error(f"Agent execution failed: {e}")
-
 
     def run(self):
         """Main CLI execution flow."""

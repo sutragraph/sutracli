@@ -212,7 +212,7 @@ class AgentService:
 
                 # Check if completion occurred
                 is_completion = self._parse_agent_response(agent_response)
-
+                logger.debug(f"Is completion: {is_completion}")
                 if is_completion:
                     # Check if this is a roadmap agent and if post-processing requests continuation
                     if self.agent_name == Agent.ROADMAP and self.result:
@@ -224,10 +224,6 @@ class AgentService:
                             and post_result.get("continue_roadmap")
                             and post_result.get("feedback")
                         ):
-                            console.info(
-                                "🔄 Continuing roadmap agent loop with user feedback..."
-                            )
-
                             # Store the formatted roadmap prompts in sutra memory feedback section
                             feedback = post_result.get("feedback")
                             self._store_feedback_in_sutra_memory(feedback)
@@ -236,11 +232,8 @@ class AgentService:
                             self._set_feedback_tool_status(feedback)
 
                             # Continue the loop instead of returning - this preserves the session
-                            console.info(
-                                "📋 Roadmap agent will now improve the prompts based on your feedback..."
-                            )
-                            console.dim(
-                                "🧠 Previous roadmap results are preserved in sutra memory"
+                            console.highlight(
+                                "Roadmap agent will now improve the prompts based on your feedback..."
                             )
                             continue
 
@@ -257,7 +250,7 @@ class AgentService:
         """Handle roadmap post-processing and return continuation info if needed."""
         try:
             from src.agent_management.post_requisites.handlers import get_agent_handler
-
+            logger.debug("Starting roadmap post-processing...")
             handler = get_agent_handler(self.agent_name)
             post_result = handler.process_agent_result_direct(self.result)
 
@@ -378,7 +371,6 @@ class AgentService:
             if tool_name == "attempt_completion":
                 is_completion = True
                 self.result = tool_to_execute.parameters
-
             # Execute tool for formatting and display
             self.last_tool_result = execute_tool(
                 Agent.ROADMAP,

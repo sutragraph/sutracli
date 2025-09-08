@@ -10,7 +10,7 @@ from agent_management.providers.manager import get_agent_provider_manager
 from agents_new import Agent
 from utils.console import console
 from tools import RoadmapCompletionParams
-
+from loguru import logger
 
 class RoadmapAgentHandler:
     """Handler for roadmap agent post-requisites."""
@@ -50,7 +50,12 @@ class RoadmapAgentHandler:
         Returns:
             List of project prompts in the format expected by _spawn_external_agents
         """
+        logger.debug("Converting roadmap data to project prompts...")
         projects = data.get("projects", [])
+
+        # Ensure projects is a list and not None
+        if projects is None:
+            projects = []
 
         project_prompts = []
 
@@ -75,7 +80,7 @@ class RoadmapAgentHandler:
             # Add reasoning
             if reasoning:
                 prompt_parts.append("## Reasoning")
-                prompt_parts.append(reasoning)
+                prompt_parts.append(str(reasoning))
                 prompt_parts.append("")
 
             # Add file changes
@@ -102,16 +107,16 @@ class RoadmapAgentHandler:
                             end_line = instruction.get("end_line")
                             additional_notes = instruction.get("additional_notes", "")
 
-                            prompt_parts.append(f"{j}. **Change:** {description}")
+                            prompt_parts.append(f"{j}. **Change:** {str(description)}")
 
                             if current_state:
                                 prompt_parts.append(
-                                    f"   **Current State:** {current_state}"
+                                    f"   **Current State:** {str(current_state)}"
                                 )
 
                             if target_state:
                                 prompt_parts.append(
-                                    f"   **Target State:** {target_state}"
+                                    f"   **Target State:** {str(target_state)}"
                                 )
 
                             if start_line is not None:
@@ -123,7 +128,9 @@ class RoadmapAgentHandler:
                                     prompt_parts.append(f"   **Line:** {start_line}")
 
                             if additional_notes:
-                                prompt_parts.append(f"   **Notes:** {additional_notes}")
+                                prompt_parts.append(
+                                    f"   **Notes:** {str(additional_notes)}"
+                                )
 
                             prompt_parts.append("")
 
@@ -169,7 +176,7 @@ class RoadmapAgentHandler:
                     prompt_parts.append("")
 
                     if description:
-                        prompt_parts.append(f"**Description:** {description}")
+                        prompt_parts.append(f"**Description:** {str(description)}")
                         prompt_parts.append("")
 
                     if interface:
@@ -234,12 +241,14 @@ class RoadmapAgentHandler:
                     if examples:
                         prompt_parts.append("**Examples:**")
                         prompt_parts.append("```")
-                        prompt_parts.append(examples)
+                        prompt_parts.append(str(examples))
                         prompt_parts.append("```")
                         prompt_parts.append("")
 
                     if instructions_contract:
-                        prompt_parts.append(f"**Implementation Notes:** {instructions_contract}")
+                        prompt_parts.append(
+                            f"**Implementation Notes:** {str(instructions_contract)}"
+                        )
                         prompt_parts.append("")
 
                     prompt_parts.append("")
@@ -247,7 +256,7 @@ class RoadmapAgentHandler:
             # Add implementation notes
             if instructions:
                 prompt_parts.append("## Implementation Notes")
-                prompt_parts.append(instructions)
+                prompt_parts.append(str(instructions))
                 prompt_parts.append("")
 
             # Add final instructions
@@ -261,15 +270,31 @@ class RoadmapAgentHandler:
             prompt_parts.append(
                 "For contracts marked as 'provider', implement the interface. For contracts marked as 'consumer', integrate with the existing interface."
             )
-            
+
             # Add the important consistency instruction
             prompt_parts.append("")
             prompt_parts.append(
                 "**Important**: Maintain strict naming consistency - use the exact same function names, API endpoints, contract identifiers, variable names, and method signatures as specified in the original query and requirements above."
             )
 
-            # Join all parts into a single prompt
-            full_prompt = "\n".join(prompt_parts)
+            # Join all parts into a single prompt - ensure all items are strings
+            def flatten_to_strings(items):
+                """Recursively flatten any nested structures to strings."""
+                result = []
+                for item in items:
+                    if isinstance(item, list):
+                        # Recursively flatten nested lists
+                        result.extend(flatten_to_strings(item))
+                    elif isinstance(item, (dict, tuple)):
+                        # Convert complex types to string representation
+                        result.append(str(item))
+                    else:
+                        # Convert to string if it's not already
+                        result.append(str(item))
+                return result
+
+            string_parts = flatten_to_strings(prompt_parts)
+            full_prompt = "\n".join(string_parts)
 
             # Create project prompt entry
             project_prompts.append(
@@ -284,7 +309,7 @@ class RoadmapAgentHandler:
     def _spawn_external_agents(self, project_prompts: list) -> Dict[str, Any]:
         """Spawn external agents for each project with prompts."""
         # Display all generated prompts to the user first
-        confirmation_result = self._get_confirmation(project_prompts)
+        confirmation_result = self._get_confirmation()
 
         if not confirmation_result["proceed"]:
             # Check if user provided feedback for improvement
@@ -365,7 +390,7 @@ class RoadmapAgentHandler:
             }]
         }
 
-    def _get_confirmation(self, project_prompts: list) -> Dict[str, Any]:
+    def _get_confirmation(self) -> Dict[str, Any]:
         """Display all generated prompts to the user and get confirmation to proceed.
 
         Args:

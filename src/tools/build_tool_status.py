@@ -3,8 +3,8 @@ from utils.console import console
 from rich.panel import Panel
 from rich.text import Text
 from rich.console import Group
-from baml_client.types import Agent, ImpactLevel
-
+from baml_client.types import Agent
+from loguru import logger
 
 def build_tool_status(tool_name: str, event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
     """Helper to build tool status dictionary."""
@@ -285,7 +285,7 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
 
     data = event.get("data", {})
     summary = data.get("summary", "")
-    projects = data.get("projects", [])
+    projects = data.get("projects", []) or []
 
     # Main summary header
     console.print("[bold blue]Implementation Roadmap Generated[/bold blue]")
@@ -547,46 +547,6 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
     status_parts = [
         "Tool: attempt_completion",
         f"Summary: {summary}",
-        f"Projects analyzed: {len(projects)}",
-        "\nDetailed Projects:"
     ]
-
-    for i, project in enumerate(projects, 1):
-        project_name = project.get("project_name", f"Project {i}")
-        project_path = project.get("project_path", "")
-        impact_level = project.get("impact_level", "Unknown")
-        reasoning = project.get("reasoning", "")
-        changes = project.get("changes", [])
-
-        contracts = project.get("contracts", [])
-        status_parts.extend(
-            [
-                f"\n  {i}. {project_name} ({project_path})",
-                f"     Impact: {impact_level}",
-                f"     Reasoning: {reasoning}",
-                f"     Files to change: {len(changes)}",
-                f"     Integration contracts: {len(contracts)}",
-            ]
-        )
-
-        for j, change in enumerate(changes, 1):
-            file_path = change.get("file_path", "")
-            operation = change.get("operation", "")
-            instructions = change.get("instructions", [])
-
-            status_parts.append(
-                f"       {j}. {operation} {file_path} ({len(instructions)} instructions)"
-            )
-
-        for j, contract in enumerate(contracts, 1):
-            contract_id = contract.get("contract_id", "")
-            contract_type = contract.get("contract_type", "")
-            contract_name = contract.get("name", "")
-            role = contract.get("role", "")
-
-            role_text = f" ({role})" if role else ""
-            status_parts.append(
-                f"       Contract {j}: {contract_type} - {contract_name}{role_text} (ID: {contract_id})"
-            )
-
+    logger.debug("Roadmap completion status built successfully.")
     return "\n".join(status_parts)
