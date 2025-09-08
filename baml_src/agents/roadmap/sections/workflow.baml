@@ -80,7 +80,7 @@ Document for EACH project:
 1. **Review Feedback Section**: Check Sutra Memory for the FEEDBACK SECTION containing:
    - User's specific feedback for improvements
    - Complete roadmap prompts that were previously created
-2. **Create New Task**: Work on improvements based on the user feedback
+2. **Create New Task(s)**: Work on improvements based on the user feedback
 3. **Analyze Previous Roadmaps**: Use the roadmap prompts from FEEDBACK SECTION to understand what was previously created
 4. **Apply Improvements**: Modify and improve the roadmap based on user's specific feedback
 5. **Generate Improved Roadmap**: Create a new, improved version addressing the user's concerns and provide tool_call with `attempt_completion` containing the improved roadmap
