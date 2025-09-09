@@ -12,14 +12,12 @@ enum TaskStatus {
 // Task operation actions
 enum TaskOperationAction {
   Add @alias("add")
-  Remove @alias("remove")
   Move @alias("move")
 }
 
 // Code storage actions
 enum CodeStorageAction {
   Add @alias("add")
-  Remove @alias("remove")
 }
 
 // Task Management Types
