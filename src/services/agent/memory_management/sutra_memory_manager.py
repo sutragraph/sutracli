@@ -173,11 +173,17 @@ class SutraMemoryManager:
                             if self.add_task(task_op.id, task_op.description, status):
                                 # Get the actual ID that was assigned (current counter value)
                                 actual_task_id = str(self.memory_ops.task_id_counter)
-                                results["changes_applied"]["tasks"].append(f"Added task {actual_task_id}: {task_op.description} (LLM ID {task_op.id} ignored)")
+                                results["changes_applied"]["tasks"].append(
+                                    f"Added task {actual_task_id}: {
+                                        task_op.description} (LLM ID {
+                                        task_op.id} ignored)")
                             else:
                                 results["errors"].append(f"Failed to add task (LLM ID {task_op.id})")
                         except ValueError as e:
-                            results["errors"].append(f"Invalid status '{task_op.to_status}' for new task (LLM ID {task_op.id}): {e}")
+                            results["errors"].append(
+                                f"Invalid status '{
+                                    task_op.to_status}' for new task (LLM ID {
+                                    task_op.id}): {e}")
 
                     elif task_op.action == TaskOperationAction.Move:
                         # Convert BAML status to TaskStatus enum
@@ -190,24 +196,26 @@ class SutraMemoryManager:
                                 target_status = task_op.to_status
 
                             if self.move_task(task_op.id, target_status):
-                                results["changes_applied"]["tasks"].append(f"Moved task {task_op.id} to {target_status.value}")
+                                results["changes_applied"]["tasks"].append(
+                                    f"Moved task {task_op.id} to {target_status.value}")
                             else:
                                 results["errors"].append(f"Failed to move task {task_op.id}")
                         except ValueError as e:
                             results["errors"].append(f"Invalid status '{task_op.to_status}' for task {task_op.id}: {e}")
 
-                    elif task_op.action == TaskOperationAction.Remove:
-                        if self.remove_task(task_op.id):
-                            results["changes_applied"]["tasks"].append(f"Removed task {task_op.id}")
-                        else:
-                            results["errors"].append(f"Failed to remove task {task_op.id}")
+                    # elif task_op.action == TaskOperationAction.Remove:
+                    #     if self.remove_task(task_op.id):
+                    #         results["changes_applied"]["tasks"].append(f"Removed task {task_op.id}")
+                    #     else:
+                    #         results["errors"].append(f"Failed to remove task {task_op.id}")
 
             # Process code operations (optional field)
             if hasattr(sutra_memory, "code") and sutra_memory.code:
                 for code_op in sutra_memory.code:
                     if code_op.action == CodeStorageAction.Add:
                         # add_code_snippet will use counter+1 internally and ignore the LLM provided ID
-                        if self.add_code_snippet(code_op.id, code_op.file, code_op.start_line, code_op.end_line, code_op.description):
+                        if self.add_code_snippet(code_op.id, code_op.file, code_op.start_line,
+                                                 code_op.end_line, code_op.description):
                             # Get the actual ID that was assigned (current counter value)
                             actual_code_id = str(self.memory_ops.code_id_counter)
                             results["changes_applied"]["code"].append(
@@ -225,27 +233,27 @@ class SutraMemoryManager:
                             results["errors"].append(f"Failed to remove code snippet {code_op.id}")
 
             # Process file changes (optional field)
-            if hasattr(sutra_memory, "files") and sutra_memory.files:
-                if sutra_memory.files.modified:
-                    for file_path in sutra_memory.files.modified:
-                        if self.track_file_change(file_path, "modified"):
-                            results["changes_applied"]["files"].append(f"Tracked modification: {file_path}")
-                        else:
-                            results["errors"].append(f"Failed to track file modification: {file_path}")
+            # if hasattr(sutra_memory, "files") and sutra_memory.files:
+            #     if sutra_memory.files.modified:
+            #         for file_path in sutra_memory.files.modified:
+            #             if self.track_file_change(file_path, "modified"):
+            #                 results["changes_applied"]["files"].append(f"Tracked modification: {file_path}")
+            #             else:
+            #                 results["errors"].append(f"Failed to track file modification: {file_path}")
 
-                if sutra_memory.files.added:
-                    for file_path in sutra_memory.files.added:
-                        if self.track_file_change(file_path, "added"):
-                            results["changes_applied"]["files"].append(f"Tracked addition: {file_path}")
-                        else:
-                            results["errors"].append(f"Failed to track file addition: {file_path}")
+            #     if sutra_memory.files.added:
+            #         for file_path in sutra_memory.files.added:
+            #             if self.track_file_change(file_path, "added"):
+            #                 results["changes_applied"]["files"].append(f"Tracked addition: {file_path}")
+            #             else:
+            #                 results["errors"].append(f"Failed to track file addition: {file_path}")
 
-                if sutra_memory.files.deleted:
-                    for file_path in sutra_memory.files.deleted:
-                        if self.track_file_change(file_path, "deleted"):
-                            results["changes_applied"]["files"].append(f"Tracked deletion: {file_path}")
-                        else:
-                            results["errors"].append(f"Failed to track file deletion: {file_path}")
+            #     if sutra_memory.files.deleted:
+            #         for file_path in sutra_memory.files.deleted:
+            #             if self.track_file_change(file_path, "deleted"):
+            #                 results["changes_applied"]["files"].append(f"Tracked deletion: {file_path}")
+            #             else:
+            #                 results["errors"].append(f"Failed to track file deletion: {file_path}")
 
             return results
 
