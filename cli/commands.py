@@ -2,29 +2,31 @@
 
 import uuid
 import sys
-import webbrowser
 from pathlib import Path
 from loguru import logger
-import requests
-from agents_new import Agent
 
-from services.project_manager import ProjectManager
-from services.cross_indexing.core.cross_index_system import CrossIndexSystem
-from graph import ASTToSqliteConverter
-from services.agent_service_new import AgentService
-from config import config
-from utils.console import console
-from embeddings import get_vector_store
-from tools.utils.code_processing_utils import (
+from src.agents_new import Agent
+
+from src.graph import SQLiteConnection, ASTToSqliteConverter
+from src.services.project_manager import ProjectManager
+from src.services.cross_indexing.core.cross_index_system import CrossIndexSystem
+from src.services.agent_service_new import AgentService
+from src.config import config
+
+from src.utils.console import console
+from rich.panel import Panel
+
+from src.embeddings import get_vector_store
+from src.tools.utils.code_processing_utils import (
     add_line_numbers_to_code,
 )
-from tools.tool_web_search.action import (
+from src.tools.tool_web_search.action import (
     WebSearch,
     TimeFilter,
     SafeSearch,
     SearchType,
 )
-from tools.tool_web_scrap.action import WebScraper
+from src.tools.tool_web_scrap.action import WebScraper
 
 
 def get_version_from_init():
@@ -50,225 +52,37 @@ def get_version_from_init():
 
 def handle_single_command(args) -> None:
     """Process a single tree-sitter JSON file."""
-    input_path = Path(args.input_file)
-    if not input_path.exists():
-        logger.error(f"Input file not found: {args.input_file}")
-        sys.exit(1)
-
-    with ASTToSqliteConverter() as converter:
-        print("Starting conversion to SQLite...")
-        result = converter.convert_json_to_graph(
-            args.input_file,
-            project_name=args.project_name or None,
-            clear_existing=args.clear,
-        )
-
-        if result.status == "success":
-            print("✅ Conversion completed successfully!")
-            print(f"Project: {result.project_name} (ID: {result.project_id})")
-            print(
-                f"Processed {
-                    result.files_processed} files, {
-                    result.blocks_processed} code blocks, and {
-                    result.relationships_processed} relationships"
-            )
-
-            stats = result.database_stats
-            print(
-                f"Database now contains {
-                    stats.get(
-                        'total_files',
-                        0)} files, {
-                    stats.get(
-                        'total_blocks',
-                        0)} code blocks and {
-                    stats.get(
-                        'total_relationships',
-                        0)} relationships"
-            )
-        else:
-            logger.error("❌ Conversion failed")
-            logger.error(f"Error: {result.error}")
-            sys.exit(1)
+    pass
 
 
-def handle_multi_command(
-    args, process_multiple_projects_func, load_project_config_func
-) -> None:
-    """Process multiple projects defined in config."""
-    if not Path(args.config_file).exists():
-        logger.error(f"Configuration file not found: {args.config_file}")
-        sys.exit(1)
-
-    config_data = load_project_config_func(args.config_file)
-    result = process_multiple_projects_func(config_data)
-
-    if result["status"] == "completed":
-        print("🎉 Multi-project processing completed!")
-        print(
-            f"Processed {result['projects_processed']}/{result['total_projects']} projects successfully"
-        )
-        print(
-            f"Total: {result['total_nodes_processed']} nodes, {result['total_relationships_processed']} relationships"
-        )
-        print(
-            "🔍 Chunked embeddings generated for all nodes with maximum information retention"
-        )
-
-        stats = result["final_database_stats"]
-        print(
-            f"Final database: {stats['total_nodes']} nodes, {stats['total_relationships']} relationships"
-        )
-    else:
-        logger.error("❌ Multi-project processing failed")
-        sys.exit(1)
-
-
-def handle_list_command(args, list_projects_func) -> None:
+def handle_list_command(args) -> None:
     """Handle list projects command."""
-    list_projects_func()
+    connection = SQLiteConnection()
+    projects = connection.list_all_projects()
 
+    if not projects:
+        console.info("No projects found in the database.")
+        return
 
-def handle_clear_command(args, clear_database_data_func) -> None:
-    """Handle clear database command."""
-    result = clear_database_data_func(project_name=args.project, force=args.force)
+    console.info(f"Found {len(projects)} project(s):")
+    console.print()
 
-    if result["status"] == "success":
-        if result.get("project_name"):
-            print(
-                f"✅ Successfully cleared project '{result['project_name']}' ({result['nodes_deleted']} nodes)"
-            )
-        else:
-            print(
-                f"✅ Successfully cleared entire database ({
-                    result['nodes_deleted']} nodes, {
-                    result.get(
-                        'relationships_deleted',
-                        0)} relationships)"
-            )
-    elif result["status"] == "no_data":
-        logger.warning(f"No data found for project '{result['project_name']}'")
-    elif result["status"] == "cancelled":
-        print("Clear operation cancelled")
-    else:
-        logger.error("Clear operation failed")
-        sys.exit(1)
+    for idx, project in enumerate(projects, 1):
+        # Create a panel for each project
+        content = f"""[key]ID:[/key] {project.id}
+[key]Path:[/key] [path]{project.path}[/path]
+[key]Description:[/key] {project.description}
+[key]Created:[/key] {project.created_at}
+[key]Updated:[/key] {project.updated_at}
+[key]Cross-Indexed:[/key] {'✅ Yes' if project.cross_indexing_done else '❌ No'}"""
 
-
-def handle_stats_command(args, show_database_stats_func) -> None:
-    """Handle database statistics command."""
-    show_database_stats_func()
-
-
-def _process_agent_updates_with_result(updates_generator):
-    """Process agent updates and capture the final result for post-processing."""
-    agent_result = None
-
-    for update in updates_generator:
-        update_type = update.get("type", "unknown")
-
-        # Process updates normally for display
-        if update_type == "thinking":
-            content = update.get("content", "Thinking...")
-            print(f"🤔 Thinking...")
-            if content and content.strip():
-                print(f"   {content}")
-            print("-" * 40)
-
-        if update_type == "task_complete":
-            completion = update.get("completion", {})
-            result_text = completion.get("result", "Task completed")
-            print(f"🎉 Task Completed 🎉 ")
-            print(f"   Result: {result_text}")
-            print("-" * 40)
-
-            # Capture the completion result for post-processing
-            agent_result = completion.get("result")
-
-        if update_type == "tool_use":
-            tool_name = update.get("tool_name", "unknown")
-
-            if tool_name == "terminal":
-                command = update.get("command", "")
-                print(f'💻 Terminal command executed: "{command}"')
-                print("-" * 40)
-
-            elif tool_name == "write_to_file":
-                file_path = update.get("applied_changes_to_files", "")
-                print(f"📝 File edited: {file_path}")
-                print("-" * 40)
-
-            elif tool_name == "apply_diff":
-                file_path = update.get("successful_files", "")
-                if file_path:
-                    print(f"📝 Git diff applied to {file_path}")
-                    print("-" * 40)
-
-            elif tool_name == "database":
-                query = update.get("query", "")
-                query_name = update.get("query_name", "")
-                results = update.get("result", "")
-                # Only show results if found, reduce verbosity
-                if "Found 0 nodes" not in results:
-                    print(f'🔍 Database search "{query}"  {query_name} | {results}')
-                    print("-" * 40)
-
-            elif tool_name == "semantic_search":
-                query = update.get("query", "")
-                results = update.get("result", "")
-                # Only print for the first result or results with batch info to avoid spam
-                batch_info = update.get("batch_info")
-                node_index = update.get("node_index", 1)
-                if node_index == 1 or batch_info is not None:
-                    print(f'🔍 Semantic search "{query}" | {results}')
-                    print("-" * 40)
-
-            elif tool_name == "list_files":
-                directory = update.get("directory", "")
-                files_count = update.get("count", 0)
-                project_name = update.get("project_name")
-
-                if project_name:
-                    print(
-                        f"📁 [{project_name}] Listed {files_count} files in {directory}"
-                    )
-                else:
-                    print(f"📁 Listed {files_count} files in {directory}")
-
-                print("-" * 40)
-
-            elif tool_name == "search_keyword":
-                keyword = update.get("keyword", "")
-                matches_found = update.get("matches_found")
-                project_name = update.get("project_name")
-
-                if project_name:
-                    print(
-                        f'🔍 [{project_name}] Keyword search "{keyword}" | Found {matches_found}'
-                    )
-                else:
-                    print(f'🔍 Keyword search "{keyword}" | Found {matches_found}')
-
-                print("-" * 40)
-
-        elif update_type == "too_error":
-            error = update.get("error", "")
-            print(f"❌ {error}")
-            print("-" * 40)
-
-        elif update_type == "user_cancelled":
-            message = update.get("message", "User cancelled the operation")
-            iteration = update.get("iteration", "unknown")
-            print(f"❌ Operation cancelled by user in iteration {iteration}")
-            print(f"   {message}")
-            print("-" * 40)
-            # Break out of the update processing loop when user cancels
-            break
-
-        else:
-            pass
-
-    return agent_result
+        panel = Panel(
+            content,
+            title=f"[bold]{idx}. {project.name}[/bold]",
+            border_style="panel_border",
+            title_align="left"
+        )
+        console.print(panel)
 
 
 def handle_agent_command(agent_name: Agent, project_path: Path):
@@ -292,55 +106,14 @@ def handle_agent_command(agent_name: Agent, project_path: Path):
 
 def handle_parse_command(args) -> str:
     """Handle parse command for code analysis."""
-    import asyncio
-    import time
-    import sys
-    from pathlib import Path
-
-    # Import analyzer using relative import from the parser package
-    from parser.analyzer.analyzer import Analyzer
-
-    directory_path = args.directory
-    repo_id = args.repo_id
-
-    # Create output directory
-    output_dir = Path(config.storage.parser_results_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    try:
-        # Create analyzer instance - no need for start_block_id with deterministic IDs
-        analyzer = Analyzer(repo_id)
-
-        # Generate output filename with timestamp
-        dir_name = Path(directory_path).name
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        output_file = output_dir / f"{dir_name}_analysis_{timestamp}.json"
-
-        # Analyze the directory
-        asyncio.run(analyzer.analyze_directory(directory_path))
-
-        # Export results to JSON
-        analyzer.export_results(str(output_file))
-
-        return str(output_file)
-
-    except KeyboardInterrupt:
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Unexpected error during analysis: {e}")
-        sys.exit(1)
+    return ""
 
 
 def handle_index_command(args) -> None:
     """Handle full project indexing command."""
     from pathlib import Path
-    from services.project_manager import ProjectManager
-    from graph.sqlite_client import SQLiteConnection
-    from cli.utils import setup_logging
-
-    # Setup logging with the specified level
-    if hasattr(args, "log_level"):
-        setup_logging(args.log_level)
+    from src.services.project_manager import ProjectManager
+    from src.graph.sqlite_client import SQLiteConnection
 
     try:
         # Validate project path
@@ -706,7 +479,7 @@ def handle_run_phase5_command(args) -> None:
                 return
 
         # Initialize cross-index system
-        from services.cross_indexing.core.cross_index_system import CrossIndexSystem
+        from src.services.cross_indexing.core.cross_index_system import CrossIndexSystem
 
         cross_index_system = CrossIndexSystem(
             project_manager, project_name=project_name

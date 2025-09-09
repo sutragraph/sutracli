@@ -4,6 +4,7 @@ Post-install setup script for Sutra CLI.
 This script sets up the ~/.sutra directory and downloads required models and parsers.
 """
 
+
 import os
 import sys
 import json
@@ -14,15 +15,12 @@ from pathlib import Path
 from urllib.request import urlretrieve
 from urllib.error import URLError
 import tarfile
-import zipfile
-from typing import Optional, Dict, Any
 
-try:
-    from setuptools.command.develop import develop
-    from setuptools.command.install import install
-except ImportError:
-    develop = None
-    install = None
+from setuptools.command.develop import develop
+from setuptools.command.install import install
+
+from src.utils.console import console
+
 
 # Configuration
 REPO_URL = "https://github.com/sutragraph/models"
@@ -31,34 +29,9 @@ INSTALL_DIR = Path.home() / ".sutra"
 TEMP_DIR = Path(tempfile.mkdtemp())
 
 
-# Color codes for output
-class Colors:
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    BLUE = "\033[0;34m"
-    NC = "\033[0m"  # No Color
-
-
-def log_info(msg: str):
-    print(f"{Colors.BLUE}[INFO]{Colors.NC} {msg}")
-
-
-def log_success(msg: str):
-    print(f"{Colors.GREEN}[SUCCESS]{Colors.NC} {msg}")
-
-
-def log_warning(msg: str):
-    print(f"{Colors.YELLOW}[WARNING]{Colors.NC} {msg}")
-
-
-def log_error(msg: str):
-    print(f"{Colors.RED}[ERROR]{Colors.NC} {msg}")
-
-
 def setup_directories():
     """Create the necessary directories in ~/.sutra"""
-    log_info("Setting up ~/.sutra directory structure...")
+    console.info("Setting up ~/.sutra directory structure...")
 
     directories = [
         INSTALL_DIR / "config",
@@ -74,39 +47,39 @@ def setup_directories():
 
     for directory in directories:
         directory.mkdir(parents=True, exist_ok=True)
-        log_info(f"Created directory: {directory}")
+        console.info(f"Created directory: {directory}")
 
-    log_success("Directory structure created successfully")
+    console.success("Directory structure created successfully")
 
 
 def download_file(url: str, destination: Path) -> bool:
     """Download a file from URL to destination"""
     try:
-        log_info(f"Downloading {url}...")
+        console.info(f"Downloading {url}...")
         urlretrieve(url, destination)
-        log_success(f"Downloaded {destination.name}")
+        console.success(f"Downloaded {destination.name}")
         return True
     except URLError as e:
-        log_error(f"Failed to download {url}: {e}")
+        console.error(f"Failed to download {url}: {e}")
         return False
 
 
 def extract_tar_gz(archive_path: Path, extract_to: Path) -> bool:
     """Extract a tar.gz file"""
     try:
-        log_info(f"Extracting {archive_path}...")
+        console.info(f"Extracting {archive_path}...")
         with tarfile.open(archive_path, "r:gz") as tar:
             tar.extractall(extract_to)
-        log_success(f"Extracted {archive_path.name}")
+        console.success(f"Extracted {archive_path.name}")
         return True
     except Exception as e:
-        log_error(f"Failed to extract {archive_path}: {e}")
+        console.error(f"Failed to extract {archive_path}: {e}")
         return False
 
 
 def setup_models() -> bool:
     """Download and setup ML models"""
-    log_info("Setting up ML models from remote repository...")
+    console.info("Setting up ML models from remote repository...")
 
     models_url = f"{REPO_URL}/releases/download/{RELEASE_TAG}/all-MiniLM-L12-v2.tar.gz"
     models_dir = INSTALL_DIR / "models"
@@ -114,7 +87,7 @@ def setup_models() -> bool:
     # Download models
     archive_path = TEMP_DIR / "all-MiniLM-L12-v2.tar.gz"
     if not download_file(models_url, archive_path):
-        log_warning("Failed to download models, continuing without them")
+        console.warning("Failed to download models, continuing without them")
         return False
 
     # Extract models
@@ -126,55 +99,10 @@ def setup_models() -> bool:
             if model_dest.exists():
                 shutil.rmtree(model_dest)
             shutil.copytree(model_src, model_dest)
-            log_success(f"Models installed to {model_dest}")
+            console.success(f"Models installed to {model_dest}")
             return True
         else:
-            log_error("Model extraction failed - directory not found")
-            return False
-
-    return False
-
-
-def setup_parsers() -> bool:
-    """Download and setup tree-sitter parsers"""
-    log_info("Setting up tree-sitter parsers from remote repository...")
-
-    parsers_url = f"{REPO_URL}/releases/download/{RELEASE_TAG}/tree-sitter-build.tar.gz"
-    build_dir = INSTALL_DIR / "build"
-
-    # Download parsers
-    archive_path = TEMP_DIR / "tree-sitter-build.tar.gz"
-    if not download_file(parsers_url, archive_path):
-        log_warning("Failed to download parsers, continuing without them")
-        return False
-
-    # Extract parsers
-    if extract_tar_gz(archive_path, TEMP_DIR):
-        parser_src = TEMP_DIR / "build"
-
-        if parser_src.exists():
-            # Copy parser files to build directory
-            for item in parser_src.iterdir():
-                dest_item = build_dir / item.name
-                if item.is_dir():
-                    if dest_item.exists():
-                        shutil.rmtree(dest_item)
-                    shutil.copytree(item, dest_item)
-                else:
-                    shutil.copy2(item, dest_item)
-
-            log_success(f"Parsers installed to {build_dir}")
-
-            # List installed parsers
-            log_info("Installed parser libraries:")
-            for parser_file in build_dir.glob("*.so"):
-                log_info(f"  - {parser_file.name}")
-            for parser_file in build_dir.glob("*.dylib"):
-                log_info(f"  - {parser_file.name}")
-
-            return True
-        else:
-            log_error("Parser extraction failed - directory not found")
+            console.error("Model extraction failed - directory not found")
             return False
 
     return False
@@ -182,7 +110,7 @@ def setup_parsers() -> bool:
 
 def setup_configuration():
     """Setup configuration files"""
-    log_info("Setting up configuration files...")
+    console.info("Setting up configuration files...")
 
     config_dir = INSTALL_DIR / "config"
 
@@ -194,7 +122,6 @@ def setup_configuration():
             "connection_timeout": 60,
             "max_retry_attempts": 5,
             "batch_size": 1000,
-            "enable_wal_mode": True,
         },
         "storage": {
             "data_dir": f"{INSTALL_DIR}/data",
@@ -202,6 +129,7 @@ def setup_configuration():
             "file_changes_dir": f"{INSTALL_DIR}/data/file_changes",
             "file_edits_dir": f"{INSTALL_DIR}/data/edits",
             "parser_results_dir": f"{INSTALL_DIR}/parser_results",
+            "session_logs_dir": f"{INSTALL_DIR}/logs",
             "models_dir": f"{INSTALL_DIR}/models",
         },
         "embedding": {
@@ -209,10 +137,6 @@ def setup_configuration():
             "tokenizer_max_length": 256,
             "max_tokens": 240,
             "overlap_tokens": 30,
-        },
-        "parser": {
-            "config_file": f"{INSTALL_DIR}/config/parsers.json",
-            "build_directory": f"{INSTALL_DIR}/build",
         },
         "web_search": {"api_key": "", "requests_per_minute": 60, "timeout": 30},
         "web_scrap": {
@@ -264,42 +188,12 @@ def setup_configuration():
     system_config_path = config_dir / "system.json"
     with open(system_config_path, "w") as f:
         json.dump(system_config, f, indent=2)
-    log_success(f"System configuration created at {system_config_path}")
-
-    # Create parser configuration
-    parser_config = {
-        "build_directory": str(INSTALL_DIR / "build"),
-        "languages": {
-            "python": {"library": "libtree-sitter-python.so", "extensions": [".py"]},
-            "javascript": {
-                "library": "libtree-sitter-javascript.so",
-                "extensions": [".js", ".mjs"],
-            },
-            "typescript": {
-                "library": "libtree-sitter-typescript.so",
-                "extensions": [".ts"],
-            },
-            "tsx": {"library": "libtree-sitter-tsx.so", "extensions": [".tsx"]},
-            "java": {"library": "libtree-sitter-java.so", "extensions": [".java"]},
-            "c": {"library": "libtree-sitter-c.so", "extensions": [".c", ".h"]},
-            "cpp": {
-                "library": "libtree-sitter-cpp.so",
-                "extensions": [".cpp", ".hpp", ".cc", ".cxx"],
-            },
-            "rust": {"library": "libtree-sitter-rust.so", "extensions": [".rs"]},
-            "go": {"library": "libtree-sitter-go.so", "extensions": [".go"]},
-        },
-    }
-
-    parser_config_path = config_dir / "parsers.json"
-    with open(parser_config_path, "w") as f:
-        json.dump(parser_config, f, indent=2)
-    log_success(f"Parser configuration created at {parser_config_path}")
+    console.success(f"System configuration created at {system_config_path}")
 
 
 def setup_environment():
     """Setup environment variables"""
-    log_info("Setting up environment variables...")
+    console.info("Setting up environment variables...")
 
     config_file = INSTALL_DIR / "config" / "system.json"
 
@@ -324,37 +218,91 @@ def setup_environment():
         if "SUTRAKNOWLEDGE_CONFIG" not in content:
             with open(rc_file, "a") as f:
                 f.write(f"\n# Sutra Knowledge CLI\n{env_line}\n")
-            log_success(f"Added SUTRAKNOWLEDGE_CONFIG to {rc_file}")
+            console.success(f"Added SUTRAKNOWLEDGE_CONFIG to {rc_file}")
         else:
-            log_info("SUTRAKNOWLEDGE_CONFIG already set in shell configuration")
+            console.info("SUTRAKNOWLEDGE_CONFIG already set in shell configuration")
     else:
         with open(rc_file, "w") as f:
             f.write(f"# Sutra Knowledge CLI\n{env_line}\n")
-        log_success(f"Created {rc_file} with SUTRAKNOWLEDGE_CONFIG")
+    console.success(f"Created {rc_file} with SUTRAKNOWLEDGE_CONFIG")
 
     # Set for current session
     os.environ["SUTRAKNOWLEDGE_CONFIG"] = str(config_file)
-    log_info("Environment variable set for current session")
+    console.info("Environment variable set for current session")
+
+
+def setup_baml_environment():
+    """Set up BAML environment variables from config at module level."""
+    try:
+        # Import here to avoid circular imports
+        from src.config.settings import get_config
+
+        # Use the config function to get loaded config
+        config = get_config()
+
+        # Environment variable mapping for each provider
+        ENV_VAR_MAPPING = {
+            "aws": {
+                "AWS_ACCESS_KEY_ID": "access_key_id",
+                "AWS_SECRET_ACCESS_KEY": "secret_access_key",
+                "AWS_MODEL_ID": "model_id",
+                "AWS_REGION": "region",
+            },
+            "openai": {"OPENAI_API_KEY": "api_key", "OPENAI_MODEL_ID": "model_id"},
+            "anthropic": {
+                "ANTHROPIC_API_KEY": "api_key",
+                "ANTHROPIC_MODEL_ID": "model_id",
+            },
+            "gcp": {"GOOGLE_API_KEY": "api_key", "GOOGLE_MODEL_ID": "model_id"},
+        }
+
+        # Check if config has llm attribute
+        if not hasattr(config, "llm") or not config.llm:
+            return
+
+        provider = config.llm.provider.lower()
+        if provider not in ENV_VAR_MAPPING:
+            return
+
+        # Get provider-specific config
+        provider_config = getattr(config.llm, provider, None)
+        if not provider_config:
+            return
+
+        # Set environment variables
+        env_mapping = ENV_VAR_MAPPING[provider]
+        for env_var, config_key in env_mapping.items():
+            # Only set if not already set and config value exists
+            if env_var not in os.environ:
+                value = getattr(provider_config, config_key, None)
+                if value:
+                    os.environ[env_var] = str(value)
+
+        os.environ["BAML_LOG"] = "OFF"
+
+    except Exception as e:
+        # Silent fail - don't break CLI if environment setup fails
+        pass
 
 
 def check_dependencies():
     """Check if ripgrep is installed and install if missing"""
-    log_info("Checking dependencies...")
+    console.info("Checking dependencies...")
 
     try:
         subprocess.run(["rg", "--version"], check=True, capture_output=True)
-        log_success("ripgrep is already installed")
+        console.success("ripgrep is already installed")
     except (subprocess.CalledProcessError, FileNotFoundError):
-        log_warning("ripgrep not found. Please install it manually:")
-        log_info("  Ubuntu/Debian: sudo apt-get install ripgrep")
-        log_info("  macOS: brew install ripgrep")
-        log_info("  CentOS/RHEL: sudo yum install ripgrep")
-        log_info("  Arch Linux: sudo pacman -S ripgrep")
+        console.warning("ripgrep not found. Please install it manually:")
+        console.info("  Ubuntu/Debian: sudo apt-get install ripgrep")
+        console.info("  macOS: brew install ripgrep")
+        console.info("  CentOS/RHEL: sudo yum install ripgrep")
+        console.info("  Arch Linux: sudo pacman -S ripgrep")
 
 
 def setup_baml_client():
     """Generate BAML client files using baml-cli generate"""
-    log_info("Generating BAML client files...")
+    console.info("Generating BAML client files...")
 
     try:
         # Find the project root by looking for baml_src directory
@@ -368,14 +316,14 @@ def setup_baml_client():
                 break
 
         if not project_root:
-            log_error("Could not find baml_src directory to generate BAML client")
+            console.error("Could not find baml_src directory to generate BAML client")
             return False
 
         # Change to project root and run baml-cli generate
         original_cwd = os.getcwd()
         try:
             os.chdir(project_root)
-            log_info(f"Running baml-cli generate in {project_root}")
+            console.info(f"Running baml-cli generate in {project_root}")
 
             # Try baml-cli first, then fallback to python -m baml_cli
             try:
@@ -386,7 +334,7 @@ def setup_baml_client():
                     timeout=60,  # 60 second timeout
                 )
             except FileNotFoundError:
-                log_info("baml-cli not found in PATH, trying python -m baml_cli")
+                console.info("baml-cli not found in PATH, trying python -m baml_cli")
                 result = subprocess.run(
                     [sys.executable, "-m", "baml_cli", "generate"],
                     capture_output=True,
@@ -395,26 +343,26 @@ def setup_baml_client():
                 )
 
             if result.returncode == 0:
-                log_success("BAML client files generated successfully")
+                console.success("BAML client files generated successfully")
                 if result.stdout:
-                    log_info(f"BAML output: {result.stdout.strip()}")
+                    console.info(f"BAML output: {result.stdout.strip()}")
                 return True
             else:
-                log_error(
+                console.error(
                     f"baml-cli generate failed with return code {result.returncode}"
                 )
                 if result.stderr:
-                    log_error(f"Error output: {result.stderr.strip()}")
+                    console.error(f"Error output: {result.stderr.strip()}")
                 return False
 
         finally:
             os.chdir(original_cwd)
 
     except subprocess.TimeoutExpired:
-        log_error("baml-cli generate timed out after 60 seconds")
+        console.error("baml-cli generate timed out after 60 seconds")
         return False
     except Exception as e:
-        log_error(f"Failed to generate BAML client: {e}")
+        console.error(f"Failed to generate BAML client: {e}")
         return False
 
 
@@ -422,7 +370,7 @@ def cleanup():
     """Clean up temporary files"""
     if TEMP_DIR.exists():
         shutil.rmtree(TEMP_DIR)
-        log_info("Cleaned up temporary files")
+        console.info("Cleaned up temporary files")
 
 
 def main():
@@ -433,10 +381,10 @@ def main():
     try:
         # Check if already installed
         if INSTALL_DIR.exists():
-            log_warning(f"Sutra CLI directory already exists at {INSTALL_DIR}")
+            console.warning(f"Sutra CLI directory already exists at {INSTALL_DIR}")
             response = input("Do you want to reinstall? (y/N): ").strip().lower()
             if response not in ["y", "yes"]:
-                log_info("Installation cancelled")
+                console.info("Installation cancelled")
                 return
             shutil.rmtree(INSTALL_DIR)
 
@@ -447,34 +395,29 @@ def main():
 
         # Try to setup models and parsers (non-blocking)
         models_success = setup_models()
-        parsers_success = setup_parsers()
 
         # Generate BAML client files
         baml_success = setup_baml_client()
 
         # Setup environment
         setup_environment()
+        setup_baml_environment()
 
         # Summary
         print("\n" + "=" * 50)
-        log_success("🎉 Sutra Knowledge CLI setup completed!")
+        console.success("🎉 Sutra Knowledge CLI setup completed!")
         print(f"\n📁 Installation directory: {INSTALL_DIR}")
         print(f"🔧 Configuration: {INSTALL_DIR / 'config' / 'system.json'}")
 
         if models_success:
             print(f"📦 Models: {INSTALL_DIR / 'models'}")
         else:
-            log_warning("Models setup failed - you may need to install them manually")
-
-        if parsers_success:
-            print(f"🔨 Parsers: {INSTALL_DIR / 'build'}")
-        else:
-            log_warning("Parsers setup failed - you may need to install them manually")
+            console.warning("Models setup failed - you may need to install them manually")
 
         if baml_success:
             print(f"🤖 BAML Client: Generated successfully")
         else:
-            log_warning(
+            console.warning(
                 "BAML client generation failed - you may need to run 'baml-cli generate' manually"
             )
 
@@ -486,9 +429,9 @@ def main():
         print("💡 Configure your API keys in ~/.sutra/config/system.json")
 
     except KeyboardInterrupt:
-        log_info("Installation cancelled by user")
+        console.info("Installation cancelled by user")
     except Exception as e:
-        log_error(f"Installation failed: {e}")
+        console.error(f"Installation failed: {e}")
         return 1
     finally:
         cleanup()
@@ -496,7 +439,7 @@ def main():
     return 0
 
 
-class PostDevelopCommand(develop if develop else object):
+class PostDevelopCommand(develop):
     """Post-installation for development mode."""
 
     def run(self):
@@ -505,7 +448,7 @@ class PostDevelopCommand(develop if develop else object):
         main()
 
 
-class PostInstallCommand(install if install else object):
+class PostInstallCommand(install):
     """Post-installation for installation mode."""
 
     def run(self):

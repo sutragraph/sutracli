@@ -9,7 +9,7 @@ from loguru import logger
 
 from graph import SQLiteConnection, GraphOperations
 from models.schema import Project, ExtractionData
-from src.utils import load_json_file
+from utils import load_json_file
 
 
 class ASTToSqliteConverter:

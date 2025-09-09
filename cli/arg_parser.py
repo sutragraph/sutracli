@@ -2,18 +2,11 @@
 
 import argparse
 
-from config.settings import config
+from src.config.settings import config
 
 
-def setup_argument_parser() -> argparse.ArgumentParser:
-    default_log_level = config.logging.level
-    parser = argparse.ArgumentParser(
-        description="Convert tree-sitter JSON to SQLite with embeddings for semantic search"
-    )
-
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # Single file processing command
+def _add_single_parser(subparsers, default_log_level: str) -> None:
+    """Add single file processing command parser."""
     single_parser = subparsers.add_parser("single", help="Process a single JSON file")
     single_parser.add_argument("input_file", help="Path to the tree-sitter JSON file")
     single_parser.add_argument(
@@ -35,21 +28,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Set the logging level",
     )
 
-    # Multi-project processing command
-    multi_parser = subparsers.add_parser(
-        "multi", help="Process multiple projects from config file"
-    )
-    multi_parser.add_argument(
-        "config_file", help="Path to the project configuration JSON file"
-    )
-    multi_parser.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default=default_log_level,
-        help="Set the logging level",
-    )
 
-    # List projects command
+def _add_list_parser(subparsers, default_log_level: str) -> None:
+    """Add list projects command parser."""
     list_parser = subparsers.add_parser("list", help="List projects in the database")
     list_parser.add_argument(
         "--log-level",
@@ -58,34 +39,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Set the logging level",
     )
 
-    # Clear command
-    clear_parser = subparsers.add_parser("clear", help="Clear data from the database")
-    clear_parser.add_argument(
-        "--project",
-        help="Clear only a specific project (if not provided, clears all data)",
-    )
-    clear_parser.add_argument(
-        "--force", action="store_true", help="Skip confirmation prompt"
-    )
-    clear_parser.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default=default_log_level,
-        help="Set the logging level",
-    )
 
-    # Stats command
-    stats_parser = subparsers.add_parser(
-        "stats", help="Show database and embedding statistics"
-    )
-    stats_parser.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default=default_log_level,
-        help="Set the logging level",
-    )
-
-    # Parse command for code analysis
+def _add_parse_parser(subparsers, default_log_level: str) -> None:
+    """Add parse command parser for code analysis."""
     parse_parser = subparsers.add_parser(
         "parse", help="Parse and analyze code repository"
     )
@@ -106,7 +62,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Set the logging level",
     )
 
-    # Search command for semantic search
+
+def _add_search_parser(subparsers, default_log_level: str) -> None:
+    """Add search command parser for semantic search."""
     search_parser = subparsers.add_parser(
         "search", help="Search for code chunks using semantic similarity"
     )
@@ -130,7 +88,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Set the logging level",
     )
 
-    # Index command for full project indexing at custom paths
+
+def _add_index_parser(subparsers, default_log_level: str) -> None:
+    """Add index command parser for full project indexing."""
     index_parser = subparsers.add_parser(
         "index", help="Fully index a project at a specific path (parse + embeddings)"
     )
@@ -154,6 +114,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Set the logging level",
     )
 
+
+def _add_web_search_parser(subparsers, default_log_level: str) -> None:
+    """Add web search command parser."""
     web_search_parser = subparsers.add_parser(
         "web_search", help="Perform web search using Search Engine"
     )
@@ -227,7 +190,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Include extra snippets in results",
     )
 
-    # Web scraper parser configuration
+
+def _add_web_scrap_parser(subparsers, default_log_level: str) -> None:
+    """Add web scraper command parser."""
     web_scrap_parser = subparsers.add_parser(
         "web_scrap", help="Web scraping operations"
     )
@@ -243,7 +208,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Output format: text, html, or markdown (default: text)",
     )
 
-    # Cross-indexing command
+
+def _add_cross_index_parser(subparsers, default_log_level: str) -> None:
+    """Add cross-indexing command parser."""
     cross_index_parser = subparsers.add_parser(
         "cross-indexing", help="Analyze project for cross-service connections"
     )
@@ -269,7 +236,9 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Skip confirmation prompts when used with --log-level DEBUG",
     )
 
-    # Run Phase 5 command
+
+def _add_phase5_parser(subparsers, default_log_level: str) -> None:
+    """Add run-phase5 command parser."""
     phase5_parser = subparsers.add_parser(
         "run-phase5",
         help="Run Phase 5 (Connection Matching) of cross-indexing directly",
@@ -291,7 +260,41 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Set the logging level",
     )
 
-    # Version command
+
+def _add_version_parser(subparsers, default_log_level: str) -> None:
+    """Add version command parser."""
     version_parser = subparsers.add_parser("version", help="Show version information")
+
+
+def _add_common_log_level_argument(parser, default_log_level: str) -> None:
+    """Add common log level argument to a parser."""
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default=default_log_level,
+        help="Set the logging level",
+    )
+
+
+def setup_argument_parser() -> argparse.ArgumentParser:
+    """Set up and return the main argument parser with all subcommands."""
+    default_log_level = config.logging.level
+    parser = argparse.ArgumentParser(
+        description="Convert tree-sitter JSON to SQLite with embeddings for semantic search"
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Add all subcommand parsers
+    _add_single_parser(subparsers, default_log_level)
+    _add_list_parser(subparsers, default_log_level)
+    _add_parse_parser(subparsers, default_log_level)
+    _add_search_parser(subparsers, default_log_level)
+    _add_index_parser(subparsers, default_log_level)
+    _add_web_search_parser(subparsers, default_log_level)
+    _add_web_scrap_parser(subparsers, default_log_level)
+    _add_cross_index_parser(subparsers, default_log_level)
+    _add_phase5_parser(subparsers, default_log_level)
+    _add_version_parser(subparsers, default_log_level)
 
     return parser

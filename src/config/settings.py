@@ -24,7 +24,6 @@ class DatabaseConfig:
     connection_timeout: int
     max_retry_attempts: int
     batch_size: int
-    enable_wal_mode: bool = True
 
 
 @dataclass
@@ -123,17 +122,6 @@ class EmbeddingConfig:
     # Chunking settings
     max_tokens: int
     overlap_tokens: int
-
-
-@dataclass
-class ParserConfig:
-    """Parser configuration for tree-sitter analyzers."""
-
-    # Parser configuration file path
-    config_file: str
-
-    # Build directory for parser libraries
-    build_directory: str
 
 
 @dataclass
@@ -274,12 +262,6 @@ class Config:
                 )
             else:
                 self.llm = None
-
-            # Initialize parser config
-            parser_config = config_data.get("parser", {})
-            if not parser_config:
-                raise ValueError("Parser configuration is required in config file")
-            self.parser = ParserConfig(**parser_config)
 
         except Exception as e:
             raise ValueError(f"Failed to load config file {self.config_file}: {e}")

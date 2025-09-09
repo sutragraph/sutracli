@@ -52,7 +52,7 @@ class SutraConsole:
         if self._console is None:
             # Create custom theme from color scheme
             theme = Theme(self.COLOR_SCHEME)
-            self._console = Console(theme=theme)
+            self._console = Console(theme=theme, force_interactive=True)
 
     @property
     def console(self) -> Console:
@@ -112,8 +112,6 @@ class SutraConsole:
 
         except (EOFError, KeyboardInterrupt):
             raise
-
-
 
 
 # Global singleton instance

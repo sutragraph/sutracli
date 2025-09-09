@@ -7,7 +7,6 @@ import sys
 import json
 from pathlib import Path
 from typing import Dict, Any
-from utils.console import console
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.table import Table
@@ -22,12 +21,14 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 
+from src.agents_new import Agent
+from src.utils.console import console
+from src.config.settings import reload_config
 from src.agent_management.prerequisites.agent_config import (
     get_agent_registry,
 )
-from src.agents_new import Agent
-from cli.utils import setup_logging
-from config.settings import reload_config
+
+from src.utils.logging import setup_logging
 
 
 class UserCancelledError(Exception):
@@ -137,11 +138,11 @@ class ModernSutraKit:
         # Collect provider-specific configuration
         config_data = self._get_provider_config(provider_key)
 
-        # Create the full configuration
-        full_config = self._create_full_config(provider_key, config_data)
+        # Update only the LLM configuration
+        updated_config = self._update_llm_config(provider_key, config_data)
 
         # Save configuration
-        self._save_config(full_config)
+        self._save_config(updated_config)
 
         console.success("Configuration saved successfully!")
 
@@ -210,73 +211,34 @@ class ModernSutraKit:
             "model_id": model_id
         }
 
-    def _create_full_config(self, provider: str, provider_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Create full configuration with default values."""
-        return {
-            "database": {
-                "knowledge_graph_db": "~/.sutra/data/knowledge_graph.db",
-                "embeddings_db": "~/.sutra/data/knowledge_graph_embeddings.db",
-                "connection_timeout": 60,
-                "max_retry_attempts": 5,
-                "batch_size": 1000,
-                "enable_wal_mode": True
-            },
-            "storage": {
-                "data_dir": "~/.sutra/data",
-                "sessions_dir": "~/.sutra/data/sessions",
-                "file_changes_dir": "~/.sutra/data/file_changes",
-                "file_edits_dir": "~/.sutra/data/edits",
-                "session_logs_dir": "~/.sutra/data/session_logs",
-                "parser_results_dir": "~/.sutra/parser_results",
-                "models_dir": "~/.sutra/models"
-            },
-            "embedding": {
-                "model_path": "~/.sutra/models/all-MiniLM-L12-v2",
-                "tokenizer_max_length": 256,
-                "max_tokens": 240,
-                "overlap_tokens": 30
-            },
-            "parser": {
-                "config_file": "~/.sutra/config/parsers.json",
-                "build_directory": "~/.sutra/build"
-            },
-            "web_search": {
-                "api_key": "YOUR_WEB_SEARCH_API_KEY",
-                "requests_per_minute": 60,
-                "timeout": 30
-            },
-            "web_scrap": {
-                "timeout": 30,
-                "max_retries": 3,
-                "delay_between_retries": 1.0,
-                "include_comments": True,
-                "include_tables": True,
-                "include_images": True,
-                "include_links": True,
-                "trafilatura_config": {},
-                "markdown_options": {
-                    "heading_style": "ATX",
-                    "bullets": "-",
-                    "wrap": True
-                }
-            },
-            "logging": {
-                "level": "INFO",
-                "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-                "log_file": "~/.sutra/logs/sutraknowledge.log"
-            },
-            "llm": {
-                "provider": provider,
-                "llama_model_id": "meta/llama-4-maverick-17b-128e-instruct-maas",
-                "gemini_model": "gemini-2.5-flash",
-                "claude_model": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-                "aws": provider_config if provider == "aws" else {},
-                "anthropic": provider_config if provider == "anthropic" else {},
-                "gcp": provider_config if provider == "gcp" else {},
-                "openai": provider_config if provider == "openai" else {},
-                "superllm": {}
-            }
-        }
+    def _load_existing_config(self) -> Dict[str, Any]:
+        """Load existing configuration or exit if not found."""
+        if not self.config_path.exists():
+            console.error("Configuration file not found. Did you run the 'sutrakit-setup' command?")
+            console.info("Please run 'sutrakit-setup' first to initialize the system configuration.")
+            sys.exit(1)
+
+        try:
+            with open(self.config_path, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            console.error(f"Invalid JSON in configuration file: {e}")
+            console.error("Configuration file appears to be corrupted. Please run 'sutrakit-setup' again.")
+            sys.exit(1)
+        except Exception as e:
+            console.error(f"Error reading configuration file: {e}")
+            sys.exit(1)
+
+    def _update_llm_config(self, provider: str, provider_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Update only the LLM configuration, preserving other settings."""
+        # Load existing configuration (will exit if not found)
+        existing_config = self._load_existing_config()
+
+        existing_config["llm"]["provider"] = provider
+
+        existing_config["llm"][provider] = provider_config
+
+        return existing_config
 
     def _save_config(self, config: Dict[str, Any]):
         """Save configuration to file."""
