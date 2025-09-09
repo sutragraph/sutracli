@@ -1,7 +1,7 @@
 template_string ToolGuidelines_Phase1() #"
 ====
 
-TOOL GUIDELINES
+# TOOL GUIDELINES
 
 This section provides specific guidelines for using tools effectively during package discovery.
 
@@ -28,11 +28,11 @@ Critical: Update your task list in every iteration based on your thinking:
 
 2. TOOL SELECTION STRATEGY
 
-**LIST_FILES TOOL**
+LIST_FILES TOOL
 - Use for initial project structure exploration
 - Look for package configuration files
 
-**DATABASE TOOL**
+DATABASE TOOL
 - Use to read package configuration files completely
 - Essential for analyzing dependencies and packages
 - Read entire file content to understand all dependencies
@@ -42,7 +42,7 @@ Critical: Update your task list in every iteration based on your thinking:
 
 Look for package configuration files that define dependencies and packages. Here are common examples by language:
 
-**Common Package Files by Language (Examples):**
+Common Package Files by Language (Examples):
 - JavaScript/Node.js: package.json, yarn.lock, package-lock.json, pnpm-lock.yaml
 - Python: requirements.txt, setup.py, pyproject.toml, Pipfile, Pipfile.lock, setup.cfg
 - Java: pom.xml, build.gradle, gradle.properties, build.gradle.kts
@@ -60,7 +60,7 @@ Note: These are examples of common package configuration files. Different projec
 
 Look for packages used for data communication, sending/receiving data, and handling incoming/outgoing connections. Here are some common examples by category:
 
-**HTTP Client Libraries (Examples):**
+HTTP Client Libraries (Examples):
 - JavaScript: axios, request, superagent, got, fetch, node-fetch
 - Python: requests, httpx, aiohttp, urllib3, urllib
 - Java: okhttp, retrofit, apache-httpclient, java.net.http
@@ -68,7 +68,7 @@ Look for packages used for data communication, sending/receiving data, and handl
 - C#: HttpClient, RestSharp
 - PHP: Guzzle, cURL
 
-**Server Frameworks (Examples):**
+Server Frameworks (Examples):
 - JavaScript: express, koa, fastify, hapi, nest.js
 - Python: flask, django, fastapi, tornado, aiohttp
 - Java: spring-boot, jersey, dropwizard, vertx
@@ -76,21 +76,21 @@ Look for packages used for data communication, sending/receiving data, and handl
 - C#: ASP.NET Core, Nancy
 - PHP: Laravel, Symfony, Slim
 
-**WebSocket Libraries (Examples):**
+WebSocket Libraries (Examples):
 - JavaScript: socket.io, ws, websocket, sockjs
 - Python: websockets, socketio, tornado, aiohttp
 - Java: java-websocket, spring-websocket, netty
 - Go: gorilla/websocket, nhooyr/websocket
 - C#: SignalR, WebSocketSharp
 
-**Message Queue/Broker Libraries (Examples):**
+Message Queue/Broker Libraries (Examples):
 - Multi-language: rabbitmq, kafka, redis, amqp, mqtt
 - JavaScript: bull, agenda, bee-queue, amqplib
 - Python: celery, rq, kombu, pika
 - Java: spring-kafka, spring-amqp, activemq
 - Go: sarama, amqp091-go
 
-**Database Connection Libraries (Examples):**
+Database Connection Libraries (Examples):
 - JavaScript: mongoose, sequelize, typeorm, prisma
 - Python: sqlalchemy, django-orm, peewee, pymongo
 - Java: hibernate, mybatis, spring-data
@@ -100,12 +100,12 @@ Note: These are examples of common packages. The actual packages in any codebase
 
 4. TASK CREATION GUIDELINES
 
-**Task Format Requirements:**
+Task Format Requirements:
 - Include specific search patterns for import discovery
 - Provide clear descriptions of what to search for
 - Add examples of expected import statements
 
-**Search Pattern Examples:**
+Search Pattern Examples:
 - Node.js: require\\('package'\\)|import.*from.*'package'|import.*package|package
 - Python: import package|from package import
 - Java: import package\\.|@Import.*package
@@ -113,13 +113,13 @@ Note: These are examples of common packages. The actual packages in any codebase
 
 5. COMPLETION CRITERIA
 
-**When to Use attempt_completion:**
+When to Use attempt_completion:
 - Your current/pending tasks are completely fulfilled
 - All package files have been analyzed
 - All connection packages have been identified
 - Comprehensive task list has been created
 
-**Completion Summary Format:**
+Completion Summary Format:
 - Number of packages discovered
 - Types of connection libraries found
 - Number of tasks created for next analysis

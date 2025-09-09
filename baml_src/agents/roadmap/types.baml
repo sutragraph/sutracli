@@ -3,7 +3,7 @@ class RoadmapCompletionToolCall {
   parameters RoadmapCompletionParams | BaseCompletionParams
 }
 
-type RoadmapToolCall = DatabaseToolCall | SearchKeywordToolCall  | SemanticSearchToolCall | ListFilesToolCall  | RoadmapCompletionToolCall
+type RoadmapToolCall = DatabaseToolCall | SearchKeywordToolCall | SemanticSearchToolCall | ListFilesToolCall | RoadmapCompletionToolCall
 
 class RoadmapPromptParams {
   base_params BasePromptParams

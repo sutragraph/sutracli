@@ -1,13 +1,13 @@
 template_string ToolUsageExamples_Phase3() #"
 ====
 
-TOOL USAGE EXAMPLES
+# TOOL USAGE EXAMPLES
 
 This section provides comprehensive examples of how to use different tools effectively for implementation discovery and connection code analysis across different programming languages.
 
 1. TASK EXECUTION EXAMPLES
 
-**DATABASE TOOL EXAMPLES (3-5 files)**
+DATABASE TOOL EXAMPLES (3-5 files)
 
 Example 1: JavaScript - Axios usage analysis in few files
 - database(query_type="GET_FILE_BY_PATH", file_path="src/api/client.js")
@@ -21,7 +21,7 @@ Example 2: Python - Requests usage analysis in specific files
 - Look for: requests.get(), requests.post() with actual parameters and endpoints
 - Find: Actual API calls with real URLs and configuration data
 
-**SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions)**
+SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions)
 
 Example 1: JavaScript - Express usage across many files
 - search_keyword("(app|router)\\.(get|post|put|delete|patch)\\s*\\(", regex=true, after_lines=2)
@@ -49,7 +49,7 @@ Example 4: HTTP calls with improved quote handling
 
 2. CONNECTION CODE ANALYSIS
 
-**WHAT TO FIND (ACTUAL USAGE WITH REAL VALUES)**
+WHAT TO FIND (ACTUAL USAGE WITH REAL VALUES)
 
 Example 1: JavaScript - HTTP API calls with real endpoints
 ```javascript
@@ -143,7 +143,7 @@ channel.sendToQueue('user-notifications', Buffer.from(message))
 producer.send("email-queue", emailData)
 ```
 
-**WHAT NOT TO FOCUS ON (GENERIC DEFINITIONS)**
+WHAT NOT TO FOCUS ON (GENERIC DEFINITIONS)
 
 Example 1: JavaScript - Generic wrapper functions
 ```javascript
@@ -171,14 +171,14 @@ session.headers.update({'Authorization': f'Bearer {token}'})
 
 3. TOOL SELECTION STRATEGY
 
-**DATABASE TOOL USAGE (Few files)**
+DATABASE TOOL USAGE (Few files)
 When import discovery found few files (3-5):
 - Use for complete file analysis to understand all usage patterns
 - Read entire file content to analyze context and relationships between methods
 - Get comprehensive view of all connections and their actual usage within the file
 - Best for thorough analysis when dealing with limited number of files
 
-**SEARCH_KEYWORD USAGE (Many files or wrapper functions)**
+SEARCH_KEYWORD USAGE (Many files or wrapper functions)
 When import discovery found many files (6+) or wrapper functions:
 - Use targeted patterns to find specific usage across multiple files efficiently
 - Essential for wrapper function usage discovery across entire codebase
@@ -187,7 +187,7 @@ When import discovery found many files (6+) or wrapper functions:
 
 4. TASK CREATION EXAMPLES
 
-**CRITICAL THINKING PROCESS FOR TASK CREATION - WRAPPER FUNCTION DETECTION**
+CRITICAL THINKING PROCESS FOR TASK CREATION - WRAPPER FUNCTION DETECTION
 
 Before creating any task, ask yourself these specific questions:
 1. "Did I find connection code with VARIABLE NAMES instead of actual hardcoded values?"
@@ -200,13 +200,13 @@ Before creating any task, ask yourself these specific questions:
 4. "Have I already found the actual usage sites with real endpoint/queue/event names?"
    - If YES, collect this data. If NO, create search tasks.
 
-**VARIABLE PARAMETER DETECTION PATTERNS:**
+VARIABLE PARAMETER DETECTION PATTERNS:
 - Queue Operations: `queueName`, `topicName`, `channelName` → Search for wrapper calls
 - HTTP Operations: `url`, `endpoint`, `apiUrl`, `baseUrl` → Search for wrapper calls
 - Socket Operations: `eventName`, `event`, `channel` → Search for wrapper calls
 - Database Operations: `tableName`, `collection`, `query` → Search for wrapper calls
 
-**WRAPPER FUNCTION DEFINITION CHECK EXAMPLES**
+WRAPPER FUNCTION DEFINITION CHECK EXAMPLES
 
 Example: Python - Socket wrapper function pattern (similar to Socket.IO)
 ```python
@@ -232,7 +232,7 @@ THINKING: "Found `socket_handler(socketio)` call in main.py - this is in two dif
 IMMEDIATE ACTION: CREATE TASK: "Use search_keyword to find socket_handler function definition: def socket_handler\\("
 EXPECTED RESULT: Find the actual function definition in handlers.py where socketio connection object is used for real socket operations.
 
-**WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - EXAMPLES**
+WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - EXAMPLES
 
 Example 1: Queue operation with variable parameter - CREATE TASK IMMEDIATELY
 When you find connection code like:
@@ -347,7 +347,7 @@ CREATE TASK: {
 }
 Reason: Need to find all method calls on this custom client across the project with real service communication parameters
 
-**WHEN NOT TO CREATE TASKS - DECISION MAKING**
+WHEN NOT TO CREATE TASKS - DECISION MAKING
 
 Example 1: Already found actual connection usage with hardcoded values - DON'T CREATE TASK
 When you find direct connection calls with real parameters:
@@ -417,7 +417,7 @@ DON'T CREATE TASK: The communication parameters are hardcoded, so this is the ac
 
 5. DECISION-MAKING FLOWCHART FOR TASK CREATION
 
-**STEP-BY-STEP THINKING PROCESS**
+STEP-BY-STEP THINKING PROCESS
 
 When you find any code during analysis, follow this thinking process:
 
@@ -445,7 +445,7 @@ When you find any code during analysis, follow this thinking process:
 
 5. SPECIFIC QUEUE EXAMPLE WORKFLOW:
    
-   **SCENARIO: Found this code during analysis**
+   SCENARIO: Found this code during analysis
    ```javascript
    // Line 49-51 in message-service.js
    this.channel.sendToQueue(queueName, Buffer.from(message), {
@@ -453,7 +453,7 @@ When you find any code during analysis, follow this thinking process:
    });
    ```
    
-   **CORRECT ANALYSIS PROCESS:**
+   CORRECT ANALYSIS PROCESS:
    1. DETECT: "Found `sendToQueue(queueName, message)` with variable 'queueName' - this is NOT the actual queue name"
    2. IDENTIFY: "This is a wrapper function implementation, not the actual usage site"
    3. READ FILE: Use database tool to read complete message-service.js file
@@ -464,14 +464,14 @@ When you find any code during analysis, follow this thinking process:
       - `publishMessage('email-queue', emailData)`
       - `publishMessage('order-processing', orderData)`
    
-   **WRONG APPROACH (WHAT NOT TO DO):**
+   WRONG APPROACH (WHAT NOT TO DO):
    - Collecting `sendToQueue(queueName, message)` as final connection data
    - Moving to next task without searching for actual queue names
    - Accepting variable names as connection endpoints
 
 6. COMPLETION EXAMPLES
 
-**ATTEMPT_COMPLETION USAGE**
+ATTEMPT_COMPLETION USAGE
 
 Example 1: Multi-language comprehensive implementation discovery
 attempt_completion(result="Implementation discovery complete. Analyzed connection usage in 20 files across JavaScript and Python: found 35 HTTP API calls, 18 server routes, 12 WebSocket connections, and 8 message queue operations. All connection code found and analyzed.")

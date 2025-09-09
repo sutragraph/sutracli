@@ -75,9 +75,7 @@ def resolve_project_base_path(project_name: str) -> Optional[str]:
     """
     try:
         db_connection = SQLiteConnection()
-        print("Resolving project base path for:", project_name)
         project = db_connection.get_project(project_name)
-        print("Project found:", project)
         if project and project.path:
             return project.path
     except Exception as e:

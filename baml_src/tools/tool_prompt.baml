@@ -1,5 +1,6 @@
 template_string GlobalToolsPrompt(tools: ToolName[]) #"
 ====
+
 # Tools
 
 {% for tool in tools %}

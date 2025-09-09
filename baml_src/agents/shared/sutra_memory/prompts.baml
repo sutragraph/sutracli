@@ -4,169 +4,138 @@
 
 template_string SutraMemoryPrompt() #"
 ====
-    # SUTRA MEMORY SYSTEM
 
-    Sutra Memory is your persistent working memory across conversation iterations. Its primary purpose is to store necessary and useful information that will help you in future calls. Think of it as your engineering notebook that survives between iterations.
+# SUTRA MEMORY SYSTEM
 
-    ## CORE PURPOSE
+Sutra Memory is your persistent working memory across conversation iterations. Its primary purpose is to store necessary and useful information that will help you in future calls. Think of it as your engineering notebook that survives between iterations.
 
-    Store information you'll need later: task progress, code locations, file changes, and important findings. This prevents redundant operations and maintains context across multiple iterations of complex problem-solving.
+## CORE PURPOSE
 
-    ## MANDATORY JSON FORMAT
+Store information you'll need later: task progress, code locations, and important findings. This prevents redundant operations and maintains context across multiple iterations of complex problem-solving.
 
-    The "add_history" field is required in every response - no exceptions.
+## MANDATORY JSON FORMAT
 
-    Parameter Requirements:
-    - add_history: "Summary of current iteration actions and key findings" (required)
-    - tasks: Task operations array (optional)
-    - code: Code storage operations array (optional)
-    - files: File change tracking (optional)
+The "add_history" field is required in every response - no exceptions.
 
-    ## SYSTEM CONSTRAINTS
+Parameter Requirements:
+  - add_history: "Summary of current iteration actions and key findings" (required)
+  - tasks: Task operations array (optional)
+  - code: Code storage operations array (optional)
+  - files: File change tracking (optional)
 
-    1. **SINGLE CURRENT TASK RULE**
-       Only one task can have "current" status at any time
-       Complete or move existing current task before setting a new one
+## SYSTEM CONSTRAINTS
 
-    2. **MANDATORY HISTORY RULE**
-       Every response must include "add_history" with iteration summary
+1. SINGLE CURRENT TASK RULE
+    Only one task can have "current" status at any time
+    Complete or move existing current task before setting a new one
 
-    ## CRITICAL: Single Current Task Examples
+2. MANDATORY HISTORY RULE
+    Every response must include "add_history" with iteration summary
 
-    ❌ **INCORRECT** - This will fail:
-    Task Parameters: action: "add", id: "2", to_status: "current", description: "New urgent task"
-    <!-- If task "1" is already current, this violates the constraint -->
+## CRITICAL: Single Current Task Examples
 
-    ✅ **CORRECT** - Move existing current task first:
-    Task Parameters:
-    - Move existing: action: "move", id: "1", from_status: "current", to_status: "completed"
-    - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
+INCORRECT - This will fail:
+Task Parameters: action: "add", id: "2", to_status: "current", description: "New urgent task"
+<!-- If task "1" is already current, this violates the constraint -->
 
-    Alternative - Move current to pending:
-    Task Parameters:
-    - Pause existing: action: "move", id: "1", from_status: "current", to_status: "pending"
-    - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
+CORRECT - Move existing current task first:
+Task Parameters:
+  - Move existing: action: "move", id: "1", from_status: "current", to_status: "completed"
+  - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
 
-    ## TASK MANAGEMENT
+Alternative - Move current to pending:
+Task Parameters:
+  - Pause existing: action: "move", id: "1", from_status: "current", to_status: "pending"
+  - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
 
-    Organize your work using three task states:
+## TASK MANAGEMENT
 
-    **pending → current → completed**
+Organize your work using three task states:
 
-    ### Add Tasks:
-    Task Parameters:
-    - Add pending: action: "add", id: "1", to_status: "pending", description: "Analyze authentication system architecture"
-    - Add current: action: "add", id: "2", to_status: "current", description: "Review user model structure"
-    - Add completed: action: "add", id: "3", to_status: "completed", description: "Initial project exploration finished"
+pending → current → completed
 
-    ### Move Tasks:
-    Task Parameters:
-    - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
-    - Start pending: action: "move", id: "2", from_status: "pending", to_status: "current"
+### Add Tasks:
+Task Parameters:
+  - Add pending: action: "add", id: "1", to_status: "pending", description: "Analyze authentication system architecture"
+  - Add current: action: "add", id: "2", to_status: "current", description: "Review user model structure"
+  - Add completed: action: "add", id: "3", to_status: "completed", description: "Initial project exploration finished"
 
-    ### Remove Tasks:
-    Task Parameters: action: "remove", id: "3"
+### Move Tasks:
+Task Parameters:
+  - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
+  - Start pending: action: "move", id: "2", from_status: "pending", to_status: "current"
 
-    ## CODE STORAGE
+## CODE STORAGE
 
-    Store code snippets you'll reference in future iterations:
-    Code Parameters: action: "add", id: "1", file: "src/auth/validator.py", start_line: 15, end_line: 28, description: "validateUser function signature - needs role parameter"
+  Store code snippets you'll reference in future iterations:
+  Code Parameters: action: "add", id: "1", file: "src/auth/validator.py", start_line: 15, end_line: 28, description: "validateUser function signature - needs role parameter"
 
-    Remove when no longer needed:
-    Code Parameters: action: "remove", id: "1"
 
-    ## FILE CHANGE TRACKING
+## WHAT TO STORE
 
-    Track modifications that affect your stored code or future work:
-    Files Parameters: modified: ["src/models/user.py"], added: ["src/auth/roles.py"], deleted: ["migrations/old_schema.sql"]
+Store information that will be useful in future iterations:
+  - Code function signatures and locations you'll modify
+  - File paths and line numbers for precise references
+  - Architectural patterns and important relationships
+  - Task dependencies discovered during analysis
+  - Error patterns and successful approaches
+  - Configuration details and environment information
 
-    ## WHAT TO STORE
+## COMPLETE WORKFLOW EXAMPLES
 
-    Store information that will be useful in future iterations:
-    - Code function signatures and locations you'll modify
-    - File paths and line numbers for precise references
-    - Architectural patterns and important relationships
-    - Task dependencies discovered during analysis
-    - Error patterns and successful approaches
-    - Configuration details and environment information
+### Multi-Step Implementation:
+Task Parameters:
+  - Current task: action: "add", id: "1", to_status: "current", description: "Understand current authentication system"
+  - Pipeline tasks: action: "add", id: "2-4", to_status: "pending", description: "Design → Implementation → Updates"
 
-    ## WHAT NOT TO STORE
+### Discovering and Storing Key Code:
+Task Parameters:
+  - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
+  - Start next: action: "move", id: "2", from_status: "pending", to_status: "current"
+  Code Parameters:
+  - Store validator: action: "add", id: "1", file: "src/auth/validator.py", start_line: 45, end_line: 67, description: "validateUser() implementation"
+  - Store user model: action: "add", id: "2", file: "src/models/user.py", start_line: 12, end_line: 25, description: "User class structure"
 
-    Avoid cluttering memory with temporary data:
-    - Short-term variables only needed in current iteration
-    - Generic boilerplate code unless specifically relevant
-    - Debugging output that won't inform future decisions
-    - Every code snippet encountered during exploration
+### Implementing Changes:
+Task Parameters:
+  - Complete current: action: "move", id: "2", from_status: "current", to_status: "completed"
+  - Start next: action: "move", id: "3", from_status: "pending", to_status: "current"
 
-    ## COMPLETE WORKFLOW EXAMPLES
+## PRACTICAL GUIDELINES
 
-    ### Multi-Step Implementation:
-    Task Parameters:
-    - Current task: action: "add", id: "1", to_status: "current", description: "Understand current authentication system"
-    - Pipeline tasks: action: "add", id: "2-4", to_status: "pending", description: "Design → Implementation → Updates"
+### Task Management:
+  - Break complex work into specific, actionable tasks
+  - Keep one current task for focused execution
+  - Add new tasks as you discover dependencies
 
-    ### Discovering and Storing Key Code:
-    Task Parameters:
-    - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
-    - Start next: action: "move", id: "2", from_status: "pending", to_status: "current"
-    Code Parameters:
-    - Store validator: action: "add", id: "1", file: "src/auth/validator.py", start_line: 45, end_line: 67, description: "validateUser() implementation"
-    - Store user model: action: "add", id: "2", file: "src/models/user.py", start_line: 12, end_line: 25, description: "User class structure"
+### Code Storage Strategy:
+  - Store functions/classes you'll modify in multiple steps
+  - Include exact file paths and line ranges
+  - Focus on architectural and integration code
 
-    ### Implementing Changes:
-    Task Parameters:
-    - Complete current: action: "move", id: "2", from_status: "current", to_status: "completed"
-    - Start next: action: "move", id: "3", from_status: "pending", to_status: "current"
-    Files Parameters: modified: ["src/models/user.py"], added: ["src/models/user_role.py"]
-    Code Parameters: action: "remove", id: "2"
+### Memory Maintenance:
+  - Update history with specific findings and actions taken
+  - Track file changes that affect stored references
+  - Clean up obsolete tasks and code regularly
+  - Use memory to inform tool selection and avoid redundancy
 
-    ### Memory Cleanup:
-    Task Parameters:
-    - Complete current: action: "move", id: "3", from_status: "current", to_status: "completed"
-    - Remove completed: action: "remove", id: "1", action: "remove", id: "2"
-    Code Parameters: action: "remove", id: "1"
+## DO'S AND DON'TS
 
-    ## PRACTICAL GUIDELINES
+DO:
+  - Include "add_history" in every response with specific findings
+  - Complete or move current task before setting new current task
+  - Store code snippets which is relevant with current user query
+  - Use specific, actionable task descriptions
+  - Remove completed tasks and obsolete code to keep memory clean
+  - Break complex work into manageable pending tasks
+  - Record exact file paths and line numbers for precision
 
-    ### Task Management:
-    - Break complex work into specific, actionable tasks
-    - Keep one current task for focused execution
-    - Add new tasks as you discover dependencies
-    - Remove completed tasks when no longer referenced
+DON'T:
+  - Try to add new current task while another task is already current
+  - Skip mandatory history updates - they're required every time
+  - Use vague task descriptions like "fix the system" or "analyze code"
+  - Leave obsolete tasks and code cluttering memory indefinitely
+  - Create pending tasks for work that's already finished
 
-    ### Code Storage Strategy:
-    - Store functions/classes you'll modify in multiple steps
-    - Include exact file paths and line ranges
-    - Remove code after modifications are complete
-    - Focus on architectural and integration code
-
-    ### Memory Maintenance:
-    - Update history with specific findings and actions taken
-    - Track file changes that affect stored references
-    - Clean up obsolete tasks and code regularly
-    - Use memory to inform tool selection and avoid redundancy
-
-    ## DO'S AND DON'TS
-
-    ✅ **DO:**
-    - Include "add_history" in every response with specific findings
-    - Complete or move current task before setting new current task
-    - Store code snippets for functions you'll modify across iterations
-    - Use specific, actionable task descriptions
-    - Track file changes that affect your stored code or future work
-    - Remove completed tasks and obsolete code to keep memory clean
-    - Break complex work into manageable pending tasks
-    - Record exact file paths and line numbers for precision
-
-    ❌ **DON'T:**
-    - Try to add new current task while another task is already current
-    - Skip mandatory history updates - they're required every time
-    - Store every code snippet you encounter during exploration
-    - Use vague task descriptions like "fix the system" or "analyze code"
-    - Leave obsolete tasks and code cluttering memory indefinitely
-    - Create pending tasks for work that's already finished
-    - Store temporary debugging information that won't help future iterations
-    - Forget to track file modifications that affect stored references
-
-    The Sutra Memory system enables you to work on complex, multi-iteration tasks by preserving essential context, tracking progress, and maintaining references to important code locations across conversation turns.
+The Sutra Memory system enables you to work on complex, multi-iteration tasks by preserving essential context, tracking progress, and maintaining references to important code locations across conversation turns.
 "#

@@ -41,18 +41,10 @@ class CodeStorage {
   description string
 }
 
-// File Change Tracking Types
-class FileChanges {
-  modified string[]? // file paths that were modified
-  added string[]?    // file paths that were added
-  deleted string[]?  // file paths that were deleted
-}
-
 // Main Sutra Memory Structure
 // This is the main class that agents must return
 class SutraMemoryParams {
   add_history string       // mandatory field - required in every response
   tasks TaskOperation[]?   // optional task operations
   code CodeStorage[]?      // optional code snippet operations
-  files FileChanges?       // optional file change tracking
 }

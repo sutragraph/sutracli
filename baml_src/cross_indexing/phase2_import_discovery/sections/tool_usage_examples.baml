@@ -1,13 +1,13 @@
 template_string ToolUsageExamples_Phase2() #"
 ====
 
-TOOL USAGE EXAMPLES
+# TOOL USAGE EXAMPLES
 
 This section provides comprehensive examples of how to use different tools effectively for import analysis and implementation task creation.
 
 1. IMPORT PATTERN ANALYSIS EXAMPLES
 
-**DIFFERENT IMPORT SYNTAX EXAMPLES**
+DIFFERENT IMPORT SYNTAX EXAMPLES:
 
 Example 1: JavaScript/Node.js import variations
 For Example:
@@ -44,7 +44,7 @@ For Example:
 
 2. REGEX PATTERN EXAMPLES FOR SEARCH_KEYWORD
 
-**ROBUST REGEX PATTERNS WITH EXPLANATIONS**
+ROBUST REGEX PATTERNS WITH EXPLANATIONS"
 
 JavaScript/Node.js Import Patterns:
 - require\\s*\\(\\s*['\"]axios['\"]\\s*\\) → matches require('axios') or require("axios") with optional whitespace
@@ -62,7 +62,7 @@ Python Import Patterns:
 - ^\\s*from\\s+requests\\s+import → matches from requests import statements
 - ^\\s*import\\s+urllib\\.(request|parse|error) → matches urllib submodule imports
 
-**COMPREHENSIVE REGEX PATTERN EXAMPLES**
+COMPREHENSIVE REGEX PATTERN EXAMPLES"
 
 Axios Complete Pattern:
 require\\s*\\(\\s*['\"]axios['\"]\\s*\\)|import\\s+axios\\s+from\\s+['\"]axios['\"]; import\\s*\\{[^}]*\\}\\s*from\\s*['\"]axios['\"]|const\\s*\\{[^}]*\\}\\s*=\\s*require\\s*\\(\\s*['\"]axios['\"]\\s*\\)
@@ -75,7 +75,7 @@ require\\s*\\(\\s*['\"]socket\\.io['\"]\\s*\\)|import\\s+[^\\s]+\\s+from\\s+['\"
 
 3. IMPLEMENTATION TASK CREATION EXAMPLES
 
-**IMPLEMENTATION ANALYSIS TASK CREATION**
+IMPLEMENTATION ANALYSIS TASK CREATION:
 
 Example 1: After finding axios imports in 3 files
 Create 3 separate implementation tasks (database tool - individual tasks per file):
@@ -94,7 +94,7 @@ Create implementation task(Add): "Found Socket.io imports in 4 files. Use search
 
 4. BUILT-IN PATTERN TASK CREATION (ALWAYS REQUIRED)
 
-**MULTI-LANGUAGE BUILT-IN PATTERN EXAMPLES**
+MULTI-LANGUAGE BUILT-IN PATTERN EXAMPLES:
 
 Example 1: JavaScript built-in pattern task creation
 Create implementation task(Add): "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\s*\\(|new\\s+XMLHttpRequest\\s*\\(|new\\s+WebSocket\\s*\\(' and regex=true, after_lines=4 to find native JavaScript connection patterns across all files."
@@ -110,20 +110,20 @@ Create implementation task(Add): "Create built-in pattern task for Go: Use searc
 
 5. TOOL SELECTION STRATEGY FOR IMPLEMENTATION TASKS
 
-**DATABASE TOOL TASK CREATION (3-5 files)**
+DATABASE TOOL TASK CREATION (3-5 files)
 When imports found in few files, create separate tasks for each file:
 For Example:
 - Task 1: "Use database tool to read file1 and analyze [package] usage patterns"
 - Task 2: "Use database tool to read file2 and analyze [package] usage patterns"
 - Task 3: "Use database tool to read file3 and analyze [package] usage patterns"
 
-**SEARCH_KEYWORD TASK CREATION (6+ files)**
+SEARCH_KEYWORD TASK CREATION (6+ files)
 When imports found in many files, create combined tasks:
 For Example: "Use search_keyword to find [package] usage patterns across [X] files with pattern '[robust_regex_pattern]' and regex=true"
 
 6. COMPLETION EXAMPLES
 
-**ATTEMPT_COMPLETION USAGE**
+ATTEMPT_COMPLETION USAGE:
 
 Example 1: Comprehensive import analysis with packages
 attempt_completion(result="Import analysis complete. Found imports in 15 files: axios (3 files), express (8 files), socket.io (4 files). Created 5 implementation tasks (3 individual database tasks for axios files, 1 combined search_keyword task for express files, 1 combined search_keyword task for socket.io files) and 3 built-in pattern tasks for subsequent implementation analysis.")

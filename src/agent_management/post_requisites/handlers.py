@@ -3,6 +3,7 @@ Specific handlers for different agents' post-requisites.
 """
 
 from typing import Dict, Any
+import os
 from rich.panel import Panel
 from rich.text import Text
 from rich.prompt import Confirm
@@ -74,8 +75,8 @@ class RoadmapAgentHandler:
 
             # Add header
             prompt_parts.append(f"# Project Modification Request: {project_name}")
-            prompt_parts.append(f"**Project Path:** {project_path}")
-            prompt_parts.append(f"**Impact Level:** {impact_level}")
+            prompt_parts.append(f"Project Path: {project_path}")
+            prompt_parts.append(f"Impact Level: {impact_level}")
             prompt_parts.append("")
 
             # Add reasoning
@@ -95,11 +96,11 @@ class RoadmapAgentHandler:
                     instructions = file_change.get("instructions", [])
 
                     prompt_parts.append(f"### {i}. File: {file_path}")
-                    prompt_parts.append(f"**Operation:** {operation}")
+                    prompt_parts.append(f"Operation: {operation}")
                     prompt_parts.append("")
 
                     if instructions:
-                        prompt_parts.append("**Instructions:**")
+                        prompt_parts.append("Instructions:")
                         for j, instruction in enumerate(instructions, 1):
                             description = instruction.get("description", "")
                             current_state = instruction.get("current_state", "")
@@ -108,29 +109,29 @@ class RoadmapAgentHandler:
                             end_line = instruction.get("end_line")
                             additional_notes = instruction.get("additional_notes", "")
 
-                            prompt_parts.append(f"{j}. **Change:** {str(description)}")
+                            prompt_parts.append(f"{j}. Change: {str(description)}")
 
                             if current_state:
                                 prompt_parts.append(
-                                    f"   **Current State:** {str(current_state)}"
+                                    f"   Current State: {str(current_state)}"
                                 )
 
                             if target_state:
                                 prompt_parts.append(
-                                    f"   **Target State:** {str(target_state)}"
+                                    f"   Target State: {str(target_state)}"
                                 )
 
                             if start_line is not None:
                                 if end_line is not None:
                                     prompt_parts.append(
-                                        f"   **Lines:** {start_line}-{end_line}"
+                                        f"   Lines: {start_line}-{end_line}"
                                     )
                                 else:
-                                    prompt_parts.append(f"   **Line:** {start_line}")
+                                    prompt_parts.append(f"   Line: {start_line}")
 
                             if additional_notes:
                                 prompt_parts.append(
-                                    f"   **Notes:** {str(additional_notes)}"
+                                    f"   Notes: {str(additional_notes)}"
                                 )
 
                             prompt_parts.append("")
@@ -160,8 +161,8 @@ class RoadmapAgentHandler:
                     instructions_contract = contract.get("instructions", "")
 
                     prompt_parts.append(f"### {i}. {contract_name}")
-                    prompt_parts.append(f"**Contract ID:** {contract_id}")
-                    prompt_parts.append(f"**Type:** {contract_type}")
+                    prompt_parts.append(f"Contract ID: {contract_id}")
+                    prompt_parts.append(f"Type: {contract_type}")
 
                     if role:
                         if role == "provider":
@@ -172,16 +173,16 @@ class RoadmapAgentHandler:
                             role_desc = "Acts as both provider and consumer for this contract (proxy/intermediary)"
                         else:
                             role_desc = f"Role: {role}"
-                        prompt_parts.append(f"**Role:** {role} ({role_desc})")
+                        prompt_parts.append(f"Role: {role} ({role_desc})")
 
                     prompt_parts.append("")
 
                     if description:
-                        prompt_parts.append(f"**Description:** {str(description)}")
+                        prompt_parts.append(f"Description: {str(description)}")
                         prompt_parts.append("")
 
                     if interface:
-                        prompt_parts.append("**Interface Details:**")
+                        prompt_parts.append("Interface Details:")
                         for key, value in interface.items():
                             prompt_parts.append(f"- {key}: {value}")
                         prompt_parts.append("")
@@ -206,41 +207,47 @@ class RoadmapAgentHandler:
                                 req_text = " (required)" if field['required'] else " (optional)"
 
                             # 1. Add the main line for the current field
-                            prompt_parts.append(f"{indent}{bullet} **{name}**: `{field_type}`{req_text}")
+                            prompt_parts.append(
+                                f"{indent}{bullet} {name}: `{field_type}`{req_text}"
+                            )
 
                             # 2. Add sub-details like description and validation
                             sub_indent = indent + "  "
                             if description:
-                                prompt_parts.append(f"{sub_indent}*Description*: {description}")
+                                prompt_parts.append(
+                                    f"{sub_indent}Description: {description}"
+                                )
                             if validation:
-                                prompt_parts.append(f"{sub_indent}*Validation*: `{validation}`")
+                                prompt_parts.append(
+                                    f"{sub_indent}Validation: `{validation}`"
+                                )
 
                             # 3. If there are nested fields, call this function again with an increased indent
                             if nested_fields:
                                 _process_level(nested_fields, indent_level + 1)
 
                     if input_format:
-                        prompt_parts.append("**Input Format:**")
+                        prompt_parts.append("Input Format:")
                         _process_level(input_format)
                         prompt_parts.append("")
 
                     if output_format:
-                        prompt_parts.append("**Output Format:**")
+                        prompt_parts.append("Output Format:")
                         _process_level(output_format)
                         prompt_parts.append("")
 
                     if error_codes:
-                        prompt_parts.append("**Error Codes:**")
+                        prompt_parts.append("Error Codes:")
                         for error_code in error_codes:
                             prompt_parts.append(f"- {error_code}")
                         prompt_parts.append("")
 
                     if authentication_required:
-                        prompt_parts.append("**Authentication:** Required")
+                        prompt_parts.append("Authentication: Required")
                         prompt_parts.append("")
 
                     if examples:
-                        prompt_parts.append("**Examples:**")
+                        prompt_parts.append("Examples:")
                         prompt_parts.append("```")
                         prompt_parts.append(str(examples))
                         prompt_parts.append("```")
@@ -248,7 +255,7 @@ class RoadmapAgentHandler:
 
                     if instructions_contract:
                         prompt_parts.append(
-                            f"**Implementation Notes:** {str(instructions_contract)}"
+                            f"Implementation Notes: {str(instructions_contract)}"
                         )
                         prompt_parts.append("")
 
@@ -277,7 +284,7 @@ class RoadmapAgentHandler:
             # Add the important consistency instruction
             prompt_parts.append("")
             prompt_parts.append(
-                "**Important**: Maintain strict naming consistency - use the exact same function names, API endpoints, contract identifiers, variable names, and method signatures as specified in the original query and requirements above."
+                "Important: Maintain strict naming consistency - use the exact same function names, API endpoints, contract identifiers, variable names, and method signatures as specified in the original query and requirements above."
             )
 
             # Join all parts into a single prompt - ensure all items are strings
@@ -308,6 +315,143 @@ class RoadmapAgentHandler:
             )
 
         return project_prompts
+
+    def _verify_file_paths(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Verify that file paths for modify and delete operations exist.
+
+        Args:
+            data: The roadmap data containing projects
+
+        Returns:
+            Dict with 'valid' (bool) and 'feedback' (str) if validation fails
+        """
+        logger.debug("Verifying file paths for modify and delete operations...")
+        projects = data.get("projects", [])
+        non_existing_paths = []
+
+        for project in projects:
+            project_path = project.get("project_path", "")
+            changes = project.get("changes", [])
+
+            # Get the project root directory for file checking
+            # First try to find the project root from current working directory
+            current_dir = os.getcwd()
+            project_root = self._find_project_root(current_dir, project_path)
+
+            for change in changes:
+                operation = change.get("operation", "")
+                file_path = change.get("file_path", "")
+
+                # Only check modify and delete operations
+                # Handle both string and enum values - convert to lowercase string
+                operation_str = operation
+                if hasattr(operation, "value"):
+                    operation_str = operation.value
+                operation_str = str(operation_str).lower()
+
+                if operation_str in ["modify", "delete"]:
+                    # Construct full file path
+                    if project_root:
+                        full_file_path = os.path.join(project_root, file_path)
+                    else:
+                        # Fallback to original logic if project root not found
+                        clean_project_path = (
+                            project_path[1:]
+                            if project_path.startswith("/")
+                            else project_path
+                        )
+                        full_file_path = os.path.join(clean_project_path, file_path)
+
+                    # Check if file exists
+                    if not os.path.exists(full_file_path):
+                        non_existing_paths.append(
+                            {
+                                "project": project.get("project_name", "Unknown"),
+                                "project_path": project_path,
+                                "file_path": file_path,
+                                "operation": operation,
+                                "full_path": full_file_path,
+                            }
+                        )
+                    else:
+                        logger.debug(f"File exists and verified: {full_file_path}")
+
+        if non_existing_paths:
+            # Create feedback message for non-existing paths
+            feedback_message = "The following file paths provided for modify or delete operations do not exist:\n\n"
+
+            for i, path_info in enumerate(non_existing_paths, 1):
+                feedback_message += f"{i}. Project: {path_info['project']}\n"
+                feedback_message += f"   Operation: {path_info['operation']}\n"
+                feedback_message += f"   File path: {path_info['file_path']}\n"
+                feedback_message += f"   Full path: {path_info['full_path']}\n"
+                feedback_message += f"   Status: FILE DOES NOT EXIST\n\n"
+
+            feedback_message += "Please provide correct file paths that exist in the project before proceeding with any modification or deletion operations. "
+            feedback_message += "Make sure to verify the file paths are correct and the files actually exist in the specified locations."
+
+            return {
+                "valid": False,
+                "feedback": feedback_message,
+                "non_existing_paths": non_existing_paths,
+            }
+
+        return {"valid": True}
+
+    def _find_project_root(self, current_dir: str, project_path: str) -> str:
+        """Find the actual project root directory for file verification.
+
+        Args:
+            current_dir: Current working directory
+            project_path: Project path from roadmap data
+
+        Returns:
+            Absolute path to project root or None if not found
+        """
+        try:
+            # Case 1: project_path is already an absolute path
+            if os.path.isabs(project_path):
+                if os.path.exists(project_path) and os.path.isdir(project_path):
+                    return project_path
+                else:
+                    logger.debug(
+                        f"Absolute project path does not exist: {project_path}"
+                    )
+                    return None
+
+            # Remove leading slash from project_path if present for relative path handling
+            clean_project_path = (
+                project_path[1:] if project_path.startswith("/") else project_path
+            )
+
+            # Case 2: project_path is relative to current directory
+            potential_root = os.path.join(current_dir, clean_project_path)
+            if os.path.exists(potential_root) and os.path.isdir(potential_root):
+                return potential_root
+
+            # Case 3: we are already in the project directory
+            if os.path.basename(current_dir) == clean_project_path.split("/")[-1]:
+                return current_dir
+
+            # Case 4: project_path matches a subdirectory in current directory
+            project_name = clean_project_path.split("/")[-1]
+            potential_root = os.path.join(current_dir, project_name)
+            if os.path.exists(potential_root) and os.path.isdir(potential_root):
+                return potential_root
+
+            # Case 5: Look for the project in parent directories
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir != current_dir:  # Avoid infinite loop at filesystem root
+                potential_root = os.path.join(parent_dir, clean_project_path)
+                if os.path.exists(potential_root) and os.path.isdir(potential_root):
+                    return potential_root
+
+            logger.debug(f"Could not find project root for: {project_path}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error finding project root: {e}")
+            return None
 
     def _spawn_external_agents(self, project_prompts: list) -> Dict[str, Any]:
         """Spawn external agents for each project with prompts."""
@@ -394,10 +538,7 @@ class RoadmapAgentHandler:
         }
 
     def _get_confirmation(self) -> Dict[str, Any]:
-        """Display all generated prompts to the user and get confirmation to proceed.
-
-        Args:
-            project_prompts: List of project prompts with prompt
+        """Display final confirmation when all file paths are verified and correct.
 
         Returns:
             Dict: Contains 'proceed' (bool) and optionally 'feedback' (str) for improvement
@@ -422,11 +563,10 @@ class RoadmapAgentHandler:
             confirmation_text, border_style="yellow", padding=(1, 2)
         )
         console.print(confirmation_panel)
-
         # Use Rich's Confirm for user input
         try:
             result = Confirm.ask(
-                "[bold cyan]👤 Do you want to proceed with this roadmap?[/bold cyan]",
+                "[bold cyan]👤 Do you want to process this roadmap?[/bold cyan]",
                 default=True,
             )
 

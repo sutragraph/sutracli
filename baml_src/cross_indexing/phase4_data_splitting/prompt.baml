@@ -1,6 +1,4 @@
 template_string ConnectionSplittingPrompt() #"
-CONNECTION SPLITTING ANALYSIS
-
 You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format. Additionally, include a comprehensive top-level "summary" that thoroughly describes the project's purpose, functionality, and architecture based on the collected connections.
 
 ## ABSOLUTE CRITICAL RULE - ONE CONNECTION PER SNIPPET
@@ -84,20 +82,20 @@ Examples:
 
 ## PROCESSING RULES
 
-1. **STRICT ONE-TO-ONE MAPPING**: Analyze each connection individually - never group multiple connections
-2. **INDIVIDUAL ENTRIES ONLY**: Create separate entries - If you find code with multiple operations, create separate entries for each
-3. **PRECISE LINE NUMBERS**: Extract individual details - Each entry gets its own specific line numbers (single line "23-23" or very small ranges "23-25" for one logical connection only)
-4. **SINGLE CONNECTION FOCUS**: Focus on data transmission - Only code that sends or receives data, exclude setup
-5. **COMPLETE PARAMETER DETAILS**: Include complete parameter details:
+1. STRICT ONE-TO-ONE MAPPING: Analyze each connection individually - never group multiple connections
+2. INDIVIDUAL ENTRIES ONLY: Create separate entries - If you find code with multiple operations, create separate entries for each
+3. PRECISE LINE NUMBERS: Extract individual details - Each entry gets its own specific line numbers (single line "23-23" or very small ranges "23-25" for one logical connection only)
+4. SINGLE CONNECTION FOCUS: Focus on data transmission - Only code that sends or receives data, exclude setup
+5. COMPLETE PARAMETER DETAILS: Include complete parameter details:
    - Exact endpoints, event names, queue names, method names
    - Protocols, methods, parameters
    - Environment variables and their resolved values in descriptions using format ENV_VAR=actual_value
    - File paths and line numbers
-6. **CORRECT DIRECTION**: Classify direction correctly based on data flow
-7. **NO DUPLICATES**: No duplicates - each data transmission operation must be unique
-8. **NO REPEATED CONTENT**: CRITICAL: IGNORE REPEATING CONTENT - If you see the same file code with the same lines appearing multiple times in the input, include it only ONCE in your response. Same lines from same files are allowed only one time in splitting.
-9. **ENVIRONMENT RESOLUTION**: ENVIRONMENT FILE CODE RESOLUTION - If environment file code is provided as a code block, look for env var/config values and include them in connection descriptions for better context
-10. **FORBIDDEN LANGUAGE**: Never use words like "multiple", "including", "various", "several", "comprehensive", numbers with "+" (like "40+", "45+"), "operations for", "endpoints for"
+6. CORRECT DIRECTION: Classify direction correctly based on data flow
+7. NO DUPLICATES: No duplicates - each data transmission operation must be unique
+8. NO REPEATED CONTENT: CRITICAL: IGNORE REPEATING CONTENT - If you see the same file code with the same lines appearing multiple times in the input, include it only ONCE in your response. Same lines from same files are allowed only one time in splitting.
+9. ENVIRONMENT RESOLUTION: ENVIRONMENT FILE CODE RESOLUTION - If environment file code is provided as a code block, look for env var/config values and include them in connection descriptions for better context
+10. FORBIDDEN LANGUAGE: Never use words like "multiple", "including", "various", "several", "comprehensive", numbers with "+" (like "40+", "45+"), "operations for", "endpoints for"
 
 ## ENVIRONMENT FILE CODE RESOLUTION
 
@@ -183,7 +181,7 @@ INTELLIGENT LINE EXTENSION GUIDELINES:
 - Multi-parameter method calls: +3-5 lines
 - Always prefer capturing complete context over partial information
 
-**EXTRACT ALL connections found - no selective sampling allowed.**
+EXTRACT ALL connections found - no selective sampling allowed.
 
 ## GENERIC ANALYSIS INSTRUCTIONS
 
@@ -930,9 +928,9 @@ Why Included: These show actual connection usage with specific identifiers or en
 9. Comprehensive Summary: Generate detailed project description covering purpose, functionality, architecture, and integrations
 10. Output Format: Start with detailed analysis, then return valid JSON
 11. Grouping Structure: Group by technology and file path as shown in format
-12. **FORBIDDEN LANGUAGE**: No phrases like "including", "multiple", "various", "several", "operations for", "comprehensive", "40+", "45+", numbers with plus signs
-13. **INDIVIDUAL ENTRIES REQUIRED**: If you find 86 different connections, create 86 separate JSON entries - No exceptions, No sampling, No grouping
-14. **MANDATORY SEPARATION**: Every single connection must be its own separate JSON entry with specific line numbers
+12. FORBIDDEN LANGUAGE: No phrases like "including", "multiple", "various", "several", "operations for", "comprehensive", "40+", "45+", numbers with plus signs
+13. INDIVIDUAL ENTRIES REQUIRED: If you find 86 different connections, create 86 separate JSON entries - No exceptions, No sampling, No grouping
+14. MANDATORY SEPARATION: Every single connection must be its own separate JSON entry with specific line numbers
 
 Summary-specific requirements:
 - Do NOT enumerate concrete endpoint paths; describe capabilities/categories only.

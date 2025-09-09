@@ -201,6 +201,9 @@ class AgentService:
                         console.print("[yellow]Task stopped by user after 15 iterations.[/yellow]")
                         return None
 
+                # Store current problem query for potential modification during file verification
+                self._current_problem_query = problem_query
+
                 user_message = self._build_user_message(problem_query, current_iteration)
 
                 logger.debug(f"Invoking agent: {self.agent_name}")
@@ -231,10 +234,10 @@ class AgentService:
                             # Set feedback tool status for next iteration
                             self._set_feedback_tool_status(feedback)
 
+                            # Update the problem query from the stored version (may have been modified during file verification)
+                            problem_query = self._current_problem_query
+
                             # Continue the loop instead of returning - this preserves the session
-                            console.highlight(
-                                "Roadmap agent will now improve the prompts based on your feedback..."
-                            )
                             continue
 
                     return self.result
@@ -276,7 +279,11 @@ class AgentService:
             # Create FEEDBACK section in sutra memory
             feedback_section = "FEEDBACK SECTION: \n"
             feedback_section += f"USER FEEDBACK: {feedback}\n\n"
-            feedback_section += f"ROADMAP PROMPTS CREATED BY AGENT ({len(project_prompts)} projects):\n\n"
+
+            # Add information about the generated project roadmaps
+            feedback_section += (
+                f"GENERATED PROJECT ROADMAPS ({len(project_prompts)} projects):\n\n"
+            )
 
             for i, project_prompt in enumerate(project_prompts, 1):
                 feedback_section += f"=== PROJECT {i} ROADMAP ===\n"
@@ -297,20 +304,20 @@ class AgentService:
     def _set_feedback_tool_status(self, user_feedback) -> None:
         """Set tool status to show feedback information instead of attempt_completion."""
         try:
-            # Simple feedback tool status as requested
+            # Enhanced feedback tool status with roadmap information
             feedback_status = "Tool: feedback_received\n"
-            feedback_status += "Status: User provided feedback for roadmap improvement create new task for this improvements and work on it"
-            feedback_status += f"\nFeedback: {user_feedback}"
+            feedback_status += "Status: User provided feedback for roadmap improvement. The generated project roadmaps are stored in FEEDBACK section. Create new task for these improvements and work on it.\n"
+            feedback_status += f"Feedback: {user_feedback}\n"
 
             # Set this as the last tool result
             self.last_tool_result = feedback_status
 
-            logger.debug("Set simple feedback tool status")
+            logger.debug("Set enhanced feedback tool status with roadmap information")
 
         except Exception as e:
             logger.error(f"Error setting feedback tool status: {e}")
             # Fallback to simple feedback status
-            self.last_tool_result = "Tool: feedback_received\nStatus: User provided feedback for roadmap improvement create new task for this improvements and work on it"
+            self.last_tool_result = "Tool: feedback_received\nStatus: User provided feedback for roadmap improvement."
 
     def _build_user_message(self, problem_query: str, current_iteration: int) -> str:
         user_message = []
@@ -374,7 +381,28 @@ class AgentService:
             if tool_name == "attempt_completion":
                 is_completion = True
                 self.result = tool_to_execute.parameters
-            # Execute tool for formatting and display
+
+                # Do file path verification BEFORE displaying anything to user
+                if self._should_verify_file_paths():
+                    verification_result = self._verify_file_paths_before_display()
+
+                    if not verification_result["valid"]:
+                        # File paths are invalid - return False to continue agent loop
+                        # Set feedback for next iteration
+                        feedback = verification_result["feedback"]
+                        self._store_feedback_in_sutra_memory(feedback)
+                        self._set_feedback_tool_status(feedback)
+
+                        # Modify problem query for next iteration
+                        if hasattr(self, '_current_problem_query'):
+                            if "FILE DOES NOT EXIST" in feedback:
+                                self._current_problem_query = f"{self._current_problem_query}\n\nIMPORTANT: The provided file paths for modify or delete operations do not exist. {feedback}"
+                            else:
+                                self._current_problem_query = f"{self._current_problem_query}\n\nUser feedback for improvement: {feedback}"
+
+                        return False  # Don't show completion, continue agent loop
+
+            # Execute tool for formatting and display (only if file paths are valid)
             self.last_tool_result = execute_tool(
                 Agent.ROADMAP,
                 tool_name,
@@ -382,6 +410,27 @@ class AgentService:
             )
 
         return is_completion
+
+    def _should_verify_file_paths(self) -> bool:
+        """Check if we should verify file paths for this agent."""
+        return self.agent_name == Agent.ROADMAP
+
+    def _verify_file_paths_before_display(self) -> Dict[str, Any]:
+        """Verify file paths before displaying project info to user."""
+        try:
+            from src.agent_management.post_requisites.handlers import (
+                RoadmapAgentHandler,
+            )
+
+            handler = RoadmapAgentHandler()
+            roadmap_data = self.result.model_dump()
+            result = handler._verify_file_paths(roadmap_data)
+            return result
+
+        except Exception as e:
+            logger.error(f"Error during file path verification: {e}")
+            # If verification fails, assume paths are valid to avoid blocking
+            return {"valid": True}
 
     def _parse_thinking(self, thinking: str) -> None:
         header = Text("THINKING", style="bold yellow")
