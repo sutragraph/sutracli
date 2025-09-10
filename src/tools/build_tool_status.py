@@ -1,12 +1,17 @@
 from typing import Any, Dict
-from utils.console import console
+
+from loguru import logger
+from rich.console import Group
 from rich.panel import Panel
 from rich.text import Text
-from rich.console import Group
-from baml_client.types import Agent
-from loguru import logger
 
-def build_tool_status(tool_name: str, event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
+from baml_client.types import Agent
+from utils.console import console
+
+
+def build_tool_status(
+    tool_name: str, event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
     """Helper to build tool status dictionary."""
     match tool_name:
         case "database":
@@ -23,7 +28,9 @@ def build_tool_status(tool_name: str, event: Dict[str, Any], agent: Agent, tool_
             return f"Unknown tool name '{tool_name}' with parameters {tool_params}"
 
 
-def _build_database_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
+def _build_database_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
     """Helper to build database status dictionary."""
     query_name = event.get("query_name")
     query = event.get("query")
@@ -66,7 +73,9 @@ def _build_database_status(event: Dict[str, Any], agent: Agent, tool_params: Dic
     return "\n".join(status_parts).rstrip()
 
 
-def _build_semantic_search_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
+def _build_semantic_search_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
     """Build status for semantic search tool."""
     query = event.get("query")
     count = event.get("count") or event.get("total_nodes")
@@ -135,7 +144,9 @@ def _build_semantic_search_status(event: Dict[str, Any], agent: Agent, tool_para
     return "\n".join(status_parts).rstrip()
 
 
-def _build_list_files_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
+def _build_list_files_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
     """Build status for list_files tool."""
     directory = event.get("directory")
     count = event.get("count")
@@ -179,7 +190,9 @@ def _build_list_files_status(event: Dict[str, Any], agent: Agent, tool_params: D
     return "\n".join(status_parts).rstrip()
 
 
-def _build_search_keyword_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
+def _build_search_keyword_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
     """Build status for search_keyword tool."""
     keyword = event.get("keyword")
     file_paths = event.get("file_paths")
@@ -236,7 +249,9 @@ def _build_search_keyword_status(event: Dict[str, Any], agent: Agent, tool_param
     return "\n".join(status_parts).rstrip()
 
 
-def _build_completion_status(event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]) -> str:
+def _build_completion_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
     """Build status for completion tool based on agent_name."""
     error = event.get("error")
     is_simple = event.get("simple", False)
@@ -308,7 +323,7 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
             "High": "red",
             "Medium": "yellow",
             "Low": "blue",
-            "None": "dim"
+            "None": "dim",
         }
         impact_color = impact_colors.get(impact_level, "white")
 
@@ -362,7 +377,9 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                 # Show detailed instructions for each file
                 if instructions:
                     for k, instruction in enumerate(instructions, 1):
-                        description = instruction.get("description", "No description provided")
+                        description = instruction.get(
+                            "description", "No description provided"
+                        )
                         current_state = instruction.get("current_state", "")
                         target_state = instruction.get("target_state", "")
                         start_line = instruction.get("start_line")
@@ -411,7 +428,9 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                         if k < len(instructions):
                             content_elements.append(Text())
                 else:
-                    no_instr_text = Text("     No detailed instructions provided", style="dim")
+                    no_instr_text = Text(
+                        "     No detailed instructions provided", style="dim"
+                    )
                     content_elements.append(no_instr_text)
         else:
             no_changes_text = Text()

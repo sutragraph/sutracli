@@ -5,8 +5,9 @@ Handles formatting of memory state for LLM context and other display purposes.
 """
 
 from typing import List
-from .models import TaskStatus
+
 from .memory_operations import MemoryOperations
+from .models import TaskStatus
 
 
 class MemoryFormatter:

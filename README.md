@@ -166,6 +166,85 @@ The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) a
 
 After saving, restart Sutrakit to apply changes. For other sections (e.g., logging level or embedding model), edit values directly—refer to the file for details.
 
+## 🛠️ Development Setup
+
+If you want to contribute to the project or modify the BAML configurations, follow these steps:
+
+### Prerequisites
+
+- Python 3.8+
+- Git
+- pip
+
+### Quick Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/sutragraph/sutracli.git
+   cd sutracli
+   ```
+
+2. **Run the development setup script:**
+   ```bash
+   ./scripts/setup-dev.sh
+   ```
+
+This script will:
+- Install development dependencies (including pre-commit)
+- Set up pre-commit hooks
+- Test BAML client generation
+- Run initial code quality checks
+
+### Manual Setup
+
+If you prefer to set up manually:
+
+1. **Install development dependencies:**
+   ```bash
+   pip install -e ".[dev]"
+   ```
+
+2. **Install pre-commit hooks:**
+   ```bash
+   pre-commit install
+   ```
+
+3. **Generate BAML client (if needed):**
+   ```bash
+   ./scripts/generate-baml.sh
+   ```
+
+### Pre-commit Hooks
+
+The project uses pre-commit hooks to ensure code quality and keep BAML client files up-to-date:
+
+- **BAML Generation**: Automatically regenerates BAML client files when `baml_src/` files change
+- **Code Formatting**: Runs Black and isort on Python files
+- **Code Quality**: Checks for trailing whitespace, large files, merge conflicts, etc.
+- **File Validation**: Validates YAML, JSON, and TOML files
+
+### Working with BAML
+
+When you modify files in `baml_src/`, the pre-commit hooks will automatically:
+1. Regenerate the BAML client files in `baml_client/`
+2. Add the updated client files to your commit
+3. Ensure code formatting and quality standards
+
+You can also manually regenerate BAML client files:
+```bash
+./scripts/generate-baml.sh
+```
+
+### Running Tests
+
+```bash
+# Run all pre-commit hooks
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run baml-generate
+```
+
 ## ⭐️ Project assistance
 
 If you want to say **thank you** or/and support active development of

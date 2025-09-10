@@ -1,7 +1,9 @@
-from loguru import logger
 from typing import Optional
+
+from loguru import logger
+
+from baml_client.types import Project, ProjectContext
 from graph.sqlite_client import SQLiteConnection
-from baml_client.types import ProjectContext, Project
 
 
 def get_project_context_for_agent() -> Optional[ProjectContext]:

@@ -3,31 +3,28 @@
 Modern CLI for SutraGraph - Interactive command-line interface with provider setup and agent management.
 """
 
-import sys
 import json
+import sys
 from pathlib import Path
-from typing import Dict, Any
-from rich.panel import Panel
-from rich.prompt import Prompt, Confirm
-from rich.table import Table
-from rich.text import Text
-from rich.align import Align
+from typing import Any, Dict
 
 # Prompt toolkit imports for arrow key navigation
 from prompt_toolkit import Application, prompt
-from prompt_toolkit.layout import Layout, HSplit
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout import HSplit, Layout
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
+from rich.align import Align
+from rich.panel import Panel
+from rich.prompt import Confirm, Prompt
+from rich.table import Table
+from rich.text import Text
 
+from src.agent_management.prerequisites.agent_config import get_agent_registry
 from src.agents_new import Agent
-from src.utils.console import console
 from src.config.settings import reload_config
-from src.agent_management.prerequisites.agent_config import (
-    get_agent_registry,
-)
-
+from src.utils.console import console
 from src.utils.logging import setup_logging
 
 
@@ -64,7 +61,7 @@ class ModernSutraKit:
             Align.center(Text(banner, style="bold blue")),
             title="🚀 Welcome to SutraGraph",
             subtitle="AI-Powered Code Analysis & Automation",
-            border_style="bright_blue"
+            border_style="bright_blue",
         )
         console.print(panel)
 
@@ -74,11 +71,11 @@ class ModernSutraKit:
             if not self.config_path.exists():
                 return False
 
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path, "r") as f:
                 config_data = json.load(f)
 
-            llm_config = config_data.get('llm', {})
-            provider = llm_config.get('provider')
+            llm_config = config_data.get("llm", {})
+            provider = llm_config.get("provider")
 
             if not provider:
                 return False
@@ -89,16 +86,25 @@ class ModernSutraKit:
                 return False
 
             # Basic validation for each provider
-            if provider == 'aws':
-                required_fields = ['access_key_id', 'secret_access_key', 'model_id', 'region']
+            if provider == "aws":
+                required_fields = [
+                    "access_key_id",
+                    "secret_access_key",
+                    "model_id",
+                    "region",
+                ]
                 return all(provider_config.get(field) for field in required_fields)
-            elif provider == 'anthropic':
-                return bool(provider_config.get('api_key') and provider_config.get('model_id'))
-            elif provider == 'gcp':
-                required_fields = ['api_key', 'project_id', 'location']
+            elif provider == "anthropic":
+                return bool(
+                    provider_config.get("api_key") and provider_config.get("model_id")
+                )
+            elif provider == "gcp":
+                required_fields = ["api_key", "project_id", "location"]
                 return all(provider_config.get(field) for field in required_fields)
-            elif provider == 'openai':
-                return bool(provider_config.get('api_key') and provider_config.get('model_id'))
+            elif provider == "openai":
+                return bool(
+                    provider_config.get("api_key") and provider_config.get("model_id")
+                )
 
             return True
 
@@ -110,11 +116,26 @@ class ModernSutraKit:
         console.info("LLM Provider Setup")
 
         providers = [
-            {"name": "Anthropic (Claude)", "key": "anthropic",
-             "description": "Claude models (claude-3.5-sonnet, etc.)"},
-            {"name": "AWS Bedrock", "key": "aws", "description": "AWS managed AI services"},
-            {"name": "Google Gemini", "key": "gcp", "description": "Google's Gemini models"},
-            {"name": "OpenAI (ChatGPT)", "key": "openai", "description": "GPT models via OpenAI API"}
+            {
+                "name": "Anthropic (Claude)",
+                "key": "anthropic",
+                "description": "Claude models (claude-3.5-sonnet, etc.)",
+            },
+            {
+                "name": "AWS Bedrock",
+                "key": "aws",
+                "description": "AWS managed AI services",
+            },
+            {
+                "name": "Google Gemini",
+                "key": "gcp",
+                "description": "Google's Gemini models",
+            },
+            {
+                "name": "OpenAI (ChatGPT)",
+                "key": "openai",
+                "description": "GPT models via OpenAI API",
+            },
         ]
 
         table = Table()
@@ -165,13 +186,15 @@ class ModernSutraKit:
         access_key = Prompt.ask("AWS Access Key ID", password=False)
         secret_key = prompt("AWS Secret Access Key: ", is_password=True)
         region = Prompt.ask("AWS Region", default="us-east-2")
-        model_id = Prompt.ask("Model ID", default="us.anthropic.claude-sonnet-4-20250514-v1:0")
+        model_id = Prompt.ask(
+            "Model ID", default="us.anthropic.claude-sonnet-4-20250514-v1:0"
+        )
 
         return {
             "access_key_id": access_key,
             "secret_access_key": secret_key,
             "region": region,
-            "model_id": model_id
+            "model_id": model_id,
         }
 
     def _get_anthropic_config(self) -> Dict[str, Any]:
@@ -180,10 +203,7 @@ class ModernSutraKit:
         api_key = prompt("Anthropic API Key: ", is_password=True)
         model_id = Prompt.ask("Model ID", default="claude-3-5-sonnet-20241022")
 
-        return {
-            "api_key": api_key,
-            "model_id": model_id
-        }
+        return {"api_key": api_key, "model_id": model_id}
 
     def _get_gcp_config(self) -> Dict[str, Any]:
         """Get Google Cloud configuration."""
@@ -197,7 +217,7 @@ class ModernSutraKit:
             "api_key": api_key,
             "project_id": project_id,
             "location": location,
-            "llm_endpoint": llm_endpoint
+            "llm_endpoint": llm_endpoint,
         }
 
     def _get_openai_config(self) -> Dict[str, Any]:
@@ -206,30 +226,35 @@ class ModernSutraKit:
         api_key = prompt("OpenAI API Key: ", is_password=True)
         model_id = Prompt.ask("Model ID", default="gpt-4o")
 
-        return {
-            "api_key": api_key,
-            "model_id": model_id
-        }
+        return {"api_key": api_key, "model_id": model_id}
 
     def _load_existing_config(self) -> Dict[str, Any]:
         """Load existing configuration or exit if not found."""
         if not self.config_path.exists():
-            console.error("Configuration file not found. Did you run the 'sutrakit-setup' command?")
-            console.info("Please run 'sutrakit-setup' first to initialize the system configuration.")
+            console.error(
+                "Configuration file not found. Did you run the 'sutrakit-setup' command?"
+            )
+            console.info(
+                "Please run 'sutrakit-setup' first to initialize the system configuration."
+            )
             sys.exit(1)
 
         try:
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path, "r") as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
             console.error(f"Invalid JSON in configuration file: {e}")
-            console.error("Configuration file appears to be corrupted. Please run 'sutrakit-setup' again.")
+            console.error(
+                "Configuration file appears to be corrupted. Please run 'sutrakit-setup' again."
+            )
             sys.exit(1)
         except Exception as e:
             console.error(f"Error reading configuration file: {e}")
             sys.exit(1)
 
-    def _update_llm_config(self, provider: str, provider_config: Dict[str, Any]) -> Dict[str, Any]:
+    def _update_llm_config(
+        self, provider: str, provider_config: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update only the LLM configuration, preserving other settings."""
         # Load existing configuration (will exit if not found)
         existing_config = self._load_existing_config()
@@ -245,7 +270,7 @@ class ModernSutraKit:
         # Ensure config directory exists
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(self.config_path, 'w') as f:
+        with open(self.config_path, "w") as f:
             json.dump(config, f, indent=2)
 
         # Reload the configuration to update the in-memory instance
@@ -287,52 +312,63 @@ class ModernSutraKit:
         current_index = 0
 
         def get_formatted_text():
-            lines = [('', 'Select LLM provider (↑↓ to navigate, Enter to select, Esc to cancel):\n\n')]
+            lines = [
+                (
+                    "",
+                    "Select LLM provider (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
+                )
+            ]
 
             for i, provider in enumerate(providers):
                 if i == current_index:
-                    lines.append(('class:selected', f'▶ {provider["name"]}\n'))
+                    lines.append(("class:selected", f'▶ {provider["name"]}\n'))
                 else:
-                    lines.append(('', f'  {provider["name"]}\n'))
+                    lines.append(("", f'  {provider["name"]}\n'))
 
             return lines
 
         # Key bindings
         bindings = KeyBindings()
 
-        @bindings.add('up')
+        @bindings.add("up")
         def move_up(event):
             nonlocal current_index
             current_index = (current_index - 1) % len(providers)
 
-        @bindings.add('down')
+        @bindings.add("down")
         def move_down(event):
             nonlocal current_index
             current_index = (current_index + 1) % len(providers)
 
-        @bindings.add('enter')
+        @bindings.add("enter")
         def select_item(event):
             event.app.exit(result=providers[current_index])
 
-        @bindings.add('escape')
-        @bindings.add('c-c')
+        @bindings.add("escape")
+        @bindings.add("c-c")
         def cancel(event):
             event.app.exit(result=None)
 
         # Create the application
         application = Application(
             layout=Layout(
-                HSplit([
-                    Window(FormattedTextControl(get_formatted_text), wrap_lines=True),
-                ])
+                HSplit(
+                    [
+                        Window(
+                            FormattedTextControl(get_formatted_text), wrap_lines=True
+                        ),
+                    ]
+                )
             ),
             key_bindings=bindings,
             mouse_support=False,
             full_screen=False,
-            style=Style([
-                ('selected', 'bg:#0066cc #ffffff bold'),
-                ('dim', '#666666'),
-            ])
+            style=Style(
+                [
+                    ("selected", "bg:#0066cc #ffffff bold"),
+                    ("dim", "#666666"),
+                ]
+            ),
         )
 
         # Run the application
@@ -343,52 +379,63 @@ class ModernSutraKit:
         current_index = 0
 
         def get_formatted_text():
-            lines = [('', 'Select agent (↑↓ to navigate, Enter to select, Esc to cancel):\n\n')]
+            lines = [
+                (
+                    "",
+                    "Select agent (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
+                )
+            ]
 
             for i, agent in enumerate(agents):
                 if i == current_index:
-                    lines.append(('class:selected', f'▶ {agent.name}'))
+                    lines.append(("class:selected", f"▶ {agent.name}"))
                 else:
-                    lines.append(('', f'  {agent.name}'))
+                    lines.append(("", f"  {agent.name}"))
 
             return lines
 
         # Key bindings
         bindings = KeyBindings()
 
-        @bindings.add('up')
+        @bindings.add("up")
         def move_up(event):
             nonlocal current_index
             current_index = (current_index - 1) % len(agents)
 
-        @bindings.add('down')
+        @bindings.add("down")
         def move_down(event):
             nonlocal current_index
             current_index = (current_index + 1) % len(agents)
 
-        @bindings.add('enter')
+        @bindings.add("enter")
         def select_item(event):
             event.app.exit(result=agents[current_index])
 
-        @bindings.add('escape')
-        @bindings.add('c-c')
+        @bindings.add("escape")
+        @bindings.add("c-c")
         def cancel(event):
             event.app.exit(result=None)
 
         # Create the application
         application = Application(
             layout=Layout(
-                HSplit([
-                    Window(FormattedTextControl(get_formatted_text), wrap_lines=True),
-                ])
+                HSplit(
+                    [
+                        Window(
+                            FormattedTextControl(get_formatted_text), wrap_lines=True
+                        ),
+                    ]
+                )
             ),
             key_bindings=bindings,
             mouse_support=False,
             full_screen=False,
-            style=Style([
-                ('selected', 'bg:#0066cc #ffffff bold'),
-                ('dim', '#666666'),
-            ])
+            style=Style(
+                [
+                    ("selected", "bg:#0066cc #ffffff bold"),
+                    ("dim", "#666666"),
+                ]
+            ),
         )
 
         # Run the application
@@ -477,8 +524,8 @@ class ModernSutraKit:
 
         # Check if cross-indexing is already completed
         try:
-            from src.services.project_manager import ProjectManager
             from src.graph.graph_operations import GraphOperations
+            from src.services.project_manager import ProjectManager
 
             project_manager = ProjectManager()
             graph_ops = GraphOperations()
@@ -486,7 +533,9 @@ class ModernSutraKit:
             project_name = project_manager.determine_project_name(project_dir)
 
             if graph_ops.is_cross_indexing_done(project_name):
-                console.success(f"Cross-indexing already completed for project '{project_name}'")
+                console.success(
+                    f"Cross-indexing already completed for project '{project_name}'"
+                )
                 console.dim("📊 Skipping analysis - project already fully analyzed")
                 return
 
@@ -523,7 +572,9 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
 
         if not proceed:
             console.warning("Cross-indexing declined by user.")
-            console.dim("💡 Tip: You can run this later when you're ready to spend the time and tokens.")
+            console.dim(
+                "💡 Tip: You can run this later when you're ready to spend the time and tokens."
+            )
             console.dim("📝 To continue later, simply run the same command again.")
             # Raise a custom exception to stop the workflow
             raise UserCancelledError("User declined cross-indexing analysis")
@@ -558,7 +609,9 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             from cli.commands import handle_agent_command
 
             # Execute the agent - post-processing is handled internally by the agent service
-            agent_result = handle_agent_command(agent_name=agent_name, project_path=project_dir)
+            agent_result = handle_agent_command(
+                agent_name=agent_name, project_path=project_dir
+            )
 
             if agent_result:
                 console.success("Agent execution completed successfully!!!")

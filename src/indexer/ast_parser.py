@@ -6,22 +6,23 @@ relationships between files based on import statements.
 """
 
 import os
-
 import zlib
-from loguru import logger
 from pathlib import Path
-from typing import Dict, Optional, Union, Any, cast
+from typing import Any, Dict, Optional, Union, cast
+
+from loguru import logger
 from tree_sitter import Parser
-from tree_sitter_language_pack import get_parser, SupportedLanguage
+from tree_sitter_language_pack import SupportedLanguage, get_parser
 
 from utils.file_utils import (
     get_language_from_extension,
-    should_ignore_file,
-    should_ignore_directory,
     is_text_file,
     read_file_content,
+    should_ignore_directory,
+    should_ignore_file,
 )
 from utils.hash_utils import compute_file_hash
+
 from .extractors import Extractor
 from .relationship_extractors import RelationshipExtractor
 
@@ -144,7 +145,7 @@ class ASTParser:
                 "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,
-                "error": "Failed to parse file"
+                "error": "Failed to parse file",
             }
 
         # Get language and check if extractor is available

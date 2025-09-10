@@ -43,4 +43,3 @@ function ChatGPTCodeManager(tool_results: string, system_info: SystemInfo_CrossI
     {{ UserPrompt_Manager(tool_results) }}
   "#
 }
-

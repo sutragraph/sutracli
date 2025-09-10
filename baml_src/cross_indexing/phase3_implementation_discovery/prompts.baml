@@ -44,4 +44,3 @@ function ChatGPTImplementationDiscovery(analysis_query: string, memory_context: 
     {{ UserPrompt_Phase3(analysis_query, memory_context) }}
   "#
 }
-

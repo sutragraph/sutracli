@@ -65,7 +65,7 @@ const result = await fetch(`${process.env.SERVICE_URL}/api/data`, {
 // FIND THIS - with single quotes
 const data = await axios.post('/api/users', userData)
 
-// FIND THIS - with double quotes  
+// FIND THIS - with double quotes
 const info = await fetch("/api/orders", { method: 'GET' })
 ```
 
@@ -222,7 +222,7 @@ def socket_handler(socketio):
     @socketio.on('connect')
     def handle_connect():
         emit('status', {'msg': 'Connected'})
-    
+
     @socketio.on('user_message')
     def handle_message(data):
         emit('response', {'reply': f"Got: {data['message']}"})
@@ -250,7 +250,7 @@ IMMEDIATE ACTION:
     "tasks": [
       {
         "action": "add",
-        "id": "21", 
+        "id": "21",
         "to_status": "current",
         "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\\s*\\(\\s*['\"][^'\"]*['\"]"
       }
@@ -274,7 +274,7 @@ IMMEDIATE ACTION:
       {
         "action": "add",
         "id": "22",
-        "to_status": "current", 
+        "to_status": "current",
         "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\\s*\\(\\s*['\"][^'\"]*['\"]"
       }
     ]
@@ -444,7 +444,7 @@ When you find any code during analysis, follow this thinking process:
      - "THINKING: Found direct HTTP call `axios.get('/api/users')` with hardcoded endpoint. This IS the actual connection code to collect."
 
 5. SPECIFIC QUEUE EXAMPLE WORKFLOW:
-   
+
    SCENARIO: Found this code during analysis
    ```javascript
    // Line 49-51 in message-service.js
@@ -452,7 +452,7 @@ When you find any code during analysis, follow this thinking process:
      persistent: true,
    });
    ```
-   
+
    CORRECT ANALYSIS PROCESS:
    1. DETECT: "Found `sendToQueue(queueName, message)` with variable 'queueName' - this is NOT the actual queue name"
    2. IDENTIFY: "This is a wrapper function implementation, not the actual usage site"
@@ -463,7 +463,7 @@ When you find any code during analysis, follow this thinking process:
       - `publishMessage('user-notifications', userData)`
       - `publishMessage('email-queue', emailData)`
       - `publishMessage('order-processing', orderData)`
-   
+
    WRONG APPROACH (WHAT NOT TO DO):
    - Collecting `sendToQueue(queueName, message)` as final connection data
    - Moving to next task without searching for actual queue names

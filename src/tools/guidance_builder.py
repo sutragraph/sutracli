@@ -10,16 +10,16 @@ Architecture:
 - GuidanceRegistry: Factory for retrieving guidance handlers by tool type
 """
 
-from typing import Optional, Dict, Any, List
 from abc import ABC
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 from loguru import logger
 
 from models.agent import AgentAction
-
 from tools.utils.constants import (
-    GUIDANCE_MESSAGES,
     DATABASE_ERROR_GUIDANCE,
+    GUIDANCE_MESSAGES,
     SEARCH_CONFIG,
 )
 
@@ -101,11 +101,7 @@ def calculate_database_batch_with_line_limit(
             # Check if adding this node would exceed the limit
             if total_lines + node_lines > line_limit and batch_nodes:
                 logger.debug(
-                    f"📦 DEBUG: Adding node {
-                        i +
-                        1} would exceed limit ({
-                        total_lines +
-                        node_lines} > {line_limit}), stopping batch"
+                    f"📦 DEBUG: Adding node {i + 1} would exceed limit ({total_lines + node_lines} > {line_limit}), stopping batch"
                 )
                 # Don't add this node, return current batch
                 break
@@ -603,7 +599,9 @@ class DatabaseSearchGuidance(BaseToolGuidance):
 
         return None
 
-    def _handle_no_results(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
+    def _handle_no_results(
+        self, event: Dict[str, Any], action: AgentAction
+    ) -> Dict[str, Any]:
         """Handle no results case with comprehensive error guidance."""
         # Build error guidance
         query_name = action.parameters.get("query_name", "unknown")

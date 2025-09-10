@@ -7,7 +7,6 @@ when parsing directories, similar to .gitignore functionality.
 
 from typing import List
 
-
 # File patterns to ignore (glob patterns)
 IGNORE_FILE_PATTERNS: List[str] = [
     # Compiled files

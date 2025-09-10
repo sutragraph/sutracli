@@ -5,7 +5,8 @@ This module provides functionality to validate technology names against the pred
 enum list from the connection splitting prompt and correct mismatched names.
 """
 
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
+
 from loguru import logger
 
 

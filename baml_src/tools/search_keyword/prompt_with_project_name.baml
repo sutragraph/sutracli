@@ -24,12 +24,12 @@ Other Parameters:
   - file_paths: Comma-separated `absolute` file or directory paths to search. Use this when you know specific paths to search.
   - project_name: The name of the project to search within. Use this to search the entire project automatically.
 
-IMPORTANT: 
+IMPORTANT:
   - DO NOT use both file_paths and project_name together - choose one approach:
     - Use file_paths when you know specific files/directories to search
     - Use project_name when you want to search the entire project
   - If using file_paths, ensure they are absolute paths.
-    
+
 Notes:
   - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
   - For multiple patterns, use "pattern1|pattern2" with regex=true

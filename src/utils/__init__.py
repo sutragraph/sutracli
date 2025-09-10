@@ -1,8 +1,8 @@
 from .helpers import (
+    chunk_list,
     load_json_file,
     normalize_node_type,
     normalize_relationship_type,
-    chunk_list,
 )
 
 __all__ = [

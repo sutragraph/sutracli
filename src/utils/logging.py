@@ -3,7 +3,8 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
 from loguru import logger
 
 
@@ -45,7 +46,11 @@ def cleanup_old_logs(log_dir: str, max_files: int = 50):
     """Clean up old log files if there are too many in the directory."""
     try:
         # List all debug log files
-        log_files = [f for f in os.listdir(log_dir) if f.startswith("debug_session_") and f.endswith(".log")]
+        log_files = [
+            f
+            for f in os.listdir(log_dir)
+            if f.startswith("debug_session_") and f.endswith(".log")
+        ]
 
         # If we have more files than the maximum allowed
         if len(log_files) > max_files:

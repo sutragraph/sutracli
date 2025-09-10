@@ -12,7 +12,7 @@ EXAMPLES OF FORBIDDEN GROUPING: (Avoid! Do Not use!)
 - "Multiple incoming HTTP connection points"
 - "Several outgoing HTTP connection points"
 - "Message handlers for incoming events including eventA, eventB, eventC"
-- "API endpoints including endpointX, endpointY, endpointZ"  
+- "API endpoints including endpointX, endpointY, endpointZ"
 - "Multiple operations for data processing"
 - "Connection handlers including X, Y, Z"
 - "40+ REST API endpoints including /get-speech-token, /get-custom-token, /check-room"
@@ -22,7 +22,7 @@ EXAMPLES OF FORBIDDEN GROUPING: (Avoid! Do Not use!)
 
 REQUIRED APPROACH:
 - "Message handler for eventA"
-- "Message handler for eventB"  
+- "Message handler for eventB"
 - "Message handler for eventC"
 - "GET /endpointX for data retrieval"
 - "POST /endpointY for data creation"
@@ -42,7 +42,7 @@ You MUST classify each connection using ONLY one of these exact technology type 
 1. HTTP/HTTPS - HTTP/HTTPS REST API calls and endpoints
    - Any HTTP/HTTPS client library or REST API framework should use this type
    - Examples: axios, fetch, requests, superagent, got, node-fetch, Express routes, Flask routes, FastAPI endpoints
-   
+
 2. WebSockets - WebSocket connections for real-time bidirectional communication
    - Any WebSocket library or real-time bidirectional connection should use this type
    - Examples: socket.io, ws, websocket-client, Socket.IO-client, webrtc
@@ -50,11 +50,11 @@ You MUST classify each connection using ONLY one of these exact technology type 
 3. gRPC - Google RPC framework for high-performance RPC
    - Any gRPC implementation or protobuf-based RPC should use this type
    - Examples: @grpc/grpc-js, grpcio, grpc-web
-   
+
 4. GraphQL - Query language for APIs
    - Any GraphQL client or server implementation should use this type
    - Examples: apollo-client, graphql-request, urql, relay
-   
+
 5. MessageQueue - Message queuing systems
    - Any message queue, job queue, or task queue system should use this type
    - Examples: amqplib (RabbitMQ), kafkajs (Kafka), bull (Redis queues), sqs (AWS SQS), pub/sub
@@ -73,7 +73,7 @@ Examples:
 - Message queue consumers that receive messages
 - Server configurations that listen for connections
 
-#### OUTGOING CONNECTIONS  
+#### OUTGOING CONNECTIONS
 Connections where THIS service connects TO other services
 Examples:
 - HTTP client calls (axios, fetch, requests, etc.)
@@ -197,7 +197,7 @@ switch/if (condition) {
 
 You MUST create separate entries:
 - One for operation A handler
-- One for operation B handler  
+- One for operation B handler
 - One for operation C handler
 
 ### FOR MULTIPLE OPERATION DEFINITIONS:
@@ -260,7 +260,7 @@ Produce a concise, README-like project summary that an agent can rely on with hi
 9) Operational notes (when evident)
 - Include tracing/logging/metrics libraries, and error-handling/retry patterns that affect connections.
 
-Example style: "This service exposes user and order workflows over HTTP using Express and the axios client, publishes order events to RabbitMQ via amqplib for asynchronous processing, and pushes live updates via Socket.IO. Configuration uses ENV vars such as API_BASE_URL and ORDER_QUEUE. Outbound HTTP requests include an Authorization: Bearer <token> header." 
+Example style: "This service exposes user and order workflows over HTTP using Express and the axios client, publishes order events to RabbitMQ via amqplib for asynchronous processing, and pushes live updates via Socket.IO. Configuration uses ENV vars such as API_BASE_URL and ORDER_QUEUE. Outbound HTTP requests include an Authorization: Bearer <token> header."
 
 ## OUTPUT FORMAT
 
@@ -334,7 +334,7 @@ For any code handling multiple operations:
 - Use specific line numbers for each operation block
 - Description must mention the specific operation
 
-### RULE 2: ONE ENDPOINT/EVENT/METHOD PER SNIPPET  
+### RULE 2: ONE ENDPOINT/EVENT/METHOD PER SNIPPET
 For any code defining multiple endpoints/events/methods:
 - Each definition gets its own snippet entry
 - Use specific line numbers for each definition
@@ -342,7 +342,7 @@ For any code defining multiple endpoints/events/methods:
 
 ### RULE 3: PRECISE LINE NUMBERS
 - Use exact line numbers for each individual connection
-- For single-line connections: "23-23" 
+- For single-line connections: "23-23"
 - For multi-line connections: "23-25" (only if they're truly one logical connection spanning multiple lines)
 - Never use large ranges that span multiple different connections
 - FORBIDDEN: "264-600", "604-674", "100-500" - these indicate multiple connections being grouped
@@ -571,7 +571,7 @@ File: src/services/api.js
 22 | makeApiCall('/api/orders', 'GET', params)
 
 File: src/makeApiCall.js
-10 | function makeApiCall(path, method, payloadOrParams, config) { 
+10 | function makeApiCall(path, method, payloadOrParams, config) {
 11 |   const url = `${process.env.BASE_URL}${path}`
 13 |   return axios.request({ url, method, data: payloadOrParams, ...config })
 14 | }
@@ -713,7 +713,7 @@ IMPORTANT NOTES FOR SWITCH CASE SPLITTING:
           "description": "40+ REST API endpoints including /get-speech-token, /get-custom-token, /check-room, /admin routes, /super-admin routes - comprehensive incoming HTTP connection points"
         },
         {
-          "snippet_lines": "604-674", 
+          "snippet_lines": "604-674",
           "description": "REST API endpoints for incoming connections - includes 45+ admin, internal, techyrr-admin, and public routes with various HTTP methods"
         }
       ]
@@ -972,4 +972,3 @@ function ChatGPTConnectionSplitting(memory_context: string) -> ConnectionSplitti
     {{ ConnectionSplittingUserPrompt(memory_context) }}
   "#
 }
-

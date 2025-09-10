@@ -3,35 +3,41 @@ Comprehensive Python test file for AST parser testing.
 Contains examples of all extractable code constructs.
 """
 
+import asyncio
 import os
 import sys
-from typing import Protocol, List, Dict, Any
 from abc import ABC, abstractmethod
-from enum import Enum, IntEnum
 from dataclasses import dataclass
-import asyncio
+from enum import Enum, IntEnum
 from pathlib import Path
+from typing import Any, Dict, List, Protocol
 
 # ============================================================================
 # ENUMS - Should be extracted as BlockType.ENUM
 # ============================================================================
 
+
 class Status(Enum):
     """Basic enum example."""
+
     PENDING = "pending"
     ACTIVE = "active"
     INACTIVE = "inactive"
 
+
 class Priority(IntEnum):
     """Integer enum example."""
+
     LOW = 1
     MEDIUM = 2
     HIGH = 3
+
 
 class Color(Enum):
     RED = 1
     GREEN = 2
     BLUE = 3
+
 
 # ============================================================================
 # VARIABLES - Should be extracted as BlockType.VARIABLE
@@ -50,44 +56,39 @@ name, age, city = "John", 30, "NYC"
 first, second, *rest = [1, 2, 3, 4, 5]
 
 # Dictionary
-CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "debug": True
-}
+CONFIG = {"host": "localhost", "port": 5432, "debug": True}
 
 # List comprehension
 NUMBERS = [x for x in range(10)]
 
 # Complex assignment
-user_data = {
-    "name": "Alice",
-    "settings": {
-        "theme": "dark",
-        "notifications": True
-    }
-}
+user_data = {"name": "Alice", "settings": {"theme": "dark", "notifications": True}}
 
 # ============================================================================
 # FUNCTIONS - Should be extracted as BlockType.FUNCTION
 # ============================================================================
 
+
 def simple_function():
     """A simple function."""
     return "Hello, World!"
+
 
 def function_with_params(name: str, age: int = 25) -> str:
     """Function with parameters and type hints."""
     return f"Name: {name}, Age: {age}"
 
+
 def function_with_args(*args, **kwargs):
     """Function with variable arguments."""
     return args, kwargs
+
 
 async def async_function():
     """Async function example."""
     await asyncio.sleep(1)
     return "Async result"
+
 
 async def async_function_with_params(url: str, timeout: int = 30) -> Dict[str, Any]:
     """Async function with parameters."""
@@ -95,29 +96,37 @@ async def async_function_with_params(url: str, timeout: int = 30) -> Dict[str, A
     await asyncio.sleep(0.1)
     return {"url": url, "timeout": timeout}
 
+
 def generator_function():
     """Generator function."""
     for i in range(5):
         yield i
 
+
 def decorator_function(func):
     """Decorator function."""
+
     def wrapper(*args, **kwargs):
         print(f"Calling {func.__name__}")
         return func(*args, **kwargs)
+
     return wrapper
+
 
 @decorator_function
 def decorated_function():
     """Function with decorator."""
     return "Decorated!"
 
+
 def nested_function_example():
     """Function with nested function."""
+
     def inner_function():
         return "Inner"
 
     return inner_function()
+
 
 # Lambda functions (assigned to variables)
 lambda_func = lambda x: x * 2
@@ -127,6 +136,7 @@ complex_lambda = lambda x, y=10: x + y if x > 0 else y
 # CLASSES - Should be extracted as BlockType.CLASS
 # ============================================================================
 
+
 class SimpleClass:
     """A simple class."""
 
@@ -135,6 +145,7 @@ class SimpleClass:
 
     def get_value(self):
         return self.value
+
 
 class ClassWithMethods:
     """Class with various methods."""
@@ -171,6 +182,7 @@ class ClassWithMethods:
         await asyncio.sleep(0.1)
         return "Async method result"
 
+
 class InheritedClass(ClassWithMethods):
     """Class with inheritance."""
 
@@ -181,6 +193,7 @@ class InheritedClass(ClassWithMethods):
     def get_info(self):
         return f"{self.name}: {self.value}"
 
+
 class MultipleInheritanceClass(SimpleClass, ClassWithMethods):
     """Class with multiple inheritance."""
 
@@ -188,12 +201,15 @@ class MultipleInheritanceClass(SimpleClass, ClassWithMethods):
         SimpleClass.__init__(self)
         ClassWithMethods.__init__(self, name)
 
+
 @dataclass
 class DataClass:
     """Dataclass example."""
+
     name: str
     age: int
     email: str = ""
+
 
 class GenericClass:
     """Generic class example."""
@@ -204,9 +220,11 @@ class GenericClass:
     def add_item(self, item: Any):
         self.items.append(item)
 
+
 # ============================================================================
 # INTERFACES - Should be extracted as BlockType.INTERFACE
 # ============================================================================
+
 
 class AbstractBaseClass(ABC):
     """Abstract base class example."""
@@ -225,6 +243,7 @@ class AbstractBaseClass(ABC):
         """Concrete method in ABC."""
         return "Concrete implementation"
 
+
 class ShapeProtocol(Protocol):
     """Protocol example."""
 
@@ -235,6 +254,7 @@ class ShapeProtocol(Protocol):
     def perimeter(self) -> float:
         """Calculate perimeter."""
         ...
+
 
 class ProcessorProtocol(Protocol):
     """Another protocol example."""
@@ -247,6 +267,7 @@ class ProcessorProtocol(Protocol):
         """Validate input data."""
         ...
 
+
 # Implementation of abstract class
 class ConcreteImplementation(AbstractBaseClass):
     """Concrete implementation of abstract class."""
@@ -257,6 +278,7 @@ class ConcreteImplementation(AbstractBaseClass):
     async def abstract_async_method(self):
         await asyncio.sleep(0.1)
         return "Async implemented!"
+
 
 # ============================================================================
 # EXPORTS - Should be extracted as BlockType.EXPORT
@@ -273,12 +295,13 @@ __all__ = [
     "simple_function",
     "async_function",
     "DATABASE_URL",
-    "API_VERSION"
+    "API_VERSION",
 ]
 
 # ============================================================================
 # ADDITIONAL COMPLEX EXAMPLES
 # ============================================================================
+
 
 class ComplexClass:
     """Complex class with nested classes and various constructs."""
@@ -304,10 +327,12 @@ class ComplexClass:
 
     def method_with_nested_function(self):
         """Method containing nested function."""
+
         def inner():
             return "Inner function in method"
 
         return inner()
+
 
 # Context manager class
 class ContextManager:
@@ -321,6 +346,7 @@ class ContextManager:
         print("Exiting context")
         return False
 
+
 # Exception class
 class CustomException(Exception):
     """Custom exception class."""
@@ -329,6 +355,7 @@ class CustomException(Exception):
         super().__init__(message)
         self.code = code
 
+
 # Metaclass example
 class MetaClass(type):
     """Metaclass example."""
@@ -336,48 +363,57 @@ class MetaClass(type):
     def __new__(cls, name, bases, attrs):
         return super().__new__(cls, name, bases, attrs)
 
+
 class ClassWithMetaclass(metaclass=MetaClass):
     """Class using metaclass."""
 
     def method(self):
         return "Metaclass method"
 
+
 # ============================================================================
 # FUNCTIONS WITH VARIOUS DECORATORS
 # ============================================================================
 
+
 def timing_decorator(func):
     """Timing decorator."""
+
     def wrapper(*args, **kwargs):
         import time
+
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
         print(f"{func.__name__} took {end - start:.4f} seconds")
         return result
+
     return wrapper
+
 
 @timing_decorator
 def timed_function():
     """Function with timing decorator."""
     import time
+
     time.sleep(0.1)
     return "Timed result"
+
 
 @property
 def standalone_property():
     """Standalone property (unusual but valid)."""
     return "Property value"
 
+
 # ============================================================================
 # EDGE CASES AND SPECIAL CONSTRUCTS
 # ============================================================================
 
+
 # Function with complex default arguments
 def complex_defaults(
-    name: str = "default",
-    items: List[str] = None,
-    config: Dict[str, Any] = None
+    name: str = "default", items: List[str] = None, config: Dict[str, Any] = None
 ):
     """Function with complex default arguments."""
     if items is None:
@@ -386,14 +422,16 @@ def complex_defaults(
         config = {}
     return {"name": name, "items": items, "config": config}
 
+
 # Function with type annotations
 def typed_function(
     input_data: List[Dict[str, Any]],
     processor: ProcessorProtocol,
-    timeout: float = 30.0
+    timeout: float = 30.0,
 ) -> List[Any]:
     """Function with complex type annotations."""
     return [processor.process(item) for item in input_data]
+
 
 # Async generator
 async def async_generator():
@@ -402,14 +440,17 @@ async def async_generator():
         await asyncio.sleep(0.1)
         yield i
 
+
 # Class with slots
 class SlottedClass:
     """Class with __slots__."""
-    __slots__ = ['x', 'y']
+
+    __slots__ = ["x", "y"]
 
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
 
 # Final test constructs
 if __name__ == "__main__":

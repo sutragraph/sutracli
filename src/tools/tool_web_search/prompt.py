@@ -7,7 +7,7 @@ Required Parameters:
 Optional Parameters:
 - time_filter: Time-based filtering options
   - "pd": Results from the past day
-  - "pw": Results from the past week  
+  - "pw": Results from the past week
   - "pm": Results from the past month
   - "py": Results from the past year
   - leave empty for no time filter (default)
@@ -26,7 +26,7 @@ Optional Parameters:
 - extra_snippets: Include extra snippets in results (default: false)
 
 Usage:
-<web_search> 
+<web_search>
 <query>search terms here</query>
 <search_type>search</search_type>
 <time_filter>pw</time_filter>

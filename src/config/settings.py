@@ -3,11 +3,11 @@ Configuration management for SutraKnowledge.
 Centralizes all configurable paths and settings.
 """
 
-import os
 import json
+import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from dataclasses import dataclass
 
 
 @dataclass

@@ -8,7 +8,8 @@ without file system lookups.
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
-from tree_sitter_language_pack import get_parser, get_language
+
+from tree_sitter_language_pack import get_language, get_parser
 
 from indexer.extractors import BlockType
 from indexer.relationship_extractors import BaseRelationshipExtractor, Relationship

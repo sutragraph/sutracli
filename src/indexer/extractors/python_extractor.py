@@ -4,9 +4,11 @@ This module provides Python-specific extraction capabilities for identifying
 and extracting code blocks from Python AST nodes using tree-sitter.
 """
 
-from typing import List, Any, Dict, Set, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
+
 from tree_sitter_language_pack import SupportedLanguage
-from . import BaseExtractor, CodeBlock, BlockType
+
+from . import BaseExtractor, BlockType, CodeBlock
 
 
 class PythonExtractor(BaseExtractor):

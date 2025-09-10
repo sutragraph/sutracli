@@ -1,6 +1,9 @@
-from baml_client.types import ConnectionMatchingResponse
-from loguru import logger
 from typing import Any, Dict
+
+from loguru import logger
+
+from baml_client.types import ConnectionMatchingResponse
+
 
 def format_connections(connections, connection_type):
     """
@@ -49,7 +52,6 @@ def validate_and_process_baml_results(
         tuple: (is_valid, processed_results)
     """
     try:
-
         processed_matches = []
         incoming_ids = {str(conn.get("id")) for conn in incoming_connections}
         outgoing_ids = {str(conn.get("id")) for conn in outgoing_connections}

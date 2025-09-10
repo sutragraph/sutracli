@@ -9,7 +9,7 @@ import hashlib
 from pathlib import Path
 from typing import Dict, Optional, Union
 
-from utils.file_utils import should_ignore_file, should_ignore_directory, is_text_file
+from utils.file_utils import is_text_file, should_ignore_directory, should_ignore_file
 
 
 def compute_file_hash(file_path: Union[str, Path]) -> Optional[str]:

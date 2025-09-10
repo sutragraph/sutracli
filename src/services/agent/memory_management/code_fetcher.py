@@ -4,11 +4,14 @@ Code Fetcher Module
 Handles fetching code content from database and file operations.
 """
 
-from typing import Optional, Any
 from pathlib import Path
+from typing import Any, Optional
+
 from loguru import logger
-from .query_cache import get_query_cache
+
 from graph.graph_operations import GraphOperations
+
+from .query_cache import get_query_cache
 
 
 class CodeFetcher:
@@ -105,7 +108,9 @@ class CodeFetcher:
                     # Try to construct path by going up one level and then adding the file path
                     parent_dir = current_dir.parent
                     fixed_path = parent_dir / file_path
-                    logger.debug(f"Fixed file path (avoiding duplication): {file_path} -> {fixed_path}")
+                    logger.debug(
+                        f"Fixed file path (avoiding duplication): {file_path} -> {fixed_path}"
+                    )
                     return str(fixed_path)
                 else:
                     # Normal case: concatenate with current dir
@@ -172,6 +177,7 @@ class CodeFetcher:
 
         try:
             from pathlib import Path
+
             current_dir = Path.cwd()
 
             # If the fixed path has duplicated directory names, try removing one level
@@ -182,10 +188,12 @@ class CodeFetcher:
                 for i in range(len(parts) - 1):
                     if parts[i] == parts[i + 1]:
                         # Found duplicate, create path without one of them
-                        new_parts = parts[:i] + parts[i+1:]
+                        new_parts = parts[:i] + parts[i + 1 :]
                         fallback_path = str(Path(*new_parts))
                         fallback_paths.append(fallback_path)
-                        logger.debug(f"Generated fallback path by removing duplicate '{parts[i]}': {fallback_path}")
+                        logger.debug(
+                            f"Generated fallback path by removing duplicate '{parts[i]}': {fallback_path}"
+                        )
                         break
 
             # Try the original path as-is (in case it was already correct)

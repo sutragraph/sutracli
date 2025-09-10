@@ -1,7 +1,7 @@
 """Agent data models for agentic operations."""
 
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 @dataclass
@@ -13,4 +13,6 @@ class AgentAction:
     """
 
     description: str
-    parameters: Dict[str, Any] = field(default_factory=dict)  # Primary source for XML-parsed tool parameters
+    parameters: Dict[str, Any] = field(
+        default_factory=dict
+    )  # Primary source for XML-parsed tool parameters

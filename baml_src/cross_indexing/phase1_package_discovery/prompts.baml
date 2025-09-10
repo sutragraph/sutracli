@@ -44,4 +44,3 @@ function ChatGPTPackageDiscovery(analysis_query: string, memory_context: string,
     {{ UserPrompt_Phase1(analysis_query, memory_context) }}
   "#
 }
-

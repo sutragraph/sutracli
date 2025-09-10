@@ -5,22 +5,21 @@ This script sets up the ~/.sutra directory and downloads required models and par
 """
 
 
-import os
-import sys
 import json
+import os
 import shutil
-import tempfile
 import subprocess
-from pathlib import Path
-from urllib.request import urlretrieve
-from urllib.error import URLError
+import sys
 import tarfile
+import tempfile
+from pathlib import Path
+from urllib.error import URLError
+from urllib.request import urlretrieve
 
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 
 from src.utils.console import console
-
 
 # Configuration
 REPO_URL = "https://github.com/sutragraph/models"
@@ -299,7 +298,6 @@ def check_dependencies():
         console.info("  Arch Linux: sudo pacman -S ripgrep")
 
 
-
 def cleanup():
     """Clean up temporary files"""
     if TEMP_DIR.exists():
@@ -342,7 +340,9 @@ def main():
         if models_success:
             print(f"📦 Models: {INSTALL_DIR / 'models'}")
         else:
-            console.warning("Models setup failed - you may need to install them manually")
+            console.warning(
+                "Models setup failed - you may need to install them manually"
+            )
 
         print("\n🚀 Usage:")
         print("  sutrakit --help                    # Show help")

@@ -28,12 +28,12 @@ function main() {
   console.log('Main module');
   function1();
   module2.function2();
-  
+
   const instance = new DefaultClass();
   instance.method();
-  
+
   loadModule().then(result => console.log(result));
-  
+
   requiredModule.function2();
 }
 

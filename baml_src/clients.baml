@@ -19,7 +19,7 @@ client<llm> AnthropicClaude {
   options {
     api_key env.ANTHROPIC_API_KEY
     model env.ANTHROPIC_MODEL_ID
-    max_tokens 64000  
+    max_tokens 64000
     temperature 0.1
     allowed_role_metadata ["cache_control"]
     headers {

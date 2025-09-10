@@ -1,5 +1,7 @@
-from typing import Iterator, Dict, Any
+from typing import Any, Dict, Iterator
+
 from models.agent import AgentAction
+
 from .action import execute_completion_action as base_execute_completion_action
 
 

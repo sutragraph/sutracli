@@ -3,12 +3,12 @@ Main converter class that orchestrates the code extraction to SQLite conversion 
 """
 
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from loguru import logger
 
-from graph import SQLiteConnection, GraphOperations
-from models.schema import Project, ExtractionData
+from graph import GraphOperations, SQLiteConnection
+from models.schema import ExtractionData, Project
 from utils import load_json_file
 
 

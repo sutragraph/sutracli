@@ -4,8 +4,8 @@ Agent Configuration System for SutraKit.
 Provides modular configuration for different agents and their requirements.
 """
 
-from typing import Dict, List, Optional
 from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 # Import Agent enum
 from src.agents_new import Agent
@@ -14,12 +14,14 @@ from src.agents_new import Agent
 @dataclass
 class AgentConfig:
     """Configuration for a SutraKit agent."""
+
     key: Agent
     name: str
     description: str
     requires_indexing: bool = False
     requires_cross_indexing: bool = False
     config_file: Optional[str] = None
+
 
 class AgentRegistry:
     """Registry for managing available agents."""
@@ -41,7 +43,6 @@ class AgentRegistry:
                 requires_cross_indexing=True,
             )
         )
-
 
     def register_agent(self, agent: AgentConfig):
         """Register a new agent."""

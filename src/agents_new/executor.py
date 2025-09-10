@@ -1,26 +1,24 @@
-from typing import Dict, Optional, NamedTuple, Union, cast
+from typing import Dict, NamedTuple, Optional, Union, cast
+
 from loguru import logger
 
 from baml_client.types import (
     Agent,
+    BasePromptParams,
     ProjectContext,
     RoadmapAgentParams,
     RoadmapPromptParams,
-    BasePromptParams,
     RoadmapResponse,
-
-
 )
 from services.baml_service import BAMLService
-from .utils import get_project_context_for_agent, get_system_info
 
+from .utils import get_project_context_for_agent, get_system_info
 
 AgentContentType = Union[RoadmapResponse]
 
 
 class AgentResponse(NamedTuple):
-    """Structured response from agent execution including agent type.
-    """
+    """Structured response from agent execution including agent type."""
 
     agent_type: Agent
     content: AgentContentType
@@ -48,10 +46,9 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
         # Validate agent name
         if agent_name not in agent_function_mapping:
             available_agents = list(agent_function_mapping.keys())
+            available_names = [a.value for a in available_agents]
             raise ValueError(
-                f"Unsupported agent: {agent_name}. Available: {
-                    [
-                        a.value for a in available_agents]}"
+                f"Unsupported agent: {agent_name}. Available: {available_names}"
             )
 
         system_info = get_system_info()
@@ -71,15 +68,13 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
             prompt_params = RoadmapPromptParams(base_params=base_params)
             params = RoadmapAgentParams(context=context, prompt_params=prompt_params)
         else:
-            raise ValueError(
-                f"Agent type {agent_name} not implemented yet")
+            raise ValueError(f"Agent type {agent_name} not implemented yet")
 
         logger.debug(f"Executing {agent_name.value} agent using BAMLService")
 
         # Initialize BAMLService and execute
         baml_service = BAMLService()
-        baml_response = baml_service.call(
-            function_name=function_name, params=params)
+        baml_response = baml_service.call(function_name=function_name, params=params)
 
         logger.debug("Agent execution completed successfully")
 

@@ -9,4 +9,3 @@ template_string CrossIndexingSystemInfoTemplate(home_dir: string, current_dir: s
     - Make platform-specific decisions when needed
     - Set proper file permissions and executable formats
 "#
-

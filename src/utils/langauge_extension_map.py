@@ -6,6 +6,7 @@ and specific filenames that should be parsed.
 """
 
 from typing import Dict, List
+
 from tree_sitter_language_pack import SupportedLanguage
 
 # Supported languages and their file extensions

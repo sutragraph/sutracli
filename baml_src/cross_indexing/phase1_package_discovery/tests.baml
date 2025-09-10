@@ -5,7 +5,7 @@ test TestAwsPackageDiscovery {
     memory_context "Starting package discovery analysis for a Python CLI project"
     system_info {
       home "/home/user"
-      current_dir "/home/user/project"  
+      current_dir "/home/user/project"
     }
   }
 }
@@ -17,7 +17,7 @@ test TestAnthropicPackageDiscovery {
     memory_context "Starting package discovery analysis for a Python CLI project"
     system_info {
       home "/home/user"
-      current_dir "/home/user/project"  
+      current_dir "/home/user/project"
     }
   }
 }

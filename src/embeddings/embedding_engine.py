@@ -3,22 +3,22 @@ Code block embedding engine for generating strategic embeddings for FileData and
 Moved from processors/ to embeddings/ for better organization.
 """
 
-from typing import List, Dict, Optional
 from pathlib import Path
+from typing import Dict, List, Optional
 
 from loguru import logger
 from rich.progress import (
-    Progress,
     BarColumn,
+    MofNCompleteColumn,
+    Progress,
     TextColumn,
     TimeElapsedColumn,
     TimeRemainingColumn,
-    MofNCompleteColumn,
 )
 
-from models.schema import CodeBlock, FileData
-from embeddings.vector_store import get_vector_store
 from config import config
+from embeddings.vector_store import get_vector_store
+from models.schema import CodeBlock, FileData
 
 
 class EmbeddingEngine:
@@ -142,7 +142,9 @@ class EmbeddingEngine:
             # Track which chunks belong to this block
             for chunk_idx, chunk_metadata in enumerate(content_chunks):
                 # Create embedding text by adding metadata to this specific chunk
-                chunk_embedding_text = f"{metadata_template}\nCode:\n{chunk_metadata['text']}"
+                chunk_embedding_text = (
+                    f"{metadata_template}\nCode:\n{chunk_metadata['text']}"
+                )
                 all_chunk_texts.append(chunk_embedding_text)
 
                 # Calculate actual source line numbers using chunk boundaries
@@ -221,7 +223,6 @@ class EmbeddingEngine:
         def find_parent_path(
             block_id: int, blocks: List[CodeBlock], path: List[str] = []
         ) -> List[str]:
-
             for block in blocks:
                 if block.id == block_id:
                     return path + [block.name]
@@ -293,7 +294,9 @@ class EmbeddingEngine:
 
             # For line number calculation, use source content if provided (for blocks),
             # otherwise use the full content (for files)
-            line_calc_content = source_content if source_content is not None else content
+            line_calc_content = (
+                source_content if source_content is not None else content
+            )
             content_chunks = self.vector_store.chunk_text(
                 line_calc_content,
                 max_tokens=self.max_tokens,
@@ -310,8 +313,12 @@ class EmbeddingEngine:
                     if chunk_index < len(content_chunks):
                         content_chunk = content_chunks[chunk_index]
                         # Add source start line offset for blocks
-                        chunk_start_line = content_chunk["start_line"] + source_start_line - 1
-                        chunk_end_line = content_chunk["end_line"] + source_start_line - 1
+                        chunk_start_line = (
+                            content_chunk["start_line"] + source_start_line - 1
+                        )
+                        chunk_end_line = (
+                            content_chunk["end_line"] + source_start_line - 1
+                        )
                     else:
                         # Fallback calculation using source content for line numbers
                         char_start = chunk_metadata.get("start", 0)
@@ -319,7 +326,9 @@ class EmbeddingEngine:
                         lines_before_chunk = text_up_to_start.count("\n")
                         chunk_text = chunk_metadata.get("text", "")
                         chunk_line_count = len(chunk_text.split("\n"))
-                        chunk_start_line = lines_before_chunk + 1 + source_start_line - 1
+                        chunk_start_line = (
+                            lines_before_chunk + 1 + source_start_line - 1
+                        )
                         chunk_end_line = chunk_start_line + chunk_line_count - 1
 
                     # Store embedding in vector database

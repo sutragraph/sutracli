@@ -51,7 +51,7 @@ Before Marking Any Task Complete (Only when results = 0):
 - Only after 2-3 documented different attempts with zero results should you mark task complete
 
 Implementation Discovery Retry Strategy (Only when zero results found):
-- 1st attempt: Use primary tool approach as specified in import discovery task  
+- 1st attempt: Use primary tool approach as specified in import discovery task
 - 2nd attempt: Try alternative tool or broader search pattern - ONLY if 1st attempt found 0 results
 - 3rd attempt: Try different analysis method or alternative file approaches - ONLY if 2nd attempt found 0 results
 - After 3 attempts with zero results: Mark complete and move to next task

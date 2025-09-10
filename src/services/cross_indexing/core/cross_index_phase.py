@@ -1,20 +1,26 @@
-from typing import Dict, Any, List
-from src.utils.system_utils import get_home_and_current_directories
+import json
+from typing import Any, Dict, List
+
 from loguru import logger
-from src.graph.graph_operations import GraphOperations
-from services.cross_indexing.utils import format_connections, validate_and_process_baml_results
+
 from baml_client.types import (
     CodeManagerResponse,
-    CrossIndexingResponse,
     ConnectionMatchingResponse,
     ConnectionSplittingResponse,
+    CrossIndexingResponse,
     TaskFilterResponse,
     TechnologyCorrectionResponse,
 )
-import json
-from .technology_validator import TechnologyValidator
-from services.baml_service import BAMLService
 from services.agent.memory_management.models import Task, TaskStatus
+from services.baml_service import BAMLService
+from services.cross_indexing.utils import (
+    format_connections,
+    validate_and_process_baml_results,
+)
+from src.graph.graph_operations import GraphOperations
+from src.utils.system_utils import get_home_and_current_directories
+
+from .technology_validator import TechnologyValidator
 
 
 class CrossIndexing:

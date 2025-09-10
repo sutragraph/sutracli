@@ -29,13 +29,13 @@ RULES
    - Message Queue Libraries: Packages that enable asynchronous message passing between services
    - Media Streaming Libraries: Packages that handle media streaming protocols like WebRTC
    - Other Communication Libraries: Any other packages related to communication but not covered above
-   
+
 6. EXCLUSION CRITERIA:
    - Database connection libraries for data persistence (not communication)
    - File system and local storage libraries
    - Development tools and testing frameworks
    - Files Like package-lock.json, yarn.lock, Pipfile.lock, etc. that are not package configuration files
-   
+
 7. TASK CREATION FORMAT RULES:
    - Include complete tool selection guidance (search_keyword with specific patterns)
    - Provide exact search patterns with proper regex escaping
@@ -90,7 +90,7 @@ RULES
             "action": "move|add|remove",
             "id": "task_id_string",
             "from_status": "pending|current|completed",
-            "to_status": "pending|current|completed", 
+            "to_status": "pending|current|completed",
             "description": "task description"
           }
         ],

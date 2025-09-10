@@ -1,14 +1,17 @@
 import json
 from typing import Any, Dict, Iterator, Optional
+
 from loguru import logger
-from services.agent.memory_management.models import TaskStatus
-from src.utils.debug_utils import get_user_confirmation_for_llm_call
+
 from baml_client.types import Agent
-from src.tools.tool_executor import execute_tool
+from services.agent.memory_management.models import TaskStatus
 from services.agent.session_management import SessionManager
-from .cross_indexing_task_manager import CrossIndexingTaskManager
-from .cross_index_phase import CrossIndexing
 from src.graph.graph_operations import GraphOperations
+from src.tools.tool_executor import execute_tool
+from src.utils.debug_utils import get_user_confirmation_for_llm_call
+
+from .cross_index_phase import CrossIndexing
+from .cross_indexing_task_manager import CrossIndexingTaskManager
 
 
 class CrossIndexService:
@@ -101,14 +104,15 @@ class CrossIndexService:
                         if (
                             current_phase == 3
                             and pending_code_manager_result is not None
-                            and pending_code_manager_result["tool_name"] in ["database", "search_keyword"]
+                            and pending_code_manager_result["tool_name"]
+                            in ["database", "search_keyword"]
                         ):
                             logger.debug(
                                 f"Running code manager with previous tool result: {pending_code_manager_result['tool_name']}"
                             )
                             self._process_tool_with_code_manager_from_status(
                                 pending_code_manager_result["tool_status"],
-                                pending_code_manager_result["tool_name"]
+                                pending_code_manager_result["tool_name"],
                             )
                             pending_code_manager_result = None
 
@@ -196,14 +200,15 @@ class CrossIndexService:
                         # Process any remaining code manager result before Phase 3 completion
                         if (
                             pending_code_manager_result is not None
-                            and pending_code_manager_result["tool_name"] in ["database", "search_keyword"]
+                            and pending_code_manager_result["tool_name"]
+                            in ["database", "search_keyword"]
                         ):
                             logger.debug(
                                 f"Processing final code manager result before Phase 3 completion: {pending_code_manager_result['tool_name']}"
                             )
                             self._process_tool_with_code_manager_from_status(
                                 pending_code_manager_result["tool_status"],
-                                pending_code_manager_result["tool_name"]
+                                pending_code_manager_result["tool_name"],
                             )
                             pending_code_manager_result = None
 
@@ -532,18 +537,20 @@ Tool Results:
                     logger.debug(
                         f"Found overlapping code snippet in {file_path}: existing {existing_snippet.start_line}-{existing_snippet.end_line}, new {start_line}-{end_line}"
                     )
-                    
+
                     # Merge the overlapping ranges by expanding the existing snippet
                     merged_start = min(existing_snippet.start_line, start_line)
                     merged_end = max(existing_snippet.end_line, end_line)
-                    
+
                     logger.debug(
                         f"Merging code snippets: removing existing {existing_snippet.start_line}-{existing_snippet.end_line} and new {start_line}-{end_line}, replacing with merged {merged_start}-{merged_end}"
                     )
-                    
+
                     # Update the existing snippet with merged range
-                    self._update_code_snippet_range(existing_snippet, merged_start, merged_end)
-                    
+                    self._update_code_snippet_range(
+                        existing_snippet, merged_start, merged_end
+                    )
+
                     return True  # Return True to skip adding the new snippet since we merged it
 
             return False
@@ -551,11 +558,13 @@ Tool Results:
         except Exception as e:
             logger.warning(f"Error checking for duplicate code snippet: {e}")
             return False  # If we can't check, allow the addition
-    
-    def _update_code_snippet_range(self, existing_snippet, new_start_line: int, new_end_line: int):
+
+    def _update_code_snippet_range(
+        self, existing_snippet, new_start_line: int, new_end_line: int
+    ):
         """
         Update an existing code snippet with a new line range and fetch updated content.
-        
+
         Args:
             existing_snippet: The existing CodeSnippet object
             new_start_line: New starting line number
@@ -565,18 +574,20 @@ Tool Results:
             # Update the snippet's line range
             existing_snippet.start_line = new_start_line
             existing_snippet.end_line = new_end_line
-            
+
             # Fetch the updated content for the expanded range
-            if hasattr(self.task_manager.memory_ops, 'code_fetcher'):
-                updated_content = self.task_manager.memory_ops.code_fetcher.fetch_code_from_file(
-                    existing_snippet.file_path, new_start_line, new_end_line
+            if hasattr(self.task_manager.memory_ops, "code_fetcher"):
+                updated_content = (
+                    self.task_manager.memory_ops.code_fetcher.fetch_code_from_file(
+                        existing_snippet.file_path, new_start_line, new_end_line
+                    )
                 )
                 existing_snippet.content = updated_content
-                
+
             logger.debug(
                 f"Successfully updated code snippet {existing_snippet.id} to range {new_start_line}-{new_end_line}"
             )
-            
+
         except Exception as e:
             logger.warning(f"Error updating code snippet range: {e}")
 
@@ -915,9 +926,7 @@ Tool Results:
                     mapping_result = self.graph_ops.create_connection_mappings(
                         db_matches
                     )
-                    print(
-                        f"✅ Stored {len(db_matches)} connection mappings in database"
-                    )
+                    print(f"✅ Stored {len(db_matches)} connection mappings in database")
                 else:
                     mapping_result = {"success": True, "mapping_ids": []}
                     print("ℹ️  No connection matches found")

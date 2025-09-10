@@ -1,16 +1,16 @@
 import os
 import subprocess
 from pathlib import Path
-from typing import Iterator, Dict, Any, List
+from typing import Any, Dict, Iterator, List
 
-from models.agent import AgentAction
-from utils.file_utils import should_ignore_file, should_ignore_directory
 from graph.sqlite_client import SQLiteConnection
+from models.agent import AgentAction
+from tools.utils.constants import SEARCH_CONFIG
 from tools.utils.project_utils import (
     auto_detect_project_from_paths,
     resolve_project_base_path,
 )
-from tools.utils.constants import SEARCH_CONFIG
+from utils.file_utils import should_ignore_directory, should_ignore_file
 
 
 def chunk_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
@@ -27,21 +27,23 @@ def chunk_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
     if not content:
         return []
 
-    lines = content.split('\n')
+    lines = content.split("\n")
     total_lines = len(lines)
 
     # If content is small enough, return as single chunk
     if total_lines <= chunk_size:
-        return [{
-            "data": content,
-            "chunk_info": {
-                "chunk_num": 1,
-                "total_chunks": 1,
-                "start_line": 1,
-                "end_line": total_lines,
-                "original_file_lines": total_lines
+        return [
+            {
+                "data": content,
+                "chunk_info": {
+                    "chunk_num": 1,
+                    "total_chunks": 1,
+                    "start_line": 1,
+                    "end_line": total_lines,
+                    "original_file_lines": total_lines,
+                },
             }
-        }]
+        ]
 
     chunks = []
     total_chunks = (total_lines + chunk_size - 1) // chunk_size  # Ceiling division
@@ -51,20 +53,17 @@ def chunk_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
         end_idx = min((i + 1) * chunk_size, total_lines)
 
         chunk_lines = lines[start_idx:end_idx]
-        chunk_content = '\n'.join(chunk_lines)
+        chunk_content = "\n".join(chunk_lines)
 
         chunk_info = {
             "chunk_num": i + 1,
             "total_chunks": total_chunks,
             "start_line": start_idx + 1,
             "end_line": end_idx,
-            "original_file_lines": total_lines
+            "original_file_lines": total_lines,
         }
 
-        chunks.append({
-            "data": chunk_content,
-            "chunk_info": chunk_info
-        })
+        chunks.append({"data": chunk_content, "chunk_info": chunk_info})
 
     return chunks
 
@@ -293,7 +292,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
         chunk_size = SEARCH_CONFIG["chunk_size"]
 
-        lines = data_message.split('\n')
+        lines = data_message.split("\n")
         total_lines = len(lines)
 
         if total_lines <= chunking_threshold:

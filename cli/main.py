@@ -2,12 +2,14 @@
 """Main entry point for the Sutra Knowledge application."""
 
 
-from loguru import logger
-from src.utils.console import console
 import os
 import sys
 from pathlib import Path
+
 from cli.setup import setup_baml_environment
+from loguru import logger
+
+from src.utils.console import console
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -19,20 +21,21 @@ def main():
     """Main entry point for the CLI application."""
 
     from cli.arg_parser import setup_argument_parser
-    from src.utils.logging import setup_logging
     from cli.commands import (
-        handle_single_command,
-        handle_list_command,
         handle_agent_command,
-        handle_parse_command,
-        handle_index_command,
-        handle_search_command,
-        handle_web_search_command,
-        handle_web_scrap_command,
-        handle_version_command,
         handle_cross_indexing_command,
+        handle_index_command,
+        handle_list_command,
+        handle_parse_command,
         handle_run_phase5_command,
+        handle_search_command,
+        handle_single_command,
+        handle_version_command,
+        handle_web_scrap_command,
+        handle_web_search_command,
     )
+
+    from src.utils.logging import setup_logging
 
     setup_baml_environment()
 
@@ -45,6 +48,7 @@ def main():
 
         # Run modern interactive CLI
         from cli.modern_cli import ModernSutraKit
+
         cli = ModernSutraKit(log_level=log_level)
         cli.run()
         return
@@ -64,7 +68,7 @@ def main():
         setup_logging(args.log_level)
         # Set debug mode flag if DEBUG level is specified
         if args.log_level == "DEBUG":
-            from src.utils.debug_utils import set_debug_mode, set_auto_mode
+            from src.utils.debug_utils import set_auto_mode, set_debug_mode
 
             set_debug_mode(True)
 

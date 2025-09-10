@@ -55,6 +55,11 @@ Homepage="https://github.com/sutragraph/sutracli"
 Repository="https://github.com/sutragraph/sutracli"
 Issues="https://github.com/sutragraph/sutracli/issues"
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=3.0.0",
+]
+
 [project.scripts]
 sutrakit="cli:main"
 sutrakit-setup="cli:setup_main"
@@ -66,4 +71,3 @@ include-package-data = true
 where = ["src", "."]
 include = ["*"]
 exclude = ["dist*", "build*"]
-

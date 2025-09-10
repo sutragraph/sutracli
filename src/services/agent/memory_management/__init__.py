@@ -15,16 +15,13 @@ Main Interface:
 - SutraMemoryManager: Main orchestrator class that combines all components
 """
 
-from .sutra_memory_manager import (
-    SutraMemoryManager,
-)
-
-from .models import TaskStatus, Task, CodeSnippet, FileChange, HistoryEntry
-from .memory_operations import MemoryOperations
-from .state_persistence import StatePersistence
-from .memory_formatter import MemoryFormatter, clean_sutra_memory_content
 from .code_fetcher import CodeFetcher
+from .memory_formatter import MemoryFormatter, clean_sutra_memory_content
+from .memory_operations import MemoryOperations
 from .memory_updater import MemoryUpdater
+from .models import CodeSnippet, FileChange, HistoryEntry, Task, TaskStatus
+from .state_persistence import StatePersistence
+from .sutra_memory_manager import SutraMemoryManager
 
 __all__ = [
     # Main interface

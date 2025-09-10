@@ -6,10 +6,12 @@ Supports TypeScript and Python initially, with extensible design for other langu
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Set, Callable, Dict
+from typing import Any, Callable, Dict, List, Optional, Set
+
 from tree_sitter_language_pack import SupportedLanguage
+
+from models.schema import BlockType, CodeBlock
 from utils.incremental_hash import IncrementalHashGenerator
-from models.schema import CodeBlock, BlockType
 
 
 class BaseExtractor(ABC):
@@ -321,8 +323,8 @@ class Extractor:
 
     def _setup_extractors(self):
         """Setup language-specific extractors."""
-        from indexer.extractors.typescript_extractor import TypeScriptExtractor
         from indexer.extractors.python_extractor import PythonExtractor
+        from indexer.extractors.typescript_extractor import TypeScriptExtractor
 
         self.register_extractor("typescript", TypeScriptExtractor)
         self.register_extractor("javascript", TypeScriptExtractor)

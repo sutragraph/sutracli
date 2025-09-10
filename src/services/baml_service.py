@@ -5,11 +5,12 @@ Generic service for calling BAML functions with dynamic function resolution,
 provider management, and proper error handling.
 """
 
-from loguru import logger
 import time
-from config import config
-from baml_py import Collector
 
+from baml_py import Collector
+from loguru import logger
+
+from config import config
 
 # Global token usage tracking across all calls
 _global_token_usage = {
@@ -38,6 +39,7 @@ class BAMLService:
         # Import BAML client
         try:
             from baml_client.sync_client import b as baml
+
             self.baml = baml
         except ImportError as e:
             logger.error(f"Failed to import BAML client: {e}")
@@ -63,12 +65,8 @@ class BAMLService:
         return getattr(self.baml, full_function_name)
 
     def call(
-        self,
-        function_name: str,
-        max_retries: int = 9,
-        retry_delay: int = 30,
-        **kwargs
-    ) :
+        self, function_name: str, max_retries: int = 9, retry_delay: int = 30, **kwargs
+    ):
         """
         Call a BAML function with retry mechanism and token tracking.
 
@@ -95,10 +93,14 @@ class BAMLService:
         for attempt in range(max_retries + 1):
             try:
                 # Create BAML collector for this attempt
-                collector = Collector(name=f"{full_function_name}-attempt-{attempt + 1}")
+                collector = Collector(
+                    name=f"{full_function_name}-attempt-{attempt + 1}"
+                )
 
                 # Call BAML function with collector
-                response = baml_function(**kwargs, baml_options={"collector": collector})
+                response = baml_function(
+                    **kwargs, baml_options={"collector": collector}
+                )
 
                 # Debug log raw response and user prompts if collector has the data
                 try:
@@ -213,7 +215,9 @@ class BAMLService:
                     raise Exception(f"{final_error_msg}. Last error: {str(e)}") from e
 
         # This should never be reached, but just in case
-        raise Exception(f"Unexpected error in retry logic for BAML {full_function_name}")
+        raise Exception(
+            f"Unexpected error in retry logic for BAML {full_function_name}"
+        )
 
     def function_exists(self, function_name: str) -> bool:
         """
@@ -239,13 +243,13 @@ class BAMLService:
             List of available function names (without prefix)
         """
         prefix = self.PROVIDER_MAPPING[self.provider]
-        all_functions = [attr for attr in dir(self.baml) if not attr.startswith('_')]
+        all_functions = [attr for attr in dir(self.baml) if not attr.startswith("_")]
 
         # Filter functions that start with our provider prefix
         prefixed_functions = [f for f in all_functions if f.startswith(prefix)]
 
         # Remove the prefix to get base function names
-        base_functions = [f[len(prefix):] for f in prefixed_functions]
+        base_functions = [f[len(prefix) :] for f in prefixed_functions]
 
         return base_functions
 
@@ -259,5 +263,5 @@ class BAMLService:
         return {
             "provider": self.provider,
             "prefix": self.PROVIDER_MAPPING[self.provider],
-            "available_providers": list(self.PROVIDER_MAPPING.keys())
+            "available_providers": list(self.PROVIDER_MAPPING.keys()),
         }

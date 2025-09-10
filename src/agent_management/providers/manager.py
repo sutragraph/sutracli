@@ -4,11 +4,13 @@ Manager for external agent providers.
 
 import concurrent.futures
 import threading
-from typing import Dict, Any, Optional, List
-from .config import AgentProviderConfig, get_provider_config_manager
-from .rovodev import RovodevProvider
-from .gemini import GeminiProvider
+from typing import Any, Dict, List, Optional
+
 from tools.tool_terminal_commands.action import TerminalSessionManager
+
+from .config import AgentProviderConfig, get_provider_config_manager
+from .gemini import GeminiProvider
+from .rovodev import RovodevProvider
 
 
 class AgentProviderManager:
@@ -56,33 +58,37 @@ class AgentProviderManager:
 
         return self.config_manager.set_selected_provider(provider_name)
 
-    def execute_prompt_with_provider(self, provider_name: str, project_path: str, prompt: str) -> Dict[str, Any]:
+    def execute_prompt_with_provider(
+        self, provider_name: str, project_path: str, prompt: str
+    ) -> Dict[str, Any]:
         """Execute a prompt using a specific provider."""
         provider = self.get_provider(provider_name)
         if not provider:
             return {
                 "success": False,
                 "error": f"Provider '{provider_name}' not found",
-                "output": ""
+                "output": "",
             }
 
         if not provider.is_available():
             return {
                 "success": False,
                 "error": f"Provider '{provider_name}' is not available",
-                "output": ""
+                "output": "",
             }
 
         return provider.execute_prompt(project_path, prompt)
 
-    def execute_prompt_with_selected_provider(self, project_path: str, prompt: str) -> Dict[str, Any]:
+    def execute_prompt_with_selected_provider(
+        self, project_path: str, prompt: str
+    ) -> Dict[str, Any]:
         """Execute a prompt using the currently selected provider."""
         provider = self.get_selected_provider()
         if not provider:
             return {
                 "success": False,
                 "error": "No provider selected or selected provider not available",
-                "output": ""
+                "output": "",
             }
 
         return provider.execute_prompt(project_path, prompt)
@@ -157,10 +163,7 @@ class AgentProviderManager:
 
     def list_providers_info(self) -> List[Dict[str, Any]]:
         """Get information about all providers."""
-        return [
-            provider.get_provider_info()
-            for provider in self._providers.values()
-        ]
+        return [provider.get_provider_info() for provider in self._providers.values()]
 
     def prompt_user_for_provider_selection(self) -> Optional[str]:
         """Prompt user to select a provider (for CLI usage)."""

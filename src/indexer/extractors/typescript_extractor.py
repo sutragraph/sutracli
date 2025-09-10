@@ -4,9 +4,11 @@ This module provides TypeScript-specific extraction capabilities for identifying
 and extracting code blocks from TypeScript AST nodes using tree-sitter.
 """
 
-from typing import List, Any, Dict, Set, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
+
 from tree_sitter_language_pack import SupportedLanguage
-from . import BaseExtractor, CodeBlock, BlockType
+
+from . import BaseExtractor, BlockType, CodeBlock
 
 
 class TypeScriptExtractor(BaseExtractor):
@@ -79,6 +81,7 @@ class TypeScriptExtractor(BaseExtractor):
                         break
 
         else:
+
             def find_identifiers(n):
                 if n.type in ["identifier", "property_identifier"]:
                     names.append(self._get_node_text(n))
@@ -561,11 +564,13 @@ class TypeScriptExtractor(BaseExtractor):
                             field_name = get_field_name(body_child)
                             if field_name:
                                 # Create as a function block with nested extraction for large functions
-                                method_block = self._create_function_block_with_nested_extraction(
-                                    body_child,
-                                    BlockType.FUNCTION,
-                                    [field_name],
-                                    self.FUNCTION_TYPES,
+                                method_block = (
+                                    self._create_function_block_with_nested_extraction(
+                                        body_child,
+                                        BlockType.FUNCTION,
+                                        [field_name],
+                                        self.FUNCTION_TYPES,
+                                    )
                                 )
                                 fields.append(method_block)
                         else:

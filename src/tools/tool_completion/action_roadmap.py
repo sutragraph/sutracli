@@ -1,6 +1,8 @@
-from typing import Iterator, Dict, Any
-from models.agent import AgentAction
+from typing import Any, Dict, Iterator
+
 from baml_client.types import Agent
+from models.agent import AgentAction
+
 from .action import execute_completion_action as base_execute_completion_action
 
 
@@ -21,17 +23,13 @@ def execute_completion_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 yield {
                     "type": "tool_error",
                     "tool_name": "attempt_completion",
-                    "error": f"Invalid completion parameters. Expected either 'result' or 'projects+summary', got: {list(params.keys())}"
+                    "error": f"Invalid completion parameters. Expected either 'result' or 'projects+summary', got: {list(params.keys())}",
                 }
         else:
             yield from base_execute_completion_action(action)
 
     except Exception as e:
-        yield {
-            "type": "tool_error",
-            "tool_name": "attempt_completion",
-            "error": str(e)
-        }
+        yield {"type": "tool_error", "tool_name": "attempt_completion", "error": str(e)}
 
 
 def _handle_roadmap_completion(params: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
@@ -44,8 +42,5 @@ def _handle_roadmap_completion(params: Dict[str, Any]) -> Iterator[Dict[str, Any
         "type": "tool_use",
         "tool_name": "attempt_completion",
         "agent_name": Agent.ROADMAP,
-        "data": {
-            "summary": summary,
-            "projects": projects
-        }
+        "data": {"summary": summary, "projects": projects},
     }

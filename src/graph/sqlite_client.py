@@ -5,17 +5,15 @@ Stores files, code blocks, and relationships from code parsing.
 
 import json
 import sqlite3
-
 import threading
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
 from loguru import logger
+
 from config import config
-from models import File, Project, CodeBlock, Relationship
-from queries.creation_queries import (
-    CREATE_TABLES,
-    CREATE_INDEXES,
-)
+from models import CodeBlock, File, Project, Relationship
+from queries.creation_queries import CREATE_INDEXES, CREATE_TABLES
 
 
 class SQLiteConnection:

@@ -84,7 +84,7 @@ RULES
             "action": "move|add|remove",
             "id": "task_id_string",
             "from_status": "pending|current|completed",
-            "to_status": "pending|current|completed", 
+            "to_status": "pending|current|completed",
             "description": "task description"
           }
         ],

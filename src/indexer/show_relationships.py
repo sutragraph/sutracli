@@ -8,6 +8,7 @@ showing source/target file paths, IDs, and import statements.
 
 import sys
 from pathlib import Path
+
 from ast_parser import ASTParser
 
 
@@ -34,7 +35,9 @@ def show_relationships(directory_path: str):
 
     # Count statistics
     total_files = len(results)
-    total_relationships = sum(len(result.get("relationships", [])) for result in results.values())
+    total_relationships = sum(
+        len(result.get("relationships", [])) for result in results.values()
+    )
 
     print(f"📁 Files parsed: {total_files}")
     print(f"🔗 Relationships found: {total_relationships}")
@@ -61,12 +64,14 @@ def show_relationships(directory_path: str):
 
             # Get target file path
             target_path = id_to_path.get(target_id, "Unknown file")
-            target_filename = Path(target_path).name if target_path != "Unknown file" else "Unknown"
+            target_filename = (
+                Path(target_path).name if target_path != "Unknown file" else "Unknown"
+            )
 
             print(f"   {i}. Target: {target_filename}")
             print(f"      └─ Path: {target_path}")
             print(f"      └─ Target ID: {target_id}")
-            print(f"      └─ Import: \"{import_content}\"")
+            print(f'      └─ Import: "{import_content}"')
 
             if symbols:
                 symbols_str = ", ".join(symbols)
@@ -104,12 +109,14 @@ def show_detailed_summary(directory_path: str):
         for rel in relationships:
             source_path = file_path
             target_path = id_to_path.get(rel.get("target_id"), "Unknown")
-            all_relationships.append({
-                "source": source_path,
-                "target": target_path,
-                "import": rel.get("import_content", ""),
-                "symbols": rel.get("symbols", [])
-            })
+            all_relationships.append(
+                {
+                    "source": source_path,
+                    "target": target_path,
+                    "import": rel.get("import_content", ""),
+                    "symbols": rel.get("symbols", []),
+                }
+            )
 
     print(f"Total relationships: {len(all_relationships)}")
     print()
@@ -137,11 +144,15 @@ def show_detailed_summary(directory_path: str):
 
     for rel in all_relationships:
         source_name = Path(rel["source"]).name
-        target_name = Path(rel["target"]).name if rel["target"] != "Unknown" else "Unknown"
+        target_name = (
+            Path(rel["target"]).name if rel["target"] != "Unknown" else "Unknown"
+        )
         symbols_str = ", ".join(rel["symbols"][:3])  # Show first 3 symbols
         if len(rel["symbols"]) > 3:
             symbols_str += "..."
-        import_short = rel["import"][:30] + "..." if len(rel["import"]) > 30 else rel["import"]
+        import_short = (
+            rel["import"][:30] + "..." if len(rel["import"]) > 30 else rel["import"]
+        )
 
         print(f"{source_name:<25} {target_name:<25} {symbols_str:<20} {import_short}")
 
@@ -151,7 +162,7 @@ def test_both_directories():
 
     test_dirs = [
         ("test_relationships/python", "Python"),
-        ("test_relationships/typescript", "TypeScript")
+        ("test_relationships/typescript", "TypeScript"),
     ]
 
     print("🧪 QUICK TEST - BOTH DIRECTORIES")
@@ -170,7 +181,9 @@ def test_both_directories():
             results = parser.extract_from_directory(directory)
 
             total_files = len(results)
-            total_relationships = sum(len(result.get("relationships", [])) for result in results.values())
+            total_relationships = sum(
+                len(result.get("relationships", [])) for result in results.values()
+            )
 
             print(f"✅ Files parsed: {total_files}")
             print(f"✅ Relationships found: {total_relationships}")
@@ -189,11 +202,11 @@ def test_both_directories():
                                 target_path = Path(fp).name
                                 break
                         symbols = rel.get("symbols", [])
-                        symbols_str = f"[{', '.join(symbols)}]" if symbols else "[side-effect]"
+                        symbols_str = (
+                            f"[{', '.join(symbols)}]" if symbols else "[side-effect]"
+                        )
                         print(f"      → {target_path}: {symbols_str}")
                         relationship_count += 1
-
-
 
         except Exception as e:
             print(f"❌ Error testing {lang}: {e}")
@@ -205,7 +218,9 @@ def main():
     """Main function to run the relationship display script."""
 
     if len(sys.argv) < 2 or (len(sys.argv) == 2 and sys.argv[1] in ["-h", "--help"]):
-        print("Usage: python show_relationships.py <directory_path> [--summary] [--test]")
+        print(
+            "Usage: python show_relationships.py <directory_path> [--summary] [--test]"
+        )
         print("\nExamples:")
         print("  python show_relationships.py test_relationships/python")
         print("  python show_relationships.py test_relationships/typescript")

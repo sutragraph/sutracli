@@ -3,14 +3,17 @@ Unified vector store that combines embedding generation and vector storage.
 Merges the functionality of simple_processor.py and vector_db.py into a clean interface.
 """
 
-import sqlite3, threading
+import sqlite3
+import threading
 from pathlib import Path
-from typing import List, Dict, Any, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import onnxruntime as ort
 import sqlite_vec
 from loguru import logger
 from tokenizers import Tokenizer
+
 from config import config
 
 
@@ -40,8 +43,12 @@ class EmbeddingModel:
                 self.tokenizer = Tokenizer.from_file(str(tokenizer_file))
                 # Override tokenizer's default max_length to use model's full capacity
                 if self.tokenizer is not None:
-                    self.tokenizer.enable_truncation(max_length=config.embedding.tokenizer_max_length)
-                    self.tokenizer.enable_padding(length=config.embedding.tokenizer_max_length)
+                    self.tokenizer.enable_truncation(
+                        max_length=config.embedding.tokenizer_max_length
+                    )
+                    self.tokenizer.enable_padding(
+                        length=config.embedding.tokenizer_max_length
+                    )
             else:
                 logger.warning("Tokenizer file not found, using basic tokenization")
                 self.tokenizer = None
@@ -52,7 +59,9 @@ class EmbeddingModel:
             logger.error(f"Failed to load embedding model: {e}")
             raise
 
-    def _tokenize(self, text: str, max_length: Optional[int] = None) -> Dict[str, np.ndarray]:
+    def _tokenize(
+        self, text: str, max_length: Optional[int] = None
+    ) -> Dict[str, np.ndarray]:
         """Tokenize text for the model."""
         if max_length is None:
             max_length = config.embedding.tokenizer_max_length
@@ -107,7 +116,9 @@ class EmbeddingModel:
 
         try:
             # Align counting with the embedding model's tokenization and max length
-            inputs = self._tokenize(text, max_length=config.embedding.tokenizer_max_length)
+            inputs = self._tokenize(
+                text, max_length=config.embedding.tokenizer_max_length
+            )
             attention_mask = inputs["attention_mask"]
             if isinstance(attention_mask, np.ndarray):
                 # attention_mask shape is (1, seq_len)
@@ -168,8 +179,12 @@ class EmbeddingModel:
                 if text and text.strip():
                     tokens = self._tokenize(text)
                     batch_input_ids[i] = tokens["input_ids"].reshape(-1)[:max_length]
-                    batch_attention_mask[i] = tokens["attention_mask"].reshape(-1)[:max_length]
-                    batch_token_type_ids[i] = tokens["token_type_ids"].reshape(-1)[:max_length]
+                    batch_attention_mask[i] = tokens["attention_mask"].reshape(-1)[
+                        :max_length
+                    ]
+                    batch_token_type_ids[i] = tokens["token_type_ids"].reshape(-1)[
+                        :max_length
+                    ]
                 # Empty texts remain as zeros (already pre-allocated)
 
             batch_inputs = {
@@ -232,7 +247,11 @@ class TextChunker:
         metadata_prefix = (metadata + "\n\n") if metadata else ""
 
         # Reserve tokens for metadata in first chunk
-        first_chunk_token_budget = max_tokens - self._count_tokens(metadata_prefix) if metadata_prefix else max_tokens
+        first_chunk_token_budget = (
+            max_tokens - self._count_tokens(metadata_prefix)
+            if metadata_prefix
+            else max_tokens
+        )
 
         line_index = 0
         overlap_text = ""
@@ -293,9 +312,11 @@ class TextChunker:
             # Remove overlap text from the beginning for character offset calculation
             chunk_text_for_offset = "".join(chunk_lines)
             if overlap_text and current_chunk_text.startswith(overlap_text):
-                char_start = len("".join(lines[:start_line-1])) - len(overlap_text.rstrip('\n'))
+                char_start = len("".join(lines[: start_line - 1])) - len(
+                    overlap_text.rstrip("\n")
+                )
             else:
-                char_start = len("".join(lines[:start_line-1]))
+                char_start = len("".join(lines[: start_line - 1]))
 
             char_end = len("".join(lines[:chunk_end_line]))
 
@@ -312,7 +333,9 @@ class TextChunker:
 
             # Prepare overlap for next chunk
             if overlap_tokens > 0 and line_index < len(lines):
-                overlap_text = self._get_overlap_text(chunk_text_for_offset, overlap_tokens)
+                overlap_text = self._get_overlap_text(
+                    chunk_text_for_offset, overlap_tokens
+                )
                 if overlap_text:
                     overlap_text += "\n"
             else:
@@ -441,6 +464,7 @@ class VectorStore:
         if model_path is None:
             try:
                 import os
+
                 from config.settings import get_config
 
                 config_obj = get_config()

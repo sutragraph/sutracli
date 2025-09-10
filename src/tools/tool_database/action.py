@@ -1,31 +1,25 @@
-from loguru import logger
-from typing import Iterator, Dict, Any, List
-from graph.graph_operations import GraphOperations
-import subprocess
-from tools.utils import (
-    beautify_node_result,
-    chunk_large_code_clean,
-)
-from queries.agent_queries import (
-    GET_FILE_BY_ID,
-    GET_FILE_BLOCK_SUMMARY,
-    GET_DEPENDENCY_CHAIN,
-)
-from tools.utils.formatting_utils import (
-    beautify_node_result_metadata_only,
-)
-from pathlib import Path
-import os
 import json
+import os
+import subprocess
+from pathlib import Path
+from typing import Any, Dict, Iterator, List
+
+from loguru import logger
+
+from graph.graph_operations import GraphOperations
 from models.agent import AgentAction
-from tools.utils.constants import (
-    DATABASE_QUERY_CONFIG,
-    SEARCH_CONFIG,
+from queries.agent_queries import (
+    GET_DEPENDENCY_CHAIN,
+    GET_FILE_BLOCK_SUMMARY,
+    GET_FILE_BY_ID,
 )
 from tools.delivery_actions import (
     check_pending_delivery,
     register_delivery_queue_and_get_first_batch_with_line_limit,
 )
+from tools.utils import beautify_node_result, chunk_large_code_clean
+from tools.utils.constants import DATABASE_QUERY_CONFIG, SEARCH_CONFIG
+from tools.utils.formatting_utils import beautify_node_result_metadata_only
 
 
 def should_chunk_content(code_content: str, chunking_threshold: int) -> bool:
@@ -224,15 +218,21 @@ def execute_structured_database_query(
                     end_line = final_params.get("end_line")
                     if results and (start_line is not None or end_line is not None):
                         for i, result in enumerate(results):
-                            result_dict = dict(result) if hasattr(result, 'keys') else result
-                            content = result_dict.get('content', '')
+                            result_dict = (
+                                dict(result) if hasattr(result, "keys") else result
+                            )
+                            content = result_dict.get("content", "")
                             if content:
-                                content_lines = content.split('\n')
+                                content_lines = content.split("\n")
                                 total_lines = len(content_lines)
 
                                 # Default to full range if not specified
-                                start_idx = (start_line - 1) if start_line is not None else 0
-                                end_idx = end_line if end_line is not None else total_lines
+                                start_idx = (
+                                    (start_line - 1) if start_line is not None else 0
+                                )
+                                end_idx = (
+                                    end_line if end_line is not None else total_lines
+                                )
 
                                 # Ensure indices are within bounds
                                 start_idx = max(0, min(start_idx, total_lines - 1))
@@ -240,42 +240,74 @@ def execute_structured_database_query(
 
                                 # Filter content to specified line range
                                 filtered_lines = content_lines[start_idx:end_idx]
-                                filtered_content = '\n'.join(filtered_lines)
+                                filtered_content = "\n".join(filtered_lines)
 
                                 # Update the result with filtered content and line info
                                 if isinstance(result, dict):
-                                    result['content'] = filtered_content
-                                    result['start_line'] = start_line if start_line is not None else 1
-                                    result['end_line'] = end_line if end_line is not None else total_lines
-                                    result['lines'] = [result['start_line'], result['end_line']]
+                                    result["content"] = filtered_content
+                                    result["start_line"] = (
+                                        start_line if start_line is not None else 1
+                                    )
+                                    result["end_line"] = (
+                                        end_line
+                                        if end_line is not None
+                                        else total_lines
+                                    )
+                                    result["lines"] = [
+                                        result["start_line"],
+                                        result["end_line"],
+                                    ]
                                     # Remove block-related fields for GET_FILE_BY_PATH
-                                    result.pop('id', None)
-                                    result.pop('block_id', None)
+                                    result.pop("id", None)
+                                    result.pop("block_id", None)
                                 else:
                                     # Convert to dict if it's not already
-                                    result_dict['content'] = filtered_content
-                                    result_dict['start_line'] = start_line if start_line is not None else 1
-                                    result_dict['end_line'] = end_line if end_line is not None else total_lines
-                                    result_dict['lines'] = [result_dict['start_line'], result_dict['end_line']]
+                                    result_dict["content"] = filtered_content
+                                    result_dict["start_line"] = (
+                                        start_line if start_line is not None else 1
+                                    )
+                                    result_dict["end_line"] = (
+                                        end_line
+                                        if end_line is not None
+                                        else total_lines
+                                    )
+                                    result_dict["lines"] = [
+                                        result_dict["start_line"],
+                                        result_dict["end_line"],
+                                    ]
                                     # Remove block-related fields for GET_FILE_BY_PATH
-                                    result_dict.pop('id', None)
-                                    result_dict.pop('block_id', None)
+                                    result_dict.pop("id", None)
+                                    result_dict.pop("block_id", None)
                                     results[i] = result_dict
 
-                                logger.debug(f"🔍 TRACE: Filtered content from lines {start_idx + 1}-{end_idx} ({len(filtered_lines)} lines)")
+                                logger.debug(
+                                    f"🔍 TRACE: Filtered content from lines {start_idx + 1}-{end_idx} ({len(filtered_lines)} lines)"
+                                )
 
                     # Get connection mappings for the file/line range if we have results
                     if results:
-                        connection_mappings = graph_ops._get_connection_mappings_for_display(
-                            file_id, start_line, end_line
+                        connection_mappings = (
+                            graph_ops._get_connection_mappings_for_display(
+                                file_id, start_line, end_line
+                            )
                         )
-                        logger.debug(f"🔗 CONNECTIONS: Retrieved connection mappings for file_id {file_id}, lines {start_line}-{end_line}")
-                        logger.debug(f"🔗 CONNECTIONS: Found {len(connection_mappings)} connection mappings")
+                        logger.debug(
+                            f"🔗 CONNECTIONS: Retrieved connection mappings for file_id {file_id}, lines {start_line}-{end_line}"
+                        )
+                        logger.debug(
+                            f"🔗 CONNECTIONS: Found {len(connection_mappings)} connection mappings"
+                        )
                         if connection_mappings:
-                            result_dict = dict(results[0]) if hasattr(results[0], 'keys') else results[0]
-                            result_dict['connection_mappings'] = connection_mappings
+                            result_dict = (
+                                dict(results[0])
+                                if hasattr(results[0], "keys")
+                                else results[0]
+                            )
+                            result_dict["connection_mappings"] = connection_mappings
                             results[0] = result_dict
-                            logger.debug(f"🔗 CONNECTIONS: Added connection mappings to result_dict")
+                            logger.debug(
+                                f"🔗 CONNECTIONS: Added connection mappings to result_dict"
+                            )
                 else:
                     results = []
                     logger.debug("🔍 TRACE: No file_id found, empty results")
@@ -289,9 +321,7 @@ def execute_structured_database_query(
                 if file_path:
                     file_id = graph_ops._get_file_id_by_path(file_path)
                     summary = (
-                        graph_ops.get_file_block_summary(file_id)
-                        if file_id
-                        else []
+                        graph_ops.get_file_block_summary(file_id) if file_id else []
                     )
 
                     results = summary
@@ -307,22 +337,35 @@ def execute_structured_database_query(
                     file_id = graph_ops._get_file_id_by_path(file_path)
 
                 if not file_path or not file_id:
-                    error_msg = "No file path provided. Please specify a file path to analyze dependencies." if not file_path else "File not found in database."
-                    results = [{
-                        "file_path": file_path,
-                        "dependency_scope": {
-                            "anchor_file_path": file_path or "unknown",
-                            "error": error_msg,
-                            "imports": [],
-                            "importers": [],
-                            "dependency_chain": [],
-                            "connection_impacts": [],
-                            "max_depth": depth
+                    error_msg = (
+                        "No file path provided. Please specify a file path to analyze dependencies."
+                        if not file_path
+                        else "File not found in database."
+                    )
+                    results = [
+                        {
+                            "file_path": file_path,
+                            "dependency_scope": {
+                                "anchor_file_path": file_path or "unknown",
+                                "error": error_msg,
+                                "imports": [],
+                                "importers": [],
+                                "dependency_chain": [],
+                                "connection_impacts": [],
+                                "max_depth": depth,
+                            },
                         }
-                    }]
+                    ]
                 else:
-                    scope = graph_ops.get_search_scope_by_import_graph(file_id, "both", depth)
-                    results = [{"file_path": scope.get("anchor_file_path", "unknown"), "dependency_scope": scope}]
+                    scope = graph_ops.get_search_scope_by_import_graph(
+                        file_id, "both", depth
+                    )
+                    results = [
+                        {
+                            "file_path": scope.get("anchor_file_path", "unknown"),
+                            "dependency_scope": scope,
+                        }
+                    ]
                 include_code = False
 
             elif base_query_name == "GET_BLOCK_DETAILS":
@@ -353,7 +396,9 @@ def execute_structured_database_query(
                     )
                     if result.returncode == 0 and result.stdout.strip():
                         found_files = result.stdout.strip().split("\n")
-                        logger.debug(f"Ripgrep found {len(found_files)} files with similar names")
+                        logger.debug(
+                            f"Ripgrep found {len(found_files)} files with similar names"
+                        )
                         # Try to get file_id for the first found file
                         for found_file in found_files[:3]:  # Try first 3 matches
                             file_id = graph_ops._get_file_id_by_path(found_file)
@@ -362,7 +407,9 @@ def execute_structured_database_query(
                                     sql_query, (file_id,)
                                 )
                                 if results:
-                                    logger.debug(f"Found file data using ripgrep match: {found_file}")
+                                    logger.debug(
+                                        f"Found file data using ripgrep match: {found_file}"
+                                    )
                                     break
                     else:
                         logger.debug("Ripgrep fallback found no matching files")
@@ -388,7 +435,9 @@ def execute_structured_database_query(
         if not include_code:
             # Process metadata-only results in batches
             batch_size = 30  # Default batch size for metadata
-            batches = [results[i : i + batch_size] for i in range(0, len(results), batch_size)]
+            batches = [
+                results[i : i + batch_size] for i in range(0, len(results), batch_size)
+            ]
 
             for batch_num, batch in enumerate(batches, 1):
                 # Process metadata-only results for this batch
@@ -420,7 +469,8 @@ def execute_structured_database_query(
                     "current_batch": batch_num,
                     "total_batches": len(batches),
                     "has_more_batches": batch_num < len(batches),
-                    "project_name": project_name,}
+                    "project_name": project_name,
+                }
             return
 
         elif len(results) == 1:
@@ -603,7 +653,8 @@ def execute_structured_database_query(
                         "data": result_data,
                         "include_code": include_code,
                         "total_nodes": 1,
-                        "project_name": result_dict.get("project_name"),}
+                        "project_name": result_dict.get("project_name"),
+                    }
                     return
             else:
                 # No code content available
@@ -623,7 +674,8 @@ def execute_structured_database_query(
                     "data": result_data,
                     "include_code": include_code,
                     "total_nodes": 1,
-                        "project_name": result_dict.get("project_name"),}
+                    "project_name": result_dict.get("project_name"),
+                }
                 return
 
         else:

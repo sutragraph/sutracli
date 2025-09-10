@@ -1,12 +1,12 @@
-from loguru import logger
 import os
 import platform
-
 import subprocess
 import threading
 import time
 import uuid
 from typing import Any, Dict, Iterator, List, Optional
+
+from loguru import logger
 
 from models.agent import AgentAction
 
@@ -660,14 +660,16 @@ class TerminalSession:
                 # Use different completion detection for long-running vs regular commands
                 if self.output_monitor:
                     if is_long_running:
-                        command_completed, output_lines = (
-                            self._handle_long_running_command(command, timeout)
-                        )
+                        (
+                            command_completed,
+                            output_lines,
+                        ) = self._handle_long_running_command(command, timeout)
                     else:
-                        command_completed, output_lines = (
-                            self.output_monitor.detect_command_completion(
-                                command, timeout
-                            )
+                        (
+                            command_completed,
+                            output_lines,
+                        ) = self.output_monitor.detect_command_completion(
+                            command, timeout
                         )
 
                     if command_completed:
@@ -1396,7 +1398,9 @@ def _handle_execute_command(parameters: Dict[str, Any]) -> Iterator[Dict[str, An
 
     # Execute command
     logger.debug(f"Executing command in foreground session {session_id}: {command}")
-    result = session.execute_command(command, timeout=timeout, is_long_running=is_long_running)
+    result = session.execute_command(
+        command, timeout=timeout, is_long_running=is_long_running
+    )
 
     # Add session info to result
     result.update(

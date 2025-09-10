@@ -1,32 +1,28 @@
 """Command handlers for the CLI application."""
 
-import uuid
 import sys
+import uuid
 from pathlib import Path
+
 from loguru import logger
-
-from src.agents_new import Agent
-
-from src.graph import SQLiteConnection, ASTToSqliteConverter
-from src.services.project_manager import ProjectManager
-from src.services.cross_indexing.core.cross_index_system import CrossIndexSystem
-from src.services.agent_service_new import AgentService
-from src.config import config
-
-from src.utils.console import console
 from rich.panel import Panel
 
+from src.agents_new import Agent
+from src.config import config
 from src.embeddings import get_vector_store
-from src.tools.utils.code_processing_utils import (
-    add_line_numbers_to_code,
-)
+from src.graph import ASTToSqliteConverter, SQLiteConnection
+from src.services.agent_service_new import AgentService
+from src.services.cross_indexing.core.cross_index_system import CrossIndexSystem
+from src.services.project_manager import ProjectManager
+from src.tools.tool_web_scrap.action import WebScraper
 from src.tools.tool_web_search.action import (
-    WebSearch,
-    TimeFilter,
     SafeSearch,
     SearchType,
+    TimeFilter,
+    WebSearch,
 )
-from src.tools.tool_web_scrap.action import WebScraper
+from src.tools.utils.code_processing_utils import add_line_numbers_to_code
+from src.utils.console import console
 
 
 def get_version_from_init():
@@ -80,7 +76,7 @@ def handle_list_command(args) -> None:
             content,
             title=f"[bold]{idx}. {project.name}[/bold]",
             border_style="panel_border",
-            title_align="left"
+            title_align="left",
         )
         console.print(panel)
 
@@ -112,8 +108,9 @@ def handle_parse_command(args) -> str:
 def handle_index_command(args) -> None:
     """Handle full project indexing command."""
     from pathlib import Path
-    from src.services.project_manager import ProjectManager
+
     from src.graph.sqlite_client import SQLiteConnection
+    from src.services.project_manager import ProjectManager
 
     try:
         # Validate project path
@@ -502,9 +499,7 @@ def handle_run_phase5_command(args) -> None:
                 print(f"   🔗 Total matches found: {len(matches)}")
 
                 if matches:
-                    print(
-                        f"   💾 Stored {len(matches)} connection mappings in database"
-                    )
+                    print(f"   💾 Stored {len(matches)} connection mappings in database")
 
                     # Display some sample matches
                     sample_count = min(5, len(matches))

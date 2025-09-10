@@ -1,11 +1,15 @@
 from json import tool
 from typing import Any, Dict
+
 from baml_client.types import Agent
 from models.agent import AgentAction
+from tools.build_tool_status import build_tool_status
+from tools.delivery_actions import (
+    handle_fetch_next_request,
+    register_delivery_queue_and_get_first_batch,
+)
 from tools.guidance_builder import GuidanceRegistry
 from tools.tool_action import get_tool_action
-from tools.build_tool_status import build_tool_status
-from tools.delivery_actions import register_delivery_queue_and_get_first_batch, handle_fetch_next_request
 
 
 def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> str:
@@ -54,7 +58,7 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
             tool_name=tool_name,
             action_type=tool_name,
             delivery_items=delivery_items,
-            action_parameters=action.parameters
+            action_parameters=action.parameters,
         )
 
         if delivery_result:

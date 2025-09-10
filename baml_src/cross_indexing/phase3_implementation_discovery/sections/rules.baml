@@ -60,20 +60,20 @@ RULES
        * Queue: `channel.sendToQueue(queueName, message)`, `producer.send(topic, data)`, `publisher.publish(queue, msg)`
        * Socket: `socket.emit(eventName, data)`, `io.emit(event, payload)`, `ws.send(channel, message)`
        * Database: `db.query(tableName, conditions)`, `collection.find(query)`, `model.create(data)`
-     
+
      - MANDATORY WORKFLOW FOR VARIABLE PARAMETERS:
        1. DETECT: Found connection code with variable parameters (not hardcoded values)
        2. READ FILE: Use database tool to read the complete file containing this code
        3. IDENTIFY: Find the wrapper function name that contains this connection code
        4. SEARCH USAGE: Create search_keyword task to find ALL calls to this wrapper function across the codebase
        5. COLLECT: Gather all wrapper function calls with actual parameter values
-     
+
      - EXAMPLE WORKFLOW:
        * Found: `this.channel.sendToQueue(queueName, Buffer.from(message))` (variable queueName)
        * Action: Read complete file to find wrapper function name (e.g., `publishMessage`)
        * Search: Create task "Use search_keyword to find publishMessage usage: publishMessage\\("
        * Result: Find calls like `publishMessage('user-notifications', data)`, `publishMessage('email-queue', emailData)`
-     
+
      - CRITICAL: DO NOT move to next task when you find variable parameters - you MUST search for actual usage sites
      - CREATE TASKS for ALL wrapper functions with variable parameters: "Use search_keyword to find [functionName] usage patterns: [functionName]\\("
      - NEVER accept variable names as final connection data - always search for the actual values passed to wrapper functions
@@ -84,18 +84,18 @@ RULES
        2. "Are these variables being passed as parameters to a function?" (indicating wrapper function usage)
        3. "Do I need to search for where this wrapper function is called with real values?"
        4. "Have I already found the actual usage sites with hardcoded connection details?"
-     
+
      - CREATE TASKS IMMEDIATELY when you find:
        * Connection code with variable parameters: `sendToQueue(queueName, message)` → Search for wrapper function calls
        * Environment variables in connection code: `process.env.API_URL` → Search for config files
        * Dynamic endpoints/topics/events: `axios.get(url)` → Search for wrapper function calls with actual URLs
        * Custom wrapper classes: `apiClient.makeRequest(endpoint)` → Search for all method calls
-     
+
      - DON'T CREATE TASKS when you find:
        * Hardcoded connection details: `axios.get('https://api.example.com/users')` → This IS the actual connection
        * Direct usage with real values: `socket.emit('user-joined', data)` → This IS the actual usage
        * Configuration objects with fixed values: `{ baseURL: 'https://api.service.com' }` → This IS the actual config
-     
+
      - TASK CREATION EXAMPLES:
        * Found: `channel.sendToQueue(queueName, Buffer.from(message))` → CREATE: "Use search_keyword to find wrapper function calls with actual queue names"
        * Found: `axios.get(process.env.API_BASE_URL + endpoint)` → CREATE: "Use list_files to find .env files and search for API_BASE_URL configuration"
@@ -139,7 +139,7 @@ RULES
             "action": "move|add|remove",
             "id": "task_id_string",
             "from_status": "pending|current|completed",
-            "to_status": "pending|current|completed", 
+            "to_status": "pending|current|completed",
             "description": "task description"
           }
         ],

@@ -3,10 +3,12 @@ Pydantic models for database and application-level operations.
 Contains all core data models for the indexer and application.
 """
 
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
 from enum import Enum
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
 
 class BlockType(Enum):
     """Types of code blocks that can be extracted."""
@@ -19,6 +21,7 @@ class BlockType(Enum):
     TYPE = "type"
     IMPORT = "import"
     EXPORT = "export"
+
 
 class CodeBlock(BaseModel):
     """Represents a code block extracted from AST."""
@@ -37,6 +40,7 @@ class CodeBlock(BaseModel):
     file_id: Optional[int] = None  # ID of the file this block belongs to
     parent_block_id: Optional[int] = None  # ID of the parent block for nested blocks
 
+
 class Relationship(BaseModel):
     """Represents a relationship between two files."""
 
@@ -46,8 +50,10 @@ class Relationship(BaseModel):
     symbols: List[str] = []  # Symbols imported (optional, default empty list)
     type: str = "import"  # Type of relationship (default: import)
 
+
 class FileData(BaseModel):
     """Represents file data from code extraction."""
+
     id: int
     file_path: str
     language: str
@@ -57,10 +63,13 @@ class FileData(BaseModel):
     relationships: List[Relationship]
     unsupported: bool = False  # True if file type is not supported by any extractor
 
+
 class ExtractionData(BaseModel):
     """Container for complete code extraction data from JSON export."""
+
     metadata: Dict[str, Any]  # Export metadata (timestamp, version, etc.)
     files: Dict[str, FileData]  # file_path -> file data
+
 
 class File(BaseModel):
     """Represents a file in the database with project association."""
@@ -72,6 +81,7 @@ class File(BaseModel):
     content: str
     content_hash: str
 
+
 class Project(BaseModel):
     """Represents a project/codebase in the database."""
 
@@ -82,5 +92,6 @@ class Project(BaseModel):
     created_at: str
     updated_at: str
     cross_indexing_done: bool = False  # Whether cross-indexing is completed
+
 
 CodeBlock.model_rebuild()

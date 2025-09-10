@@ -1,12 +1,13 @@
-import requests
-import time
 import threading
-from typing import List, Optional, Iterator, Dict, Any
-from loguru import logger
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-from config.settings import config
+from typing import Any, Dict, Iterator, List, Optional
 
+import requests
+from loguru import logger
+
+from config.settings import config
 from models.agent import AgentAction
 
 

@@ -79,7 +79,7 @@ Example 3: Multiple package files analysis
       {
         "action": "add",
         "id": "3",
-        "to_status": "pending", 
+        "to_status": "pending",
         "description": "Use search_keyword tool with pattern '^\\\\s*import\\\\s+requests|^\\\\s*from\\\\s+requests\\\\s+import' and regex=true to find requests import statements in Python files"
       }
     ],

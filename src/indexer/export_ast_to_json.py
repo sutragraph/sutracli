@@ -14,9 +14,10 @@ Examples:
     python export_ast_to_json.py ./test_files results.json --indent 4
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
+
 from indexer.ast_parser import ASTParser
 
 
@@ -130,10 +131,10 @@ def hello_world():
 
 class Calculator:
     """A simple calculator class."""
-    
+
     def add(self, a, b):
         return a + b
-    
+
     def multiply(self, a, b):
         return a * b
 
