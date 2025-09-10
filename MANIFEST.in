@@ -1,6 +1,9 @@
 include README.md
 include LICENSE
 include pyproject.toml
-recursive-include src *.py
+recursive-include . *.py
+recursive-include baml_src *
 global-exclude *.pyc
 global-exclude __pycache__
+global-exclude *.egg-info/*
+global-exclude baml_client/*
