@@ -299,59 +299,6 @@ def check_dependencies():
         console.info("  Arch Linux: sudo pacman -S ripgrep")
 
 
-def setup_baml_client():
-    """Generate BAML client files using baml-cli generate"""
-    console.info("Generating BAML client files...")
-    try:
-        # Get the package installation directory
-        current_file_dir = Path(__file__).resolve().parent  # cli/ directory
-        package_dir = current_file_dir.parent  # parent of cli/ directory
-        baml_src_path = package_dir / "baml_src"
-        baml_client_path = package_dir / "baml_client"
-
-        if not baml_src_path.exists():
-            console.error(f"Could not find baml_src directory at {baml_src_path}")
-            return False
-
-        console.info(f"Package directory: {package_dir}")
-        console.info(f"BAML source: {baml_src_path}")
-        console.info(f"BAML output: {baml_client_path}")
-
-        # Try baml-cli first, then fallback to python -m baml_cli
-        try:
-            result = subprocess.run(
-                ["baml-cli", "generate", "--from", str(baml_src_path)],  # Add --from parameter
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-        except FileNotFoundError:
-            console.info("baml-cli not found in PATH, trying python -m baml_cli")
-            result = subprocess.run(
-                [sys.executable, "-m", "baml_cli", "generate", "--from", str(baml_src_path)],  # Add --from parameter
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-
-        if result.returncode == 0:
-            console.success("BAML client files generated successfully")
-            if result.stdout:
-                console.info(f"BAML output: {result.stdout.strip()}")
-            return True
-        else:
-            console.error(f"baml-cli generate failed with return code {result.returncode}")
-            if result.stderr:
-                console.error(f"Error output: {result.stderr.strip()}")
-            return False
-
-    except subprocess.TimeoutExpired:
-        console.error("baml-cli generate timed out after 60 seconds")
-        return False
-    except Exception as e:
-        console.error(f"Failed to generate BAML client: {e}")
-        return False
-
 
 def cleanup():
     """Clean up temporary files"""
@@ -383,9 +330,6 @@ def main():
         # Try to setup models and parsers (non-blocking)
         models_success = setup_models()
 
-        # Generate BAML client files
-        baml_success = setup_baml_client()
-
         # Setup environment
         setup_environment()
 
@@ -399,13 +343,6 @@ def main():
             print(f"📦 Models: {INSTALL_DIR / 'models'}")
         else:
             console.warning("Models setup failed - you may need to install them manually")
-
-        if baml_success:
-            print(f"🤖 BAML Client: Generated successfully")
-        else:
-            console.warning(
-                "BAML client generation failed - you may need to run 'baml-cli generate' manually"
-            )
 
         print("\n🚀 Usage:")
         print("  sutrakit --help                    # Show help")
