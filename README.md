@@ -30,7 +30,7 @@ Sets up `~/.sutra` directory, downloads ML models, creates config files, sets en
 sutrakit-setup
 ```
 
-![Setup Demo](https://github.com/sutragraph/sutracli/raw/main/assets/setup.gif)
+![Setup Demo](https://raw.githubusercontent.com/sutragraph/sutracli/refs/heads/main/media/setup.gif)
 
 That's all you need to know to start! 🎉
 
@@ -47,7 +47,7 @@ For ecosystems with multiple related projects (e.g., backend, frontend, microser
 - Repeat the above in each project's directory.
 - Sutrakit automatically links them by matching connections, creating a dependency graph for ecosystem-wide analysis.
 
-![Indexing Demo](https://github.com/sutragraph/sutracli/raw/main/assets/indexing.gif)
+![Indexing Demo](https://raw.githubusercontent.com/sutragraph/sutracli/refs/heads/main/media/indexing.gif)
 
 **Important Note:** For the Roadmap Agent to fully discover and navigate inter-project connections (e.g., API calls, message queues, WebSockets), **cross-indexing** is required during the indexing phase. This builds a dependency graph of external links that standard parsing might miss. Without it, the agent can't trace code flows across projects, resulting in incomplete roadmaps.
 
@@ -199,7 +199,7 @@ Together, we can make this project **better** every day! 😘
 [repo_logo_url]: [url_placeholder]
 [repo_logo_img]: https://www.svgrepo.com/download/421259/ai-brain-data.svg
 [repo_license_url]: https://github.com/sutragraph/sutracli/blob/main/LICENSE
-[repo_license_img]: https://img.shields.io/badge/license-GNU-red?style=for-the-badge&logo=none
+[repo_license_img]: https://img.shields.io/badge/license-GPL-red?style=for-the-badge&logo=none
 [repo_cc_url]: https://creativecommons.org/licenses/by-sa/4.0/
 [repo_issues_url]: https://github.com/sutragraph/sutracli/issues
 [repo_pull_request_url]: https://github.com/sutragraph/sutracli/pulls
