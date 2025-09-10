@@ -8,8 +8,9 @@ from loguru import logger
 
 from config.settings import config
 from embeddings import get_embedding_engine
-from graph import ASTToSqliteConverter, GraphOperations, SQLiteConnection
+from graph.converter import ASTToSqliteConverter
 from graph.graph_operations import GraphOperations
+from graph.sqlite_client import SQLiteConnection
 from indexer.ast_parser import ASTParser
 from models.schema import ExtractionData, FileData
 from utils.file_utils import (
@@ -679,7 +680,7 @@ class ProjectIndexer:
         self, parser_output_path: Path, project_name: str, project_path: Path
     ) -> Dict[str, Any]:
         """Store parsed data to SQL tables."""
-        from graph import ASTToSqliteConverter
+        from graph.converter import ASTToSqliteConverter
 
         converter = ASTToSqliteConverter()
 

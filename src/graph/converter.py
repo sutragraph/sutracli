@@ -7,7 +7,8 @@ from typing import Dict, Optional
 
 from loguru import logger
 
-from graph import GraphOperations, SQLiteConnection
+from graph.graph_operations import GraphOperations
+from graph.sqlite_client import SQLiteConnection
 from models.schema import ExtractionData, Project
 from utils import load_json_file
 
