@@ -4,7 +4,7 @@ build-backend="setuptools.build_meta"
 
 [project]
 name="sutrakit"
-version="0.1.7"
+version="0.1.8"
 description="A comprehensive AI-powered code analysis and automation CLI tool"
 readme="README.md"
 license = {text="MIT"}
@@ -60,8 +60,11 @@ Issues="https://github.com/sutragraph/sutracli/issues"
 sutrakit="cli:main"
 sutrakit-setup="cli:setup_main"
 
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src", "."]
-include = ["*", "baml_client*"]
-exclude = ["dist*", "build*"]
+include = ["*"]
+exclude = ["dist*", "build*", "baml_client*"]
+
