@@ -1,3 +1,5 @@
+<div align="center">
+
 ## Sutra Knowledge CLI
 
 [![Python version][python_version_img]][python_dev_url]
@@ -6,6 +8,8 @@
 [![License][repo_license_img]][repo_license_url]
 
 An **intelligent codebase analysis** and **knowledge management tool** that provides **AI-powered insights**, **semantic search capabilities**, and **comprehensive project understanding** through advanced parsing and embedding technologies. Focus on **writing your code** and **thinking of the business-logic**! The CLI will take care of the rest.
+
+</div>
 
 ## ⚡️ Quick Start
 
