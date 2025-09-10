@@ -1,645 +1,258 @@
-"""
-Cross-Index Service for analyzing and managing inter-service connections
-"""
-
 import json
-from typing import Dict, List, Any, Optional, Iterator
+from typing import Any, Dict, Iterator, Optional
 from loguru import logger
-from services.agent.session_management import SessionManager
-from services.project_manager import ProjectManager
-from services.llm_clients.llm_factory import llm_client_factory
-from services.agent.xml_service.xml_parser import XMLParser
-from services.agent.xml_service.xml_repair import XMLRepair
-from services.agent.xml_service import XMLService
-from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
-from services.agent.memory_management.code_fetcher import CodeFetcher
 from services.agent.memory_management.models import TaskStatus
-from ..prompts.cross_index_prompt_manager_5phase import CrossIndex5PhasePromptManager
-from tools import ActionExecutor
-from ..utils import infer_technology_type
-from utils.debug_utils import get_user_confirmation_for_llm_call
-from services.cross_indexing.code_manager.prompts.code_manager_prompt_manager import (
-    CodeManagerPromptManager,
-)
-from graph.graph_operations import GraphOperations
-from services.cross_indexing.prompts.phase5_connection_matching.phase5_prompt_manager import (
-    run_connection_matching,
-)
-from ..utils.technology_validator import TechnologyValidator
-from ..utils.technology_correction_service import TechnologyCorrectionService
+from src.utils.debug_utils import get_user_confirmation_for_llm_call
+from baml_client.types import Agent
+from src.tools.tool_executor import execute_tool
+from services.agent.session_management import SessionManager
+from .cross_indexing_task_manager import CrossIndexingTaskManager
+from .cross_index_phase import CrossIndexing
+from src.graph.graph_operations import GraphOperations
 
 
 class CrossIndexService:
     """
-    Enhanced service for managing cross-project connection analysis and storage.
+    Cross-indexing service with proper phase management.
 
-    Key improvements:
-    - Uses file_id as foreign key instead of file paths
-    - Stores only technology field, not library field
-    - Returns only IDs in match responses
-    - Integrates with Sutra memory for context
-    - Uses existing XML response parser
+    Phase Flow:
+    1. Phase 1: Loop until attempt_completion → task filtering → memory clear → Phase 2
+    2. Phase 2: Loop until attempt_completion → task filtering → memory clear → Phase 3
+    3. Phase 3: Loop with code manager until attempt_completion → Phase 4 (memory preserved)
+    4. Phase 4: Technology correction → Phase 5 (memory preserved)
+    5. Phase 5: Connection matching → complete
     """
 
     def __init__(
         self,
-        project_manager: ProjectManager,
-        memory_manager: SutraMemoryManager,
+        cross_indexing: CrossIndexing,
+        task_manager: CrossIndexingTaskManager,
         session_manager: SessionManager,
+        graph_ops: GraphOperations,
     ):
-        self.project_manager = project_manager
-        self.memory_manager = memory_manager
+        self.cross_indexing = cross_indexing
+        self.task_manager = task_manager
         self.session_manager = session_manager
-        self.llm_client = llm_client_factory()
-        self.xml_parser = XMLParser()
-        self.xml_repair = XMLRepair()
-        self.xml_service = XMLService()
-        self.prompt_manager = CrossIndex5PhasePromptManager()
-        self.code_manager_prompt_manager = CodeManagerPromptManager()
-        self.code_fetcher = CodeFetcher()
-        self.action_executor = ActionExecutor(
-            self.prompt_manager.task_manager,  # Use task manager instead of memory manager
-            context="cross_index",
-        )
-        self.graph_ops = GraphOperations()
+        self.graph_ops = graph_ops
         self._memory_needs_update = False
-        # Technology validation and correction services
-        self.technology_validator = TechnologyValidator()
-        self.technology_correction_service = TechnologyCorrectionService()
 
     def analyze_project_connections(
         self, project_path: str, project_id: int
     ) -> Iterator[Dict[str, Any]]:
         """
-        Perform cross-indexing analysis with streaming updates using yield.
-
-        Args:
-            project_path: Path to the project directory
-            project_id: ID of the project in the database
-
-        Yields:
-            Progress updates and final analysis result
+        Perform cross-indexing analysis with proper phase management.
         """
         try:
             logger.debug(
                 f"Starting cross-indexing analysis for project {project_id} at {project_path}"
             )
-
-            # Yield initial status
-            yield {
-                "type": "cross_index_start",
-                "project_id": project_id,
-                "project_path": project_path,
-                "message": "Starting cross-indexing analysis",
-            }
-
-            # Initialize analysis context
-            analysis_query = f"Analyze project connections for: {project_path}"
-            self.memory_manager.set_reasoning_context(analysis_query)
-
-            # Clear memory at the start of new cross-indexing analysis
-            logger.debug("Clearing memory for new cross-indexing analysis")
-            # Reset to Phase 1 and clear memory
-            self.prompt_manager.reset_to_phase(1)
+            # Initialize and reset to Phase 1
+            self.cross_indexing.reset_to_phase(1)
+            self.task_manager.set_current_phase(1)
             logger.debug("Reset to Phase 1 and cleared memory for new analysis")
 
-            # Track last tool result for context
-            last_tool_result = None
-
-            # Analysis loop similar to agent service
+            analysis_query = f"Analyze project connections for: {project_path}"
             current_iteration = 0
             max_iterations = 100
+            last_tool_result = None
+            pending_code_manager_result = None
 
             while current_iteration < max_iterations:
                 current_iteration += 1
-                logger.debug(f"Cross-indexing iteration {current_iteration}")
+                current_phase = self.cross_indexing.current_phase
 
-                # Yield iteration progress
-                yield {
-                    "type": "iteration_start",
-                    "iteration": current_iteration,
-                    "max_iterations": max_iterations,
-                    "message": f"Starting iteration {current_iteration}",
-                }
+                logger.debug(
+                    f"Cross-indexing iteration {current_iteration} - Phase {current_phase}"
+                )
 
-                try:
-                    # Get XML response with proper context
-                    xml_response = self._get_cross_index_xml_response(
-                        analysis_query,
-                        current_iteration,
-                        last_tool_result,
-                        project_path,
-                    )
+                # Iteration start - no yield needed
+                logger.debug(f"Phase {current_phase} - Iteration {current_iteration}")
 
-                    if last_tool_result and last_tool_result.get("tool_name") in [
-                        "database",
-                        "search_keyword",
-                    ]:
-                        # Only run code manager processing in phase 3 (Implementation Discovery)
-                        if self.prompt_manager.current_phase == 3:
+                # Get BAML response for current phase
+                baml_response = self._get_baml_response(
+                    analysis_query, current_iteration, last_tool_result, project_path
+                )
+
+                # Handle user cancellation
+                if isinstance(baml_response, dict) and baml_response.get(
+                    "user_cancelled"
+                ):
+                    logger.debug("User cancelled the operation")
+                    return
+
+                # Process BAML response using model_dump() directly
+                task_complete = False
+
+                # Convert BAML response to dictionary using model_dump()
+                response_dict = (
+                    baml_response.model_dump()
+                    if hasattr(baml_response, "model_dump")
+                    else baml_response
+                )
+
+                # Process tool_call if present
+                if response_dict.get("tool_call"):
+                    tool_call = response_dict["tool_call"]
+                    tool_name = tool_call.get("tool_name")
+                    tool_params = tool_call.get("parameters", {})
+
+                    if tool_name and tool_name != "attempt_completion":
+                        # Run code manager with previous tool result before executing new tool
+                        if (
+                            current_phase == 3
+                            and pending_code_manager_result is not None
+                            and pending_code_manager_result["tool_name"] in ["database", "search_keyword"]
+                        ):
                             logger.debug(
-                                f"Processing previous tool result ({last_tool_result.get('tool_name')}) with code manager after XML response but before processing (Phase 3)"
+                                f"Running code manager with previous tool result: {pending_code_manager_result['tool_name']}"
                             )
-                            self._process_previous_tool_results_with_code_manager(
-                                last_tool_result
+                            self._process_tool_with_code_manager_from_status(
+                                pending_code_manager_result["tool_status"],
+                                pending_code_manager_result["tool_name"]
                             )
-                            # Update session memory immediately after code manager processing
-                            # to ensure code snippets are available in the next iteration
-                            logger.debug(
-                                "Updating session memory after code manager processing"
-                            )
-                            self._update_session_memory()
-                        else:
-                            logger.debug(
-                                f"Skipping code manager processing for tool {last_tool_result.get('tool_name')} - only runs in Phase 3 (current phase: {self.prompt_manager.current_phase})"
-                            )
+                            pending_code_manager_result = None
 
-                    # Check if user cancelled the operation
-                    if isinstance(xml_response, dict) and xml_response.get(
-                        "user_cancelled"
-                    ):
-                        yield {
-                            "type": "user_cancelled",
-                            "iteration": current_iteration,
-                            "message": xml_response.get(
-                                "message", "User cancelled the operation"
-                            ),
+                        # Execute tool using execute_tool function (handles tool execution and status building)
+                        tool_status = execute_tool(
+                            Agent.CrossIndexing, tool_name, tool_params
+                        )
+
+                        # Store tool status for memory context (no yielding needed)
+                        last_tool_result = {
+                            "tool_name": tool_name,
+                            "tool_status": tool_status,
                         }
+                        self._memory_needs_update = True
+
+                        # Store result for code manager processing before next tool (in Phase 3)
+                        if current_phase == 3 and tool_name in [
+                            "database",
+                            "search_keyword",
+                        ]:
+                            logger.debug(
+                                f"Storing tool result for code manager processing: {tool_name}"
+                            )
+                            pending_code_manager_result = {
+                                "tool_name": tool_name,
+                                "tool_status": tool_status,
+                            }
+
+                    elif tool_name == "attempt_completion":
+                        task_complete = True
+                        logger.debug(
+                            f"Phase {current_phase} marked complete due to attempt_completion"
+                        )
+
+                # Process sutra_memory updates using original BAML object
+                if (
+                    hasattr(baml_response, "sutra_memory")
+                    and baml_response.sutra_memory
+                ):
+                    try:
+                        # Use the original BAML sutra_memory object directly
+                        # No need to convert to dict and back to object
+                        memory_result = self.task_manager.process_sutra_memory_params(
+                            baml_response.sutra_memory
+                        )
+
+                        if memory_result.get("success"):
+                            logger.debug(
+                                f"Sutra memory processed successfully: {memory_result.get('changes_applied', {})}"
+                            )
+                        else:
+                            logger.warning(
+                                f"Sutra memory processing had errors: {memory_result.get('errors', [])}"
+                            )
+
+                        self._memory_needs_update = True
+
+                    except Exception as e:
+                        logger.error(f"Error processing sutra memory: {e}")
+                        self._memory_needs_update = True
+
+                # Handle phase completion and advancement
+                if task_complete:
+                    if current_phase in [1, 2]:
+                        # Phase 1 or 2 complete - run task filtering and advance
+                        success = self._handle_phase_12_completion(current_phase)
+                        if success:
+                            self.cross_indexing.advance_phase()
+                            self.task_manager.set_current_phase(
+                                self.cross_indexing.current_phase
+                            )
+
+                            logger.debug(
+                                f"Phase {current_phase} complete - advancing to Phase {self.cross_indexing.current_phase}"
+                            )
+
+                            last_tool_result = None
+                            pending_code_manager_result = None
+                            continue
+                        else:
+                            logger.error(f"Phase {current_phase} completion failed")
+                            return
+
+                    elif current_phase == 3:
+                        # Process any remaining code manager result before Phase 3 completion
+                        if (
+                            pending_code_manager_result is not None
+                            and pending_code_manager_result["tool_name"] in ["database", "search_keyword"]
+                        ):
+                            logger.debug(
+                                f"Processing final code manager result before Phase 3 completion: {pending_code_manager_result['tool_name']}"
+                            )
+                            self._process_tool_with_code_manager_from_status(
+                                pending_code_manager_result["tool_status"],
+                                pending_code_manager_result["tool_name"]
+                            )
+                            pending_code_manager_result = None
+
+                        # Phase 3 complete - advance to Phase 4 (preserve memory)
+                        self.cross_indexing.current_phase = 4
+                        # Don't call task_manager.set_current_phase to preserve memory
+
+                        logger.debug(
+                            "Phase 3 complete - advancing to Phase 4 (memory preserved)"
+                        )
+
+                        # Execute Phase 4
+                        phase4_result = self._execute_phase_4()
+                        if phase4_result.get("success"):
+                            analysis_result = phase4_result.get("analysis_result", {})
+
+                            # Execute Phase 5
+                            phase5_result = self._execute_phase_5(
+                                analysis_result, project_id
+                            )
+
+                            yield {
+                                "type": "cross_index_success",
+                                "iteration": current_iteration,
+                                "analysis_result": analysis_result,
+                                "phase4_result": phase4_result,
+                                "phase5_result": phase5_result,
+                                "message": "Cross-indexing analysis completed successfully",
+                            }
+                        else:
+                            yield {
+                                "type": "cross_index_error",
+                                "iteration": current_iteration,
+                                "error": phase4_result.get("error", "Phase 4 failed"),
+                                "message": "Phase 4 execution failed",
+                            }
                         return
 
-                    # Process XML response using action executor
-                    task_complete = False
-                    analysis_result = None
-
-                    for event in self.action_executor.process_xml_response(
-                        xml_response, analysis_query
-                    ):
-                        event_type = event.get("type", "unknown")
-
-                        if event_type == "thinking":
-                            yield {
-                                "type": "thinking",
-                                "iteration": current_iteration,
-                                "content": event.get("content", "analyzing..."),
-                            }
-
-                        elif event_type == "tool_use":
-                            tool_name = event.get("tool_name", "unknown")
-
-                            last_tool_result = event
-
-                            # Update Sutra memory with tool results
-                            self._update_cross_index_memory(event)
-
-                            # Mark memory for update (like agent service)
-                            self._memory_needs_update = True
-
-                            # Yield the original event as-is (like agent service)
-                            yield event
-
-                        elif event_type in ["completion", "task_complete"]:
-                            # Handle completion events from attempt_completion tool
-                            tool_name = event.get("tool_name", "attempt_completion")
-
-                            if (
-                                tool_name == "attempt_completion"
-                                or event_type == "task_complete"
-                            ):
-                                # Mark that we need to check for phase advancement in the next iteration
-                                # This ensures all XML processing (including task creation) is complete
-                                task_complete = True
-                                # Break out of the event processing loop immediately
-                                break
-
-                            # For Phase 3 completion, we'll handle Phase 4 transition later
-                            # after all XML processing is complete
-
-                        elif event_type == "tool_error":
-                            error_msg = event.get("error", "Unknown error")
-                            # Yield error update
-                            yield {
-                                "type": "tool_error",
-                                "iteration": current_iteration,
-                                "error": error_msg,
-                                "message": f"Tool error in iteration {current_iteration}, continuing...",
-                            }
-
-                            # Update last_tool_result with the error event so it shows in next iteration's tool status
-                            last_tool_result = event
-
-                        elif event_type == "sutra_memory_update":
-                            memory_result = event.get("result", {})
-                            if memory_result.get("success"):
-                                # Yield single memory update event
-                                yield {
-                                    "type": "memory_update",
-                                    "iteration": current_iteration,
-                                    "message": "Sutra memory updated with connection data",
-                                }
-                                # Mark memory for update (like agent service)
-                                self._memory_needs_update = True
-
-                        else:
-                            # Yield other events as-is
-                            yield event
-
-                    # Handle phase advancement after all XML processing is complete
-                    if task_complete:
-                        current_phase = self.prompt_manager.current_phase
-
-                        if current_phase < 3:
-                            # Check if there are pending tasks for the next phase before advancing
-                            next_phase = current_phase + 1
-                            next_phase_tasks = (
-                                self.prompt_manager.task_manager.get_tasks_for_phase(
-                                    next_phase
-                                )
-                            )
-                            pending_tasks = next_phase_tasks.get("pending", [])
-
-                            # Debug logging
-                            all_tasks = (
-                                self.prompt_manager.task_manager.get_tasks_by_status(
-                                    TaskStatus.PENDING
-                                )
-                            )
-                            logger.debug(
-                                f"Phase advancement check: current_phase={current_phase}, next_phase={next_phase}"
-                            )
-                            logger.debug(
-                                f"All pending tasks in system: {len(all_tasks)} - {[task.id + ': ' + task.description[:30] + '...' for task in all_tasks]}"
-                            )
-                            logger.debug(
-                                f"Tasks for phase {next_phase}: pending={len(pending_tasks)}, current={len(next_phase_tasks.get('current', []))}, completed={len(next_phase_tasks.get('completed', []))}"
-                            )
-                            if pending_tasks:
-                                logger.debug(
-                                    f"Pending tasks for phase {next_phase}: {[task.id + ': ' + task.description[:50] + '...' for task in pending_tasks]}"
-                                )
-                            else:
-                                logger.debug(
-                                    f"No pending tasks found for phase {next_phase}"
-                                )
-
-                            if pending_tasks:
-                                # There are pending tasks for the next phase, advance to that phase
-                                self.prompt_manager.advance_phase()
-                                next_phase = self.prompt_manager.current_phase
-
-                                # Clear last_tool_result when starting new phase
-                                last_tool_result = None
-
-                                print(
-                                    f"🎯 Phase {current_phase} complete - advancing to Phase {next_phase}"
-                                )
-                                yield {
-                                    "type": "phase_complete",
-                                    "iteration": current_iteration,
-                                    "current_phase": current_phase,
-                                    "next_phase": next_phase,
-                                    "message": f"Phase {current_phase} completed, advancing to Phase {next_phase}",
-                                }
-                                # Continue to next iteration to execute the tasks
-                                continue
-                            else:
-                                # No pending tasks for next phase, skip to Phase 3
-                                # Advance without adding history entries for skipped phases
-                                while self.prompt_manager.current_phase < 3:
-                                    self.prompt_manager.current_phase += 1
-                                    # Set phase without adding history entry for skipped phases
-                                    self.prompt_manager.task_manager.set_current_phase(
-                                        self.prompt_manager.current_phase,
-                                        add_history_entry=False,
-                                    )
-
-                                final_phase = self.prompt_manager.current_phase
-                                # Clear last_tool_result when starting new phase
-                                last_tool_result = None
-
-                                print(
-                                    f"🎯 Phase {current_phase} complete - no tasks for Phase {next_phase}, advancing to Phase {final_phase}"
-                                )
-                                yield {
-                                    "type": "phase_complete",
-                                    "iteration": current_iteration,
-                                    "current_phase": current_phase,
-                                    "next_phase": final_phase,
-                                    "message": f"Phase {current_phase} completed, no tasks for Phase {next_phase}, advancing to Phase {final_phase}",
-                                }
-                                # Continue to next iteration in the new phase
-                                continue
-                        elif current_phase == 3:
-                            # Phase 3 complete → run Phase 4 data splitting using collected code snippets
-                            try:
-                                # Advance internal phase state to 4. Do not call task_manager.set_current_phase(4)
-                                # here because that would clear the code snippets we need for Phase 4.
-                                self.prompt_manager.current_phase = 4
-
-                                # Clear last_tool_result when starting new phase
-                                last_tool_result = None
-
-                                print(
-                                    f"🎯 Phase {current_phase} complete - advancing to Phase 4"
-                                )
-                                yield {
-                                    "type": "phase_complete",
-                                    "iteration": current_iteration,
-                                    "current_phase": current_phase,
-                                    "next_phase": 4,
-                                    "message": f"Phase {current_phase} completed, advancing to Phase 4",
-                                }
-
-                                # Execute Phase 4 - Data Splitting
-                                phase4_result = self._run_phase4_data_splitting()
-
-                                # Handle user cancellation in debug mode
-                                if phase4_result.get("user_cancelled"):
-                                    yield {
-                                        "type": "user_cancelled",
-                                        "iteration": current_iteration,
-                                        "message": "User cancelled Phase 4 data splitting",
-                                    }
-                                    return
-
-                                # If successful, capture analysis_result so storage/matching path below can run
-                                if phase4_result.get("success"):
-                                    analysis_result = phase4_result.get(
-                                        "analysis_result", {}
-                                    )
-
-                                    # Mark cross-indexing as done after completion
-                                    self.graph_ops.mark_cross_indexing_done_by_id(
-                                        project_id
-                                    )
-                                    logger.info(
-                                        f"✅ Cross-indexing completed for project ID {project_id}"
-                                    )
-                                else:
-                                    # Phase 4 failed; surface warning and end
-                                    yield {
-                                        "type": "analysis_warning",
-                                        "iteration": current_iteration,
-                                        "warning": phase4_result.get(
-                                            "error", "Phase 4 failed"
-                                        ),
-                                        "message": "Phase 4 data splitting failed",
-                                    }
-                                    return
-                            except Exception as phase4_error:
-                                logger.error(
-                                    f"Error during Phase 4 data splitting: {phase4_error}"
-                                )
-                                yield {
-                                    "type": "analysis_error",
-                                    "iteration": current_iteration,
-                                    "error": str(phase4_error),
-                                    "message": "Error while running Phase 4 data splitting",
-                                }
-                                return
-
-                    # Exit main loop if task completed (regardless of analysis_result success)
-                    if task_complete:
-                        # Only proceed with connection storage if we have analysis_result from Phase 4
-                        if (
-                            analysis_result
-                            and isinstance(analysis_result, dict)
-                            and "error" not in analysis_result
-                        ):
-                            # Check if both incoming and outgoing connections exist before proceeding
-                            incoming_count = len(
-                                analysis_result.get("incoming_connections", [])
-                            )
-                            outgoing_count = len(
-                                analysis_result.get("outgoing_connections", [])
-                            )
-
-                            if incoming_count > 0 or outgoing_count > 0:
-                                # Store connections in database with actual code snippets
-                                storage_result = (
-                                    self.graph_ops.store_connections_with_commit(
-                                        project_id, analysis_result
-                                    )
-                                )
-
-                                if storage_result.get("success"):
-                                    logger.debug(
-                                        f"Successfully stored connections: {storage_result.get('message')}"
-                                    )
-
-                                    # Get ALL existing connections from database (including old data)
-                                    all_connections = (
-                                        self.get_existing_connections_with_ids()
-                                    )
-                                    all_incoming = all_connections.get("incoming", [])
-                                    all_outgoing = all_connections.get("outgoing", [])
-                                    all_incoming_ids = [
-                                        conn["id"] for conn in all_incoming
-                                    ]
-                                    all_outgoing_ids = [
-                                        conn["id"] for conn in all_outgoing
-                                    ]
-
-                                    logger.info(
-                                        f"Connection counts for Phase 5 check: {len(all_incoming_ids)} incoming, {len(all_outgoing_ids)} outgoing"
-                                    )
-
-                                    # Run connection matching if we have both types
-                                    if (
-                                        len(all_incoming_ids) > 0
-                                        and len(all_outgoing_ids) > 0
-                                    ):
-                                        # Advance to Phase 5 - Connection Matching
-                                        self.prompt_manager.current_phase = 5
-                                        print(
-                                            f"🎯 Phase 4 complete - advancing to Phase 5"
-                                        )
-                                        yield {
-                                            "type": "phase_complete",
-                                            "iteration": current_iteration,
-                                            "current_phase": 4,
-                                            "next_phase": 5,
-                                            "message": f"Phase 4 completed, advancing to Phase 5",
-                                        }
-
-                                        logger.info(
-                                            "Starting Phase 5 - Connection Matching"
-                                        )
-                                        yield {
-                                            "type": "connection_matching_start",
-                                            "iteration": current_iteration,
-                                            "message": f"🔗 Starting Phase 5 connection matching analysis...",
-                                        }
-
-                                        try:
-                                            matching_exec = run_connection_matching()
-
-                                            # Check if user cancelled connection matching
-                                            if matching_exec.get("user_cancelled"):
-                                                yield {
-                                                    "type": "user_cancelled",
-                                                    "iteration": current_iteration,
-                                                    "message": "User cancelled connection matching",
-                                                }
-                                                return
-
-                                            if matching_exec.get("success"):
-                                                results = matching_exec.get(
-                                                    "results", {}
-                                                )
-                                                matches = results.get("matches", [])
-
-                                                # Store mappings in database
-                                                if matches:
-                                                    db_matches = []
-                                                    for match in matches:
-                                                        db_matches.append(
-                                                            {
-                                                                "sender_id": match.get(
-                                                                    "outgoing_id"
-                                                                ),
-                                                                "receiver_id": match.get(
-                                                                    "incoming_id"
-                                                                ),
-                                                                "description": match.get(
-                                                                    "match_reason",
-                                                                    "Auto-detected connection",
-                                                                ),
-                                                                "match_confidence": self._convert_confidence_to_float(
-                                                                    match.get(
-                                                                        "match_confidence",
-                                                                        "medium",
-                                                                    )
-                                                                ),
-                                                            }
-                                                        )
-
-                                                    mapping_result = self.graph_ops.create_connection_mappings(
-                                                        db_matches
-                                                    )
-                                                else:
-                                                    mapping_result = {
-                                                        "success": True,
-                                                        "mapping_ids": [],
-                                                    }
-
-                                                yield {
-                                                    "type": "cross_index_success",
-                                                    "iteration": current_iteration,
-                                                    "analysis_result": analysis_result,
-                                                    "storage_result": storage_result,
-                                                    "matching_result": results,
-                                                    "mappings_result": mapping_result,
-                                                    "message": f"🎉 Cross-indexing analysis completed successfully in {current_iteration} iterations",
-                                                }
-
-                                                # Mark cross-indexing as completely done
-                                                self.graph_ops.mark_cross_indexing_done_by_id(
-                                                    project_id
-                                                )
-                                                logger.info(
-                                                    f"✅ Cross-indexing fully completed for project ID {project_id}"
-                                                )
-                                            else:
-                                                yield {
-                                                    "type": "cross_index_partial_success",
-                                                    "iteration": current_iteration,
-                                                    "analysis_result": analysis_result,
-                                                    "storage_result": storage_result,
-                                                    "matching_error": matching_exec.get(
-                                                        "error"
-                                                    ),
-                                                    "message": f"Analysis and storage completed successfully, but connection matching failed: {matching_exec.get('error')}",
-                                                }
-                                        except Exception as matching_error:
-                                            logger.error(
-                                                f"Error during connection matching: {matching_error}"
-                                            )
-                                            yield {
-                                                "type": "cross_index_partial_success",
-                                                "iteration": current_iteration,
-                                                "analysis_result": analysis_result,
-                                                "storage_result": storage_result,
-                                                "matching_error": str(matching_error),
-                                                "message": f"Analysis and storage completed successfully, but connection matching failed: {str(matching_error)}",
-                                            }
-                                    else:
-                                        # Show results even with only one type of connection
-                                        logger.info(
-                                            f"Skipping Phase 5 - only {len(all_incoming_ids)} incoming and {len(all_outgoing_ids)} outgoing connections available"
-                                        )
-                                        yield {
-                                            "type": "cross_index_partial_success",
-                                            "iteration": current_iteration,
-                                            "analysis_result": analysis_result,
-                                            "storage_result": storage_result,
-                                            "message": f"Analysis completed with {incoming_count} incoming and {outgoing_count} outgoing connections. Connection matching skipped (requires both types).",
-                                        }
-                                else:
-                                    logger.error(
-                                        f"Failed to store connections: {storage_result.get('error')}"
-                                    )
-                                    yield {
-                                        "type": "cross_index_storage_error",
-                                        "iteration": current_iteration,
-                                        "analysis_result": analysis_result,
-                                        "storage_error": storage_result.get("error"),
-                                        "message": f"Analysis completed but storage failed: {storage_result.get('error')}",
-                                    }
-                                return
-                            else:
-                                # No connections found at all
-                                yield {
-                                    "type": "cross_index_no_connections",
-                                    "iteration": current_iteration,
-                                    "message": f"No connections found in analysis.",
-                                    "analysis_result": analysis_result,
-                                }
-                                return
-                        elif analysis_result:
-                            # We have analysis_result but it has errors
-                            logger.info(
-                                f"Analysis completed with some issues: {analysis_result.get('error')}"
-                            )
-                            yield {
-                                "type": "analysis_warning",
-                                "iteration": current_iteration,
-                                "warning": analysis_result.get("error"),
-                                "message": "Analysis completed with warnings but continuing",
-                            }
-                            return
-                        else:
-                            # No analysis_result - this shouldn't happen if phases completed properly
-                            yield {
-                                "type": "cross_index_incomplete",
-                                "iteration": current_iteration,
-                                "message": "Task completed but no analysis result available",
-                            }
-                            return
-
-                except Exception as iteration_error:
-                    logger.error(
-                        f"Error in cross-indexing iteration {current_iteration}: {iteration_error}"
-                    )
-                    yield {
-                        "type": "iteration_error",
-                        "iteration": current_iteration,
-                        "error": str(iteration_error),
-                        "message": f"Error in iteration {current_iteration}, continuing...",
-                    }
-                    # Continue to next iteration
-                    continue
-
-                # Update memory if needed before next iteration (like agent service)
+                # Update memory if needed
                 if self._memory_needs_update:
                     self._update_session_memory()
                     self._memory_needs_update = False
 
-            # If we reach here, analysis didn't complete successfully
+            # Analysis didn't complete within iteration limit
+            logger.error(f"Analysis did not complete after {max_iterations} iterations")
             yield {
                 "type": "cross_index_failure",
                 "iterations_completed": max_iterations,
-                "error": f"Cross-indexing analysis did not complete after {max_iterations} iterations",
-                "message": "Analysis failed to complete within iteration limit",
+                "message": f"Analysis did not complete after {max_iterations} iterations",
             }
 
         except Exception as e:
@@ -650,845 +263,802 @@ class CrossIndexService:
                 "message": "Critical error during cross-indexing analysis",
             }
 
-    def _get_cross_index_xml_response(
+    def _get_baml_response(
         self,
         analysis_query: str,
         current_iteration: int,
         last_tool_result: Optional[Dict[str, Any]],
         project_path: str,
     ) -> Dict[str, Any]:
-        """
-        Get XML response from LLM with proper Sutra memory and tool status context.
-
-        Args:
-            analysis_query: The analysis query
-            current_iteration: Current iteration number
-            last_tool_result: Last tool execution result
-            project_path: Path to the project being analyzed
-
-        Returns:
-            LLM response
-        """
+        """Get BAML response for current phase."""
         try:
             if not get_user_confirmation_for_llm_call():
-                logger.info("User cancelled Cross-indexing LLM call in debug mode")
-                # Return a special marker to indicate user cancellation
                 return {
                     "user_cancelled": True,
                     "message": "User cancelled the operation in debug mode",
                 }
 
-            # Get system prompt for current phase
-            current_phase = self.prompt_manager.current_phase
-            system_prompt = self.prompt_manager.get_system_prompt(current_phase)
+            current_phase = self.cross_indexing.current_phase
 
-            # Build tool status from last tool result
-            tool_status = self._build_cross_index_tool_status(last_tool_result)
+            # Get memory context
+            memory_context = self._get_memory_context()
 
-            # Get rich sutra memory from session manager first (for persistence), then memory manager
-            session_memory = ""
-            if self.session_manager:
-                session_memory = self.session_manager.get_sutra_memory()
-
-            # Use session memory if available, otherwise use task manager memory
-            if session_memory and session_memory.strip():
-                sutra_memory_rich = session_memory
-                logger.debug("Using persisted session memory for cross-indexing")
+            # Combine memory and tool status (tool status now handled by execute_tool)
+            if last_tool_result and last_tool_result.get("tool_status"):
+                tool_status = last_tool_result["tool_status"]
+                full_context = f"{memory_context}\n\nTOOL STATUS\n\n{tool_status}\n===="
             else:
-                sutra_memory_rich = (
-                    self.prompt_manager.task_manager.get_memory_for_llm()
-                )
-                logger.debug("Using task manager memory for cross-indexing")
+                full_context = memory_context
 
-            # Prepare memory context for phase-specific user prompt
-            memory_context_parts = []
-
-            # Add sutra memory - check for meaningful content
             logger.debug(
-                f"Cross-Index Sutra memory length: {len(sutra_memory_rich) if sutra_memory_rich else 0}"
+                f"Phase {current_phase} - Memory context length: {len(full_context)}"
             )
 
-            # Use task manager's memory context directly (includes base memory + tasks)
-            old_phase = self.prompt_manager.task_manager.current_phase
-            self.prompt_manager.task_manager.set_current_phase(
-                self.prompt_manager.current_phase
+            # Execute phase using centralized method
+            response = self._execute_phase_baml(
+                current_phase, analysis_query, full_context
             )
-            try:
-                memory_context = self.prompt_manager.task_manager.get_memory_for_llm()
 
-                logger.debug(
-                    f"Using task manager memory context: {len(memory_context)} characters"
-                )
-            finally:
-                self.prompt_manager.task_manager.set_current_phase(old_phase)
-
-            if (
-                tool_status
-                and tool_status.strip()
-                != "No previous tool execution in cross-indexing analysis"
-            ):
-                memory_context_with_tool_status = (
-                    f"{memory_context}\n\nTOOL STATUS\n\n{tool_status}\n===="
-                )
+            if response.get("success"):
+                baml_results = response.get("results")
+                return baml_results
             else:
-                memory_context_with_tool_status = memory_context
-
-            # Get phase-specific user prompt
-            user_message = self.prompt_manager.get_user_prompt(
-                analysis_query, memory_context_with_tool_status
-            )
-
-            logger.debug(
-                f"Cross-index iteration {current_iteration}: Sending prompt to LLM"
-            )
-            logger.debug(f"System prompt length: {len(system_prompt)}")
-            logger.debug(f"User message length: {len(user_message)}")
-
-            response = self.llm_client.call_llm(system_prompt, user_message)
-            logger.debug(
-                f"Cross-index iteration {current_iteration}: Got XML response from LLM"
-            )
-
-            # Try to repair malformed XML if needed
-            if isinstance(response, str) and response.strip():
-                try:
-                    # Test if XML parsing would work
-                    self.xml_parser.parse_single_xml_block(response)
-                except Exception as xml_error:
-                    logger.warning(
-                        f"XML parsing failed, attempting repair: {xml_error}"
-                    )
-                    try:
-                        repaired_response = (
-                            self.xml_repair.repair_malformed_xml_in_text(response)
-                        )
-                        if repaired_response and repaired_response != response:
-                            logger.info("Successfully repaired malformed XML")
-                            return repaired_response
-                        else:
-                            logger.warning("XML repair did not improve the response")
-                    except Exception as repair_error:
-                        logger.error(f"XML repair failed: {repair_error}")
-                        # Continue with original response
-
-            return response
+                # Handle BAML error
+                error_msg = response.get("error", "BAML execution failed")
+                logger.error(f"Phase {current_phase} BAML error: {error_msg}")
+                return {
+                    "type": "error",
+                    "thinking": f"Phase {current_phase} failed: {error_msg}",
+                    "attempt_completion": {"result": f"Phase {current_phase} failed"},
+                }
 
         except Exception as e:
-            logger.error(f"Failed to get cross-index XML response: {e}")
-            raise
+            logger.error(f"Error getting BAML response: {e}")
+            return {
+                "type": "error",
+                "thinking": f"Error: {str(e)}",
+                "attempt_completion": {"result": "BAML request failed"},
+            }
 
-    def _build_cross_index_tool_status(
-        self, last_tool_result: Optional[Dict[str, Any]]
-    ) -> str:
-        """
-        Build tool status for cross-indexing context.
+    def _get_memory_context(self) -> str:
+        """Get memory context for current phase."""
+        current_phase = self.cross_indexing.current_phase
 
-        Args:
-            last_tool_result: Last tool execution result
+        # Get tasks for current phase
+        current_tasks = self.task_manager.get_tasks_by_status(TaskStatus.CURRENT)
+        pending_tasks = self.task_manager.get_tasks_by_status(TaskStatus.PENDING)
 
-        Returns:
-            Formatted tool status string
-        """
-        if not last_tool_result:
-            return "No previous tool execution in cross-indexing analysis"
+        # Filter tasks for current phase
+        phase_current = []
+        phase_pending = []
 
-        tool_name = last_tool_result.get("tool_name", "unknown_tool")
+        for task in current_tasks:
+            if task:
+                metadata = self.task_manager._task_phase_metadata.get(task.id, {})
+                target_phase = metadata.get("target_phase", current_phase)
+                if target_phase == current_phase:
+                    phase_current.append(task)
 
-        if tool_name == "semantic_search":
-            return self._build_semantic_status_cross_index(last_tool_result)
-        elif tool_name == "search_keyword":
-            return self._build_search_keyword_status_cross_index(last_tool_result)
-        elif tool_name == "list_files":
-            return self._build_list_files_status_cross_index(last_tool_result)
-        elif tool_name == "database":
-            return self._build_database_status_cross_index(last_tool_result)
-        else:
-            return self._build_generic_status_cross_index(last_tool_result, tool_name)
+        for task in pending_tasks:
+            if task:
+                metadata = self.task_manager._task_phase_metadata.get(task.id, {})
+                target_phase = metadata.get("target_phase", current_phase)
+                if target_phase == current_phase:
+                    phase_pending.append(task)
 
-    def _build_semantic_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build semantic search status for cross-indexing."""
-        status = "Tool: semantic_search\n"
+        # Build memory context - let task manager handle all task display
+        return self.task_manager.get_memory_for_llm()
 
-        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            # Handle error events - they only have error and tool_name fields
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            query = result.get("query")
-            if query and query != "fetch_next_code":
-                status += f"Query: '{query}'\n"
-
-            count = result.get("count") or result.get("total_nodes")
-            if count is not None:
-                status += f"Found {count} nodes for connection analysis\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        return status.rstrip()
-
-    def _build_search_keyword_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build keyword search status for cross-indexing."""
-        status = "Tool: search_keyword\n"
-
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            keyword = result.get("keyword")
-            if keyword:
-                status += f"Keyword: '{keyword}'\n"
-
-            # Add searched paths information
-            file_paths = result.get("file_paths")
-            if file_paths:
-                if isinstance(file_paths, list) and file_paths:
-                    paths_str = ", ".join(file_paths)
-                    status += f"Searched in: {paths_str}\n"
-                elif isinstance(file_paths, str):
-                    status += f"Searched in: {file_paths}\n"
-
-            matches_found = result.get("matches_found")
-            if matches_found is not None:
-                matches_status = "Found" if matches_found else "Not Found"
-                status += f"Matches Status: '{matches_status}'\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        return status.rstrip()
-
-    def _build_list_files_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build list files status for cross-indexing."""
-        status = "Tool: list_files\n"
-
-        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            # Handle error events - they only have error and tool_name fields
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            directory = result.get("directory")
-            if directory:
-                status += f"Directory: {directory}\n"
-
-            count = result.get("count")
-            if count is not None:
-                status += f"Files: {count} found\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        status += "\n\nNOTE: Store relevant file/folder information in Sutra memory's history section for connection analysis, as directory listings will not persist in next iterations."
-        return status.rstrip()
-
-    def _build_database_status_cross_index(self, result: Dict[str, Any]) -> str:
-        """Build database status for cross-indexing."""
-        status = "Tool: database\n"
-
-        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            # Handle error events - they only have error and tool_name fields
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events
-            query_name = result.get("query_name")
-            if query_name:
-                status += f"Query Name: {query_name}\n"
-
-            query = result.get("query")
-            if query:
-                status += f"Query: {query}\n"
-
-            count = result.get("count") or result.get("total_results")
-            if count is not None:
-                status += f"Results: {count} found\n"
-
-            # Only check for error field if this is not already a tool_error event
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        return status.rstrip()
-
-    def _build_generic_status_cross_index(
-        self, result: Dict[str, Any], tool_name: str
-    ) -> str:
-        """Build generic status for unknown tools in cross-indexing."""
-        status = f"Tool: {tool_name}\n"
-
-        # Check if this is an error event (type: "tool_error") or success event (type: "tool_use")
-        event_type = result.get("type", "unknown")
-
-        if event_type == "tool_error":
-            # Handle error events - they only have error and tool_name fields
-            error = result.get("error", "Unknown error")
-            status += f"ERROR: {error}\n"
-        else:
-            # Handle successful tool_use events or other event types
-            error = result.get("error")
-            if error:
-                status += f"ERROR: {error}\n"
-
-            success = result.get("success")
-            if success is not None:
-                status += f"Status: {'success' if success else 'failed'}\n"
-
-            data = result.get("data", "")
-            if data:
-                status += f"Results:\n{data}"
-
-        return status.rstrip()
-
-    def _update_cross_index_memory(self, event: Dict[str, Any]) -> None:
-        """
-        Update Sutra memory with cross-indexing specific context.
-
-        Args:
-            event: Tool execution event
-        """
-        try:
-            tool_name = event.get("tool_name", "unknown")
-
-            # Add cross-indexing context to memory updates
-            if tool_name == "semantic_search":
-                query = event.get("query", "")
-                count = event.get("count", 0)
-                if count > 0:
-                    memory_entry = (
-                        f"Cross-Index: Found {count} nodes for query '{query}'"
-                    )
-                    self.memory_manager.add_history(memory_entry)
-
-            elif tool_name == "search_keyword":
-                keyword = event.get("keyword", "")
-                matches = event.get("matches_found", False)
-                if matches:
-                    memory_entry = f"Cross-Index: Found keyword '{keyword}'"
-                    self.memory_manager.add_history(memory_entry)
-
-            elif tool_name == "list_files":
-                directory = event.get("directory", "")
-                count = event.get("count", 0)
-                memory_entry = f"Cross-Index: Listed {count} files in {directory}"
-                self.memory_manager.add_history(memory_entry)
-
-        except Exception as e:
-            logger.error(f"Error updating cross-index memory: {e}")
-
-    def _process_previous_tool_results_with_code_manager(
-        self, event: Dict[str, Any]
+    def _process_tool_with_code_manager_from_status(
+        self, tool_status: str, tool_name: str
     ) -> None:
         """
-        Process previous tool results with code manager to extract connection code.
+        Process tool results with code manager using tool status string.
         Only processes database and search_keyword tools.
 
         Args:
-            event: Tool execution event with results from previous iteration
+            tool_status: Tool status string from execute_tool
+            tool_name: Name of the tool that was executed
         """
         try:
-            tool_name = event.get("tool_name", "unknown")
-            tool_result = event.get("data", "")
-
             if tool_name not in ["database", "search_keyword"]:
                 logger.debug(
                     f"Skipping code manager processing for tool: {tool_name} (not database or search_keyword)"
                 )
                 return
 
-            if not tool_result or tool_result.strip() == "":
+            if not tool_status or tool_status.strip() == "":
                 logger.debug(
-                    f"Skipping code manager processing for tool: {tool_name} (no result data)"
+                    f"Skipping code manager processing for tool: {tool_name} (no status data)"
                 )
                 return
 
-            logger.info(
-                f"Processing previous tool results with code manager for tool: {tool_name}"
+            logger.debug(
+                f"Processing tool results with code manager for tool: {tool_name}"
             )
 
-            formatted_tool_results = self._format_tool_results_for_code_manager(event)
-
-            system_prompt = self.code_manager_prompt_manager.get_system_prompt()
-            user_prompt = self.code_manager_prompt_manager.get_user_prompt(
-                formatted_tool_results
-            )
-
-            response = self.llm_client.call_llm(
-                system_prompt, user_prompt, return_raw=True
-            )
-
-            if response:
-                # Process code manager response to extract connection code
-                self._process_code_manager_response(response)
-                logger.info("Code manager processing completed")
-            else:
-                logger.warning("Empty response from code manager LLM call")
-
-        except Exception as e:
-            logger.error(
-                f"Error processing previous tool results with code manager: {e}"
-            )
-
-    def _format_tool_results_for_code_manager(self, event: Dict[str, Any]) -> str:
-        """
-        Format tool execution event for code manager analysis.
-
-        Args:
-            event: Tool execution event
-
-        Returns:
-            Formatted tool results string
-        """
-        tool_result = event.get("data", "")
-
-        result = f"""
+            # Format tool status for code manager
+            formatted_tool_results = f"""
 Tool Results:
-{tool_result}
+{tool_status}
 """
 
-        return result
+            # Use BAML code manager
+            baml_result = self.cross_indexing.run_code_manager(formatted_tool_results)
+            logger.debug(
+                f"BAML code manager result success = {baml_result.get('success') if isinstance(baml_result, dict) else 'N/A'}"
+            )
 
-    def _process_code_manager_response(self, response: str) -> None:
-        """
-        Process code manager response and extract connection code XML.
-
-        Args:
-            response: Raw response from code manager LLM
-        """
-        try:
-            logger.debug("Processing code manager response for connection code XML")
-
-            # Parse XML response using existing XML service
-            xml_blocks = self.xml_service.parse_xml_response(response)
-
-            if xml_blocks:
-                # Process connection code XML through task manager (not memory manager)
-                # This ensures code snippets are added to the correct memory instance
-                for xml_block in xml_blocks:
-                    if isinstance(xml_block, dict) and "connection_code" in xml_block:
-                        logger.info("Found connection_code XML from code manager")
-
-                        result = self.prompt_manager.task_manager.xml_processor.process_sutra_memory_data(
-                            xml_block
-                        )
-
-                        if result.get("success"):
-                            logger.info(
-                                f"Successfully processed connection code: {len(result.get('changes_applied', {}).get('code', []))} code snippets added"
-                            )
-                        else:
-                            logger.warning(
-                                f"Failed to process connection code: {result.get('errors', [])}"
-                            )
+            if baml_result.get("success"):
+                logger.debug("Processing successful BAML code manager result")
+                # Process code manager response to extract connection code using model_dump()
+                baml_response = baml_result.get("results")
+                response_data = (
+                    baml_response.model_dump()
+                    if hasattr(baml_response, "model_dump")
+                    else baml_response
+                )
+                self._add_code_snippets_to_memory(response_data)
+                logger.debug("BAML code manager processing completed")
             else:
-                logger.debug("No connection code XML found in code manager response")
+                error_msg = baml_result.get("error", "BAML code manager failed")
+                logger.warning(f"BAML code manager error: {error_msg}")
 
         except Exception as e:
-            logger.error(f"Error processing code manager response: {e}")
+            logger.error(f"Error processing tool results with code manager: {e}")
+            import traceback
+
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+
+    def _add_code_snippets_to_memory(self, response_data) -> None:
+        """
+        Process code manager response and extract connection code with deduplication.
+
+        Args:
+            response_data: Code manager response data (from model_dump())
+        """
+        try:
+            logger.debug("Processing code manager response for connection code")
+            logger.debug(f"Response data type: {type(response_data)}")
+
+            if not response_data:
+                logger.debug("No code manager response to process")
+                return
+
+            # Get connection code from response data
+            connection_code_list = response_data.get("connection_code", [])
+            logger.debug(f"Found {len(connection_code_list)} connection code items")
+
+            if connection_code_list:
+                code_snippets_added = 0
+                code_snippets_skipped = 0
+
+                for code_connection in connection_code_list:
+                    logger.debug(f"Processing connection: {code_connection}")
+
+                    # Extract fields from code connection dictionary
+                    file_path = code_connection.get("file")
+                    start_line = code_connection.get("start_line")
+                    end_line = code_connection.get("end_line")
+                    description = code_connection.get("description")
+
+                    if not all([file_path, start_line, end_line, description]):
+                        logger.warning(
+                            f"Incomplete code connection data: file={file_path}, start={start_line}, end={end_line}, desc={description}"
+                        )
+                        continue
+
+                    # Check for duplicates before adding
+                    if self._is_duplicate_code_snippet(file_path, start_line, end_line):
+                        code_snippets_skipped += 1
+                        logger.debug(
+                            f"Processed overlapping/duplicate code snippet: {file_path} lines {start_line}-{end_line}"
+                        )
+                        continue
+
+                    # Add code snippet to task manager
+                    try:
+                        snippet_id = self.task_manager.add_code_snippet(
+                            code_id="dummy_id",  # Will be replaced with counter+1
+                            file_path=file_path,
+                            start_line=start_line,
+                            end_line=end_line,
+                            description=description,
+                        )
+                        if snippet_id:
+                            code_snippets_added += 1
+                            logger.debug(
+                                f"Added code snippet {snippet_id}: {description}"
+                            )
+                    except Exception as snippet_error:
+                        logger.warning(f"Failed to add code snippet: {snippet_error}")
+
+                if code_snippets_added > 0:
+                    logger.debug(
+                        f"Successfully processed BAML code manager: {code_snippets_added} code snippets added, {code_snippets_skipped} overlapping/duplicates processed"
+                    )
+                elif code_snippets_skipped > 0:
+                    logger.debug(
+                        f"BAML code manager processing: {code_snippets_skipped} overlapping/duplicate code snippets processed (merged or already in memory)"
+                    )
+                else:
+                    logger.warning(
+                        "No code snippets were added from BAML code manager response"
+                    )
+            else:
+                logger.debug("No connection_code found in BAML code manager response")
+
+        except Exception as e:
+            logger.error(f"Error processing BAML code manager response: {e}")
+            import traceback
+
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+
+    def _is_duplicate_code_snippet(
+        self, file_path: str, start_line: int, end_line: int
+    ) -> bool:
+        """
+        Check if a code snippet already exists in memory and handle merging of overlapping ranges.
+
+        Args:
+            file_path: Path to the file
+            start_line: Starting line number
+            end_line: Ending line number
+
+        Returns:
+            True if duplicate exists (exact match), False otherwise
+        """
+        try:
+            if (
+                not hasattr(self.task_manager, "memory_ops")
+                or not self.task_manager.memory_ops.code_snippets
+            ):
+                return False
+
+            for existing_snippet in self.task_manager.memory_ops.code_snippets.values():
+                # Check for exact match: same file and identical line ranges
+                if (
+                    existing_snippet.file_path == file_path
+                    and existing_snippet.start_line == start_line
+                    and existing_snippet.end_line == end_line
+                ):
+                    return True
+
+                # Check for overlapping ranges in the same file
+                if existing_snippet.file_path == file_path and not (
+                    end_line < existing_snippet.start_line
+                    or start_line > existing_snippet.end_line
+                ):
+                    logger.debug(
+                        f"Found overlapping code snippet in {file_path}: existing {existing_snippet.start_line}-{existing_snippet.end_line}, new {start_line}-{end_line}"
+                    )
+                    
+                    # Merge the overlapping ranges by expanding the existing snippet
+                    merged_start = min(existing_snippet.start_line, start_line)
+                    merged_end = max(existing_snippet.end_line, end_line)
+                    
+                    logger.debug(
+                        f"Merging code snippets: removing existing {existing_snippet.start_line}-{existing_snippet.end_line} and new {start_line}-{end_line}, replacing with merged {merged_start}-{merged_end}"
+                    )
+                    
+                    # Update the existing snippet with merged range
+                    self._update_code_snippet_range(existing_snippet, merged_start, merged_end)
+                    
+                    return True  # Return True to skip adding the new snippet since we merged it
+
+            return False
+
+        except Exception as e:
+            logger.warning(f"Error checking for duplicate code snippet: {e}")
+            return False  # If we can't check, allow the addition
+    
+    def _update_code_snippet_range(self, existing_snippet, new_start_line: int, new_end_line: int):
+        """
+        Update an existing code snippet with a new line range and fetch updated content.
+        
+        Args:
+            existing_snippet: The existing CodeSnippet object
+            new_start_line: New starting line number
+            new_end_line: New ending line number
+        """
+        try:
+            # Update the snippet's line range
+            existing_snippet.start_line = new_start_line
+            existing_snippet.end_line = new_end_line
+            
+            # Fetch the updated content for the expanded range
+            if hasattr(self.task_manager.memory_ops, 'code_fetcher'):
+                updated_content = self.task_manager.memory_ops.code_fetcher.fetch_code_from_file(
+                    existing_snippet.file_path, new_start_line, new_end_line
+                )
+                existing_snippet.content = updated_content
+                
+            logger.debug(
+                f"Successfully updated code snippet {existing_snippet.id} to range {new_start_line}-{new_end_line}"
+            )
+            
+        except Exception as e:
+            logger.warning(f"Error updating code snippet range: {e}")
 
     def _update_session_memory(self):
-        """Update session memory with current memory state (like agent service)."""
-        if not self.session_manager:
-            logger.warning(
-                "No session manager available for cross-index memory persistence"
-            )
-            return
-
+        """Update session memory with current state."""
         try:
-            # Get the rich formatted memory from task manager (includes code snippets)
-            # Use task manager instead of memory manager since that's where code snippets are stored
-            memory_summary = self.prompt_manager.task_manager.get_memory_for_llm()
-            # Update session manager with the rich memory content
-            self.session_manager.update_sutra_memory(memory_summary)
-            logger.debug(
-                f"Updated Cross-Index Sutra Memory in session: {len(memory_summary)} characters"
-            )
-            logger.debug(
-                f"Memory includes {len(self.prompt_manager.task_manager.get_all_code_snippets())} code snippets"
-            )
+            if self.session_manager:
+                memory_summary = self.task_manager.get_memory_for_llm()
+                self.session_manager.update_sutra_memory(memory_summary)
+                logger.debug(
+                    f"Updated Cross-Index Sutra Memory in session: {len(memory_summary)} characters"
+                )
+                logger.debug(
+                    f"Memory includes {len(self.task_manager.get_all_code_snippets())} code snippets"
+                )
         except Exception as e:
             logger.error(f"Error updating cross-index session memory: {e}")
 
-    def _parse_connection_splitting_json(self, response_content: str) -> Dict[str, Any]:
-        """
-        Parse connection splitting JSON response format with technology name validation and correction.
-
-        Args:
-            response_content: Raw JSON response from connection splitting prompt
-
-        Returns:
-            Parsed analysis data in the expected format with validated technology names
-        """
+    def _handle_phase_12_completion(self, phase: int) -> bool:
+        """Handle completion of Phase 1 or 2 with task filtering."""
         try:
-            import re
+            logger.debug(f"Phase {phase} completed - running task filtering")
 
-            # Clean up response content - remove any markdown formatting
-            response_text = response_content.strip()
-            if response_text.startswith("```json"):
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
-                if end != -1:
-                    response_text = response_text[start:end].strip()
-            elif response_text.startswith("```"):
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
-                if end != -1:
-                    response_text = response_text[start:end].strip()
+            # Get tasks created for the next phase
+            next_phase = phase + 1
+            tasks_to_filter = []
 
-            # Parse JSON directly
-            try:
-                json_data = json.loads(response_text)
-            except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse connection splitting JSON: {e}")
-                return {
-                    "incoming_connections": [],
-                    "outgoing_connections": [],
-                    "potential_matches": [],
-                    "error": f"Could not parse connection splitting response: {str(e)}",
-                }
+            # Get all pending tasks that were created in this phase for next phase
+            for task in self.task_manager.get_tasks_by_status(TaskStatus.PENDING):
+                if task:
+                    metadata = self.task_manager._task_phase_metadata.get(task.id, {})
+                    created_in_phase = metadata.get("created_in_phase")
+                    target_phase = metadata.get("target_phase")
 
-            # TECHNOLOGY NAME VALIDATION AND CORRECTION
-            logger.info("Validating technology names against predefined enums")
-            all_valid, unmatched_names = (
-                self.technology_validator.validate_json_technology_names(json_data)
-            )
-
-            if not all_valid:
-                logger.warning(
-                    f"Found {len(unmatched_names)} unmatched technology names: {unmatched_names}"
-                )
-
-                # Get corrections for unmatched names
-                corrections = (
-                    self.technology_correction_service.correct_technology_names(
-                        unmatched_names
-                    )
-                )
-
-                if corrections:
-                    logger.info(
-                        f"Applying {len(corrections)} technology name corrections"
-                    )
-                    # Apply corrections to the JSON data
-                    json_data = self.technology_validator.apply_corrected_names(
-                        json_data, corrections
-                    )
-
-                    # Log the corrections applied
-                    for original, corrected in corrections.items():
-                        logger.info(
-                            f"Technology name corrected: '{original}' -> '{corrected}'"
-                        )
-                else:
-                    logger.warning(
-                        "No corrections could be generated for unmatched technology names"
-                    )
-            else:
-                logger.info("All technology names are valid, no corrections needed")
-
-            # Convert the JSON format to our expected format
-            result = {
-                "incoming_connections": [],
-                "outgoing_connections": [],
-                "potential_matches": [],
-            }
-
-            # Extract project summary if present
-            project_summary = json_data.get("summary", "").strip()
-            if project_summary:
-                result["summary"] = project_summary
-                logger.info(
-                    f"Extracted project summary from Phase 4: {len(project_summary)} characters"
-                )
-
-            # Process incoming connections from JSON format
-            incoming_data = json_data.get("incoming_connections", {})
-            if isinstance(incoming_data, dict):
-                for tech_name, files_data in incoming_data.items():
-                    if isinstance(files_data, dict):
-                        for file_path, connections in files_data.items():
-                            if isinstance(connections, list):
-                                for conn in connections:
-                                    if isinstance(conn, dict):
-                                        # Parse snippet_lines from range format (e.g., "15-20")
-                                        snippet_lines = []
-                                        snippet_range = conn.get("snippet_lines", "")
-                                        if snippet_range and "-" in snippet_range:
-                                            try:
-                                                start, end = snippet_range.split("-")
-                                                snippet_lines = list(
-                                                    range(int(start), int(end) + 1)
-                                                )
-                                            except ValueError:
-                                                snippet_lines = []
-
-                                        result["incoming_connections"].append(
-                                            {
-                                                "description": conn.get(
-                                                    "description", ""
-                                                ),
-                                                "file_path": file_path,
-                                                "snippet_lines": snippet_lines,
-                                                "technology": {
-                                                    "name": tech_name,
-                                                    "type": infer_technology_type(
-                                                        tech_name
-                                                    ),
-                                                },
-                                            }
-                                        )
-
-            # Process outgoing connections from JSON format
-            outgoing_data = json_data.get("outgoing_connections", {})
-            if isinstance(outgoing_data, dict):
-                for tech_name, files_data in outgoing_data.items():
-                    if isinstance(files_data, dict):
-                        for file_path, connections in files_data.items():
-                            if isinstance(connections, list):
-                                for conn in connections:
-                                    if isinstance(conn, dict):
-                                        # Parse snippet_lines from range format (e.g., "15-20")
-                                        snippet_lines = []
-                                        snippet_range = conn.get("snippet_lines", "")
-                                        if snippet_range and "-" in snippet_range:
-                                            try:
-                                                start, end = snippet_range.split("-")
-                                                snippet_lines = list(
-                                                    range(int(start), int(end) + 1)
-                                                )
-                                            except ValueError:
-                                                snippet_lines = []
-
-                                        result["outgoing_connections"].append(
-                                            {
-                                                "description": conn.get(
-                                                    "description", ""
-                                                ),
-                                                "file_path": file_path,
-                                                "snippet_lines": snippet_lines,
-                                                "technology": {
-                                                    "name": tech_name,
-                                                    "type": infer_technology_type(
-                                                        tech_name
-                                                    ),
-                                                },
-                                            }
-                                        )
+                    if created_in_phase == phase and target_phase == next_phase:
+                        tasks_to_filter.append(task)
 
             logger.debug(
-                f"Parsed connection splitting response: {len(result['incoming_connections'])} incoming, {len(result['outgoing_connections'])} outgoing connections"
+                f"Found {len(tasks_to_filter)} tasks to filter from Phase {phase} to Phase {next_phase}"
+            )
+
+            if tasks_to_filter:
+                logger.debug(f"Running task filtering on {len(tasks_to_filter)} tasks")
+
+                # Run task filtering
+                filtering_result = self.cross_indexing.filter_tasks(tasks_to_filter)
+
+                # Extract filtered tasks using model_dump() if it's a BAML response
+                if hasattr(filtering_result, "model_dump"):
+                    filter_data = filtering_result.model_dump()
+                    filtered_tasks = filter_data.get("tasks", [])
+                elif isinstance(filtering_result, dict):
+                    filtered_tasks = filtering_result.get("tasks", [])
+                else:
+                    filtered_tasks = filtering_result
+
+                if not filtered_tasks:
+                    logger.warning(
+                        "Task filtering returned no results, keeping original tasks"
+                    )
+                    filtered_tasks = tasks_to_filter  # Keep original if filtering fails
+
+                logger.debug(
+                    f"Task filtering result: {len(tasks_to_filter)} → {len(filtered_tasks)} tasks"
+                )
+
+                # Clear all tasks and reset counter
+                self.task_manager.clear_all_tasks_for_filtering()
+
+                # Add filtered tasks back with proper metadata
+                for i, task in enumerate(filtered_tasks):
+                    new_task_id = str(i + 1)  # Use sequential IDs starting from 1
+                    success = self.task_manager.add_task(
+                        new_task_id,
+                        task.description,
+                        TaskStatus.PENDING,
+                        target_phase=next_phase,
+                    )
+
+                    if success:
+                        logger.debug(
+                            f"Added filtered task {new_task_id} for Phase {next_phase}: {task.description[:50]}..."
+                        )
+                    else:
+                        logger.error(f"Failed to add filtered task {new_task_id}")
+
+                logger.debug(
+                    f"Task filtering completed: {len(filtered_tasks)} tasks ready for Phase {next_phase}"
+                )
+            else:
+                logger.debug(f"No tasks to filter from Phase {phase}")
+                # Still clear tasks and reset for clean transition
+                self.task_manager.clear_all_tasks_for_filtering()
+
+            # Clear memory for phase transition (history and code snippets)
+            logger.debug(
+                f"Clearing memory for phase transition: {phase} → {next_phase}"
+            )
+            self.task_manager.clear_phase_memory()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error handling Phase {phase} completion: {e}")
+            return False
+
+    def _execute_phase_baml(
+        self, phase: int, analysis_query: str, memory_context: str
+    ) -> Dict[str, Any]:
+        """Execute BAML for specific phase."""
+        try:
+            if phase == 1:
+                return self.cross_indexing.run_package_discovery(
+                    analysis_query, memory_context
+                )
+            elif phase == 2:
+                return self.cross_indexing.run_import_discovery(
+                    analysis_query, memory_context
+                )
+            elif phase == 3:
+                return self.cross_indexing.run_implementation_discovery(
+                    analysis_query, memory_context
+                )
+            else:
+                return {
+                    "success": False,
+                    "error": f"Invalid phase for BAML execution: {phase}",
+                }
+        except Exception as e:
+            return {"success": False, "error": f"BAML execution error: {str(e)}"}
+
+    def _execute_phase_4(self) -> Dict[str, Any]:
+        """Execute Phase 4 - Data Splitting."""
+        try:
+            logger.debug("Executing Phase 4 - Data Splitting")
+
+            # Get only code snippets from task manager (not full memory context)
+            code_snippets_context = self._get_code_snippets_only_context()
+
+            # Run connection splitting first to generate connection data
+            # Pass only code snippets, not tasks or tool results
+            splitting_result = self.cross_indexing.run_connection_splitting(
+                code_snippets_context
+            )
+
+            if not splitting_result.get("success"):
+                return {
+                    "success": False,
+                    "error": f"Connection splitting failed: {splitting_result.get('error')}",
+                }
+
+            # Get the analysis result from connection splitting using model_dump()
+            baml_analysis_result = splitting_result.get("results")
+
+            # Add logging to diagnose the response format issue
+            logger.debug(f"BAML analysis result type: {type(baml_analysis_result)}")
+            logger.debug(f"BAML analysis result: {baml_analysis_result}")
+
+            # Handle both object and string responses
+            if hasattr(baml_analysis_result, "model_dump"):
+                analysis_result = baml_analysis_result.model_dump()
+                logger.debug("Used model_dump() to convert BAML response")
+            elif isinstance(baml_analysis_result, str):
+                # Parse JSON string if BAML returned a string
+                try:
+                    analysis_result = json.loads(baml_analysis_result)
+                    logger.debug("Parsed JSON string from BAML response")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse BAML JSON response: {e}")
+                    return {
+                        "success": False,
+                        "error": f"Invalid JSON response from connection splitting: {str(e)}",
+                    }
+            else:
+                analysis_result = baml_analysis_result
+                logger.debug("Used BAML response directly")
+
+            logger.debug(f"Final analysis result type: {type(analysis_result)}")
+
+            # Ensure analysis_result is a dictionary before proceeding
+            if not isinstance(analysis_result, dict):
+                logger.error(
+                    f"Analysis result is not a dictionary: {type(analysis_result)}"
+                )
+                return {
+                    "success": False,
+                    "error": f"Connection splitting returned invalid format: {type(analysis_result)}",
+                }
+
+            # Check if technology correction is needed
+            unmatched_technologies = self._get_unmatched_technologies(analysis_result)
+
+            if unmatched_technologies:
+                logger.debug(
+                    f"🔧 Technology Correction: Processing {len(unmatched_technologies)} unmatched names: {unmatched_technologies}"
+                )
+
+                # Run technology correction with only technology names
+                correction_result = self.cross_indexing.run_technology_correction(
+                    json.dumps(unmatched_technologies),
+                    json.dumps(
+                        [
+                            "GraphQL",
+                            "HTTP/HTTPS",
+                            "MessageQueue",
+                            "Unknown",
+                            "WebSockets",
+                            "gRPC",
+                        ]
+                    ),
+                )
+
+                if correction_result.get("success"):
+                    # Apply corrections to analysis result using model_dump()
+                    correction_results = correction_result.get("results")
+                    correction_data = (
+                        correction_results.model_dump()
+                        if hasattr(correction_results, "model_dump")
+                        else correction_results
+                    )
+                    corrected_analysis = self._apply_technology_corrections(
+                        analysis_result, correction_data
+                    )
+                    if corrected_analysis:
+                        analysis_result = corrected_analysis
+                        logger.debug("Technology correction completed successfully")
+                else:
+                    logger.warning(
+                        f"Technology correction failed: {correction_result.get('error')}"
+                    )
+            else:
+                logger.debug(
+                    "✅ All technologies already match valid enums - skipping technology correction"
+                )
+
+            return {
+                "success": True,
+                "analysis_result": analysis_result,
+                "message": "Phase 4 completed successfully",
+            }
+
+        except Exception as e:
+            logger.error(f"Error in Phase 4 execution: {e}")
+            return {"success": False, "error": f"Phase 4 execution error: {str(e)}"}
+
+    def _get_code_snippets_only_context(self) -> str:
+        """Get only code snippets for Phase 4 connection splitting."""
+        try:
+            content = []
+
+            # Add only code snippets if any exist
+            if (
+                hasattr(self.task_manager, "memory_ops")
+                and self.task_manager.memory_ops.code_snippets
+            ):
+                content.append("CODE SNIPPETS:")
+                content.append("")
+                for (
+                    code_id,
+                    snippet,
+                ) in self.task_manager.memory_ops.code_snippets.items():
+                    content.append(f"ID: {code_id}")
+                    content.append(
+                        f"File: {snippet.file_path} (lines {snippet.start_line}-{snippet.end_line})"
+                    )
+                    content.append(f"Description: {snippet.description}")
+                    if snippet.content:
+                        for line in snippet.content.split("\n"):
+                            content.append(f"  {line}")
+                    else:
+                        content.append("")
+            else:
+                content.append("No code snippets available for connection splitting.")
+
+            result = "\n".join(content)
+            logger.debug(
+                f"Phase 4 code snippets context length: {len(result)} characters"
             )
             return result
 
         except Exception as e:
-            logger.error(f"Error parsing connection splitting JSON: {e}")
-            logger.error(f"Raw content: {response_content}")
-            return {
-                "error": str(e),
-                "raw_content": response_content,
-                "incoming_connections": [],
-                "outgoing_connections": [],
-                "potential_matches": [],
-            }
+            logger.error(f"Error building code snippets context: {e}")
+            return "Error retrieving code snippets for connection splitting."
 
-    def _run_phase4_data_splitting(self) -> Dict[str, Any]:
-        """
-        Run Phase 4 - Data Splitting using the new 5-phase system.
-
-        Returns:
-            Result dictionary with splitting status and analysis data
-        """
+    def _execute_phase_5(
+        self, analysis_result: Dict[str, Any], project_id: int
+    ) -> Dict[str, Any]:
+        """Execute Phase 5 - Connection Matching."""
         try:
-            logger.info("Starting Phase 4 - Data Splitting")
+            logger.debug("Executing Phase 5 - Connection Matching")
 
-            # Get ONLY the code snippets stored by code manager (no tasks, no history)
-            # Code snippets are stored in the task_manager, not memory_manager
-            code_snippets = self.prompt_manager.task_manager.get_all_code_snippets()
+            # Store connections and summary in database first
+            storage_result = self.graph_ops.store_connections_with_commit(
+                project_id, analysis_result
+            )
 
-            if not code_snippets:
+            if not storage_result.get("success"):
+                return {
+                    "success": False,
+                    "error": f"Connection storage failed: {storage_result.get('error')}",
+                }
+
+            print("✅ Connections and summary stored in database successfully")
+
+            # Run comprehensive connection matching for all technology types
+            # The method handles fetching and processing all connections internally
+            print(
+                "🔍 Starting comprehensive connection matching for all technology types"
+            )
+
+            matching_result = self.cross_indexing.run_connection_matching()
+
+            if matching_result.get("success"):
+                matching_data = matching_result.get("results", {})
+                if hasattr(matching_data, "model_dump"):
+                    matching_data = matching_data.model_dump()
+                matches = matching_data.get("matches", [])
+
+                # Store mappings if matches found
+                if matches:
+                    db_matches = []
+                    for match in matches:
+                        db_matches.append(
+                            {
+                                "sender_id": match.get("outgoing_id"),
+                                "receiver_id": match.get("incoming_id"),
+                                "description": match.get(
+                                    "match_reason", "Auto-detected connection"
+                                ),
+                                "match_confidence": self._convert_confidence_to_float(
+                                    match.get("match_confidence", "medium")
+                                ),
+                            }
+                        )
+
+                    mapping_result = self.graph_ops.create_connection_mappings(
+                        db_matches
+                    )
+                    print(
+                        f"✅ Stored {len(db_matches)} connection mappings in database"
+                    )
+                else:
+                    mapping_result = {"success": True, "mapping_ids": []}
+                    print("ℹ️  No connection matches found")
+
+                # Mark cross-indexing as complete
+                self.graph_ops.mark_cross_indexing_done_by_id(project_id)
+
+                return {
+                    "success": True,
+                    "matching_result": matching_result.get("results", {}),
+                    "storage_result": storage_result,
+                    "mapping_result": mapping_result,
+                    "message": "Phase 5 completed successfully with comprehensive connection matching",
+                }
+            else:
                 logger.warning(
-                    "No code snippets found in task manager for Phase 4 data splitting"
+                    f"Connection matching failed: {matching_result.get('error')}"
                 )
+                # Mark as complete even if matching fails
+                self.graph_ops.mark_cross_indexing_done_by_id(project_id)
                 return {
-                    "success": False,
-                    "error": "No code snippets available from code manager for data splitting",
-                    "analysis_result": {
-                        "incoming_connections": [],
-                        "outgoing_connections": [],
-                        "potential_matches": [],
-                    },
+                    "success": True,
+                    "storage_result": storage_result,
+                    "message": f"Phase 5 completed - connection matching failed but data stored",
                 }
-
-            # Format only the code snippets for Phase 4 processing
-            formatted_snippets = []
-            for code_id, snippet in code_snippets.items():
-                formatted_snippets.append(
-                    f"""Code {code_id}:
-File: {snippet.file_path}
-Lines: {snippet.start_line}-{snippet.end_line}
-Description: {snippet.description}
-Content:
-{snippet.content}
----"""
-                )
-
-            memory_context = "\n".join(formatted_snippets)
-            logger.debug(
-                f"Phase 4 processing {len(code_snippets)} code snippets from code manager"
-            )
-
-            if not get_user_confirmation_for_llm_call():
-                logger.info(
-                    "User cancelled Phase 4 data splitting LLM call in debug mode"
-                )
-                return {
-                    "success": False,
-                    "user_cancelled": True,
-                    "error": "User cancelled Phase 4 data splitting in debug mode",
-                    "analysis_result": {
-                        "incoming_connections": [],
-                        "outgoing_connections": [],
-                        "potential_matches": [],
-                    },
-                }
-
-            # Get Phase 4 prompt manager
-            phase4_manager = self.prompt_manager.phase4_manager
-
-            # Get system and user prompts for Phase 4
-            system_prompt = phase4_manager.get_system_prompt()
-            user_prompt = phase4_manager.get_user_prompt(memory_context)
-
-            # Retry logic for Phase 4 data splitting
-            max_retries = 5
-            last_error = None
-
-            for attempt in range(max_retries):
-                try:
-                    logger.debug(
-                        f"Phase 4 data splitting attempt {attempt + 1}/{max_retries}"
-                    )
-
-                    # Call LLM for Phase 4 data splitting
-                    response = self.llm_client.call_llm(
-                        system_prompt, user_prompt, return_raw=True
-                    )
-
-                    # Parse the JSON response directly
-                    analysis_result = self._parse_connection_splitting_json(response)
-
-                    # Check if we got valid results
-                    if analysis_result and not analysis_result.get("error"):
-                        logger.info(
-                            f"Phase 4 data splitting completed successfully on attempt {attempt + 1}: "
-                            f"{len(analysis_result['incoming_connections'])} incoming, "
-                            f"{len(analysis_result['outgoing_connections'])} outgoing"
-                        )
-
-                        return {
-                            "success": True,
-                            "analysis_result": analysis_result,
-                            "attempts_used": attempt + 1,
-                        }
-                    else:
-                        last_error = analysis_result.get(
-                            "error", "Invalid analysis result"
-                        )
-                        logger.warning(
-                            f"Phase 4 data splitting attempt {attempt + 1} failed: {last_error}"
-                        )
-
-                except Exception as e:
-                    last_error = str(e)
-                    logger.warning(
-                        f"Phase 4 data splitting attempt {attempt + 1} failed with exception: {e}"
-                    )
-
-                # If not the last attempt, continue to retry
-                if attempt < max_retries - 1:
-                    logger.info(
-                        f"Retrying Phase 4 data splitting (attempt {attempt + 2}/{max_retries})"
-                    )
-
-            # All retries failed
-            logger.error(
-                f"Phase 4 data splitting failed after {max_retries} attempts. Last error: {last_error}"
-            )
-            return {
-                "success": False,
-                "error": f"Phase 4 data splitting failed after {max_retries} attempts. Last error: {last_error}",
-                "analysis_result": {
-                    "incoming_connections": [],
-                    "outgoing_connections": [],
-                    "potential_matches": [],
-                },
-                "attempts_used": max_retries,
-            }
 
         except Exception as e:
-            logger.error(f"Error during Phase 4 data splitting: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "analysis_result": {
-                    "incoming_connections": [],
-                    "outgoing_connections": [],
-                    "potential_matches": [],
-                },
-            }
+            logger.error(f"Error in Phase 5 execution: {e}")
+            return {"success": False, "error": f"Phase 5 execution error: {str(e)}"}
 
-    def get_existing_connections_with_ids(self) -> Dict[str, List[Dict[str, Any]]]:
-        """
-        Retrieve existing connections with IDs and file references.
-
-        Returns:
-            Dictionary with 'incoming' and 'outgoing' connection lists including IDs
-        """
+    def get_existing_connections_with_ids(self) -> Dict[str, Any]:
+        """Get existing connections with IDs for matching."""
         try:
-            # Get incoming and outgoing connections using wrapper function
-            connections = self.graph_ops.get_existing_connections()
-            return connections
-
+            return self.graph_ops.get_existing_connections()
         except Exception as e:
-            logger.error(f"Error retrieving existing connections: {e}")
+            logger.error(f"Error getting existing connections: {e}")
             return {"incoming": [], "outgoing": []}
 
     def _convert_confidence_to_float(self, confidence: str) -> float:
-        """Convert confidence level string to float."""
+        """Convert confidence string to float."""
         confidence_map = {"high": 0.9, "medium": 0.7, "low": 0.5}
         return confidence_map.get(confidence.lower(), 0.5)
+
+    def _get_unmatched_technologies(self, analysis_result: Dict[str, Any]) -> list:
+        """Get list of technology names that don't match valid enums from BAML format."""
+        valid_enums = {
+            "GraphQL",
+            "HTTP/HTTPS",
+            "MessageQueue",
+            "Unknown",
+            "WebSockets",
+            "gRPC",
+        }
+        unmatched = set()
+
+        # Check incoming connections - BAML format: {"tech_name": {"file": [details]}}
+        incoming_connections = analysis_result.get("incoming_connections", {})
+        for tech_name in incoming_connections.keys():
+            if tech_name and tech_name not in valid_enums:
+                unmatched.add(tech_name)
+
+        # Check outgoing connections - BAML format: {"tech_name": {"file": [details]}}
+        outgoing_connections = analysis_result.get("outgoing_connections", {})
+        for tech_name in outgoing_connections.keys():
+            if tech_name and tech_name not in valid_enums:
+                unmatched.add(tech_name)
+
+        return list(unmatched)
+
+    def _apply_technology_corrections(
+        self, analysis_result: Dict[str, Any], baml_corrections
+    ) -> Dict[str, Any]:
+        """Apply technology corrections to analysis result in BAML format."""
+        try:
+            # Use model_dump() to get corrections data
+            if hasattr(baml_corrections, "model_dump"):
+                corrections_data = baml_corrections.model_dump()
+            else:
+                corrections_data = baml_corrections
+
+            corrections_list = corrections_data.get("corrections", [])
+
+            if not corrections_list:
+                logger.debug("No corrections provided by technology correction")
+                return analysis_result
+
+            # Build correction mapping
+            correction_map = {}
+            for correction in corrections_list:
+                original_name = correction.get("original_name")
+                corrected_name = correction.get("corrected_name")
+                if original_name and corrected_name:
+                    correction_map[original_name] = corrected_name
+
+            logger.debug(f"Applying technology corrections: {correction_map}")
+
+            # Apply corrections to incoming connections - BAML format
+            incoming_connections = analysis_result.get("incoming_connections", {})
+            corrected_incoming = {}
+            for tech_name, files_dict in incoming_connections.items():
+                corrected_tech_name = correction_map.get(tech_name, tech_name)
+                corrected_incoming[corrected_tech_name] = files_dict
+            analysis_result["incoming_connections"] = corrected_incoming
+
+            # Apply corrections to outgoing connections - BAML format
+            outgoing_connections = analysis_result.get("outgoing_connections", {})
+            corrected_outgoing = {}
+            for tech_name, files_dict in outgoing_connections.items():
+                corrected_tech_name = correction_map.get(tech_name, tech_name)
+                corrected_outgoing[corrected_tech_name] = files_dict
+            analysis_result["outgoing_connections"] = corrected_outgoing
+
+            return analysis_result
+
+        except Exception as e:
+            logger.error(f"Error applying technology corrections: {e}")
+            return analysis_result
+
+    def _get_connections_with_unknown_types(self) -> Dict[str, Any]:
+        """Get existing connections that have unknown technology types for matching."""
+        try:
+            all_connections = self.get_existing_connections_with_ids()
+            unknown_connections = {"incoming": [], "outgoing": []}
+
+            # Filter incoming connections with unknown types
+            for connection in all_connections.get("incoming", []):
+                tech_type = connection.get("technology_type", "").lower()
+                if tech_type in ["unknown", ""]:
+                    unknown_connections["incoming"].append(connection)
+
+            # Filter outgoing connections with unknown types
+            for connection in all_connections.get("outgoing", []):
+                tech_type = connection.get("technology_type", "").lower()
+                if tech_type in ["unknown", ""]:
+                    unknown_connections["outgoing"].append(connection)
+
+            logger.debug(
+                f"Found {len(unknown_connections['incoming'])} incoming and {len(unknown_connections['outgoing'])} outgoing connections with unknown types"
+            )
+            return unknown_connections
+
+        except Exception as e:
+            logger.error(f"Error getting connections with unknown types: {e}")
+            return {"incoming": [], "outgoing": []}

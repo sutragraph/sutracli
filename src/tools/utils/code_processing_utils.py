@@ -3,6 +3,41 @@ Code processing utility functions for handling code snippets, chunking, and line
 """
 
 
+def merge_overlapping_ranges(ranges):
+    """
+    Merge overlapping line ranges for the same file.
+    
+    Args:
+        ranges: List of tuples [(start_line, end_line), ...]
+        
+    Returns:
+        List of merged non-overlapping ranges
+    """
+    if not ranges:
+        return []
+    
+    # Sort ranges by start line
+    sorted_ranges = sorted(ranges, key=lambda x: x[0])
+    merged = []
+    
+    current_start, current_end = sorted_ranges[0]
+    
+    for start, end in sorted_ranges[1:]:
+        # Check if current range overlaps with the next range
+        if start <= current_end + 1:  # +1 allows for adjacent ranges to be merged
+            # Merge by extending the current range
+            current_end = max(current_end, end)
+        else:
+            # No overlap, add current range to result and start new range
+            merged.append((current_start, current_end))
+            current_start, current_end = start, end
+    
+    # Add the last range
+    merged.append((current_start, current_end))
+    
+    return merged
+
+
 def add_line_numbers_to_code(code_snippet, start_line=None):
     """
     Add line numbers to code snippet for better LLM understanding.
@@ -98,7 +133,7 @@ def process_code_with_line_filtering(
     }
 
 
-def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk_threshold=250):
+def chunk_large_code_clean(code_snippet, max_lines, chunk_threshold, file_start_line=1):
     """
     Split large code content into clean, non-overlapping chunks.
     Only chunks if total lines > chunk_threshold to avoid unnecessary chunking.
@@ -106,8 +141,6 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
     Args:
         code_snippet: The code content
         file_start_line: Starting line number in the original file
-        max_lines: Maximum lines per chunk (default 200)
-        chunk_threshold: Only chunk if total lines > this threshold (default 250)
 
     Returns:
         List of dictionaries with chunk information
@@ -133,8 +166,6 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
 
     logger.debug(f"📦 Content has {total_lines} lines")
 
-    # Only chunk if file is larger than threshold (e.g., >250 lines)
-    # This prevents chunking 223 lines into 0-200, 201-223
     if total_lines <= chunk_threshold:
         logger.debug(f"📊 File too small ({total_lines} <= {chunk_threshold}) - no chunking needed")
         numbered_code = add_line_numbers_to_code(code_snippet, file_start_line)
@@ -158,16 +189,12 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
     estimated_chunks = (total_lines + max_lines - 1) // max_lines  # Ceiling division
     remaining_after_full_chunks = total_lines % max_lines
 
-
-
     # If the last chunk would be very small (< 50 lines), redistribute
     if estimated_chunks > 1 and remaining_after_full_chunks > 0 and remaining_after_full_chunks < 50:
         logger.debug("📦 Using redistribution to avoid small trailing chunk")
         # Redistribute lines more evenly
         lines_per_chunk = total_lines // (estimated_chunks - 1)
         extra_lines = total_lines % (estimated_chunks - 1)
-
-
 
         chunks = []
         start_idx = 0
@@ -230,8 +257,6 @@ def chunk_large_code_clean(code_snippet, file_start_line=1, max_lines=200, chunk
 
             start_idx = end_idx
             chunk_num += 1
-
-
 
     # Update total_chunks and original_file_lines for all chunks
     total_chunks = len(chunks)

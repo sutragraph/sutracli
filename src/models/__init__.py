@@ -14,7 +14,6 @@ from models.schema import (
 )
 from models.agent import (
     AgentAction,
-    AgentThought,
 )
 
 __all__ = [
@@ -26,5 +25,4 @@ __all__ = [
     "Relationship",
     "ExtractionData",
     "AgentAction",
-    "AgentThought",
 ]

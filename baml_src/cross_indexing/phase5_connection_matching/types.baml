@@ -8,5 +8,5 @@ class ConnectionMatch {
 }
 
 class ConnectionMatchingResponse {
-  matches ConnectionMatch[]
+  matches ConnectionMatch[]?
 }

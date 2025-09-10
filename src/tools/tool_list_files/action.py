@@ -1,7 +1,7 @@
 import os
 import subprocess
 from pathlib import Path
-from typing import Iterator, Dict, Any
+from typing import Iterator, Dict, Any, List
 
 from models.agent import AgentAction
 from utils.file_utils import should_ignore_file, should_ignore_directory
@@ -10,6 +10,63 @@ from tools.utils.project_utils import (
     auto_detect_project_from_paths,
     resolve_project_base_path,
 )
+from tools.utils.constants import SEARCH_CONFIG
+
+
+def chunk_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
+    """
+    Chunk content into smaller pieces based on line count.
+
+    Args:
+        content: The content to chunk
+        chunk_size: Maximum lines per chunk
+
+    Returns:
+        List of chunk dictionaries with chunk_info
+    """
+    if not content:
+        return []
+
+    lines = content.split('\n')
+    total_lines = len(lines)
+
+    # If content is small enough, return as single chunk
+    if total_lines <= chunk_size:
+        return [{
+            "data": content,
+            "chunk_info": {
+                "chunk_num": 1,
+                "total_chunks": 1,
+                "start_line": 1,
+                "end_line": total_lines,
+                "original_file_lines": total_lines
+            }
+        }]
+
+    chunks = []
+    total_chunks = (total_lines + chunk_size - 1) // chunk_size  # Ceiling division
+
+    for i in range(total_chunks):
+        start_idx = i * chunk_size
+        end_idx = min((i + 1) * chunk_size, total_lines)
+
+        chunk_lines = lines[start_idx:end_idx]
+        chunk_content = '\n'.join(chunk_lines)
+
+        chunk_info = {
+            "chunk_num": i + 1,
+            "total_chunks": total_chunks,
+            "start_line": start_idx + 1,
+            "end_line": end_idx,
+            "original_file_lines": total_lines
+        }
+
+        chunks.append({
+            "data": chunk_content,
+            "chunk_info": chunk_info
+        })
+
+    return chunks
 
 
 def filter_ignored_paths(files_list: list, directory_path: str) -> list:
@@ -94,7 +151,7 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
 
         files_list = []
 
-        if recursive == "true" or recursive == "True":
+        if recursive == "true" or recursive == "True" or recursive is True:
             # Recursive listing using rg
             try:
                 # First, get normal files (respects .gitignore)
@@ -228,18 +285,45 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         else:
             data_message = "\n".join(files_list)
 
-        # Project header will be added by delivery system
+        # Add project header if project_name is available
+        if project_name:
+            data_message = f"PROJECT: {project_name}\n{data_message}"
 
-        yield {
-            "type": "tool_use",
-            "directory": abs_directory_path,
-            "recursive": recursive,
-            "ignore_patterns": ignore_patterns,
-            "count": len(files_list),
-            "data": data_message,
-            "tool_name": "list_files",
-            "project_name": project_name,
-        }
+        # Check if content needs chunking
+        chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
+        chunk_size = SEARCH_CONFIG["chunk_size"]
+
+        lines = data_message.split('\n')
+        total_lines = len(lines)
+
+        if total_lines <= chunking_threshold:
+            # Content is small enough, return as-is
+            yield {
+                "type": "tool_use",
+                "directory": abs_directory_path,
+                "recursive": recursive,
+                "ignore_patterns": ignore_patterns,
+                "count": len(files_list),
+                "data": data_message,
+                "tool_name": "list_files",
+                "project_name": project_name,
+            }
+        else:
+            # Content needs chunking
+            chunks = chunk_content(data_message, chunk_size)
+
+            for chunk in chunks:
+                yield {
+                    "type": "tool_use",
+                    "directory": abs_directory_path,
+                    "recursive": recursive,
+                    "ignore_patterns": ignore_patterns,
+                    "count": len(files_list),
+                    "data": chunk["data"],
+                    "tool_name": "list_files",
+                    "project_name": project_name,
+                    "chunk_info": chunk["chunk_info"],
+                }
 
     except Exception as e:
         yield {

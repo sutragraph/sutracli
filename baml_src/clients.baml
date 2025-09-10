@@ -7,6 +7,7 @@ client<llm> AwsClaudeSonnet4 {
     region env.AWS_REGION
     inference_configuration {
       max_tokens 64000
+      temperature 0.1
     }
     allowed_role_metadata ["cache_control"]
   }
@@ -19,6 +20,7 @@ client<llm> AnthropicClaude {
     api_key env.ANTHROPIC_API_KEY
     model env.ANTHROPIC_MODEL_ID
     max_tokens 64000  
+    temperature 0.1
     allowed_role_metadata ["cache_control"]
     headers {
       "anthropic-beta" "prompt-caching-2024-07-31"
@@ -32,5 +34,6 @@ client<llm> OpenAIChatGPT {
   options {
     api_key env.OPENAI_API_KEY
     model env.OPENAI_MODEL_ID
+    temperature 0.1
   }
 }

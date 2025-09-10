@@ -74,6 +74,7 @@ class ASTToSqliteConverter:
                 path=str(
                     project_path.absolute()
                 ),  # Use the actual project directory path
+                description="",
                 created_at=current_time,
                 updated_at=current_time,
             )

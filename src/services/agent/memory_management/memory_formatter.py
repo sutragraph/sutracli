@@ -27,7 +27,7 @@ class MemoryFormatter:
     def _get_memory_text(self) -> str:
         """Generate plain text formatted memory state for LLM"""
         content = [
-            "ID FORMAT: All items use unique IDs for LLM operations (add_task, move_task, remove_task, add_code, remove_code)",
+            "ID FORMAT: All items use unique IDs for LLM operations (add_task, move_task, remove_task, add_code, remove_code)\n",
         ]
 
         # Current task
@@ -79,12 +79,16 @@ class MemoryFormatter:
             content.append("")
 
         # Recent history (last 20 entries)
-        recent_history = self.memory_ops.get_recent_history(20)
+        recent_history = self.memory_ops.get_recent_history()
         if recent_history:
             content.extend(["RECENT HISTORY:", ""])
             for i, entry in enumerate(reversed(recent_history), 1):
                 content.append(f"{i}. {entry.summary}")
             content.append("")
+
+        feedback_section = self.memory_ops.get_feedback_section()
+        if feedback_section:
+            content.extend(["", feedback_section])
 
         return "\n".join(content)
 

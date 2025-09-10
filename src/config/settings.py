@@ -24,7 +24,6 @@ class DatabaseConfig:
     connection_timeout: int
     max_retry_attempts: int
     batch_size: int
-    enable_wal_mode: bool = True
 
 
 @dataclass
@@ -66,14 +65,6 @@ class SuperLLMConfig:
 
 
 @dataclass
-class AnthropicConfig:
-    """Anthropic configuration."""
-
-    api_key: str
-    model_id: str
-
-
-@dataclass
 class LLMConfig:
     """LLM provider configuration."""
 
@@ -93,7 +84,7 @@ class LoggingConfig:
 
     level: str
     format: str
-    log_file: Optional[str] = None
+    logs_dir: str
 
 
 @dataclass
@@ -122,27 +113,14 @@ class EmbeddingConfig:
     """Embedding and vector search configuration."""
 
     # Model settings
-    model_name: str
     model_path: str
+
+    # Tokenizer settings
+    tokenizer_max_length: int  # Override tokenizer's default max length
 
     # Chunking settings
     max_tokens: int
     overlap_tokens: int
-
-    # Search settings
-    similarity_threshold: float
-    enable_optimization: bool
-
-
-@dataclass
-class ParserConfig:
-    """Parser configuration for tree-sitter analyzers."""
-
-    # Parser configuration file path
-    config_file: str
-
-    # Build directory for parser libraries
-    build_directory: str
 
 
 @dataclass
@@ -283,12 +261,6 @@ class Config:
                 )
             else:
                 self.llm = None
-
-            # Initialize parser config
-            parser_config = config_data.get("parser", {})
-            if not parser_config:
-                raise ValueError("Parser configuration is required in config file")
-            self.parser = ParserConfig(**parser_config)
 
         except Exception as e:
             raise ValueError(f"Failed to load config file {self.config_file}: {e}")

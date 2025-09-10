@@ -1,11 +1,11 @@
 """
 Tool Guidance System
 
-Provides guidance and formatting for tool results. Each tool can have optional
-guidance hooks that are called by the ActionExecutor during tool execution.
+Provides guidance and formatting for tool results. Tools with registered guidance
+handlers get enhanced with contextual messages, while others pass through unchanged.
 
 Architecture:
-- BaseToolGuidance: Abstract base with hooks for tool lifecycle
+- BaseToolGuidance: Abstract base with on_event hook for processing results
 - Tool-specific classes: Handle guidance for semantic search, database, and keyword search
 - GuidanceRegistry: Factory for retrieving guidance handlers by tool type
 """
@@ -15,12 +15,13 @@ from abc import ABC
 from enum import Enum
 from loguru import logger
 
+from models.agent import AgentAction
+
 from tools.utils.constants import (
     GUIDANCE_MESSAGES,
     DATABASE_ERROR_GUIDANCE,
     SEARCH_CONFIG,
 )
-from tools import ToolName
 
 
 class SearchType(Enum):
@@ -52,181 +53,14 @@ class SequentialNodeScenario(Enum):
     NODE_NO_CODE_CONTENT = "node_no_code_content"
 
 
-def _get_fetch_next_code_note() -> str:
+def _get_fetch_next_chunk_note() -> str:
     """
-    Helper function to generate the fetch_next_code note.
+    Helper function to generate the fetch_next_chunk note.
 
     Returns:
         Formatted note about fetching next code
     """
-    return GUIDANCE_MESSAGES["FETCH_NEXT_CODE_NOTE"]
-
-
-def build_guidance_message(
-    search_type: SearchType, scenario: GuidanceScenario, **kwargs
-) -> str:
-    """
-    Build guidance message based on search type and scenario.
-
-    Args:
-        search_type: Type of search operation
-        scenario: Guidance scenario
-        **kwargs: Additional parameters for message building
-
-    Returns:
-        Formatted guidance message
-    """
-    if scenario == GuidanceScenario.NO_RESULTS_FOUND:
-        return GUIDANCE_MESSAGES["NO_RESULTS_FOUND"].format(
-            search_type=search_type.value
-        )
-
-    elif scenario == GuidanceScenario.SINGLE_RESULT_SMALL:
-        return f"Found 1 result from {search_type.value} search."
-
-    elif scenario == GuidanceScenario.SINGLE_RESULT_LARGE:
-        has_more_chunks = kwargs.get("has_more_chunks", False)
-        chunk_num = kwargs.get("chunk_num", 1)
-        total_chunks = kwargs.get("total_chunks", 1)
-        message = f"Found 1 result from {search_type.value} search."
-        if has_more_chunks or chunk_num < total_chunks:
-            message += _get_fetch_next_code_note()
-        return message
-
-    elif scenario == GuidanceScenario.MULTIPLE_RESULTS:
-        total_nodes = kwargs.get("total_nodes", 0)
-        has_more_results = kwargs.get("has_more_results", False)
-        current_node = kwargs.get("current_node", 1)
-        delivered_count = kwargs.get("delivered_count", 0)
-        remaining_count = kwargs.get("remaining_count", 0)
-
-        if search_type == SearchType.SEMANTIC:
-            # Enhanced guidance for semantic search - show fetch_next_code note but NO line numbers
-            start_range = (
-                (delivered_count - len(range(delivered_count))) + 1
-                if delivered_count > 0
-                else 1
-            )
-            end_range = delivered_count if delivered_count > 0 else total_nodes
-            message = f"Showing nodes {start_range} to {end_range} of {total_nodes}."
-            if remaining_count > 0:
-                message += f"\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query. ({remaining_count} more nodes available)"
-        else:
-            # Original logic for other search types
-            message = f"Found {total_nodes} results from {search_type.value} search"
-            if has_more_results or current_node < total_nodes:
-                message += _get_fetch_next_code_note()
-        return message
-
-    elif scenario == GuidanceScenario.NODE_MISSING_CODE_CONTENT:
-        return GUIDANCE_MESSAGES["NODE_MISSING_CODE"]
-
-    elif scenario == GuidanceScenario.BATCH_DELIVERY:
-        remaining_count = kwargs.get("remaining_count", 0)
-        total_nodes = kwargs.get("total_nodes", 0)
-        message = ""
-        if remaining_count > 0:
-            message = _get_fetch_next_code_note()
-        return message
-
-    return f"Results from {search_type.value} search."
-
-
-def determine_guidance_scenario(
-    total_nodes: int,
-    include_code: bool,
-    code_lines: Optional[int] = None,
-    chunk_info: Optional[Dict[str, Any]] = None,
-    **kwargs,  # Accept additional parameters for flexibility
-) -> GuidanceScenario:
-    """
-    Determine the appropriate guidance scenario based on search results.
-
-    Args:
-        total_nodes: Total number of nodes found
-        include_code: Whether code snippets are included
-        code_lines: Number of lines in code (if applicable)
-        chunk_info: Information about chunking (if applicable)
-        **kwargs: Additional parameters for flexibility
-
-    Returns:
-        Appropriate guidance scenario
-    """
-    if total_nodes == 0:
-        return GuidanceScenario.NO_RESULTS_FOUND
-
-    elif total_nodes == 1:
-        if not include_code or not code_lines:
-            return GuidanceScenario.NODE_MISSING_CODE_CONTENT
-        elif code_lines > SEARCH_CONFIG["chunking_threshold"]:
-            return GuidanceScenario.SINGLE_RESULT_LARGE
-        else:
-            return GuidanceScenario.SINGLE_RESULT_SMALL
-
-    else:
-        return GuidanceScenario.MULTIPLE_RESULTS
-
-
-def determine_sequential_node_scenario(
-    chunk_info: Optional[Dict[str, Any]] = None,
-) -> SequentialNodeScenario:
-    """
-    Determine the sequential node scenario for guidance.
-
-    Args:
-        chunk_info: Information about chunking
-
-    Returns:
-        Appropriate sequential node scenario
-    """
-    if not chunk_info:
-        return SequentialNodeScenario.NODE_WITH_SMALL_CODE
-
-    # Handle chunked scenarios
-    chunk_num = chunk_info.get("chunk_num", 1)
-    total_chunks = chunk_info.get("total_chunks", 1)
-
-    if chunk_num == 1:
-        return SequentialNodeScenario.NODE_WITH_LARGE_CODE_FIRST_CHUNK
-    elif chunk_num == total_chunks:
-        return SequentialNodeScenario.NODE_WITH_LARGE_CODE_LAST_CHUNK
-    else:
-        return SequentialNodeScenario.NODE_WITH_LARGE_CODE_MIDDLE_CHUNK
-
-
-def determine_semantic_batch_scenario() -> GuidanceScenario:
-    """
-    Determine guidance scenario for semantic search batch delivery.
-
-    Returns:
-        Appropriate guidance scenario
-    """
-    return GuidanceScenario.BATCH_DELIVERY
-
-
-def analyze_result_set_for_large_files(results: List[Dict[str, Any]]) -> bool:
-    """
-    Analyze search results to determine if any files contain large code content.
-
-    Args:
-        results: List of search result dictionaries
-
-    Returns:
-        bool: True if any files are considered large, False otherwise
-    """
-    if not results:
-        return False
-
-    # Check each result for large code content
-    for result in results:
-        code_snippet = result.get("code_snippet", "")
-        if code_snippet:
-            # Consider a file large if it exceeds chunking threshold
-            line_count = len(code_snippet.split("\n"))
-            if line_count > SEARCH_CONFIG["chunking_threshold"]:
-                return True
-
-    return False
+    return GUIDANCE_MESSAGES["fetch_next_chunk_NOTE"]
 
 
 def calculate_database_batch_with_line_limit(
@@ -255,19 +89,23 @@ def calculate_database_batch_with_line_limit(
 
     for i, node in enumerate(nodes):
         code_content = node.get("code_snippet", "") or node.get("data", "")
-        logger.debug(f"📦 DEBUG: Processing node {i+1}/{len(nodes)}")
+        logger.debug(f"📦 DEBUG: Processing node {i + 1}/{len(nodes)}")
         logger.debug(f"📦 DEBUG: Node keys: {list(node.keys())}")
 
         if code_content:
             node_lines = len(str(code_content).split("\n"))
             logger.debug(
-                f"📦 DEBUG: Node {i+1} has {node_lines} lines, current total: {total_lines}"
+                f"📦 DEBUG: Node {i + 1} has {node_lines} lines, current total: {total_lines}"
             )
 
             # Check if adding this node would exceed the limit
             if total_lines + node_lines > line_limit and batch_nodes:
                 logger.debug(
-                    f"📦 DEBUG: Adding node {i+1} would exceed limit ({total_lines + node_lines} > {line_limit}), stopping batch"
+                    f"📦 DEBUG: Adding node {
+                        i +
+                        1} would exceed limit ({
+                        total_lines +
+                        node_lines} > {line_limit}), stopping batch"
                 )
                 # Don't add this node, return current batch
                 break
@@ -275,10 +113,10 @@ def calculate_database_batch_with_line_limit(
             batch_nodes.append(node)
             total_lines += node_lines
             logger.debug(
-                f"📦 DEBUG: Added node {i+1} to batch, new total lines: {total_lines}"
+                f"📦 DEBUG: Added node {i + 1} to batch, new total lines: {total_lines}"
             )
         else:
-            logger.debug(f"📦 DEBUG: Node {i+1} has no code content, adding anyway")
+            logger.debug(f"📦 DEBUG: Node {i + 1} has no code content, adding anyway")
             # Add nodes without code content
             batch_nodes.append(node)
 
@@ -319,13 +157,17 @@ def build_database_guidance_with_line_info(
             total_chunks = chunk_info.get("total_chunks", 1)
             original_file_lines = chunk_info.get("original_file_lines", total_lines)
 
-            message = f"Found 1 node with {original_file_lines} total lines. Showing lines {start_line}:{end_line}."
             if chunk_num < total_chunks:
-                message += _get_fetch_next_code_note()
+                message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
+                message += _get_fetch_next_chunk_note()
+            else:
+                message = f"Found 1 node with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
         else:
-            message = f"Found 1 node with {total_lines} total lines. Showing lines 1 to {delivered_lines}."
             if delivered_lines < total_lines:
-                message += _get_fetch_next_code_note()
+                message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{delivered_lines} lines)"
+                message += _get_fetch_next_chunk_note()
+            else:
+                message = f"Found 1 node with {total_lines} total lines. Showing (1-{delivered_lines} lines) - Complete result."
     else:
         # For multiple nodes, check if we have chunk info to show line ranges
         if chunk_info:
@@ -336,91 +178,18 @@ def build_database_guidance_with_line_info(
             original_file_lines = chunk_info.get("original_file_lines", total_lines)
 
             # Show actual line range instead of just counts
-            message = f"Found {total_nodes} nodes with {original_file_lines} total lines. Showing lines {start_line}:{end_line}."
             if chunk_num < total_chunks:
-                message += _get_fetch_next_code_note()
+                message = f"Found {total_nodes} nodes with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
+                message += _get_fetch_next_chunk_note()
+            else:
+                message = f"Found {total_nodes} nodes with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
         else:
             # Fallback to original format when no chunk info available
             message = f"Found {total_nodes} nodes with {total_lines} total lines. Delivered {delivered_nodes} nodes ({delivered_lines} lines)."
             if remaining_nodes > 0:
-                message += _get_fetch_next_code_note()
+                message += _get_fetch_next_chunk_note()
 
     return message
-
-
-def calculate_optimal_batch_size(
-    nodes: List[Dict[str, Any]], max_lines: int = 500, default_batch_size: int = 15
-) -> int:
-    """
-    Calculate optimal batch size based on content length.
-
-    Args:
-        nodes: List of nodes to analyze
-        max_lines: Maximum lines allowed per batch
-        default_batch_size: Default batch size if no content analysis needed
-
-    Returns:
-        Optimal batch size
-    """
-    if not nodes:
-        return default_batch_size
-
-    # Sample first few nodes to estimate average lines per node
-    sample_size = min(3, len(nodes))
-    total_sample_lines = 0
-
-    for i in range(sample_size):
-        node = nodes[i]
-        content = node.get("code_snippet", "") or node.get("data", "")
-        if content:
-            lines = len(str(content).split("\n"))
-            total_sample_lines += lines
-
-    if total_sample_lines == 0:
-        return default_batch_size
-
-    avg_lines_per_node = total_sample_lines / sample_size
-    optimal_batch_size = max(1, int(max_lines / avg_lines_per_node))
-
-    # Cap at default batch size to avoid too large batches
-    return min(optimal_batch_size, default_batch_size)
-
-
-def track_delivery_progress(
-    delivered_count: int,
-    total_count: int,
-    current_lines: int,
-    estimated_total_lines: Optional[int] = None,
-) -> Dict[str, Any]:
-    """
-    Track and format delivery progress information.
-
-    Args:
-        delivered_count: Number of items delivered
-        total_count: Total number of items
-        current_lines: Lines in current delivery
-        estimated_total_lines: Estimated total lines (optional)
-
-    Returns:
-        Dictionary with progress information
-    """
-    progress_info = {
-        "delivered_count": delivered_count,
-        "total_count": total_count,
-        "remaining_count": max(0, total_count - delivered_count),
-        "current_lines": current_lines,
-        "progress_percentage": (
-            (delivered_count / total_count * 100) if total_count > 0 else 0
-        ),
-    }
-
-    if estimated_total_lines:
-        progress_info["estimated_total_lines"] = estimated_total_lines
-        progress_info["estimated_remaining_lines"] = max(
-            0, estimated_total_lines - current_lines
-        )
-
-    return progress_info
 
 
 def should_chunk_delivery(
@@ -444,34 +213,6 @@ def should_chunk_delivery(
     return lines > threshold
 
 
-def build_enhanced_fetch_note(
-    remaining_items: int,
-    item_type: str = "nodes",
-    estimated_lines: Optional[int] = None,
-) -> str:
-    """
-    Build enhanced fetch next code note with additional context.
-
-    Args:
-        remaining_items: Number of remaining items
-        item_type: Type of items (nodes, chunks, etc.)
-        estimated_lines: Estimated remaining lines
-
-    Returns:
-        Enhanced fetch note message
-    """
-    base_note = _get_fetch_next_code_note()
-
-    if remaining_items > 0:
-        context = f" ({remaining_items} more {item_type}"
-        if estimated_lines:
-            context += f", ~{estimated_lines} lines"
-        context += " available)"
-        return base_note + context
-
-    return base_note
-
-
 def enhance_semantic_search_event(
     event: Dict[str, Any], action_parameters: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -480,7 +221,7 @@ def enhance_semantic_search_event(
 
     Args:
         event: The original event from semantic search
-        action_parameters: Parameters from the action
+        action: The AgentAction being executed
 
     Returns:
         Enhanced event with guidance
@@ -504,7 +245,7 @@ def enhance_semantic_search_event(
     guidance_message = f"Showing nodes {start_node} to {end_node} of {total_nodes}"
 
     if remaining_count > 0:
-        guidance_message += f"\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query. ({remaining_count} more nodes available)"
+        guidance_message += f"""\nNOTE: There are more results available. Use `"fetch_next_chunk" : true`  to get next codes for your current query. ({remaining_count} more nodes available)"""
     else:
         guidance_message += "."
 
@@ -523,7 +264,7 @@ def enhance_database_search_event(
 
     Args:
         event: The original event from database search
-        action_parameters: Parameters from the action
+        action_parameters: The AgentAction being executed
         delivery_context: Optional context about delivery state
 
     Returns:
@@ -550,8 +291,8 @@ def enhance_database_search_event(
             )
             guidance_message = f"Found {total_nodes} nodes."
             if remaining_nodes > 0:
-                guidance_message += _get_fetch_next_code_note()
-        
+                guidance_message += _get_fetch_next_chunk_note()
+
         # Add guidance as prefix to data
         event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
         return event
@@ -572,45 +313,52 @@ def enhance_database_search_event(
         delivery_context.get("delivered_nodes", 1) if delivery_context else 1
     )
 
+    # Check for chunk info in the event itself (for chunked content)
+    chunk_info = event.get("chunk_info")
+    if not chunk_info and delivery_context:
+        chunk_info = delivery_context.get("chunk_info")
+
+    # Handle chunked content
+    if chunk_info:
+        start_line = chunk_info.get("start_line", 1)
+        end_line = chunk_info.get("end_line", 0)
+        chunk_num = chunk_info.get("chunk_num", 1)
+        total_chunks = chunk_info.get("total_chunks", 1)
+        original_file_lines = chunk_info.get("original_file_lines", 0)
+
+        # Check if there are more chunks to determine the message
+        if chunk_num < total_chunks:
+            guidance_message = f"Found 1 node with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
+            guidance_message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
+
+Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+        else:
+            guidance_message = f"Found 1 node with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
+
+        # Add guidance as prefix to data
+        event = GuidanceFormatter.add_prefix_to_data(event, guidance_message)
+        return event
+
     if total_nodes == 1:
-        # Single node scenario
-        chunk_info = delivery_context.get("chunk_info") if delivery_context else None
-
-        if chunk_info:
-            # We have chunk info, so this is definitely chunked content
-            start_line = chunk_info.get("start_line", 1)
-            end_line = chunk_info.get("end_line", current_lines)
-            chunk_num = chunk_info.get("chunk_num", 1)
-            total_chunks = chunk_info.get("total_chunks", 1)
-            original_file_lines = chunk_info.get("original_file_lines", total_lines)
-
-            guidance_message = f"Found 1 node with {original_file_lines} total lines. Showing lines {start_line}:{end_line}."
-            if chunk_num < total_chunks:
-                guidance_message += _get_fetch_next_code_note()
-        elif should_chunk_delivery(data):
+        # Single node scenario (non-chunked)
+        if should_chunk_delivery(data):
             # Fallback to content-based chunking detection
-            guidance_message = f"Found 1 node with {total_lines} total lines. Showing lines 1 to {current_lines}."
             if current_lines < total_lines:
-                guidance_message += _get_fetch_next_code_note()
+                guidance_message = f"Found 1 node with {total_lines} total lines. There are more results available showing only (1-{current_lines} lines)"
+                guidance_message += _get_fetch_next_chunk_note()
+            else:
+                guidance_message = f"Found 1 node with {total_lines} total lines. Showing (1-{current_lines} lines) - Complete result."
         else:
             guidance_message = f"Found 1 node with {current_lines} lines (complete)."
     else:
         # Multiple nodes scenario - use enhanced guidance with actual line info
-        # Check if we have chunk info to show line ranges instead of just counts
-        chunk_info = delivery_context.get("chunk_info") if delivery_context else None
-
-        # Use original file lines from chunk_info if available
-        actual_total_lines = total_lines
-        if chunk_info and "original_file_lines" in chunk_info:
-            actual_total_lines = chunk_info.get("original_file_lines", total_lines)
-
         guidance_message = build_database_guidance_with_line_info(
             total_nodes=total_nodes,
             delivered_nodes=delivered_nodes,
-            total_lines=actual_total_lines,
+            total_lines=total_lines,
             delivered_lines=current_lines,
             remaining_nodes=remaining_nodes,
-            chunk_info=chunk_info,
+            chunk_info=None,  # Multiple nodes don't use chunk_info
         )
 
     # Add guidance as prefix to data
@@ -622,24 +370,11 @@ class BaseToolGuidance(ABC):
     """
     Base class for tool guidance handlers.
 
-    Provides hooks for tool lifecycle events:
-    - on_start: Called before tool execution
-    - on_event: Called for each event yielded by the tool
+    Provides a single hook for processing tool events:
+    - on_event: Called for each event yielded by the tool to add contextual guidance
     """
 
-    def on_start(self, action) -> Optional[Dict[str, Any]]:
-        """
-        Pre-execution hook called before tool starts.
-
-        Args:
-            action: The AgentAction being executed
-
-        Returns:
-            Optional event to yield before tool execution
-        """
-        return None
-
-    def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
         """
         Post-execution hook called for each tool event.
 
@@ -662,7 +397,10 @@ class GuidanceFormatter:
     def add_prefix_to_data(event: Dict[str, Any], prefix: str) -> Dict[str, Any]:
         """Add a prefix to the event data."""
         data = event.get("data", "")
-        event["data"] = f"{prefix}\n\n{data}".strip() if data else prefix
+
+        new_data = f"{prefix}\n\n{data}".strip() if data else prefix
+        event["data"] = new_data
+
         return event
 
     @staticmethod
@@ -691,7 +429,12 @@ class SemanticSearchGuidance(BaseToolGuidance):
     - Provide dynamic guidance for batch delivery with node and line information
     """
 
-    def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
+        # Validate event data
+        if not self._validate_event(event):
+            logger.warning(f"Invalid event data for semantic search guidance: {event}")
+            return event
+
         # Only process semantic search events
         if not self._is_semantic_search_event(event):
             return event
@@ -708,6 +451,14 @@ class SemanticSearchGuidance(BaseToolGuidance):
                 return GuidanceFormatter.add_prefix_to_data(event, guidance_message)
 
         return event
+
+    def _validate_event(self, event: Dict[str, Any]) -> bool:
+        """Validate that event has required fields."""
+        if not isinstance(event, dict):
+            return False
+
+        required_fields = ["type", "tool_name"]
+        return all(field in event for field in required_fields)
 
     def _is_semantic_search_event(self, event: Dict[str, Any]) -> bool:
         """Check if this is a semantic search event."""
@@ -737,9 +488,9 @@ class SemanticSearchGuidance(BaseToolGuidance):
 
         message = f"Showing nodes {start_range} to {end_range} of {total_nodes}."
 
-        # Add fetch_next_code note if there are remaining nodes, but without line numbers
+        # Add fetch_next_chunk note if there are remaining nodes, but without line numbers
         if remaining_count > 0:
-            message += f"\nNOTE: There are more results available. Use <fetch_next_code>true</fetch_next_code> to get next codes for your current query. ({remaining_count} more nodes available)"
+            message += f"""\nNOTE: There are more results available. Use `"fetch_next_chunk" : true` to get next codes for your current query. ({remaining_count} more nodes available)"""
 
         return message
 
@@ -754,7 +505,12 @@ class DatabaseSearchGuidance(BaseToolGuidance):
     - Provide dynamic guidance for batch delivery with line counting
     """
 
-    def on_event(self, event: Dict[str, Any], action) -> Optional[Dict[str, Any]]:
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
+        # Validate event data
+        if not self._validate_event(event):
+            logger.warning(f"Invalid event data for database search guidance: {event}")
+            return event
+
         # Only process database events
         if not self._is_database_event(event):
             return event
@@ -771,6 +527,14 @@ class DatabaseSearchGuidance(BaseToolGuidance):
 
         return event
 
+    def _validate_event(self, event: Dict[str, Any]) -> bool:
+        """Validate that event has required fields."""
+        if not isinstance(event, dict):
+            return False
+
+        required_fields = ["type", "tool_name"]
+        return all(field in event for field in required_fields)
+
     def _is_database_event(self, event: Dict[str, Any]) -> bool:
         """Check if this is a database event."""
         return isinstance(event, dict) and event.get("tool_name") == "database"
@@ -785,7 +549,10 @@ class DatabaseSearchGuidance(BaseToolGuidance):
         # Add guidance if there are multiple results or large code content
         total_nodes = event.get("total_nodes", 0)
         has_code_snippet = event.get("code_snippet", False)
-        return total_nodes > 0 and has_code_snippet
+        has_chunk_info = event.get("chunk_info") is not None
+
+        # Always add guidance for chunked content or when there are results with code
+        return (total_nodes > 0 and has_code_snippet) or has_chunk_info
 
     def _build_database_batch_guidance(self, event: Dict[str, Any]) -> Optional[str]:
         """Build guidance message for database batch delivery with line counting."""
@@ -798,16 +565,26 @@ class DatabaseSearchGuidance(BaseToolGuidance):
         # Calculate line information
         delivered_lines = len(str(data).split("\n")) if data else 0
 
+        # Check if this is chunked content by looking for chunk_info
+        chunk_info = event.get("chunk_info")
+        is_chunked_content = chunk_info is not None
+
         # For database queries, we need to estimate or track total lines
-        # This is a simplified approach - in practice you'd track this in the delivery system
-        estimated_total_lines = (
-            delivered_lines * total_nodes if total_nodes > 1 else delivered_lines
-        )
+        if is_chunked_content:
+            # Use actual chunk information for accurate line counting
+            estimated_total_lines = chunk_info.get(
+                "original_file_lines", delivered_lines
+            )
+        else:
+            estimated_total_lines = (
+                delivered_lines * total_nodes if total_nodes > 1 else delivered_lines
+            )
 
         # Check if this is likely a chunked/batched delivery
         result = event.get("result", "")
         is_chunked = (
-            "chunk" in str(result).lower()
+            is_chunked_content
+            or "chunk" in str(result).lower()
             or delivered_lines > SEARCH_CONFIG["chunking_threshold"]
         )
 
@@ -821,11 +598,12 @@ class DatabaseSearchGuidance(BaseToolGuidance):
                 total_lines=estimated_total_lines,
                 delivered_lines=delivered_lines,
                 remaining_nodes=remaining_nodes,
+                chunk_info=chunk_info,
             )
 
         return None
 
-    def _handle_no_results(self, event: Dict[str, Any], action) -> Dict[str, Any]:
+    def _handle_no_results(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
         """Handle no results case with comprehensive error guidance."""
         # Build error guidance
         query_name = action.parameters.get("query_name", "unknown")
@@ -840,7 +618,7 @@ class DatabaseSearchGuidance(BaseToolGuidance):
 
     def _extract_query_params(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Extract relevant query parameters excluding internal ones."""
-        excluded_keys = {"query_name", "code_snippet", "fetch_next_code"}
+        excluded_keys = {"query_name", "code_snippet", "fetch_next_chunk"}
         return {k: v for k, v in parameters.items() if k not in excluded_keys}
 
     def _generate_error_guidance(self, query_name: str, params: Dict[str, Any]) -> str:
@@ -878,6 +656,160 @@ class DatabaseSearchGuidance(BaseToolGuidance):
         return " ".join(guidance_parts)
 
 
+class ListFilesGuidance(BaseToolGuidance):
+    """
+    Guidance handler for list_files tool.
+
+    Responsibilities:
+    - Handle no results scenarios
+    - Provide dynamic guidance for chunked delivery with line counting
+    """
+
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
+        # Validate event data
+        if not self._validate_event(event):
+            logger.warning(f"Invalid event data for list_files guidance: {event}")
+            return event
+
+        # Only process list_files events
+        if not self._is_list_files_event(event):
+            return event
+
+        # Handle no results case
+        if self._has_no_results(event):
+            message = GuidanceFormatter.format_no_results_message("list_files")
+            return GuidanceFormatter.add_prefix_to_data(event, message)
+
+        # Handle chunked delivery
+        if self._should_add_chunk_guidance(event):
+            guidance_message = self._build_chunk_guidance(event)
+            if guidance_message:
+                return GuidanceFormatter.add_prefix_to_data(event, guidance_message)
+
+        return event
+
+    def _validate_event(self, event: Dict[str, Any]) -> bool:
+        """Validate that event has required fields."""
+        if not isinstance(event, dict):
+            return False
+
+        required_fields = ["type", "tool_name"]
+        return all(field in event for field in required_fields)
+
+    def _is_list_files_event(self, event: Dict[str, Any]) -> bool:
+        """Check if this is a list_files event."""
+        return isinstance(event, dict) and event.get("tool_name") == "list_files"
+
+    def _has_no_results(self, event: Dict[str, Any]) -> bool:
+        """Check if the list_files returned no results."""
+        count = event.get("count", 0)
+        return count == 0
+
+    def _should_add_chunk_guidance(self, event: Dict[str, Any]) -> bool:
+        """Check if we should add chunk guidance for list_files results."""
+        return event.get("chunk_info") is not None
+
+    def _build_chunk_guidance(self, event: Dict[str, Any]) -> Optional[str]:
+        """Build guidance message for list_files chunk delivery."""
+        chunk_info = event.get("chunk_info")
+        if not chunk_info:
+            return None
+
+        chunk_num = chunk_info.get("chunk_num", 1)
+        total_chunks = chunk_info.get("total_chunks", 1)
+        start_line = chunk_info.get("start_line", 1)
+        end_line = chunk_info.get("end_line", 0)
+        original_file_lines = chunk_info.get("original_file_lines", 0)
+
+        # Check if there are more chunks to determine the message
+        if chunk_num < total_chunks:
+            message = f"Found file listing with {original_file_lines} total lines. There are more results available showing only ({start_line}-{end_line} lines)"
+            message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
+
+Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+        else:
+            message = f"Found file listing with {original_file_lines} total lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
+
+        return message
+
+
+class SearchKeywordGuidance(BaseToolGuidance):
+    """
+    Guidance handler for search_keyword tool.
+
+    Responsibilities:
+    - Handle no results scenarios
+    - Provide dynamic guidance for chunked delivery with line counting
+    """
+
+    def on_event(self, event: Dict[str, Any], action: AgentAction) -> Dict[str, Any]:
+        # Validate event data
+        if not self._validate_event(event):
+            logger.warning(f"Invalid event data for search_keyword guidance: {event}")
+            return event
+
+        # Only process search_keyword events
+        if not self._is_search_keyword_event(event):
+            return event
+
+        # Handle no results case
+        if self._has_no_results(event):
+            message = GuidanceFormatter.format_no_results_message("keyword search")
+            return GuidanceFormatter.add_prefix_to_data(event, message)
+
+        # Handle chunked delivery
+        if self._should_add_chunk_guidance(event):
+            guidance_message = self._build_chunk_guidance(event)
+            if guidance_message:
+                return GuidanceFormatter.add_prefix_to_data(event, guidance_message)
+
+        return event
+
+    def _validate_event(self, event: Dict[str, Any]) -> bool:
+        """Validate that event has required fields."""
+        if not isinstance(event, dict):
+            return False
+
+        required_fields = ["type", "tool_name"]
+        return all(field in event for field in required_fields)
+
+    def _is_search_keyword_event(self, event: Dict[str, Any]) -> bool:
+        """Check if this is a search_keyword event."""
+        return isinstance(event, dict) and event.get("tool_name") == "search_keyword"
+
+    def _has_no_results(self, event: Dict[str, Any]) -> bool:
+        """Check if the search_keyword returned no results."""
+        matches_found = event.get("matches_found", False)
+        return not matches_found
+
+    def _should_add_chunk_guidance(self, event: Dict[str, Any]) -> bool:
+        """Check if we should add chunk guidance for search_keyword results."""
+        return event.get("chunk_info") is not None
+
+    def _build_chunk_guidance(self, event: Dict[str, Any]) -> Optional[str]:
+        """Build guidance message for search_keyword chunk delivery."""
+        chunk_info = event.get("chunk_info")
+        if not chunk_info:
+            return None
+
+        chunk_num = chunk_info.get("chunk_num", 1)
+        total_chunks = chunk_info.get("total_chunks", 1)
+        start_line = chunk_info.get("start_line", 1)
+        end_line = chunk_info.get("end_line", 0)
+        original_file_lines = chunk_info.get("original_file_lines", 0)
+
+        # Check if there are more chunks to determine the message
+        if chunk_num < total_chunks:
+            message = f"Found keyword matches with {original_file_lines} total result lines. There are more results available showing only ({start_line}-{end_line} lines)"
+            message += f"""\n\nNOTE: There are more chunks available. Use `"fetch_next_chunk" : true` to get the next chunk ({total_chunks - chunk_num} more chunks remaining).
+
+Chunk {chunk_num}/{total_chunks}: (Showing Chunk no {chunk_num} Remaining {total_chunks - chunk_num} chunks)"""
+        else:
+            message = f"Found keyword matches with {original_file_lines} total result lines. Showing ({start_line}-{end_line} lines) - This is the final chunk."
+
+        return message
+
+
 class GuidanceRegistry:
     """
     Registry for tool guidance handlers.
@@ -887,50 +819,52 @@ class GuidanceRegistry:
     """
 
     _HANDLERS = {
-        ToolName.SEMANTIC_SEARCH: SemanticSearchGuidance,
-        ToolName.DATABASE_SEARCH: DatabaseSearchGuidance,
+        "semantic_search": SemanticSearchGuidance,
+        "database": DatabaseSearchGuidance,
+        "list_files": ListFilesGuidance,
+        "search_keyword": SearchKeywordGuidance,
     }
 
     @classmethod
-    def get_guidance(cls, tool_enum: ToolName) -> Optional[BaseToolGuidance]:
+    def get_guidance(cls, tool_name: str) -> Optional[BaseToolGuidance]:
         """
         Get guidance handler for the specified tool.
 
         Args:
-            tool_enum: The tool type to get guidance for
+            tool_name: The tool name to get guidance for
 
         Returns:
             Guidance handler instance or None if no guidance exists
         """
-        guidance_class = cls._HANDLERS.get(tool_enum)
+        guidance_class = cls._HANDLERS.get(tool_name)
         return guidance_class() if guidance_class else None
 
     @classmethod
-    def register_guidance(cls, tool_enum: ToolName, guidance_class: type):
+    def register_guidance(cls, tool_name: str, guidance_class: type):
         """
         Register a new guidance handler.
 
         Args:
-            tool_enum: The tool type
+            tool_name: The tool name
             guidance_class: The guidance class to register
         """
-        cls._HANDLERS[tool_enum] = guidance_class
+        cls._HANDLERS[tool_name] = guidance_class
 
     @classmethod
-    def get_supported_tools(cls) -> List[ToolName]:
+    def get_supported_tools(cls) -> List[str]:
         """Get list of tools that have guidance support."""
         return list(cls._HANDLERS.keys())
 
 
 # Public factory function for backward compatibility
-def get_tool_guidance(tool_enum: ToolName) -> Optional[BaseToolGuidance]:
+def get_tool_guidance(tool_name: str) -> Optional[BaseToolGuidance]:
     """
     Factory function to get guidance handler for a tool.
 
     Args:
-        tool_enum: The tool type to get guidance for
+        tool_name: The tool name to get guidance for
 
     Returns:
         Guidance handler instance or None if no guidance exists
     """
-    return GuidanceRegistry.get_guidance(tool_enum)
+    return GuidanceRegistry.get_guidance(tool_name)

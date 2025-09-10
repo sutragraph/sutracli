@@ -1,12 +1,6 @@
 include README.md
-include INSTALL.md
-include SETUP.md
 include LICENSE
-include requirements.txt
 include pyproject.toml
 recursive-include src *.py
-recursive-include configs *.json
-recursive-include src/parser/config *.json
 global-exclude *.pyc
 global-exclude __pycache__
-global-exclude .DS_Store

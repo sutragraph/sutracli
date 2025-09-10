@@ -6,7 +6,7 @@ relationships between files based on import statements.
 """
 
 import os
-import hashlib
+
 import zlib
 from loguru import logger
 from pathlib import Path
@@ -21,6 +21,7 @@ from utils.file_utils import (
     is_text_file,
     read_file_content,
 )
+from utils.hash_utils import compute_file_hash
 from .extractors import Extractor
 from .relationship_extractors import RelationshipExtractor
 
@@ -140,7 +141,7 @@ class ASTParser:
                 "id": file_id,
                 "file_path": str(file_path),
                 "content": read_file_content(file_path) or "",
-                "content_hash": hashlib.sha256((read_file_content(file_path) or "").encode("utf-8")).hexdigest(),
+                "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,
                 "error": "Failed to parse file"
@@ -157,7 +158,7 @@ class ASTParser:
                 "id": file_id,
                 "file_path": str(file_path),
                 "content": read_file_content(file_path) or "",
-                "content_hash": hashlib.sha256((read_file_content(file_path) or "").encode("utf-8")).hexdigest(),
+                "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported file type
                 "error": f"Unsupported file type: {file_path}",
@@ -174,7 +175,7 @@ class ASTParser:
                 "id": file_id,
                 "file_path": str(file_path),
                 "content": ast_tree.root_node.text,
-                "content_hash": hashlib.sha256(ast_tree.root_node.text).hexdigest(),
+                "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported - no extractor available
                 "error": f"No extractor available for language '{language}': {file_path}",
@@ -190,7 +191,7 @@ class ASTParser:
             "id": file_id,
             "file_path": str(file_path),
             "content": ast_tree.root_node.text,
-            "content_hash": hashlib.sha256(ast_tree.root_node.text).hexdigest(),
+            "content_hash": compute_file_hash(file_path) or "",
             "relationships": [],  # Initialize empty relationships list
             "unsupported": False,  # Mark as supported file type
         }

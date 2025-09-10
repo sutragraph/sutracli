@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional
 from loguru import logger
 
 from config import config
-from ..memory_management.memory_formatter import clean_sutra_memory_content
+from services.agent.memory_management.memory_formatter import clean_sutra_memory_content
 
 
 class SessionManager:
@@ -124,7 +124,7 @@ class SessionManager:
         try:
             if self.session_file.exists():
                 self.session_file.unlink()
-            logger.info(f"🗑️  Cleared session {self.session_id}")
+            logger.debug(f"🗑️  Cleared session {self.session_id}")
         except Exception as e:
             logger.error(f"Failed to clear session file: {e}")
 

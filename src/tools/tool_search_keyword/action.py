@@ -1,14 +1,241 @@
 import subprocess
 import re
 from pathlib import Path
-from typing import Iterator, Dict, Any
+from typing import Iterator, Dict, Any, List
 from loguru import logger
 from models.agent import AgentAction
-from graph.sqlite_client import SQLiteConnection
 from tools.utils.project_utils import (
     auto_detect_project_from_paths,
     resolve_project_base_path,
 )
+from tools.utils.constants import SEARCH_CONFIG
+from utils.ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
+
+
+def group_matches_by_file(ripgrep_output: str) -> str:
+    """
+    Group ripgrep matches by file path to avoid repeating file paths on every line.
+
+    Args:
+        ripgrep_output: Raw ripgrep output with file:line:content format
+
+    Returns:
+        Formatted output with matches grouped by file
+    """
+    if not ripgrep_output.strip():
+        return ripgrep_output
+
+    # Dictionary to store matches grouped by file
+    file_matches = {}
+
+    lines = ripgrep_output.split('\n')
+    logger.debug(f"🔍 Processing {len(lines)} lines from ripgrep output")
+
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+
+        # Handle ripgrep separator lines between match groups
+        if line == '--':
+            # Add spacing between match groups - find the last file that had content
+            if file_matches:
+                last_file = list(file_matches.keys())[-1]
+                file_matches[last_file].append("")
+            continue
+
+        # More robust parsing: ripgrep format is always file<separator>line_number<separator>content
+        # where separator is ':' for matches and '-' for context lines
+        # We need to find the SECOND occurrence of the separator (after line number)
+
+        file_path = None
+        line_number = None
+        content = None
+
+        # Try matching line format first (file:line:content)
+        if ':' in line:
+            # Find all colon positions
+            colon_indices = [i for i, c in enumerate(line) if c == ':']
+            if len(colon_indices) >= 2:
+                # The line number should be between the first and second colon
+                # and should be all digits
+                for i in range(len(colon_indices) - 1):
+                    potential_file = line[:colon_indices[i]]
+                    potential_line_num = line[colon_indices[i] + 1:colon_indices[i + 1]]
+
+                    # Check if this looks like a line number (all digits)
+                    if potential_line_num.strip().isdigit():
+                        file_path = potential_file
+                        line_number = potential_line_num
+                        content = line[colon_indices[i + 1] + 1:]
+                        break
+
+        # Try context line format (file-line-content)
+        if file_path is None and '-' in line:
+            # Find all dash positions
+            dash_indices = [i for i, c in enumerate(line) if c == '-']
+            if len(dash_indices) >= 2:
+                # The line number should be between the first and second dash
+                # and should be all digits
+                for i in range(len(dash_indices) - 1):
+                    potential_file = line[:dash_indices[i]]
+                    potential_line_num = line[dash_indices[i] + 1:dash_indices[i + 1]]
+
+                    # Check if this looks like a line number (all digits)
+                    if potential_line_num.strip().isdigit():
+                        file_path = potential_file
+                        line_number = potential_line_num
+                        content = line[dash_indices[i + 1] + 1:]
+                        break
+
+        # Process if we successfully parsed the line
+        if file_path is not None and line_number is not None and content is not None:
+            # Initialize file entry if it doesn't exist
+            if file_path not in file_matches:
+                file_matches[file_path] = []
+
+            # Format the line
+            formatted_line = f"{line_number.strip()} | {content}"
+            file_matches[file_path].append(formatted_line)
+        else:
+            logger.debug(f"🔍 Failed to parse line: '{line}'")
+
+    # Format grouped output
+    grouped_lines = []
+    for file_path, matches in file_matches.items():
+        grouped_lines.append(f"{file_path}:")
+        for match in matches:
+            if match == "":  # Empty line for spacing
+                grouped_lines.append("")
+            else:
+                grouped_lines.append(f"  {match}")
+        grouped_lines.append("")  # Empty line between files
+
+    # Remove the last empty line
+    if grouped_lines and grouped_lines[-1] == "":
+        grouped_lines.pop()
+
+    return '\n'.join(grouped_lines)
+
+
+def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
+    """
+    Chunk grouped content while respecting file group boundaries.
+    Never splits a file's matches across different chunks.
+
+    Args:
+        content: The grouped content to chunk
+        chunk_size: Maximum lines per chunk
+
+    Returns:
+        List of chunk dictionaries with chunk_info
+    """
+    if not content:
+        return []
+
+    lines = content.split('\n')
+    total_lines = len(lines)
+
+    # If content is small enough, return as single chunk
+    if total_lines <= chunk_size:
+        return [{
+            "data": content,
+            "chunk_info": {
+                "chunk_num": 1,
+                "total_chunks": 1,
+                "start_line": 1,
+                "end_line": total_lines,
+                "original_file_lines": total_lines
+            }
+        }]
+
+    # Find file group boundaries (lines that don't start with space and end with :)
+    file_boundaries = []
+    for i, line in enumerate(lines):
+        if line and not line.startswith('  ') and line.endswith(':'):
+            file_boundaries.append(i)
+
+    # Add the end of content as a boundary
+    file_boundaries.append(total_lines)
+
+    # Group lines into file groups
+    file_groups = []
+    for i in range(len(file_boundaries) - 1):
+        start_idx = file_boundaries[i]
+        end_idx = file_boundaries[i + 1]
+
+        # Include empty line after group if it exists
+        if end_idx < total_lines and not lines[end_idx - 1].strip():
+            group_lines = lines[start_idx:end_idx]
+        else:
+            group_lines = lines[start_idx:end_idx]
+
+        file_groups.append({
+            'lines': group_lines,
+            'start_line': start_idx + 1,
+            'end_line': end_idx,
+            'line_count': len(group_lines)
+        })
+
+    # Create chunks respecting file group boundaries
+    chunks = []
+    current_chunk_lines = []
+    current_chunk_start = 1
+    current_chunk_line_count = 0
+
+    for group in file_groups:
+        # Check if adding this group would exceed chunk size
+        if (current_chunk_line_count + group['line_count'] > chunk_size and
+                current_chunk_lines):
+
+            # Save current chunk
+            chunk_content = '\n'.join(current_chunk_lines)
+            chunks.append({
+                "data": chunk_content,
+                "lines": current_chunk_lines.copy(),
+                "start_line": current_chunk_start,
+                "line_count": current_chunk_line_count
+            })
+
+            # Start new chunk with current group
+            current_chunk_lines = group['lines'].copy()
+            current_chunk_start = group['start_line']
+            current_chunk_line_count = group['line_count']
+        else:
+            # Add group to current chunk
+            if not current_chunk_lines:
+                current_chunk_start = group['start_line']
+            current_chunk_lines.extend(group['lines'])
+            current_chunk_line_count += group['line_count']
+
+    # Don't forget the last chunk
+    if current_chunk_lines:
+        chunk_content = '\n'.join(current_chunk_lines)
+        chunks.append({
+            "data": chunk_content,
+            "lines": current_chunk_lines,
+            "start_line": current_chunk_start,
+            "line_count": current_chunk_line_count
+        })
+
+    # Add chunk info
+    total_chunks = len(chunks)
+    result_chunks = []
+
+    for i, chunk in enumerate(chunks):
+        chunk_info = {
+            "chunk_num": i + 1,
+            "total_chunks": total_chunks,
+            "start_line": chunk["start_line"],
+            "end_line": chunk["start_line"] + chunk["line_count"] - 1,
+            "original_file_lines": total_lines
+        }
+
+        result_chunks.append({
+            "data": chunk["data"],
+            "chunk_info": chunk_info
+        })
+
+    return result_chunks
 
 
 def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
@@ -17,8 +244,19 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         project_name = action.parameters.get("project_name")
         keyword = action.parameters.get("keyword", "")
         file_paths_str = action.parameters.get("file_paths", "")
-        before_lines = int(action.parameters.get("before_lines", 0))
-        after_lines = int(action.parameters.get("after_lines", 10))
+        # Handle None values properly for before_lines and after_lines
+        before_lines_param = action.parameters.get("before_lines")
+        after_lines_param = action.parameters.get("after_lines")
+
+        before_lines = int(before_lines_param) if before_lines_param is not None else 0
+        after_lines = int(after_lines_param) if after_lines_param is not None else 5
+
+        logger.debug(
+            f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={
+                action.parameters.get(
+                    'regex',
+                    'false')}"
+        )
         case_sensitive = (
             str(action.parameters.get("case_sensitive", "false")).lower() == "true"
         )
@@ -36,9 +274,10 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             if detection_result:
                 project_name, matched_paths = detection_result
 
-        # Validate that either file_paths or project_name is provided
+        # Handle case when neither file_paths nor project_name is provided
         if not file_paths_str and not project_name:
-            raise Exception("Either file_paths or project_name must be provided")
+            # Use current directory instead of raising an exception
+            file_paths_str = "."
 
         # Handle path resolution based on priority and relative/absolute paths
         project_base_path = None
@@ -126,7 +365,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             """Build base ripgrep command with common options."""
             cmd = ["rg"]
 
-            # Add context lines
+            # Add context lines - Fix: Always add these parameters properly
             if before_lines > 0:
                 cmd.extend(["-B", str(before_lines)])
             if after_lines > 0:
@@ -136,21 +375,29 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             if not case_sensitive:
                 cmd.append("-i")
 
-            # Line numbers
-            cmd.append("-n")
+            # Line numbers and show file names
+            cmd.extend(["-n", "-H"])
+            cmd.append("--hidden")
+
+            # Add ignore patterns for files and directories
+            for pattern in IGNORE_FILE_PATTERNS:
+                cmd.extend(["--glob", f"!{pattern}"])
+
+            for pattern in IGNORE_DIRECTORY_PATTERNS:
+                cmd.extend(["--glob", f"!{pattern}/**"])
 
             # Add keyword
             if use_regex:
                 cmd.append(keyword)
             else:
-                cmd.extend(["-F", keyword])  # Fixed string search
+                cmd.extend(["-F", keyword])
 
             return cmd
 
         all_results = []
         commands_run = []
 
-        # Search in normal files (respects .gitignore)
+        # Search in specified files/directories
         cmd1 = build_base_cmd()
         if file_paths:
             # Add each file path to the command
@@ -214,22 +461,59 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         )
 
         if combined_output:
-            # Project header will be added by delivery system
-            yield {
-                "type": "tool_use",
-                "tool_name": "search_keyword",
-                "keyword": keyword,
-                "file_paths": (
-                    file_paths if file_paths else "all files (including .env*)"
-                ),
-                "matches_found": True,
-                "data": combined_output,
-                "command": " | ".join(commands_run),
-                "project_name": project_name,
-            }
+            # Group matches by file path to avoid repetitive file paths
+            grouped_output = group_matches_by_file(combined_output)
+
+            # Add project header if project_name is available
+            data_with_header = grouped_output
+            if project_name:
+                data_with_header = f"PROJECT: {project_name}\n{grouped_output}"
+
+            # Check if content needs chunking
+            chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
+            chunk_size = SEARCH_CONFIG["chunk_size"]
+
+            lines = data_with_header.split('\n')
+            total_lines = len(lines)
+
+            if total_lines <= chunking_threshold:
+                # Content is small enough, return as-is
+                yield {
+                    "type": "tool_use",
+                    "tool_name": "search_keyword",
+                    "keyword": keyword,
+                    "file_paths": (
+                        file_paths if file_paths else "all files (including .env*)"
+                    ),
+                    "matches_found": True,
+                    "data": data_with_header,
+                    "command": " | ".join(commands_run),
+                    "project_name": project_name,
+                }
+            else:
+                # Content needs chunking - use group-aware chunking for grouped output
+                chunks = chunk_grouped_content(data_with_header, chunk_size)
+
+                for chunk in chunks:
+                    yield {
+                        "type": "tool_use",
+                        "tool_name": "search_keyword",
+                        "keyword": keyword,
+                        "file_paths": (
+                            file_paths if file_paths else "all files (including .env*)"
+                        ),
+                        "matches_found": True,
+                        "data": chunk["data"],
+                        "command": " | ".join(commands_run),
+                        "project_name": project_name,
+                        "chunk_info": chunk["chunk_info"],
+                    }
         else:
-            no_matches_msg = f"No matches found for '{keyword}'"
-            # Project header will be added by delivery system
+            no_matches_msg = f"No matches found for '{keyword}' - try different keywords or check spelling."
+            # Add project header for no matches case if needed
+            if project_name:
+                no_matches_msg = f"PROJECT: {project_name}\n{no_matches_msg}"
+
             yield {
                 "type": "tool_use",
                 "tool_name": "search_keyword",
