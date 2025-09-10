@@ -7,6 +7,7 @@ from src.utils.console import console
 import os
 import sys
 from pathlib import Path
+from cli.setup import setup_baml_environment
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -32,6 +33,8 @@ def main():
         handle_cross_indexing_command,
         handle_run_phase5_command,
     )
+
+    setup_baml_environment()
 
     # Check if only --log-level is passed (for modern CLI)
     if len(sys.argv) == 1 or (len(sys.argv) == 3 and sys.argv[1] == "--log-level"):
