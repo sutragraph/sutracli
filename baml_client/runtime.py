@@ -89,7 +89,7 @@ class DoNotUseDirectlyCallManager:
                 env_vars[k] = v
             else:
                 env_vars.pop(k, None)
-        
+
         abort_controller = self.__baml_options.get("abort_controller")
 
         on_tick = self.__baml_options.get("on_tick")
@@ -119,11 +119,11 @@ class DoNotUseDirectlyCallManager:
         self, *, function_name: str, args: typing.Dict[str, typing.Any]
     ) -> baml_py.baml_py.FunctionResult:
         resolved_options = self.__resolve()
-        
+
         # Check if already aborted
         if resolved_options.abort_controller is not None and resolved_options.abort_controller.aborted:
             raise Exception("BamlAbortError: Operation was aborted")
-        
+
         return await __runtime__.call_function(
             function_name,
             args,
@@ -145,11 +145,11 @@ class DoNotUseDirectlyCallManager:
         self, *, function_name: str, args: typing.Dict[str, typing.Any]
     ) -> baml_py.baml_py.FunctionResult:
         resolved_options = self.__resolve()
-        
+
         # Check if already aborted
         if resolved_options.abort_controller is not None and resolved_options.abort_controller.aborted:
             raise Exception("BamlAbortError: Operation was aborted")
-        
+
         ctx = __ctx__manager__.get()
         return __runtime__.call_function_sync(
             function_name,

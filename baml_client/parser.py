@@ -184,7 +184,7 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
-    
+
 
 class LlmStreamParser:
     __options: DoNotUseDirectlyCallManager
@@ -353,5 +353,3 @@ class LlmStreamParser:
     ) -> stream_types.TechnologyCorrectionResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTTechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
-
-    

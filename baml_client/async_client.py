@@ -75,7 +75,7 @@ class BamlAsyncClient:
     @property
     def parse_stream(self):
       return self.__llm_stream_parser
-    
+
     async def AnthropicCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
@@ -481,7 +481,7 @@ class BamlAsyncClient:
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    
+
 
 
 class BamlStreamClient:
@@ -814,7 +814,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    
+
 
 class BamlHttpRequestClient:
     __options: DoNotUseDirectlyCallManager
@@ -1011,7 +1011,7 @@ class BamlHttpRequestClient:
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
-    
+
 
 class BamlHttpStreamRequestClient:
     __options: DoNotUseDirectlyCallManager
@@ -1208,6 +1208,6 @@ class BamlHttpStreamRequestClient:
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
-    
+
 
 b = BamlAsyncClient(DoNotUseDirectlyCallManager({}))
