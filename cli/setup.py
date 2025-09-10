@@ -400,7 +400,6 @@ def main():
 
         # Setup environment
         setup_environment()
-        setup_baml_environment()
 
         # Summary
         print("\n" + "=" * 50)
