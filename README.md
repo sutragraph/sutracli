@@ -50,6 +50,7 @@ For ecosystems with multiple related projects (e.g., backend, frontend, microser
 ![Indexing Demo](https://raw.githubusercontent.com/sutragraph/sutracli/refs/heads/main/media/indexing.gif)
 
 **Important Note:**
+
 - For the Roadmap Agent to fully discover and navigate inter-project connections (e.g., API calls, message queues, WebSockets), **cross-indexing** is required during the indexing phase. This builds a dependency graph of external links that standard parsing might miss. Without it, the agent can't trace code flows across projects, resulting in incomplete roadmaps.
 - Do not run cross-indexing parallelly for multiple projects, as it can lead to conflicts and incomplete or incorrect dependency graphs.
 
@@ -173,7 +174,6 @@ If you want to say **thank you** or/and support active development of
 - Add a [GitHub Star][repo_url] to the project.
 - Write interesting articles about project on [Dev.to][dev_to_url], or
   personal blog.
-- Leave a review on our [ProductHunt][sutrakit_product-hunt_url] page.
 
 ## 🏆 A win-win cooperation
 
