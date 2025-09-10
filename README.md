@@ -1,6 +1,6 @@
 <div align="center">
 
-## Sutra Knowledge CLI
+# Sutra Knowledge CLI
 
 [![Python version][python_version_img]][python_dev_url]
 [![Python report][python_report_img]][python_report_url]
