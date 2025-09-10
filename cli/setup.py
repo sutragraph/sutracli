@@ -302,60 +302,48 @@ def check_dependencies():
 def setup_baml_client():
     """Generate BAML client files using baml-cli generate"""
     console.info("Generating BAML client files...")
-
     try:
-        # Find the project root by looking for baml_src directory
-        current_dir = Path(__file__).resolve().parent
-        project_root = None
+        # Get the package installation directory
+        current_file_dir = Path(__file__).resolve().parent  # cli/ directory
+        package_dir = current_file_dir.parent  # parent of cli/ directory
+        baml_src_path = package_dir / "baml_src"
+        baml_client_path = package_dir / "baml_client"
 
-        # Look for baml_src in the current directory and parent directories
-        for potential_root in [current_dir] + list(current_dir.parents):
-            if (potential_root / "baml_src").exists():
-                project_root = potential_root
-                break
-
-        if not project_root:
-            console.error("Could not find baml_src directory to generate BAML client")
+        if not baml_src_path.exists():
+            console.error(f"Could not find baml_src directory at {baml_src_path}")
             return False
 
-        # Change to project root and run baml-cli generate
-        original_cwd = os.getcwd()
+        console.info(f"Package directory: {package_dir}")
+        console.info(f"BAML source: {baml_src_path}")
+        console.info(f"BAML output: {baml_client_path}")
+
+        # Try baml-cli first, then fallback to python -m baml_cli
         try:
-            os.chdir(project_root)
-            console.info(f"Running baml-cli generate in {project_root}")
+            result = subprocess.run(
+                ["baml-cli", "generate", "--from", str(baml_src_path)],  # Add --from parameter
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+        except FileNotFoundError:
+            console.info("baml-cli not found in PATH, trying python -m baml_cli")
+            result = subprocess.run(
+                [sys.executable, "-m", "baml_cli", "generate", "--from", str(baml_src_path)],  # Add --from parameter
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
 
-            # Try baml-cli first, then fallback to python -m baml_cli
-            try:
-                result = subprocess.run(
-                    ["baml-cli", "generate"],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,  # 60 second timeout
-                )
-            except FileNotFoundError:
-                console.info("baml-cli not found in PATH, trying python -m baml_cli")
-                result = subprocess.run(
-                    [sys.executable, "-m", "baml_cli", "generate"],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,  # 60 second timeout
-                )
-
-            if result.returncode == 0:
-                console.success("BAML client files generated successfully")
-                if result.stdout:
-                    console.info(f"BAML output: {result.stdout.strip()}")
-                return True
-            else:
-                console.error(
-                    f"baml-cli generate failed with return code {result.returncode}"
-                )
-                if result.stderr:
-                    console.error(f"Error output: {result.stderr.strip()}")
-                return False
-
-        finally:
-            os.chdir(original_cwd)
+        if result.returncode == 0:
+            console.success("BAML client files generated successfully")
+            if result.stdout:
+                console.info(f"BAML output: {result.stdout.strip()}")
+            return True
+        else:
+            console.error(f"baml-cli generate failed with return code {result.returncode}")
+            if result.stderr:
+                console.error(f"Error output: {result.stderr.strip()}")
+            return False
 
     except subprocess.TimeoutExpired:
         console.error("baml-cli generate timed out after 60 seconds")
