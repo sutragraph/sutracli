@@ -22,12 +22,12 @@ def setup_logging(log_level: str):
     # Add file logging when DEBUG level is specified
     if log_level == "DEBUG":
         # Create the session logs directory if it doesn't exist
-        os.makedirs(config.storage.session_logs_dir, exist_ok=True)
+        os.makedirs(config.logging.logs_dir, exist_ok=True)
 
         # Create a unique log file name with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_filename = f"debug_session_{timestamp}.log"
-        log_file = os.path.join(config.storage.session_logs_dir, log_filename)
+        log_file = os.path.join(config.logging.logs_dir, log_filename)
 
         # Add file logger without rotation since we're creating new files per session
         logger.add(
@@ -38,7 +38,7 @@ def setup_logging(log_level: str):
         logger.debug(f"Debug logging enabled. Logs will be stored in {log_file}")
 
         # Clean up old log files if there are too many
-        cleanup_old_logs(config.storage.session_logs_dir, max_files=10)
+        cleanup_old_logs(config.logging.logs_dir, max_files=10)
 
 
 def cleanup_old_logs(log_dir: str, max_files: int = 50):

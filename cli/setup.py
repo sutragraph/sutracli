@@ -129,7 +129,6 @@ def setup_configuration():
             "file_changes_dir": f"{INSTALL_DIR}/data/file_changes",
             "file_edits_dir": f"{INSTALL_DIR}/data/edits",
             "parser_results_dir": f"{INSTALL_DIR}/parser_results",
-            "session_logs_dir": f"{INSTALL_DIR}/logs",
             "models_dir": f"{INSTALL_DIR}/models",
         },
         "embedding": {
@@ -153,7 +152,7 @@ def setup_configuration():
         "logging": {
             "level": "INFO",
             "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-            "log_file": f"{INSTALL_DIR}/logs/sutraknowledge.log",
+            "logs_dir": f"{INSTALL_DIR}/logs",
         },
         "llm": {
             "provider": "",

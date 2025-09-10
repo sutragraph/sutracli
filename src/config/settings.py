@@ -84,7 +84,7 @@ class LoggingConfig:
 
     level: str
     format: str
-    log_file: Optional[str] = None
+    logs_dir: str
 
 
 @dataclass
@@ -100,7 +100,6 @@ class StorageConfig:
     # File changes and edits
     file_changes_dir: str
     file_edits_dir: str
-    session_logs_dir: str
 
     # Parser results (system-wide installation)
     parser_results_dir: str
