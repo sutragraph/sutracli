@@ -1,6 +1,4 @@
-<div align="center">
-
-# Sutra Knowledge CLI
+## Sutra Knowledge CLI
 
 [![Python version][python_version_img]][python_dev_url]
 [![Python report][python_report_img]][python_report_url]
@@ -8,8 +6,6 @@
 [![License][repo_license_img]][repo_license_url]
 
 An **intelligent codebase analysis** and **knowledge management tool** that provides **AI-powered insights**, **semantic search capabilities**, and **comprehensive project understanding** through advanced parsing and embedding technologies. Focus on **writing your code** and **thinking of the business-logic**! The CLI will take care of the rest.
-
-</div>
 
 ## ⚡️ Quick Start
 
@@ -53,6 +49,10 @@ For ecosystems with multiple related projects (e.g., backend, frontend, microser
 
 - For the Roadmap Agent to fully discover and navigate inter-project connections (e.g., API calls, message queues, WebSockets), **cross-indexing** is required during the indexing phase. This builds a dependency graph of external links that standard parsing might miss. Without it, the agent can't trace code flows across projects, resulting in incomplete roadmaps.
 - Do not run cross-indexing parallelly for multiple projects, as it can lead to conflicts and incomplete or incorrect dependency graphs.
+
+**Supported Languages and Parsing:**
+
+Sutrakit uses [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) for advanced AST-based parsing to extract code blocks such as functions, classes, methods, etc. Currently, this is fully supported only for Python, TypeScript, and JavaScript, where custom extractors have been implemented for precise structure extraction and embedding. For other languages, the tool falls back to default file-based indexing, where individual code blocks are not extracted—instead, embeddings are generated based on chunks of a certain word length. As a result, the quality of semantic search, analysis, and insights may vary for unsupported languages.
 
 ## 📝 Key Features
 
@@ -179,6 +179,7 @@ If you want to contribute to the project or modify the BAML configurations, foll
 ### Quick Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/sutragraph/sutracli.git
    cd sutracli
@@ -190,6 +191,7 @@ If you want to contribute to the project or modify the BAML configurations, foll
    ```
 
 This script will:
+
 - Install development dependencies (including pre-commit)
 - Set up pre-commit hooks
 - Test BAML client generation
@@ -200,11 +202,13 @@ This script will:
 If you prefer to set up manually:
 
 1. **Install development dependencies:**
+
    ```bash
    pip install -e ".[dev]"
    ```
 
 2. **Install pre-commit hooks:**
+
    ```bash
    pre-commit install
    ```
@@ -226,11 +230,13 @@ The project uses pre-commit hooks to ensure code quality and keep BAML client fi
 ### Working with BAML
 
 When you modify files in `baml_src/`, the pre-commit hooks will automatically:
+
 1. Regenerate the BAML client files in `baml_client/`
 2. Add the updated client files to your commit
 3. Ensure code formatting and quality standards
 
 You can also manually regenerate BAML client files:
+
 ```bash
 ./scripts/generate-baml.sh
 ```
