@@ -561,7 +561,7 @@ class TypeScriptExtractor(BaseExtractor):
                                 # This handles destructuring: { name, age } creates 2 blocks
                                 for name in names:
                                     block = self._create_code_block(
-                                        child, BlockType.VARIABLE, [name]
+                                        node, BlockType.VARIABLE, [name]
                                     )
                                     variable_blocks.append(block)
             return variable_blocks
