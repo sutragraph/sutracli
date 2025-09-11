@@ -84,17 +84,29 @@ Examples:
 1. STRICT ONE-TO-ONE MAPPING: Analyze each connection individually - never group multiple connections
 2. INDIVIDUAL ENTRIES ONLY: Create separate entries - If you find code with multiple operations, create separate entries for each
 3. PRECISE LINE NUMBERS: Extract individual details - Each entry gets its own specific line numbers (single line "23-23" or very small ranges "23-25" for one logical connection only)
-4. SINGLE CONNECTION FOCUS: Focus on data transmission - Only code that sends or receives data, exclude setup
-5. COMPLETE PARAMETER DETAILS: Include complete parameter details:
+4. SINGLE CONNECTION FOCUS: Focus on data transmission - Only code that sends or receives data (exclude setup and configuration)
+5. Include only actual data transmission operations:
+   - Message publishing/producing (publish, send, sendToQueue, produce)
+   - Message consuming/processing (consume, process, subscribe, on('message'))
+   - HTTP requests (axios.get, axios.post, fetch, request calls)
+   - HTTP route handlers (app.get, router.post, endpoint definitions)
+   - WebSocket data transmission (socket.emit, ws.send)
+   - WebSocket event handlers (socket.on, ws.on('message'))
+6. EXCLUDE SETUP CODE: Do not include connection establishment, configuration, or infrastructure setup:
+   - Connection creation (amqp.connect, axios.create, new Server, io.connect)
+   - Event listeners for connection state (on('connect'), on('disconnect'), on('error'))
+   - Channel/queue/exchange setup (createChannel, assertQueue, assertExchange, bindQueue)
+   - Configuration objects and initialization code
+7. COMPLETE PARAMETER DETAILS: Include complete parameter details:
    - Exact endpoints, event names, queue names, method names
    - Protocols, methods, parameters
    - Environment variables and their resolved values in descriptions using format ENV_VAR=actual_value
    - File paths and line numbers
-6. CORRECT DIRECTION: Classify direction correctly based on data flow
-7. NO DUPLICATES: No duplicates - each data transmission operation must be unique
-8. NO REPEATED CONTENT: CRITICAL: IGNORE REPEATING CONTENT - If you see the same file code with the same lines appearing multiple times in the input, include it only ONCE in your response. Same lines from same files are allowed only one time in splitting.
-9. ENVIRONMENT RESOLUTION: ENVIRONMENT FILE CODE RESOLUTION - If environment file code is provided as a code block, look for env var/config values and include them in connection descriptions for better context
-10. FORBIDDEN LANGUAGE: Never use words like "multiple", "including", "various", "several", "comprehensive", numbers with "+" (like "40+", "45+"), "operations for", "endpoints for"
+8. CORRECT DIRECTION: Classify direction correctly based on data flow
+9. NO DUPLICATES: No duplicates - each data transmission operation must be unique
+10. NO REPEATED CONTENT: CRITICAL: IGNORE REPEATING CONTENT - If you see the same file code with the same lines appearing multiple times in the input, include it only ONCE in your response. Same lines from same files are allowed only one time in splitting.
+11. ENVIRONMENT RESOLUTION: ENVIRONMENT FILE CODE RESOLUTION - If environment file code is provided as a code block, look for env var/config values and include them in connection descriptions for better context
+12. FORBIDDEN LANGUAGE: Never use words like "multiple", "including", "various", "several", "comprehensive", numbers with "+" (like "40+", "45+"), "operations for", "endpoints for"
 
 ## ENVIRONMENT FILE CODE RESOLUTION
 
@@ -108,13 +120,15 @@ When environment file code blocks are provided in the input (e.g., .env files, c
 ### EXAMPLE OF ENV RESOLUTION:
 If you find connection code:
 ```
-src/queue/consumer.js:20: queue.consume(process.env.USER_ADD_QUEUE, handler)
+./src/queue/consumer.js:
+  20 |     queue.consume(process.env.USER_ADD_QUEUE, handler)
 ```
 
 And env file code block contains:
 ```
-USER_ADD_QUEUE="user-add"
-NOTIFICATION_QUEUE="notifications"
+./.env:
+  5 |     USER_ADD_QUEUE="user-add"
+  6 |     NOTIFICATION_QUEUE="notifications"
 ```
 
 Then description should be:
@@ -353,10 +367,14 @@ When you receive connection data with HTTP API calls:
 
 Input Connection Data:
 ```
-src/api/client.js:15: axios.post(`${process.env.BASE_URL}/admin/users`, userData)
-src/api/client.js:23: axios.get(`${process.env.BASE_URL}/api/orders`, params)
-src/api/client.js:31: makeApiCall(`${process.env.BASE_URL}/admin/users`, 'POST', userData)
-src/api/client.js:45: makeApiCall(`${process.env.BASE_URL}/api/orders`, 'GET', params)
+./src/api/client.js:
+  15 |     axios.post(`${process.env.BASE_URL}/admin/users`, userData)
+
+  23 |     axios.get(`${process.env.BASE_URL}/api/orders`, params)
+
+  31 |     makeApiCall(`${process.env.BASE_URL}/admin/users`, 'POST', userData)
+
+  45 |     makeApiCall(`${process.env.BASE_URL}/api/orders`, 'GET', params)
 ```
 
 Environment Variables (if provided):
@@ -402,9 +420,13 @@ When you receive connection data with environment variables and their values:
 
 Input Connection Data:
 ```
-src/config/api.js:12: const response = await axios.get(`${process.env.BASE_URL}/update/data`)
-src/config/queue.js:8: const queueName = process.env.QUEUE_NAME || 'default-queue'
-src/config/api.js:20: const apiUrl = 'https://api.example.com/api'
+./src/config/api.js:
+  12 |     const response = await axios.get(`${process.env.BASE_URL}/update/data`)
+
+  20 |     const apiUrl = 'https://api.example.com/api'
+
+./src/config/queue.js:
+  8 |     const queueName = process.env.QUEUE_NAME || 'default-queue'
 ```
 
 Environment Variables (if provided):
@@ -451,16 +473,19 @@ When you receive connection data with WebSocket and message queue operations:
 
 Input Connection Data:
 ```
-File: src/socket/handlers.js
-15 | socket.emit('user_status_update', data)
-23 | socket.emit('order_notification', orderData)
+./src/socket/handlers.js:
+  15 |     socket.emit('user_status_update', data)
 
-File: src/socket/server.js
-30 | socket.on('user_login', handleUserLogin)
-35 | socket.on('user_logout', handleUserLogout)
+  23 |     socket.emit('order_notification', orderData)
 
-File: src/queue/consumer.js```
-42 | queue.consume('order-processing', handler)
+./src/socket/server.js:
+  30 |     socket.on('user_login', handleUserLogin)
+
+  35 |     socket.on('user_logout', handleUserLogout)
+
+./src/queue/consumer.js:
+  42 |     queue.consume('order-processing', handler)
+```
 
 CORRECT Splitting:
 
@@ -514,10 +539,15 @@ When you receive connection data with API route definitions:
 
 Input Connection Data:
 ```
-src/routes/users.js:10: app.get('/api/users', getUsersHandler)
-src/routes/users.js:15: app.post('/api/users', createUserHandler)
-src/routes/orders.js:8: router.get('/orders/:id', getOrderHandler)
-src/routes/orders.js:12: router.put('/orders/:id', updateOrderHandler)
+./src/routes/users.js:
+  10 |     app.get('/api/users', getUsersHandler)
+
+  15 |     app.post('/api/users', createUserHandler)
+
+./src/routes/orders.js:
+  8 |     router.get('/orders/:id', getOrderHandler)
+
+  12 |     router.put('/orders/:id', updateOrderHandler)
 ```
 
 CORRECT Splitting:
@@ -560,22 +590,25 @@ When you receive connection data with wrapper function calls:
 
 Input Connection Data:
 ```
-File: src/services/notification.js
-25 | publishMessage('user-notifications', data)
-30 | publishMessage('order-updates', orderData)
+./src/services/notification.js:
+  25 |     publishMessage('user-notifications', data)
 
-File: src/services/api.js
-18 | makeApiCall('/admin/users', 'POST', userData)
-22 | makeApiCall('/api/orders', 'GET', params)
+  30 |     publishMessage('order-updates', orderData)
 
-File: src/makeApiCall.js
-10 | function makeApiCall(path, method, payloadOrParams, config) {
-11 |   const url = `${process.env.BASE_URL}${path}`
-13 |   return axios.request({ url, method, data: payloadOrParams, ...config })
-14 | }
+./src/services/api.js:
+  18 |     makeApiCall('/admin/users', 'POST', userData)
 
-File: .env
-3: BASE_URL=https://api.example.com
+  22 |     makeApiCall('/api/orders', 'GET', params)
+
+./src/makeApiCall.js:
+  10 |     function makeApiCall(path, method, payloadOrParams, config) {
+  11 |       const url = `${process.env.BASE_URL}${path}`
+
+  13 |       return axios.request({ url, method, data: payloadOrParams, ...config })
+  14 |     }
+
+./.env:
+  3 |     BASE_URL=https://api.example.com
 ```
 
 CORRECT Splitting:
@@ -620,30 +653,37 @@ When you receive connection data with switch statements handling different conne
 
 Input Connection Data:
 ```
-src/handlers/message.js:45: switch (messageType) {
-src/handlers/message.js:46:   case 'USER_CREATED':
-src/handlers/message.js:47:     await axios.post(`https://${process.env.BASE_URL}/user-service/notify`, userData)
-src/handlers/message.js:48:     break;
-src/handlers/message.js:49:   case 'ORDER_PLACED':
-src/handlers/message.js:50:     await axios.post(`https://${process.env.BASE_URL}/order-service/process`, orderData)
-src/handlers/message.js:51:     break;
-src/handlers/message.js:52:   case 'PAYMENT_RECEIVED':
-src/handlers/message.js:53:     await axios.put(`https://${process.env.BASE_URL}/payment-service/confirm`, paymentData)
-src/handlers/message.js:54:     break;
-src/handlers/message.js:55: }
-src/handlers/event.js:20: switch (event.type) {
-src/handlers/event.js:21:   case 'sync':
-src/handlers/event.js:22:     socket.emit('data_sync', syncData)
-src/handlers/event.js:23:     break;
-src/handlers/event.js:24:   case 'update':
-src/handlers/event.js:25:     socket.emit('data_update', updateData)
-src/handlers/event.js:26:     break;
-src/handlers/event.js:27:   case 'delete':
-src/handlers/event.js:28:     socket.emit('data_delete', deleteData)
-src/handlers/event.js:29:     break;
-src/handlers/event.js:30: }
+./src/handlers/message.js:
+  45 |     switch (messageType) {
+  46 |       case 'USER_CREATED':
+  47 |         await axios.post(`https://${process.env.BASE_URL}/user-service/notify`, userData)
+  48 |         break;
+  49 |       case 'ORDER_PLACED':
+  50 |         await axios.post(`https://${process.env.BASE_URL}/order-service/process`, orderData)
+  51 |         break;
+  52 |       case 'PAYMENT_RECEIVED':
+  53 |         await axios.put(`https://${process.env.BASE_URL}/payment-service/confirm`, paymentData)
+  54 |         break;
+  55 |     }
+  56 |
 
-.env:3: BASE_URL=api.example.com
+./src/handlers/event.js:
+  20 |     switch (event.type) {
+  21 |       case 'sync':
+  22 |         socket.emit('data_sync', syncData)
+  23 |         break;
+  24 |       case 'update':
+  25 |         socket.emit('data_update', updateData)
+  26 |         break;
+  27 |       case 'delete':
+  28 |         socket.emit('data_delete', deleteData)
+  29 |         break;
+  30 |     }
+  31 |
+
+./.env:
+  3 |     BASE_URL=api.example.com
+  4 |
 ```
 
 CORRECT Splitting:
@@ -867,50 +907,132 @@ IMPORTANT NOTES FOR SWITCH CASE SPLITTING:
 
 The following types of connection data should NOT be included in splitting:
 
-### EXCLUDE 1: Generic Library Calls Without Identifiers
+### EXCLUDE 1: Connection Setup and Configuration Code
 Connection Data That Should Be Excluded:
 ```
-src/utils/http.js:25: await axios.get(url)
-src/utils/http.js:30: await axios.post(url, data)
-src/utils/socket.js:15: socket.emit(eventName, data)
+./src/queue/consumer.js:
+  18 |     const connection = amqp.connect(process.env.URL)
+  19 |     connection.on("connect", () => console.log("Connected!"))
+  20 |     connection.on("disconnect", (err) => console.log("Disconnected.", err.stack))
+  21 |
+
+  24 |     const channel = connection.createChannel({ json: true })
+
+  28 |     channel.assertExchange(process.env.EXCHANGE_NAME, "direct")
+  29 |     channel.assertQueue(queue)
+  30 |     channel.bindQueue(queue, process.env.EXCHANGE_NAME, "rooms")
+  31 |     channel.prefetch(1)
+
+./src/api/client.js:
+  10 |     const httpClient = axios.create({ baseURL: process.env.API_BASE_URL })
+
+./src/socket/server.js:
+  5 |     const io = new Server(server, { cors: { origin: "*" } })
+
+./src/websocket/client.js:
+  8 |     const socket = io.connect(process.env.SOCKET_URL)
+```
+Why Excluded: These are infrastructure setup, not actual data transmission operations.
+
+### EXCLUDE 2: Generic Library Calls Without Identifiers
+Connection Data That Should Be Excluded:
+```
+./src/utils/http.js:
+  25 |     await axios.get(url)
+
+  30 |     await axios.post(url, data)
+
+./src/utils/socket.js:
+  15 |     socket.emit(eventName, data)
 ```
 Why Excluded: These use variable identifiers, not specific connection endpoints.
 
-### EXCLUDE 2: Function Definitions and Imports
+### EXCLUDE 3: Function Definitions and Imports
 Connection Data That Should Be Excluded:
 ```
-src/api/client.js:1: const axios = require('axios')
-src/utils/api.js:10: function apiCallFunction(endpoint, method, data) { ... }
-src/socket/handler.js:5: import { io } from 'socket.io-client'
+./src/api/client.js:
+  1 |     const axios = require('axios')
+
+./src/utils/api.js:
+  10 |     function apiCallFunction(endpoint, method, data) { ... }
+
+./src/socket/handler.js:
+  5 |     import { io } from 'socket.io-client'
 ```
 Why Excluded: Library imports and generic function definitions are not actual connections.
 
-### EXCLUDE 3: Configuration Without Actual Usage
+### EXCLUDE 4: Configuration Without Actual Usage
 Connection Data That Should Be Excluded:
 ```
-src/config/settings.js:8: const API_BASE_URL = process.env.API_BASE_URL
-src/config/settings.js:12: const QUEUE_CONFIG = { host: 'localhost', port: 5672 }
+./src/config/settings.js:
+  8 |     const API_BASE_URL = process.env.API_BASE_URL
+
+  12 |     const QUEUE_CONFIG = { host: 'localhost', port: 5672 }
 ```
 Why Excluded: Configuration definitions without actual connection usage.
 
-### EXCLUDE 4: Connection Placeholders
+### EXCLUDE 5: Connection Placeholders
 Connection Data That Should Be Excluded:
 ```
-src/placeholders/connection.js:10: const dbConnection = createDbConnection(config)
-src/placeholders/connection.js:15: const apiClient = createApiClient(baseUrl)
+./src/placeholders/connection.js:
+  10 |     const dbConnection = createDbConnection(config)
+
+  15 |     const apiClient = createApiClient(baseUrl)
 ```
 Why Excluded: These are placeholders or abstractions without concrete connection details.
 
 ## DATA INCLUSION RULES - MUST BE INCLUDED
 
-### INCLUDE: Only Actual Connection Usage
+### INCLUDE: Only Actual Data Transmission Operations
 Connection Data That SHOULD Be Included:
+
+#### PRODUCERS/SENDERS (Outgoing):
 ```
-src/api/client.js:25: const response = await axios.get(`${process.env.API_BASE_URL}/users`)
-src/services/queue.js:15: publishMessage('user-notifications', userData)
-src/routes/api.js:20: app.get('/api/users', handleGetUsers)
+./src/queue/producer.js:
+  25 |     channel.publish(exchange, routingKey, message)
+
+  30 |     queue.send('user-notifications', userData)
+
+./src/api/client.js:
+  25 |     const response = await axios.get(`${process.env.API_BASE_URL}/users`)
+
+  30 |     await axios.post(`${process.env.API_BASE_URL}/orders`, orderData)
+
+./src/socket/emitter.js:
+  15 |     socket.emit('user_status_update', statusData)
+
+./src/websocket/client.js:
+  20 |     ws.send(JSON.stringify({ type: 'ping', data: pingData }))
 ```
-Why Included: These show actual connection usage with specific identifiers or environment variables.
+
+#### CONSUMERS/RECEIVERS/LISTENERS (Incoming):
+```
+./src/queue/consumer.js:
+  40 |     channel.consume(queueName, messageHandler)
+
+  45 |     queue.process('order-processing', orderProcessor)
+
+./src/routes/api.js:
+  20 |     app.get('/api/users', handleGetUsers)
+
+  25 |     app.post('/api/orders', handleCreateOrder)
+
+./src/socket/handlers.js:
+  15 |     socket.on('user_login', handleUserLogin)
+
+./src/websocket/server.js:
+  30 |     ws.on('message', (data) => handleMessage(JSON.parse(data)))
+```
+
+Why Included: These show actual data transmission operations - the core purpose of connection analysis.
+
+### FOCUS ON DATA OPERATIONS ONLY (Examples):
+- Producers: `publish()`, `send()`, `sendToQueue()`, `produce()`
+- Consumers: `consume()`, `process()`, `subscribe()`, `on('message')`
+- HTTP Senders: `axios.get()`, `axios.post()`, `fetch()`, `request()`
+- HTTP Receivers: Route handlers like `app.get()`, `router.post()`, endpoint definitions
+- WebSocket Senders: `socket.emit()`, `ws.send()`
+- WebSocket Receivers: Event handlers like `socket.on()`, `ws.on('message')`
 
 ## STEP-BY-STEP ANALYSIS PROCESS
 

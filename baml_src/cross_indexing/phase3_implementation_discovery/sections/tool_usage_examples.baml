@@ -245,7 +245,9 @@ this.channel.sendToQueue(queueName, Buffer.from(message), {
 THINKING: "I found queue operation with variable 'queueName' instead of actual queue name. This is a wrapper function implementation. I need to find where this function is called with real queue names."
 IMMEDIATE ACTION:
 1. Read complete file to find wrapper function name (e.g., `publishMessage`)
-2. CREATE TASK: {
+2. CREATE TASK:
+```
+{
   "sutra_memory": {
     "tasks": [
       {
@@ -257,6 +259,7 @@ IMMEDIATE ACTION:
     ]
   }
 }
+```
 EXPECTED RESULT: Find calls like `publishMessage('user-notifications', data)`, `publishMessage('email-queue', emailData)`
 
 Example 2: HTTP operation with variable endpoint - CREATE TASK IMMEDIATELY
@@ -268,7 +271,9 @@ const response = await axios.get(url, config);
 THINKING: "I found HTTP call with variable 'url' instead of actual endpoint. This is wrapper function usage. I need to find where this function is called with real URLs."
 IMMEDIATE ACTION:
 1. Read complete file to find wrapper function name (e.g., `makeApiCall`)
-2. CREATE TASK: {
+2. CREATE TASK:
+```
+{
   "sutra_memory": {
     "tasks": [
       {
@@ -280,6 +285,7 @@ IMMEDIATE ACTION:
     ]
   }
 }
+```
 EXPECTED RESULT: Find calls like `makeApiCall('/api/users', 'GET')`, `makeApiCall('/admin/data', 'POST', userData)`
 
 Example 3: Message queue wrapper function with dynamic topics - CREATE TASK
@@ -289,7 +295,9 @@ def publish_message(topic, message_data):
     return publisher.send(topic, json.dumps(message_data))
 ```
 THINKING: "I found a message queue wrapper function that takes dynamic topic parameter. I need to search for all publish_message() calls to find the actual topics and message types being sent."
-CREATE TASK: {
+CREATE TASK:
+```
+{
   "sutra_memory": {
     "tasks": [
       {
@@ -301,6 +309,7 @@ CREATE TASK: {
     ]
   }
 }
+```
 Reason: Need to find all actual usage sites to collect the real topics and message data being published
 
 Example 4: Socket wrapper function with dynamic events - CREATE TASK
@@ -311,7 +320,9 @@ function emitEvent(eventName, eventData) {
 }
 ```
 THINKING: "This wrapper function takes dynamic event name and data parameters. I need to find all emitEvent() calls to see what events are being emitted."
-CREATE TASK: {
+CREATE TASK:
+```
+{
   "sutra_memory": {
     "tasks": [
       {
@@ -323,6 +334,7 @@ CREATE TASK: {
     ]
   }
 }
+```
 Reason: Need to find all usage sites to collect the actual event names and data being emitted
 
 Example 5: Custom client class with dynamic communication methods - CREATE TASK
@@ -333,7 +345,8 @@ class ServiceClient:
     def subscribe_to_events(self, channel, callback): ...
 ```
 THINKING: "I found a custom service client class with dynamic parameters. I need to search for all instances where this client is used to find the actual services, actions, and channels being used."
-CREATE TASK: {
+CREATE TASK:
+```{
   "sutra_memory": {
     "tasks": [
       {
@@ -345,8 +358,37 @@ CREATE TASK: {
     ]
   }
 }
+```
 Reason: Need to find all method calls on this custom client across the project with real service communication parameters
 
+Example 6: Environment variable in wrapper function - CHECK SUTRA MEMORY FIRST
+When you find connection code with environment variables like:
+```javascript
+// Found in file analysis
+const response = await axios.get(`${process.env.API_BASE_URL}/users/${userId}`)
+```
+CONDITIONAL TASK CREATION:
+IF environment variable IS already in sutra memory with actual value:
+THINKING: "Environment variable 'API_BASE_URL' is already stored in sutra memory with value 'https://api.production.com'. No need to search for env files."
+ACTION: Continue analysis using the known value from sutra memory
+
+IF environment variable IS NOT in sutra memory:
+THINKING: "Environment variable 'API_BASE_URL' is not found in sutra memory. I need to create task to find .env files or config files where this variable is defined."
+CREATE TASK:
+```
+{
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "add",
+        "id": "25",
+        "to_status": "current",
+        "description": "Search for environment files containing API_BASE_URL: search_keyword('API_BASE_URL', regex=false, case_sensitive=true)"
+      }
+    ]
+  }
+}
+```
 ## WHEN NOT TO CREATE TASKS - DECISION MAKING
 
 Example 1: Already found actual connection usage with hardcoded values - DON'T CREATE TASK
