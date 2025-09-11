@@ -15,17 +15,17 @@ The project uses pre-commit hooks to ensure code quality and keep BAML client fi
    - Adds updated client files to the commit automatically
 
 2. **Code Quality Checks**
-   - **Trailing Whitespace**: Removes trailing whitespace from files
-   - **End of File**: Ensures files end with a newline
+   - **Trailing Whitespace**: Removes trailing whitespace from files (excludes BAML auto-generated files)
+   - **End of File**: Ensures files end with a newline (excludes BAML auto-generated files)
    - **YAML/JSON/TOML Validation**: Validates configuration files
    - **Large Files**: Prevents accidentally committing large files (>1MB)
    - **Merge Conflicts**: Detects unresolved merge conflict markers
-   - **Debug Statements**: Warns about Python debug statements
+   - **Debug Statements**: Warns about Python debug statements (excludes BAML auto-generated files)
 
 3. **Code Formatting**
    - **Black**: Formats Python code according to Black standards
    - **isort**: Sorts Python imports consistently
-   - **Note**: Generated BAML client files are excluded from formatting
+   - **Note**: All BAML auto-generated files in `baml_client/` are excluded from all linting and formatting
 
 ### Setup
 

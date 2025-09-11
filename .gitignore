@@ -141,3 +141,7 @@ models/all-MiniLM-L12-v2
 
 # Config
 configs/dev.json
+
+# BAML auto-generated files
+# Note: baml_client/ files are auto-generated but committed to version control
+# They are excluded from linting in .pre-commit-config.yaml
