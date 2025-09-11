@@ -71,11 +71,11 @@ RULES
      - EXAMPLE WORKFLOW:
        * Found: `this.channel.sendToQueue(queueName, Buffer.from(message))` (variable queueName)
        * Action: Read complete file to find wrapper function name (e.g., `publishMessage`)
-       * Search: Create task "Use search_keyword to find publishMessage usage: publishMessage\\("
+       * Search: Create task "Use search_keyword to find publishMessage usage: publishMessage\("
        * Result: Find calls like `publishMessage('user-notifications', data)`, `publishMessage('email-queue', emailData)`
 
      - CRITICAL: DO NOT move to next task when you find variable parameters - you MUST search for actual usage sites
-     - CREATE TASKS for ALL wrapper functions with variable parameters: "Use search_keyword to find [functionName] usage patterns: [functionName]\\("
+     - CREATE TASKS for ALL wrapper functions with variable parameters: "Use search_keyword to find [functionName] usage patterns: [functionName]\("
      - NEVER accept variable names as final connection data - always search for the actual values passed to wrapper functions
 
 11. TASK CREATION WITHIN IMPLEMENTATION DISCOVERY:

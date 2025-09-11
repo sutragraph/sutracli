@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (49)
+# Generated classes (48)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -145,11 +145,6 @@ class FileChange(BaseModel):
     operation: typing.Optional[types.FileOperation] = None
     instructions: typing.List["ChangeInstruction"]
 
-class FileChanges(BaseModel):
-    modified: typing.Optional[typing.List[str]] = None
-    added: typing.Optional[typing.List[str]] = None
-    deleted: typing.Optional[typing.List[str]] = None
-
 class ListFilesParams(BaseModel):
     path: typing.Optional[str] = None
     project_name: typing.Optional[str] = None
@@ -246,7 +241,6 @@ class SutraMemoryParams(BaseModel):
     add_history: typing.Optional[str] = None
     tasks: typing.Optional[typing.List["TaskOperation"]] = None
     code: typing.Optional[typing.List["CodeStorage"]] = None
-    files: typing.Optional["FileChanges"] = None
 
 class SutraMemoryParams_CrossIndexing(BaseModel):
     add_history: typing.Optional[str] = None

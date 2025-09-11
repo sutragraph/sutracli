@@ -46,7 +46,6 @@ class Agent(str, Enum):
 
 class CodeStorageAction(str, Enum):
     Add = "Add"
-    Remove = "Remove"
 
 class CodeStorageAction_CrossIndexing(str, Enum):
     Add = "Add"
@@ -55,7 +54,6 @@ class CodeStorageAction_CrossIndexing(str, Enum):
 class ContractRole(str, Enum):
     Provider = "Provider"
     Consumer = "Consumer"
-    Both = "Both"
 
 class FileOperation(str, Enum):
     Create = "Create"
@@ -75,7 +73,6 @@ class Status_CrossIndexing(str, Enum):
 
 class TaskOperationAction(str, Enum):
     Add = "Add"
-    Remove = "Remove"
     Move = "Move"
 
 class TaskOperationAction_CrossIndexing(str, Enum):
@@ -106,7 +103,7 @@ class ToolName(str, Enum):
     Completion = "Completion"
 
 # #########################################################################
-# Generated classes (49)
+# Generated classes (48)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -228,11 +225,6 @@ class FileChange(BaseModel):
     operation: FileOperation
     instructions: typing.List["ChangeInstruction"]
 
-class FileChanges(BaseModel):
-    modified: typing.Optional[typing.List[str]] = None
-    added: typing.Optional[typing.List[str]] = None
-    deleted: typing.Optional[typing.List[str]] = None
-
 class ListFilesParams(BaseModel):
     path: typing.Optional[str] = None
     project_name: typing.Optional[str] = None
@@ -329,7 +321,6 @@ class SutraMemoryParams(BaseModel):
     add_history: str
     tasks: typing.Optional[typing.List["TaskOperation"]] = None
     code: typing.Optional[typing.List["CodeStorage"]] = None
-    files: typing.Optional["FileChanges"] = None
 
 class SutraMemoryParams_CrossIndexing(BaseModel):
     add_history: str

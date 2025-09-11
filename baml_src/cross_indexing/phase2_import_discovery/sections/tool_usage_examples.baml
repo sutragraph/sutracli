@@ -47,31 +47,31 @@ For Example:
 ROBUST REGEX PATTERNS WITH EXPLANATIONS"
 
 JavaScript/Node.js Import Patterns:
-- require\\s*\\(\\s*['\"]axios['\"]\\s*\\) → matches require('axios') or require("axios") with optional whitespace
-- import\\s+axios\\s+from\\s+['\"]axios['\"] → matches import axios from 'axios' or import axios from "axios"
-- import\\s*\\{[^}]*\\}\\s*from\\s*['\"]axios['\"] → matches import { get, post } from 'axios'
-- const\\s*\\{[^}]*\\}\\s*=\\s*require\\s*\\(\\s*['\"]axios['\"]\\s*\\) → matches const { get, post } = require('axios')
+- require.*axios → matches require('axios') or require("axios") with optional whitespace
+- import.*axios.*from.*axios → matches import axios from 'axios' or import axios from "axios"
+- import.*from.*axios → matches import { get, post } from 'axios'
+- const.*require.*axios → matches const { get, post } = require('axios')
 
 Express Router Patterns:
-- (app|router)\\.(get|post|put|delete|patch)\\s*\\( → matches app.get( or router.post( with optional whitespace
-- express\\s*\\(\\s*\\)\\.use → matches express().use for middleware
-- new\\s+express\\s*\\( → matches new express( instantiation
+- (app|router).(get|post|put|delete|patch) → matches app.get( or router.post( with optional whitespace
+- express.*use → matches express().use for middleware
+- new.*express → matches new express( instantiation
 
 Python Import Patterns:
-- ^\\s*import\\s+requests → matches import requests at line start
-- ^\\s*from\\s+requests\\s+import → matches from requests import statements
-- ^\\s*import\\s+urllib\\.(request|parse|error) → matches urllib submodule imports
+- import.*requests → matches import requests at line start
+- from.*requests.*import → matches from requests import statements
+- import.*urllib → matches urllib submodule imports
 
 COMPREHENSIVE REGEX PATTERN EXAMPLES"
 
 Axios Complete Pattern:
-require\\s*\\(\\s*['\"]axios['\"]\\s*\\)|import\\s+axios\\s+from\\s+['\"]axios['\"]; import\\s*\\{[^}]*\\}\\s*from\\s*['\"]axios['\"]|const\\s*\\{[^}]*\\}\\s*=\\s*require\\s*\\(\\s*['\"]axios['\"]\\s*\\)
+require.*axios|import.*axios.*from.*axios|import.*from.*axios|const.*require.*axios
 
 Express Complete Pattern:
-require\\s*\\(\\s*['\"]express['\"]\\s*\\)|import\\s+express\\s+from\\s+['\"]express['\"]|import\\s*\\{[^}]*Router[^}]*\\}\\s*from\\s*['\"]express['\"]
+require.*express|import.*express.*from.*express|import.*from.*express
 
 Socket.io Complete Pattern:
-require\\s*\\(\\s*['\"]socket\\.io['\"]\\s*\\)|import\\s+[^\\s]+\\s+from\\s+['\"]socket\\.io['\"]
+require.*socket.*io|import.*from.*socket.*io
 
 3. IMPLEMENTATION TASK CREATION EXAMPLES
 
@@ -84,29 +84,29 @@ Create 3 separate implementation tasks (database tool - individual tasks per fil
 - Task 3: "Found axios imports in src/utils/request.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
 
 Example 2: After finding express imports in 8 files
-Create implementation task(Add): "Found express imports in 8 files. Use search_keyword tool with pattern '(app|router)\\.(get|post|put|delete|patch)\\s*\\(' and regex=true, after_lines=4 to find express route definitions across all files. Look for actual route handlers with real endpoint paths. This server framework receives requests from other services."
+Create implementation task(Add): "Found express imports in 8 files. Use search_keyword tool with pattern 'app.get|app.post|router.get|router.post' and regex=true, case_sensitive=false, after_lines=4 to find express route definitions across all files. Look for actual route handlers with real endpoint paths. This server framework receives requests from other services."
 
 Example 3: After finding Spring imports in 6 files
-Create implementation task(Add): "Found Spring framework imports in 6 files. Use search_keyword tool with pattern '@(RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping)\\s*\\(' and regex=true, after_lines=4 to find Spring controller endpoints across all files. Look for actual REST endpoints with real paths."
+Create implementation task(Add): "Found Spring framework imports in 6 files. Use search_keyword tool with pattern '@RequestMapping|@GetMapping|@PostMapping' and regex=true, case_sensitive=false, after_lines=4 to find Spring controller endpoints across all files. Look for actual REST endpoints with real paths."
 
 Example 4: After finding Socket.io imports in 4 files
-Create implementation task(Add): "Found Socket.io imports in 4 files. Use search_keyword tool with pattern 'io\\s*\\(|socket\\.(on|emit)\\s*\\(' and regex=true, after_lines=4 to find Socket.io usage patterns across all files. Look for actual WebSocket event handlers and emissions."
+Create implementation task(Add): "Found Socket.io imports in 4 files. Use search_keyword tool with pattern 'socket.on|socket.emit|io.emit' and regex=true, case_sensitive=false, after_lines=4 to find Socket.io usage patterns across all files. Look for actual WebSocket event handlers and emissions."
 
 4. BUILT-IN PATTERN TASK CREATION (ALWAYS REQUIRED)
 
 MULTI-LANGUAGE BUILT-IN PATTERN EXAMPLES:
 
 Example 1: JavaScript built-in pattern task creation
-Create implementation task(Add): "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\s*\\(|new\\s+XMLHttpRequest\\s*\\(|new\\s+WebSocket\\s*\\(' and regex=true, after_lines=4 to find native JavaScript connection patterns across all files."
+Create implementation task(Add): "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch|XMLHttpRequest|WebSocket' and regex=false, case_sensitive=false, after_lines=4 to find native JavaScript connection patterns across all files."
 
 Example 2: Python built-in pattern task creation
-Create implementation task(Add): "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\.(request|parse|error)\\.|http\\.client\\.|socket\\.(socket|create_connection)\\(' and regex=true, after_lines=4 to find Python built-in connection patterns across all files."
+Create implementation task(Add): "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib|http.client|socket' and regex=false, case_sensitive=false, after_lines=4 to find Python built-in connection patterns across all files."
 
 Example 3: Java built-in pattern task creation
-Create implementation task(Add): "Create built-in pattern task for Java: Use search_keyword with pattern 'HttpURLConnection|new\\s+Socket\\s*\\(|ServerSocket\\s*\\(' and regex=true, after_lines=4 to find Java built-in connection patterns across all files."
+Create implementation task(Add): "Create built-in pattern task for Java: Use search_keyword with pattern 'HttpURLConnection|Socket|ServerSocket' and regex=false, case_sensitive=false, after_lines=4 to find Java built-in connection patterns across all files."
 
 Example 4: Go built-in pattern task creation
-Create implementation task(Add): "Create built-in pattern task for Go: Use search_keyword with pattern 'http\\.(Get|Post|Put|Delete)|net\\.Dial\\s*\\(' and regex=true, after_lines=4 to find Go built-in connection patterns across all files."
+Create implementation task(Add): "Create built-in pattern task for Go: Use search_keyword with pattern 'http.Get|http.Post|net.Dial' and regex=true, case_sensitive=false, after_lines=4 to find Go built-in connection patterns across all files."
 
 5. TOOL SELECTION STRATEGY FOR IMPLEMENTATION TASKS
 

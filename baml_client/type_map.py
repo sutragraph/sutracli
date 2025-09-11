@@ -79,9 +79,6 @@ type_map = {
     "types.FileChange": types.FileChange,
     "stream_types.FileChange": stream_types.FileChange,
 
-    "types.FileChanges": types.FileChanges,
-    "stream_types.FileChanges": stream_types.FileChanges,
-
     "types.ListFilesParams": types.ListFilesParams,
     "stream_types.ListFilesParams": stream_types.ListFilesParams,
 

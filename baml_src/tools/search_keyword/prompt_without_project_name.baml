@@ -11,7 +11,7 @@ Required Parameters:
   - keyword: The search pattern. Can be:
     Single keyword: "functionName"
     Multiple patterns: "pattern1|pattern2|pattern3" (use with regex=true)
-    Regex pattern: "\\.(get|post|put)\\s*\\(" (use with regex=true)
+    Regex pattern: "\.(get|post|put)\s*\(" (use with regex=true)
 
 Optional Parameters:
   - before_lines: Lines before match (default: 0)
@@ -24,7 +24,7 @@ Optional Parameters:
 Notes:
   - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
   - For multiple patterns, use "pattern1|pattern2" with regex=true
-  - Use \\b for word boundaries in regex patterns
+  - Use \b for word boundaries in regex patterns
   - When results return `No results found for keyword search.`, check the history section for previous search attempts. If you see 3-4 failed search attempts with different keywords/patterns, then mark the task complete. However, don't give up after just 1 failed attempt - try different variations of keywords, patterns, or search parameters before concluding no results exist.
   - search_keyword is only for searching codebase - do not use for searching file names or directories - use list_files tool for that
 
@@ -60,7 +60,7 @@ GOOD EXAMPLES:
 "tool_call": {
   "tool_name": "search_keyword",
   "parameters": {
-    "keyword": "function\\s+getUserById\\s*\\(",
+    "keyword": "function\s+getUserById\s*\(",
     "regex": true,
     "file_paths": "src/utils/helpers.ts"
     "before_lines": 0
@@ -84,7 +84,7 @@ GOOD EXAMPLES:
 "tool_call": {
   "tool_name": "search_keyword",
   "parameters": {
-    "keyword": "\\b(app|router)\\.(put|PUT)\\s*\\([^)]*apiFunction\\b",
+    "keyword": "\b(app|router)\.(put|PUT)\s*\([^)]*apiFunction\b",
     "regex": true,
     "file_paths": "src/api",
     "before_lines": 0

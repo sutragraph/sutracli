@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AddTask","BaseCompletionParams","BasePromptParams","ChangeInstruction","CodeConnection","CodeManagerResponse","CodeStorage","CodeStorage_CrossIndexing","CompletionResponse_CrossIndexing","CompletionToolCall","CompletionToolCall_CrossIndexing","ConnectionDetail","ConnectionMatch","ConnectionMatchingResponse","ConnectionSplittingResponse","Contract","ContractField","CrossIndexingResponse","DatabaseParams","DatabaseToolCall","FileChange","FileChanges","ListFilesParams","ListFilesParamsWithoutProjectName","ListFilesToolCall","ListFilesToolCallWithoutProjectName","Project","ProjectContext","ProjectRoadmap","RoadmapAgentParams","RoadmapCompletionParams","RoadmapCompletionToolCall","RoadmapPromptParams","RoadmapResponse","SearchKeywordParams","SearchKeywordParamsWithoutProjectName","SearchKeywordToolCall","SearchKeywordToolCallWithoutProjectName","SemanticSearchParams","SemanticSearchToolCall","SutraMemoryParams","SutraMemoryParams_CrossIndexing","SystemInfoParams","SystemInfo_CrossIndexing","TaskFilterResponse","TaskOperation","TaskOperation_CrossIndexing","TechnologyCorrection","TechnologyCorrectionResponse",]
+          ["AddTask","BaseCompletionParams","BasePromptParams","ChangeInstruction","CodeConnection","CodeManagerResponse","CodeStorage","CodeStorage_CrossIndexing","CompletionResponse_CrossIndexing","CompletionToolCall","CompletionToolCall_CrossIndexing","ConnectionDetail","ConnectionMatch","ConnectionMatchingResponse","ConnectionSplittingResponse","Contract","ContractField","CrossIndexingResponse","DatabaseParams","DatabaseToolCall","FileChange","ListFilesParams","ListFilesParamsWithoutProjectName","ListFilesToolCall","ListFilesToolCallWithoutProjectName","Project","ProjectContext","ProjectRoadmap","RoadmapAgentParams","RoadmapCompletionParams","RoadmapCompletionToolCall","RoadmapPromptParams","RoadmapResponse","SearchKeywordParams","SearchKeywordParamsWithoutProjectName","SearchKeywordToolCall","SearchKeywordToolCallWithoutProjectName","SemanticSearchParams","SemanticSearchToolCall","SutraMemoryParams","SutraMemoryParams_CrossIndexing","SystemInfoParams","SystemInfo_CrossIndexing","TaskFilterResponse","TaskOperation","TaskOperation_CrossIndexing","TechnologyCorrection","TechnologyCorrectionResponse",]
         ), enums=set(
           ["Agent","CodeStorageAction","CodeStorageAction_CrossIndexing","ContractRole","FileOperation","ImpactLevel","Status_CrossIndexing","TaskOperationAction","TaskOperationAction_CrossIndexing","TaskStatus","TechnologyType","ToolName",]
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -79,7 +79,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 49
+    # Generated classes 48
     # #########################################################################
 
     @property
@@ -165,10 +165,6 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def FileChange(self) -> "FileChangeViewer":
         return FileChangeViewer(self)
-
-    @property
-    def FileChanges(self) -> "FileChangesViewer":
-        return FileChangesViewer(self)
 
     @property
     def ListFilesParams(self) -> "ListFilesParamsViewer":
@@ -330,7 +326,7 @@ class CodeStorageActionAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.enum("CodeStorageAction")
-        self._values: typing.Set[str] = set([  "Add",  "Remove",  ])
+        self._values: typing.Set[str] = set([  "Add",  ])
         self._vals = CodeStorageActionValues(self._bldr, self._values)
 
     def type(self) -> baml_py.FieldType:
@@ -360,10 +356,6 @@ class CodeStorageActionValues:
     @property
     def Add(self) -> type_builder.EnumValueViewer:
         return type_builder.EnumValueViewer(self.__bldr.value("Add"))
-
-    @property
-    def Remove(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("Remove"))
 
 
 
@@ -414,7 +406,7 @@ class ContractRoleAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.enum("ContractRole")
-        self._values: typing.Set[str] = set([  "Provider",  "Consumer",  "Both",  ])
+        self._values: typing.Set[str] = set([  "Provider",  "Consumer",  ])
         self._vals = ContractRoleValues(self._bldr, self._values)
 
     def type(self) -> baml_py.FieldType:
@@ -448,10 +440,6 @@ class ContractRoleValues:
     @property
     def Consumer(self) -> type_builder.EnumValueViewer:
         return type_builder.EnumValueViewer(self.__bldr.value("Consumer"))
-
-    @property
-    def Both(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("Both"))
 
 
 
@@ -602,7 +590,7 @@ class TaskOperationActionAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.enum("TaskOperationAction")
-        self._values: typing.Set[str] = set([  "Add",  "Remove",  "Move",  ])
+        self._values: typing.Set[str] = set([  "Add",  "Move",  ])
         self._vals = TaskOperationActionValues(self._bldr, self._values)
 
     def type(self) -> baml_py.FieldType:
@@ -632,10 +620,6 @@ class TaskOperationActionValues:
     @property
     def Add(self) -> type_builder.EnumValueViewer:
         return type_builder.EnumValueViewer(self.__bldr.value("Add"))
-
-    @property
-    def Remove(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("Remove"))
 
     @property
     def Move(self) -> type_builder.EnumValueViewer:
@@ -868,7 +852,7 @@ class ToolNameValues:
 
 
 # #########################################################################
-# Generated classes 49
+# Generated classes 48
 # #########################################################################
 
 class AddTaskAst:
@@ -1914,53 +1898,6 @@ class FileChangeProperties:
 
 
 
-class FileChangesAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("FileChanges")
-        self._properties: typing.Set[str] = set([  "modified",  "added",  "deleted",  ])
-        self._props = FileChangesProperties(self._bldr, self._properties)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "FileChangesProperties":
-        return self._props
-
-
-class FileChangesViewer(FileChangesAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-
-
-
-class FileChangesProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
-
-
-
-    @property
-    def modified(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("modified"))
-
-    @property
-    def added(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("added"))
-
-    @property
-    def deleted(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("deleted"))
-
-
-
-
 class ListFilesParamsAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
@@ -2819,7 +2756,7 @@ class SutraMemoryParamsAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("SutraMemoryParams")
-        self._properties: typing.Set[str] = set([  "add_history",  "tasks",  "code",  "files",  ])
+        self._properties: typing.Set[str] = set([  "add_history",  "tasks",  "code",  ])
         self._props = SutraMemoryParamsProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -2858,10 +2795,6 @@ class SutraMemoryParamsProperties:
     @property
     def code(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("code"))
-
-    @property
-    def files(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("files"))
 
 
 
