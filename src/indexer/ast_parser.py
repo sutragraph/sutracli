@@ -129,7 +129,12 @@ class ASTParser:
         file_path = Path(file_path)
 
         # Create file ID first (needed for all cases)
-        file_id = zlib.crc32(str(file_path).encode()) & 0xFFFFFFFF
+        # Convert CRC32 to unsigned 32-bit integer to ensure positive values while preserving full range
+        crc_result = zlib.crc32(str(file_path).encode())
+        file_id = crc_result if crc_result >= 0 else crc_result + (2**32)
+
+        # Read file content once to preserve original formatting
+        file_content = read_file_content(file_path) or ""
 
         # Parse the file first
         ast_tree = self.parse_file(file_path)
@@ -141,7 +146,7 @@ class ASTParser:
                 "language": "unknown",
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": read_file_content(file_path) or "",
+                "content": file_content,
                 "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,
@@ -158,7 +163,7 @@ class ASTParser:
                 "language": "unknown",
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": read_file_content(file_path) or "",
+                "content": file_content,
                 "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported file type
@@ -175,7 +180,7 @@ class ASTParser:
                 "language": language,
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": ast_tree.root_node.text,
+                "content": file_content,
                 "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported - no extractor available
@@ -191,7 +196,7 @@ class ASTParser:
             "language": language,
             "id": file_id,
             "file_path": str(file_path),
-            "content": ast_tree.root_node.text,
+            "content": file_content,
             "content_hash": compute_file_hash(file_path) or "",
             "relationships": [],  # Initialize empty relationships list
             "unsupported": False,  # Mark as supported file type

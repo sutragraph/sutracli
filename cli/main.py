@@ -6,9 +6,9 @@ import os
 import sys
 from pathlib import Path
 
-from cli.setup import setup_baml_environment
 from loguru import logger
 
+from cli.setup import setup_baml_environment
 from src.utils.console import console
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -34,7 +34,6 @@ def main():
         handle_web_scrap_command,
         handle_web_search_command,
     )
-
     from src.utils.logging import setup_logging
 
     setup_baml_environment()
