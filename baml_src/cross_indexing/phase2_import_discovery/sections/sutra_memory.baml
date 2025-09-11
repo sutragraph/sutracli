@@ -49,30 +49,13 @@ Example 1: Executing task with retry approach
 ```json
 {
   "sutra_memory": {
-    "tasks": [
-      {
-        "action": "move",
-        "id": "2",
-        "from_status": "pending",
-        "to_status": "current",
-      }
-    ],
-    "add_history": "Used search_keyword with query='require\\\\s*\\\\(\\\\s*['\\\"]axios['\\\"]\\\\s*\\\\)' and regex=true - found 0 results in current iteration. Need to try alternative search patterns before completing this task."
-  }
-}
-```
-
-Example 2: Retry with different pattern in same task
-```json
-{
-  "sutra_memory": {
     "tasks": [],
-    "add_history": "Used search_keyword with query='import.*axios|axios.*=' and regex=true - found 5 results in 3 files: src/api/client.js, src/services/http.js, src/utils/request.js in current iteration. Task execution successful after pattern adjustment."
+    "add_history": "Used search_keyword with query='require.*axios' and regex=true, case_sensitive=false - found 0 results in current iteration. Need to try alternative search patterns before completing this task."
   }
 }
 ```
 
-Example 3: Task completion after successful retry
+Example 2: Task completion after successful retry
 ```json
 {
   "sutra_memory": {
@@ -85,29 +68,23 @@ Example 3: Task completion after successful retry
       },
       {
         "action": "add",
-        "id": "10",
+        "id": "3",
         "to_status": "pending",
         "description": "Use database tool to analyze axios usage in src/api/client.js"
       },
       {
         "action": "add",
-        "id": "11",
+        "id": "4",
         "to_status": "pending",
         "description": "Use database tool to analyze axios usage in src/services/http.js"
-      },
-      {
-        "action": "add",
-        "id": "12",
-        "to_status": "pending",
-        "description": "Use database tool to analyze axios usage in src/utils/request.js"
       }
     ],
-    "add_history": "After 2 search attempts, used search_keyword with query='import.*axios|axios.*=' and regex=true - found 5 matches in 3 files in current iteration. Created 3 individual database tasks for subsequent implementation analysis."
+    "add_history": "After 2 search attempts, used search_keyword with query='import.*axios|axios.*' and regex=true, case_sensitive=false - found 5 matches in 2 files in current iteration. Created 2 individual database tasks for subsequent implementation analysis."
   }
 }
 ```
 
-Example 4: Task completion after exhaustive search attempts
+Example 3: Task completion after exhaustive search attempts
 ```json
 {
   "sutra_memory": {
@@ -125,41 +102,12 @@ Example 4: Task completion after exhaustive search attempts
         "to_status": "current",
       }
     ],
-    "add_history": "Used search_keyword with 3 different queries in current iteration: query='require.*express' found 0 results, query='import.*express' found 0 results, query='express.*Router' found 0 results. No express imports found after exhaustive search. Moving to next package analysis task."
+    "add_history": "Used search_keyword with 2 different queries in current iteration: query='require.*express|import.*express' found 0 results, then query='express' found 0 results. No express imports found after 2 search attempts. Moving to next package analysis task."
   }
 }
 ```
 
-Example 5: Multiple import patterns found after retry
-```json
-{
-  "sutra_memory": {
-    "tasks": [
-      {
-        "action": "move",
-        "id": "5",
-        "from_status": "pending",
-        "to_status": "current",
-      },
-      {
-        "action": "move",
-        "id": "5",
-        "from_status": "current",
-        "to_status": "completed",
-      },
-      {
-        "action": "add",
-        "id": "13",
-        "to_status": "pending",
-        "description": "Use search_keyword to find express usage patterns across 8 files: (app|router)\\.(get|post|put|delete)\\("
-      }
-    ],
-    "add_history": "Used search_keyword with query='require.*express' and regex=true - found 2 results, then used query='import.*Router.*express' and regex=true - found 6 more matches in current iteration. Total 8 files with express imports discovered. Created search_keyword task for implementation analysis."
-  }
-}
-```
-
-Example 6: Built-in pattern task creation (always required)
+Example 4: Built-in pattern task creation (always required)
 ```json
 {
   "sutra_memory": {
@@ -168,13 +116,13 @@ Example 6: Built-in pattern task creation (always required)
         "action": "add",
         "id": "14",
         "to_status": "pending",
-        "description": "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch\\\\s*\\\\(|new\\\\s+XMLHttpRequest|new\\\\s+WebSocket\\\\s*\\\\(' to find native JavaScript connection patterns"
+        "description": "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch.*\(|new.*XMLHttpRequest|new.*WebSocket.*\(' and regex=true, case_sensitive=false to find native JavaScript connection patterns"
       },
       {
         "action": "add",
         "id": "15",
         "to_status": "pending",
-        "description": "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\\\\.|http\\\\.client|socket\\\\.' to find Python built-in connection patterns"
+        "description": "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\.|http\.client|socket\.' to find Python built-in connection patterns"
       }
     ],
     "add_history": "Created built-in pattern tasks for implementation discovery covering JavaScript and Python native connection patterns. These tasks will be executed regardless of package findings."
@@ -182,7 +130,7 @@ Example 6: Built-in pattern task creation (always required)
 }
 ```
 
-Example 7: Task completion with new task creation based on findings
+Example 5: Task completion with new task creation based on findings
 ```json
 {
   "sutra_memory": {
@@ -211,7 +159,7 @@ Example 7: Task completion with new task creation based on findings
 }
 ```
 
-Example 8: Task completion scenario
+Example 6: Task completion scenario
 ```json
 {
   "sutra_memory": {
@@ -236,9 +184,9 @@ In the thinking field, assess what import information you already have and what 
 2. Task Execution Protocol
 - Execute pending tasks from package discovery one by one
 - Move tasks from pending to current when starting execution
-- Try 2-3 different search patterns before marking tasks as completed
-- If initial search pattern fails, try alternative patterns in same iteration
-- Only mark task as completed after exhausting reasonable search variations
+- Try 2 different search patterns maximum before marking tasks as completed
+- If initial search pattern fails, try simple keyword search in same iteration
+- Only mark task as completed after 2 pattern attempts maximum
 - Use search_keyword with patterns provided in package discovery tasks
 - CRITICAL: After seeing tool results when marking a task as completed, if you found meaningful import information, create new implementation tasks for the next phase
 - Create implementation discovery tasks based on findings
@@ -266,7 +214,7 @@ In the thinking field, assess what import information you already have and what 
 - Note number of files found for each package in current iteration
 - Include complete file paths when relevant from current tool results
 - Track comprehensive import information for implementation discovery
-- Example: "Used search_keyword with query='require\\\\s*\\\\(axios\\\\)' and regex=true - found 0 results, tried query='import.*axios' and regex=true - found 3 matches in current iteration"
+- Example: "Used search_keyword with query='require.*axios|import.*axios' and regex=true - found 0 results, tried query='axios' and regex=false - found 3 matches in current iteration"
 - Example: "Used search_keyword with query='express.*Router' and regex=true in current iteration - discovered 5 import statements in 3 files"
 - Do not mention specific task IDs in history - focus on actions and discoveries made in current iteration
 
@@ -281,17 +229,16 @@ In the thinking field, assess what import information you already have and what 
 7. Previous Task Execution Strategy
 - Process pending tasks from previous analysis systematically
 - Use exact search patterns provided in previous analysis tasks as starting point
-- If initial pattern fails, try 2-3 alternative patterns before giving up
+- If initial pattern fails, try simple keyword search (just package name) before giving up
 - Handle different import syntaxes appropriately for each language
-- Only mark tasks complete after exhaustive pattern attempts (2-3 tries minimum)
+- Only mark tasks complete after 2 pattern attempts maximum
 - Create comprehensive implementation analysis tasks based on findings
 - ALWAYS create built-in pattern tasks for subsequent analysis regardless of package findings
 
 8. Retry Pattern Guidelines
 - First attempt: Use exact pattern from package discovery task
-- Second attempt: Try broader or alternative syntax patterns
-- Third attempt: Try language-specific variations or simplified patterns
+- Second attempt: Try simple keyword search (just the package name) if first attempt found 0 results
+- After 2 attempts with zero results: Mark complete and move to next task
 - Document all attempts in history with specific patterns used
-- Only complete task after reasonable exhaustive search
-- Example retry sequence: 'require\\\\(axios\\\\)' → 'import.*axios' → 'axios.*='
+- Example retry sequence: 'require.*axios|import.*axios' → 'axios'
 "#

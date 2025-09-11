@@ -24,25 +24,25 @@ Example 2: Python - Requests usage analysis in specific files
 SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions)
 
 Example 1: JavaScript - Express usage across many files
-- search_keyword("(app|router)\\.(get|post|put|delete|patch)\\s*\\(", regex=true, after_lines=2)
+- search_keyword("(app|router)\.(get|post|put|delete|patch)", regex=true, case_sensitive=false, after_lines=2)
 - Purpose: Find express route definitions across multiple files efficiently
 - Look for: Route definitions with actual endpoint paths
 - Find: All route definitions found with real endpoints
 
 Example 2: Python - Flask usage across many files
-- search_keyword("@(app|bp)\\.route\\s*\\(\\s*['\"][^'\"]*['\"]", regex=true, after_lines=2)
+- search_keyword("@app.route|@bp.route", regex=true, case_sensitive=false, after_lines=2)
 - Purpose: Find Flask route definitions across multiple files efficiently
 - Look for: Route decorators with actual endpoint paths
 - Find: All route definitions found with real endpoints
 
 Example 3: Multi-language - Wrapper function usage analysis
-- search_keyword("(makeApiCall|apiClient\\.|sendRequest)\\s*\\(", regex=true, after_lines=3)
+- search_keyword("makeApiCall|apiClient|sendRequest", regex=true, case_sensitive=false, after_lines=3)
 - Purpose: Find all usage sites of wrapper functions across the codebase
 - Look for: Wrapper function calls with actual parameters
 - Find: Wrapper function calls with real endpoints and data
 
 Example 4: HTTP calls with improved quote handling
-- search_keyword("axios\\.(get|post|put|delete)\\s*\\(\\s*['\"][^'\"]*['\"]", regex=true, after_lines=2)
+- search_keyword("axios\.(get|post|put|delete)", regex=true, case_sensitive=false, after_lines=2)
 - Purpose: Find axios HTTP calls with actual endpoint URLs
 - Handles both single and double quotes in endpoint strings
 - Look for: HTTP method calls with real URLs and parameters
@@ -206,7 +206,7 @@ VARIABLE PARAMETER DETECTION PATTERNS:
 - Socket Operations: `eventName`, `event`, `channel` → Search for wrapper calls
 - Database Operations: `tableName`, `collection`, `query` → Search for wrapper calls
 
-WRAPPER FUNCTION DEFINITION CHECK EXAMPLES
+## WRAPPER FUNCTION DEFINITION CHECK EXAMPLES
 
 Example: Python - Socket wrapper function pattern (similar to Socket.IO)
 ```python
@@ -229,10 +229,10 @@ def socket_handler(socketio):
 ```
 
 THINKING: "Found `socket_handler(socketio)` call in main.py - this is in two different files. The call passes connection object to wrapper function. Must use search_keyword to find actual function definition where io is used."
-IMMEDIATE ACTION: CREATE TASK: "Use search_keyword to find socket_handler function definition: def socket_handler\\("
+IMMEDIATE ACTION: CREATE TASK: "Use search_keyword to find socket_handler function definition: def socket_handler\("
 EXPECTED RESULT: Find the actual function definition in handlers.py where socketio connection object is used for real socket operations.
 
-WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - EXAMPLES
+## WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - EXAMPLES
 
 Example 1: Queue operation with variable parameter - CREATE TASK IMMEDIATELY
 When you find connection code like:
@@ -252,7 +252,7 @@ IMMEDIATE ACTION:
         "action": "add",
         "id": "21",
         "to_status": "current",
-        "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\\s*\\(\\s*['\"][^'\"]*['\"]"
+        "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\("
       }
     ]
   }
@@ -275,14 +275,14 @@ IMMEDIATE ACTION:
         "action": "add",
         "id": "22",
         "to_status": "current",
-        "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\\s*\\(\\s*['\"][^'\"]*['\"]"
+        "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\("
       }
     ]
   }
 }
 EXPECTED RESULT: Find calls like `makeApiCall('/api/users', 'GET')`, `makeApiCall('/admin/data', 'POST', userData)`
 
-Example 2: Message queue wrapper function with dynamic topics - CREATE TASK
+Example 3: Message queue wrapper function with dynamic topics - CREATE TASK
 When you find a queue wrapper function like:
 ```python
 def publish_message(topic, message_data):
@@ -296,14 +296,14 @@ CREATE TASK: {
         "action": "add",
         "id": "22",
         "to_status": "current",
-        "description": "Use search_keyword to find all publish_message( wrapper function usage: publish_message\\s*\\(\\s*['\"][^'\"]*['\"]"
+        "description": "Use search_keyword to find all publish_message( wrapper function usage: publish_message\("
       }
     ]
   }
 }
 Reason: Need to find all actual usage sites to collect the real topics and message data being published
 
-Example 3: Socket wrapper function with dynamic events - CREATE TASK
+Example 4: Socket wrapper function with dynamic events - CREATE TASK
 When you find a socket wrapper function like:
 ```javascript
 function emitEvent(eventName, eventData) {
@@ -318,14 +318,14 @@ CREATE TASK: {
         "action": "add",
         "id": "23",
         "to_status": "current",
-        "description": "Use search_keyword to find all emitEvent( wrapper function calls: emitEvent\\s*\\(\\s*['\"][^'\"]*['\"]"
+        "description": "Use search_keyword to find all emitEvent( wrapper function calls: emitEvent\("
       }
     ]
   }
 }
 Reason: Need to find all usage sites to collect the actual event names and data being emitted
 
-Example 4: Custom client class with dynamic communication methods - CREATE TASK
+Example 5: Custom client class with dynamic communication methods - CREATE TASK
 When you find a custom client class like:
 ```python
 class ServiceClient:
@@ -340,14 +340,14 @@ CREATE TASK: {
         "action": "add",
         "id": "24",
         "to_status": "current",
-        "description": "Use search_keyword to find all serviceClient usage patterns: serviceClient\\.(send_request|subscribe_to_events)\\s*\\("
+        "description": "Use search_keyword to find all serviceClient usage patterns: serviceClient\("
       }
     ]
   }
 }
 Reason: Need to find all method calls on this custom client across the project with real service communication parameters
 
-WHEN NOT TO CREATE TASKS - DECISION MAKING
+## WHEN NOT TO CREATE TASKS - DECISION MAKING
 
 Example 1: Already found actual connection usage with hardcoded values - DON'T CREATE TASK
 When you find direct connection calls with real parameters:
@@ -438,8 +438,8 @@ When you find any code during analysis, follow this thinking process:
    - If wrapper function with hardcoded values → DON'T CREATE TASK (collect this code)
 
 4. THINK EXPLICITLY: Always include your reasoning with specific examples
-     - "THINKING: Found queue operation `sendToQueue(queueName, message)` with variable 'queueName'. This is wrapper function implementation. Need to search for actual calls with real queue names."
-     - "THINKING: Found HTTP call `axios.get(url, config)` with variable 'url'. This is wrapper function usage. Need to search for actual calls with real endpoints."
+     - "THINKING: Found queue operation `sendToQueue(queueName, message)` with variable 'queueName'. This is wrapper function implementation. Need to search for actual calls with real queue names. so, i will create a task to find actual calls with real queue names."
+     - "THINKING: Found HTTP call `axios.get(url, config)` with variable 'url'. This is wrapper function usage. Need to search for actual calls with real endpoints. so, i will create a task to find actual calls with real endpoints."
      - "THINKING: Found direct queue call `sendToQueue('user-notifications', message)` with hardcoded queue name. This IS the actual connection code to collect."
      - "THINKING: Found direct HTTP call `axios.get('/api/users')` with hardcoded endpoint. This IS the actual connection code to collect."
 
@@ -458,7 +458,7 @@ When you find any code during analysis, follow this thinking process:
    2. IDENTIFY: "This is a wrapper function implementation, not the actual usage site"
    3. READ FILE: Use database tool to read complete message-service.js file
    4. FIND WRAPPER: Look for function name containing this code (e.g., `publishMessage`, `sendNotification`, etc.)
-   5. CREATE TASK: "Use search_keyword to find [wrapperFunctionName] calls with actual queue names: [wrapperFunctionName]\\("
+   5. CREATE TASK: "Use search_keyword to find [wrapperFunctionName] calls with actual queue names: [wrapperFunctionName]\("
    6. EXPECTED RESULTS: Find calls like:
       - `publishMessage('user-notifications', userData)`
       - `publishMessage('email-queue', emailData)`

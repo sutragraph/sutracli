@@ -71,7 +71,6 @@ Examples:
 - API endpoints and route handlers (Express routes, Flask routes, etc.)
 - WebSocket server endpoints that accept connections
 - Message queue consumers that receive messages
-- Server configurations that listen for connections
 
 #### OUTGOING CONNECTIONS
 Connections where THIS service connects TO other services
@@ -168,10 +167,9 @@ SOLUTION: Extend to lines 42-47 to capture complete message publishing:
 ```
 
 EXTRACTION STRATEGY FOR INCOMPLETE SNIPPETS:
-- For HTTP calls: Extend until you capture method, complete URL/endpoint, and request configuration
+- For HTTP calls: Extend until you capture method, complete URL/endpoint
 - For message queues: Extend until you capture exchange/queue name, routing key, and message payload structure
 - For WebSocket: Extend until you capture event type, recipient identification, and message content
-- For database calls: Extend until you capture complete query, parameters, and connection details
 - General rule: Add 3-8 additional lines based on code complexity and nesting level
 
 INTELLIGENT LINE EXTENSION GUIDELINES:
@@ -894,6 +892,16 @@ src/config/settings.js:8: const API_BASE_URL = process.env.API_BASE_URL
 src/config/settings.js:12: const QUEUE_CONFIG = { host: 'localhost', port: 5672 }
 ```
 Why Excluded: Configuration definitions without actual connection usage.
+
+### EXCLUDE 4: Connection Placeholders
+Connection Data That Should Be Excluded:
+```
+src/placeholders/connection.js:10: const dbConnection = createDbConnection(config)
+src/placeholders/connection.js:15: const apiClient = createApiClient(baseUrl)
+```
+Why Excluded: These are placeholders or abstractions without concrete connection details.
+
+## DATA INCLUSION RULES - MUST BE INCLUDED
 
 ### INCLUDE: Only Actual Connection Usage
 Connection Data That SHOULD Be Included:

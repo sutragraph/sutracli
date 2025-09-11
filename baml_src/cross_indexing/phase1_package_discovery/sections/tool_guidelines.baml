@@ -43,18 +43,18 @@ DATABASE TOOL
 Look for package configuration files that define dependencies and packages. Here are common examples by language:
 
 Common Package Files by Language (Examples):
-- JavaScript/Node.js: package.json, yarn.lock, package-lock.json, pnpm-lock.yaml
-- Python: requirements.txt, setup.py, pyproject.toml, Pipfile, Pipfile.lock, setup.cfg
+- JavaScript/Node.js: package.json
+- Python: requirements.txt, setup.py, pyproject.toml, Pipfile, setup.cfg
 - Java: pom.xml, build.gradle, gradle.properties, build.gradle.kts
-- Go: go.mod, go.sum, vendor/modules.txt
-- Ruby: Gemfile, Gemfile.lock, *.gemspec
-- PHP: composer.json, composer.lock
+- Go: go.mod
+- Ruby: Gemfile, *.gemspec
+- PHP: composer.json
 - C#/.NET: *.csproj, packages.config, Directory.Build.props, Directory.Packages.props
-- Rust: Cargo.toml, Cargo.lock
-- Swift: Package.swift, Package.resolved
+- Rust: Cargo.toml
+- Swift: Package.swift
 - Kotlin: build.gradle.kts, pom.xml
 
-Note: These are examples of common package configuration files. Different projects may use different build systems, package managers, or custom configuration files. Look for any file that contains dependency declarations or package management information.
+Note: These are examples of common package configuration files that contain dependency declarations. Different projects may use different build systems, package managers, or custom configuration files. Look for any file that contains dependency declarations or package management information.
 
 3. CONNECTION PACKAGE IDENTIFICATION
 
@@ -90,13 +90,7 @@ Message Queue/Broker Libraries (Examples):
 - Java: spring-kafka, spring-amqp, activemq
 - Go: sarama, amqp091-go
 
-Database Connection Libraries (Examples):
-- JavaScript: mongoose, sequelize, typeorm, prisma
-- Python: sqlalchemy, django-orm, peewee, pymongo
-- Java: hibernate, mybatis, spring-data
-- Go: gorm, sqlx, mongo-driver
-
-Note: These are examples of common packages. The actual packages in any codebase may vary widely. Look for any package that facilitates communication, data transfer, or network connections between services, databases, or external systems.
+Note: These are examples of common packages. The actual packages in any codebase may vary widely. Look for any package that facilitates communication, data transfer, or network connections between services, or external systems.
 
 4. TASK CREATION GUIDELINES
 
@@ -104,12 +98,13 @@ Task Format Requirements:
 - Include specific search patterns for import discovery
 - Provide clear descriptions of what to search for
 - Add examples of expected import statements
+- Use case_sensitive=false for better coverage
 
 Search Pattern Examples:
-- Node.js: require\\('package'\\)|import.*from.*'package'|import.*package|package
-- Python: import package|from package import
-- Java: import package\\.|@Import.*package
-- Go: import "package"|import package
+- Node.js: require.*package|import.*package
+- Python: import.*package|from.*package
+- Java: import.*package|@.*package
+- Go: import.*package
 
 5. COMPLETION CRITERIA
 

@@ -22,7 +22,7 @@ try_baml_cli() {
     # Try baml-cli directly
     if command -v baml-cli >/dev/null 2>&1; then
         echo "ℹ️  Found baml-cli in PATH"
-        if baml-cli generate --from "$BAML_SRC_DIR" --to "$BAML_CLIENT_DIR" 2>/dev/null; then
+        if baml-cli generate 2>/dev/null; then
             echo "✅ BAML client generated successfully with baml-cli"
             return 0
         else
@@ -30,46 +30,8 @@ try_baml_cli() {
         fi
     fi
 
-    # Try python -m baml_cli
-    if python -m baml_cli --help >/dev/null 2>&1; then
-        echo "ℹ️  Found baml_cli Python module"
-        if python -m baml_cli generate --from "$BAML_SRC_DIR" --to "$BAML_CLIENT_DIR" 2>/dev/null; then
-            echo "✅ BAML client generated successfully with python -m baml_cli"
-            return 0
-        else
-            echo "⚠️  python -m baml_cli generate failed (likely version compatibility issue)"
-        fi
-    fi
-
     return 1
 }
-
-# Function to check if client files are up-to-date
-check_client_uptodate() {
-    if [ ! -d "$BAML_CLIENT_DIR" ]; then
-        return 1
-    fi
-
-    # Check if any .baml files are newer than the client directory
-    if find "$BAML_SRC_DIR" -name "*.baml" -newer "$BAML_CLIENT_DIR" | grep -q .; then
-        return 1
-    fi
-
-    # Check if baml.toml is newer than the client directory
-    if [ -f "$BAML_SRC_DIR/baml.toml" ] && [ "$BAML_SRC_DIR/baml.toml" -nt "$BAML_CLIENT_DIR" ]; then
-        return 1
-    fi
-
-    return 0
-}
-
-# Main logic
-if check_client_uptodate; then
-    echo "✅ BAML client files are up-to-date"
-    exit 0
-fi
-
-echo "ℹ️  BAML source files have been modified, regenerating client..."
 
 # Try to generate with baml-cli
 if try_baml_cli; then
@@ -84,11 +46,10 @@ echo ""
 echo "📋 Manual options:"
 echo "   1. Install a compatible baml-cli version:"
 echo "      pip install baml-cli"
-echo "      baml-cli generate --from $BAML_SRC_DIR --to $BAML_CLIENT_DIR"
+echo "      baml-cli generate"
 echo ""
 echo "   2. Or use the pre-generated client files (if available)"
 echo ""
-echo "   3. Or skip BAML client generation for now (not recommended for production)"
 
 # Don't fail the commit if generation fails - just warn
 echo ""

@@ -30,27 +30,27 @@ RULES
    - Media Streaming Libraries: Packages that handle media streaming protocols like WebRTC
    - Other Communication Libraries: Any other packages related to communication but not covered above
 
-6. EXCLUSION CRITERIA:
-   - Database connection libraries for data persistence (not communication)
-   - File system and local storage libraries
-   - Development tools and testing frameworks
-   - Files Like package-lock.json, yarn.lock, Pipfile.lock, etc. that are not package configuration files
+6. MANDATORY EXCLUSIONS - NEVER include these:
+    - Database connection libraries for data persistence (not communication)
+    - File system and local storage libraries
+    - Development tools and testing frameworks
+    - Files Like package-lock.json, yarn.lock, Pipfile.lock, etc. that are not package configuration files
+    - Database persistence libraries (e.g., ORMs, database drivers for data storage)
+    - Local file system and storage libraries
+    - NON-EXISTENT PACKAGES: Never search for patterns from packages that don't exist in the project
 
 7. TASK CREATION FORMAT RULES:
    - Include complete tool selection guidance (search_keyword with specific patterns)
    - Provide exact search patterns with proper regex escaping
    - Add comprehensive context about package purpose and expected import variations
    - Include examples of expected import statements for the package
-   - Specify tool parameters (regex=true, after_lines, etc.) when applicable
+   - Specify tool parameters (regex=true, after_lines, case_sensitive=false, etc.) when applicable
 
 8. ADAPTIVE STRATEGY RULES:
    - Never search for non-existent packages
    - Create comprehensive task list based on actual findings
 
-9. MANDATORY EXCLUSIONS - NEVER include these:
-    - Database persistence libraries (e.g., ORMs, database drivers for data storage)
-    - Local file system and storage libraries
-    - NON-EXISTENT PACKAGES: Never search for patterns from packages that don't exist in the project
+9. UNKOWN FILE PATHS: When not sure about file paths, use list_files tool to explore project structure and find package configuration files. Do NOT assume file paths without verification.
 
 10. FILE PATH RULE: All file paths must be relative to the project root directory. When storing package findings in Sutra Memory, always use relative paths for consistency.
 
@@ -64,15 +64,13 @@ RULES
 
 14. COMPLETION RULE: When package discovery is complete, you MUST use the `attempt_completion` tool to signal completion after creating tasks list from package analysis.
 
-15. UNKOWN FILE PATHS: When not sure about file paths, use list_files tool to explore project structure and find package configuration files. Do NOT assume file paths without verification.
-
-16. VERIFIED FILE EXISTENCE RULE: Create tasks ONLY for package files that are explicitly present in the list_files tool results. Do NOT create tasks for files that are not found in the actual file listing. For example:
+15. VERIFIED FILE EXISTENCE RULE: Create tasks ONLY for package files that are explicitly present in the list_files tool results. Do NOT create tasks for files that are not found in the actual file listing. For example:
    - If package.json is found in list_files results, then create a task mentioning "package.json file open using database tool"
    - If pom.xml is NOT found in list_files results, then do NOT create any task for Maven packages
    - Always verify file existence in the list_files output before creating any task
    - Task creation must be based on actual file presence, not assumptions about what package files might exist
 
-17. JSON FORMAT SPECIFICATION:
+16. JSON FORMAT SPECIFICATION:
     - ALL responses MUST follow the exact JSON structure
     - Complete response structure:
     ```json

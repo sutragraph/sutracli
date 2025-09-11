@@ -82,10 +82,7 @@ If you need to manually regenerate BAML client files:
 ./scripts/generate-baml.sh
 
 # Using baml-cli directly (if compatible version available)
-baml-cli generate --from baml_src --to baml_client
-
-# Using Python module
-python -m baml_cli generate --from baml_src --to baml_client
+baml-cli generate
 ```
 
 ### Version Compatibility Notes
