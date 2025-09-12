@@ -4,7 +4,7 @@ build-backend="setuptools.build_meta"
 
 [project]
 name="sutrakit"
-version="0.1.14"
+version="0.1.15"
 description="A comprehensive AI-powered code analysis and automation CLI tool"
 readme="README.md"
 license = {text="MIT"}
@@ -47,7 +47,7 @@ dependencies = [
     "setuptools==80.9.0",
     "prompt_toolkit==3.0.48",
     "rich==14.1.0",
-    "baml-py==0.206.0",
+    "baml-py==0.207.0",
 ]
 
 [project.urls]
