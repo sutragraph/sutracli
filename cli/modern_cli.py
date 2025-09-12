@@ -413,6 +413,9 @@ class ModernSutraKit:
 
         # Reload the configuration to update the in-memory instance
         reload_config()
+        from cli.setup import setup_baml_environment
+
+        setup_baml_environment()
 
     def select_agent(self) -> Agent:
         """Interactive agent selection with arrow keys."""

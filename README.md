@@ -223,6 +223,12 @@ If you prefer to set up manually:
    ./scripts/generate-baml.sh
    ```
 
+4. **Run Setup:**
+
+   ```bash
+   sutrakit-setup
+   ```
+
 ### Pre-commit Hooks
 
 The project uses pre-commit hooks to ensure code quality and keep BAML client files up-to-date:

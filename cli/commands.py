@@ -8,11 +8,9 @@ from loguru import logger
 from rich.panel import Panel
 
 from src.agents_new import Agent
-from src.config import config
 from src.embeddings import get_vector_store
-from src.graph import ASTToSqliteConverter, SQLiteConnection
+from src.graph import SQLiteConnection
 from src.services.agent_service_new import AgentService
-from src.services.cross_indexing.core.cross_index_system import CrossIndexSystem
 from src.services.project_manager import ProjectManager
 from src.tools.tool_web_scrap.action import WebScraper
 from src.tools.tool_web_search.action import (
@@ -367,6 +365,8 @@ def handle_cross_indexing_command(args) -> None:
         print(
             f"🔄 Initializing cross-indexing system with incremental indexing for project: {project_name}"
         )
+        from src.services.cross_indexing.core.cross_index_system import CrossIndexSystem
+
         cross_index_system = CrossIndexSystem(
             project_manager, project_name=project_name
         )

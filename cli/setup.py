@@ -323,11 +323,9 @@ def setup_baml_environment():
         # Set environment variables
         env_mapping = ENV_VAR_MAPPING[provider]
         for env_var, config_key in env_mapping.items():
-            # Only set if not already set and config value exists
-            if env_var not in os.environ:
-                value = getattr(provider_config, config_key, None)
-                if value:
-                    os.environ[env_var] = str(value)
+            value = getattr(provider_config, config_key, None)
+            if value:
+                os.environ[env_var] = str(value)
 
         # Check Vertex AI authentication if using vertex_ai provider
         if provider == "vertex_ai":

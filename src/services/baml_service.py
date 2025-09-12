@@ -10,9 +10,9 @@ import time
 from baml_py import Collector
 from loguru import logger
 
-from config import config
 from config.settings import (
     get_available_providers,
+    get_config,
     get_provider_mapping,
     is_provider_supported,
 )
@@ -31,17 +31,14 @@ class BAMLService:
 
     def __init__(self):
         """Initialize BAML service."""
-        self.provider = config.llm.provider.lower()
+        config_obj = get_config(force_reload=True)
+        self.provider = config_obj.llm.provider.lower()
+
         self._validate_provider()
 
-        # Import BAML client
-        try:
-            from baml_client.sync_client import b as baml
+        from baml_client.sync_client import b as baml
 
-            self.baml = baml
-        except ImportError as e:
-            logger.error(f"Failed to import BAML client: {e}")
-            raise ImportError("BAML client is required for BAMLService") from e
+        self.baml = baml
 
     def _validate_provider(self):
         """Validate that the configured provider is supported."""

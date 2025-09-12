@@ -56,7 +56,7 @@ PROVIDER_INFO = [
     {
         "name": "Anthropic",
         "key": "anthropic",
-        "description": "Claude models (claude-3.5-sonnet, etc.)",
+        "description": "Claude models",
     },
     {
         "name": "AWS Bedrock",
@@ -387,10 +387,10 @@ class Config:
 _config_instance = None
 
 
-def get_config() -> Config:
+def get_config(force_reload: bool = False) -> Config:
     """Get the global configuration instance."""
     global _config_instance
-    if _config_instance is None:
+    if _config_instance is None or force_reload:
         _config_instance = Config()
     return _config_instance
 
@@ -399,8 +399,8 @@ def reload_config() -> None:
     """Reload the configuration by resetting the global instance."""
     global _config_instance
     _config_instance = None
-    # Force immediate reload
-    get_config()
+    # Force immediate reload with fresh instance
+    get_config(force_reload=True)
 
 
 # Create a lazy config object
