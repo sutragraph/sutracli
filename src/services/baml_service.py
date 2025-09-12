@@ -144,10 +144,14 @@ class BAMLService:
                     logger.debug("=" * 80)
 
                 # Extract actual token usage from BAML collector
-                actual_input_tokens = getattr(collector.last.usage, "input_tokens", 0)
-                actual_output_tokens = getattr(collector.last.usage, "output_tokens", 0)
-                cached_input_tokens = getattr(
-                    collector.last.usage, "cached_input_tokens", 0
+                actual_input_tokens = (
+                    getattr(collector.last.usage, "input_tokens", None) or 0
+                )
+                actual_output_tokens = (
+                    getattr(collector.last.usage, "output_tokens", None) or 0
+                )
+                cached_input_tokens = (
+                    getattr(collector.last.usage, "cached_input_tokens", None) or 0
                 )
 
                 # Track token usage
