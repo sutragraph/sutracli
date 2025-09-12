@@ -118,11 +118,8 @@ Here's a partial view of the config file (focusing on the LLM section for brevit
 {
   ...
   "llm": {
-    "provider": "aws",
-    "llama_model_id": "meta/llama-3.1-8b-instruct",
-    "claude_model": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-    "gemini_model": "gemini-1.5-flash",
-    "aws": {
+    "provider": "aws_bedrock|anthropic|google_ai|vertex_ai|azure_openai|openai",
+    "aws_bedrock": {
       "access_key_id": "YOUR_ACCESS_KEY",
       "secret_access_key": "YOUR_SECRET_KEY",
       "region": "us-east-2",
@@ -132,12 +129,24 @@ Here's a partial view of the config file (focusing on the LLM section for brevit
       "api_key": "YOUR_API_KEY",
       "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0"
     },
-    "gcp": {
+    "google_ai": {
       "api_key": "YOUR_API_KEY",
-      "project_id": "YOUR_PROJECT_ID",
-      "location": "us-central1",
-      "llm_endpoint": "https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/endpoints/openapi/chat/completions"
+      "model_id": "gemini-2.5-pro",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta"
     },
+    "vertex_ai": {
+      "location": "global",
+      "model_id": "gemini-1.5-flash",
+    },
+    "azure_openai": {
+      "api_key": "YOUR_API_KEY",
+      "base_url": "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-id",
+      "api_version": "2025-01-01-preview"
+    },
+    "openai": {
+      "api_key": "YOUR_API_KEY",
+      "model_id": "gpt-4o"
+    }
   }
   ...
 }
@@ -145,9 +154,9 @@ Here's a partial view of the config file (focusing on the LLM section for brevit
 
 ### Example: Changing the LLM Provider
 
-The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) and configure credentials. By default, it's set to `"aws"`. To change it:
+The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) and configure credentials. By default, it's set to `"aws_bedrocks"`. To change it:
 
-1. Update `"provider"` to one of: `"aws"`, `"anthropic"`, `"gcp"`, or `"superllm"`.
+1. Update `"provider"` to one of: `"aws_bedrock"`, `"anthropic"`, `"google_ai"`, `"vertex_ai"`, `"azure_openai"`, or `"openai"`.
 2. Fill in the corresponding subsection with your API keys or credentials (leave others blank if unused).
 3. Optionally, adjust model IDs for specific LLMs.
 
@@ -156,16 +165,15 @@ The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) a
 ```json
 "llm": {
   "provider": "anthropic",
-  "llama_model_id": "meta/llama-3.1-8b-instruct",
-  "claude_model": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-  "gemini_model": "gemini-1.5-flash",
-  "aws": { /* Leave as-is or blank */ },
+  "aws_bedrock": { /* Leave as-is or blank */ },
   "anthropic": {
-    "api_key": "sk-ant-your-anthropic-api-key-here",
+    "api_key": "YOUR_API_KEY",
     "model_id": "claude-3-5-sonnet-20240620"
   },
-  "gcp": { /* Leave as-is or blank */ },
-  "superllm": { /* Leave as-is or blank */ }
+  "google_ai": { /* Leave as-is or blank */ },
+  "vertex_ai": { /* Leave as-is or blank */ },
+  "azure_openai": { /* Leave as-is or blank */ },
+  "openai": { /* Leave as-is or blank */ }
 }
 ```
 
