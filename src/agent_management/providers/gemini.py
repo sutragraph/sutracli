@@ -83,7 +83,7 @@ class GeminiProvider:
 
             # Build the command to execute with properly formatted prompt
             formatted_prompt = self._format_prompt_for_command(prompt)
-            cmd = f"gemini -p {formatted_prompt}"
+            cmd = f"gemini -i {formatted_prompt}"
 
             # Execute the command in the new terminal session as a long-running process
             # This allows the user to see the agent working in real-time in a separate terminal
