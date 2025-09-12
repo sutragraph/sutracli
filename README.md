@@ -72,6 +72,7 @@ Sutrakit is an orchestrator for AI agents and services, focused on multi-project
 
   - Spawns AI sub-agents for parallel project updates.
   - Handles dependencies seamlessly.
+  - Note: Before spawning sub-agents, set up and authenticate **rovodev** or **gemini CLI** tools (currently supported providers). Install them via their respective docs (e.g., pip install rovodev or Google Cloud SDK for Gemini) and ensure auth (API keys, tokens) is configured to avoid runtime issues.
 
 - **Cross-Indexing Service**:
 
