@@ -76,7 +76,7 @@ After installation, configure your API keys in `~/.sutra/config/system.json`:
     "gcp": {
       "api_key": "your-gcp-api-key",
       "project_id": "your-project-id",
-      "location": "us-central1",
+      "location": "global",
       "model": "gemini-1.5-flash"
     }
   },

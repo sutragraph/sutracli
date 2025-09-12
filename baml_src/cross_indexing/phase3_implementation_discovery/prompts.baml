@@ -19,7 +19,7 @@ SUTRA MEMORY CONTEXT:
 "#
 
 function AwsImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
-  client AwsClaudeSonnet4
+  client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Phase3(system_info.home, system_info.current_dir) }}
@@ -45,3 +45,29 @@ function ChatGPTImplementationDiscovery(analysis_query: string, memory_context: 
   "#
 }
 
+function GeminiImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+  client GoogleGemini
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Phase3(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Phase3(analysis_query, memory_context) }}
+  "#
+}
+
+function VertexAIImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+  client GCPVertexAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Phase3(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Phase3(analysis_query, memory_context) }}
+  "#
+}
+
+function AzureImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+  client AzureOpenAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Phase3(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Phase3(analysis_query, memory_context) }}
+  "#
+}

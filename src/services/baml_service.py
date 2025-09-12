@@ -8,6 +8,7 @@ provider management, and proper error handling.
 from loguru import logger
 import time
 from config import config
+from config.settings import get_provider_mapping, get_available_providers, is_provider_supported
 from baml_py import Collector
 
 
@@ -22,13 +23,6 @@ _global_token_usage = {
 
 class BAMLService:
     """Generic service for calling BAML functions."""
-
-    PROVIDER_MAPPING = {
-        "aws": "Aws",
-        "openai": "ChatGPT",
-        "anthropic": "Anthropic",
-        "gcp": "Gemini",
-    }
 
     def __init__(self):
         """Initialize BAML service."""
@@ -45,15 +39,16 @@ class BAMLService:
 
     def _validate_provider(self):
         """Validate that the configured provider is supported."""
-        if self.provider not in self.PROVIDER_MAPPING:
-            available_providers = list(self.PROVIDER_MAPPING.keys())
+        if not is_provider_supported(self.provider):
+            available_providers = get_available_providers()
             raise ValueError(
                 f"Provider '{self.provider}' not supported. Available providers: {available_providers}"
             )
 
     def _get_full_function_name(self, base_function_name: str) -> str:
         """Get full BAML function name with provider prefix."""
-        function_prefix = self.PROVIDER_MAPPING[self.provider]
+        provider_mapping = get_provider_mapping()
+        function_prefix = provider_mapping[self.provider]
         return f"{function_prefix}{base_function_name}"
 
     def _get_baml_function(self, full_function_name: str):
@@ -238,7 +233,8 @@ class BAMLService:
         Returns:
             List of available function names (without prefix)
         """
-        prefix = self.PROVIDER_MAPPING[self.provider]
+        provider_mapping = get_provider_mapping()
+        prefix = provider_mapping[self.provider]
         all_functions = [attr for attr in dir(self.baml) if not attr.startswith('_')]
 
         # Filter functions that start with our provider prefix
@@ -256,8 +252,9 @@ class BAMLService:
         Returns:
             Dictionary with provider information
         """
+        provider_mapping = get_provider_mapping()
         return {
             "provider": self.provider,
-            "prefix": self.PROVIDER_MAPPING[self.provider],
-            "available_providers": list(self.PROVIDER_MAPPING.keys())
+            "prefix": provider_mapping[self.provider],
+            "available_providers": get_available_providers()
         }

@@ -4,12 +4,14 @@
 import os
 import sys
 from pathlib import Path
+from utils.console import console
 
 # Set tokenizers parallelism before any imports to avoid warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 root_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root_dir))
+
 
 # Set up environment configuration
 def setup_environment():
@@ -25,30 +27,71 @@ def setup_environment():
         if local_config.exists():
             os.environ["SUTRAKNOWLEDGE_CONFIG"] = str(local_config)
 
+
+def _check_vertex_ai_auth():
+    """Check and prompt for Vertex AI authentication if needed."""
+    try:
+        import subprocess
+
+        # Check if gcloud is installed
+        try:
+            result = subprocess.run(
+                ["gcloud", "--version"], capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                console.warning("Google Cloud SDK (gcloud) is not installed.")
+                console.print("   Install it from: https://cloud.google.com/sdk/docs/install")
+                console.print("   After installation, run: gcloud init")
+                return
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            console.warning("Google Cloud SDK (gcloud) is not installed or not accessible.")
+            console.print("   Install it from: https://cloud.google.com/sdk/docs/install")
+            console.print("   After installation, run: gcloud init")
+            return
+
+        # Check if authenticated
+        try:
+            result = subprocess.run(
+                [
+                    "gcloud",
+                    "auth",
+                    "application-default",
+                    "print-access-token",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                # Successfully authenticated
+                return
+        except subprocess.TimeoutExpired:
+            pass
+
+        # Not authenticated, show setup steps and exit
+        console.print("\n🔐 Vertex AI Authentication Required")
+        console.warning("   You need to authenticate with Google Cloud to use Vertex AI.")
+        console.print("   Steps:")
+        console.print("   1. Run: gcloud init (if not done already)")
+        console.print("   2. Run: gcloud auth application-default login --project YOUR_PROJECT_ID")
+        console.print("\n   After completing these steps, run the command again.")
+
+    except Exception:
+        # Silent fail for authentication check
+        pass
+
+
 def setup_baml_environment():
     """Set up BAML environment variables from config at module level."""
     try:
         # Import here to avoid circular imports
-        from config.settings import get_config
+        from config.settings import get_config, get_env_var_mapping
 
         # Use the config function to get loaded config
         config = get_config()
 
-        # Environment variable mapping for each provider
-        ENV_VAR_MAPPING = {
-            "aws": {
-                "AWS_ACCESS_KEY_ID": "access_key_id",
-                "AWS_SECRET_ACCESS_KEY": "secret_access_key",
-                "AWS_MODEL_ID": "model_id",
-                "AWS_REGION": "region",
-            },
-            "openai": {"OPENAI_API_KEY": "api_key", "OPENAI_MODEL_ID": "model_id"},
-            "anthropic": {
-                "ANTHROPIC_API_KEY": "api_key",
-                "ANTHROPIC_MODEL_ID": "model_id",
-            },
-            "gcp": {"GOOGLE_API_KEY": "api_key", "GOOGLE_MODEL_ID": "model_id"},
-        }
+        # Get environment variable mapping from centralized config
+        ENV_VAR_MAPPING = get_env_var_mapping()
 
         # Check if config has llm attribute
         if not hasattr(config, "llm") or not config.llm:
@@ -72,11 +115,30 @@ def setup_baml_environment():
                 if value:
                     os.environ[env_var] = str(value)
 
+        # Check Vertex AI authentication if using vertex_ai provider
+        if provider == "vertex_ai":
+            _check_vertex_ai_auth()
+
         os.environ["BAML_LOG"] = "OFF"
 
     except Exception as e:
         # Silent fail - don't break CLI if environment setup fails
         pass
+
+
+def reload_baml_environment():
+    """Reload BAML environment variables from updated config."""
+    try:
+        from config.settings import reload_config
+
+        # Reload config first
+        reload_config()
+        # Then setup environment with new config
+        setup_baml_environment()
+        console.success("Environment variables reloaded successfully")
+    except Exception as e:
+        console.error(f"Error reloading environment: {e}")
+
 
 # Set up environment before importing other modules
 setup_environment()
@@ -123,6 +185,7 @@ def main():
 
         # Run modern interactive CLI
         from cli.modern_cli import ModernSutraKit
+
         cli = ModernSutraKit(log_level=log_level)
         cli.run()
         return
@@ -132,7 +195,7 @@ def main():
     args = parser.parse_args()
 
     if args.command is None:
-        if len(sys.argv)> 1 and sys.argv[1].endswith(".json"):
+        if len(sys.argv) > 1 and sys.argv[1].endswith(".json"):
             args = parser.parse_args(["single"] + sys.argv[1:])
         else:
             parser.print_help()
@@ -195,7 +258,7 @@ def main():
             sys.exit(1)
 
     except KeyboardInterrupt:
-        print("Operation interrupted by user")
+        console.error("Operation interrupted by user")
         sys.exit(1)
     except Exception as e:
         logger.error(f"Unexpected error: {e}")

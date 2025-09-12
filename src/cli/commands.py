@@ -979,7 +979,6 @@ def handle_run_phase5_command(args) -> None:
         logger.error(f"Error during Phase 5 execution: {e}")
         print(f"❌ Unexpected error: {e}")
 
-
 def handle_version_command(args) -> None:
     """Handle version command to show version information."""
     try:

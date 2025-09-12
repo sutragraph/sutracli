@@ -67,7 +67,7 @@ class AWSClient(LLMClientBase):
                 # Build request body - only include system prompt if it's not empty
                 request_body = {
                     "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 65000,
+                    "max_tokens": 65400,
                     "messages": [
                         {
                             "role": "user",

@@ -160,9 +160,62 @@ To completely remove Sutra CLI:
 
 ## Essential Configuration
 
-After installation, you should add your keys for claude by editing the below configuration:
+After installation, you need to configure your preferred LLM provider by editing the system configuration:
 
 - **System Configuration**: `~/.sutra/config/system.json`
 - **Parser Configuration**: `~/.sutra/config/parsers.json`
+
+### Supported LLM Providers
+
+The following providers are supported in the configuration:
+
+1. **AWS Bedrock** (`"provider": "aws_bedrock"`)
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_MODEL_ID`
+   - `AWS_REGION`
+
+2. **Anthropic Claude** (`"provider": "anthropic"`)
+   - `ANTHROPIC_API_KEY`
+   - `ANTHROPIC_MODEL_ID`
+
+3. **OpenAI** (`"provider": "openai"`)
+   - `OPENAI_API_KEY`
+   - `OPENAI_MODEL_ID`
+
+4. **Google Gemini** (`"provider": "google_ai"`)
+   - `GEMINI_API_KEY`
+   - `GEMINI_MODEL_ID`
+
+5. **Google Vertex AI** (`"provider": "vertex_ai"`)
+   - `GCP_LOCATION`
+   - `GCP_MODEL_ID`
+   - **Authentication**: Uses `gcloud` authentication. Run:
+     ```bash
+     gcloud auth application-default login --project YOUR_PROJECT_ID
+     ```
+   - Ensure your GCP project has Vertex AI enabled
+
+6. **Azure OpenAI** (`"provider": "azure_openai"`)
+   - `AZURE_OPENAI_API_KEY`
+   - `AZURE_RESOURCE_NAME`
+   - `AZURE_DEPLOYMENT_ID`
+   - `AZURE_API_VERSION`
+   - `AZURE_ENDPOINT`
+   - `AZURE_MODEL_ID`
+
+### Example Configuration
+
+```json
+{
+  "llm": {
+    "provider": "anthropic",
+    "anthropic": {
+      "api_key": "your-api-key-here",
+      "model_id": "claude-sonnet-4-20250514"
+    }
+  }
+}
+```
 
 Refer to the configuration documentation for detailed customization options.

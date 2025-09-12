@@ -210,7 +210,7 @@ template_string ConnectionMatchingUserPrompt(incoming_connections: string, outgo
 "#
 
 function AwsConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
-  client AwsClaudeSonnet4
+  client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ ConnectionMatchingSystemPrompt() }}
@@ -229,6 +229,33 @@ function AnthropicConnectionMatching(incoming_connections: string, outgoing_conn
 
 function ChatGPTConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client OpenAIChatGPT
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionMatchingSystemPrompt() }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
+  "#
+}
+
+function GeminiConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+  client GoogleGemini
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionMatchingSystemPrompt() }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
+  "#
+}
+
+function VertexAIConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+  client GCPVertexAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionMatchingSystemPrompt() }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
+  "#
+}
+
+function AzureConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+  client AzureOpenAI
   prompt #"
     {{ _.role("system") }}
     {{ ConnectionMatchingSystemPrompt() }}

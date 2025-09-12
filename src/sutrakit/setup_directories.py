@@ -203,6 +203,7 @@ def setup_configuration():
             "file_edits_dir": f"{INSTALL_DIR}/data/edits",
             "parser_results_dir": f"{INSTALL_DIR}/parser_results",
             "models_dir": f"{INSTALL_DIR}/models",
+            "session_logs_dir": f"{INSTALL_DIR}/data/session_logs",
         },
         "embedding": {
             "model_path": f"{INSTALL_DIR}/models/all-MiniLM-L12-v2",
@@ -233,31 +234,18 @@ def setup_configuration():
         },
         "llm": {
             "provider": "",
-            "llama_model_id": "meta/llama-3.1-8b-instruct",
-            "claude_model": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-            "gemini_model": "gemini-1.5-flash",
-            "aws": {
-                "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+            "aws_bedrock": {
                 "access_key_id": "",
                 "secret_access_key": "",
-                "region": "us-east-2",
+                "region": "",
+                "model_id": "",
             },
-            "anthropic": {
-                "api_key": "",
-                "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-            },
-            "gcp": {
-                "api_key": "",
-                "project_id": "",
-                "location": "us-central1",
-                "llm_endpoint": "https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/endpoints/openapi/chat/completions",
-            },
-            "superllm": {
-                "api_endpoint": "http://localhost:8000",
-                "firebase_token": "",
-                "default_model": "gpt-3.5-turbo",
-                "default_provider": "openai",
-            },
+            "anthropic": {"api_key": "", "model_id": ""},
+            "google_ai": {"api_key": "", "model_id": "", "base_url": ""},
+            "vertex_ai": {"location": "", "model_id": ""},
+            "azure_openai": {"api_key": "", "base_url": "", "api_version": ""},
+            "openai": {"api_key": "", "model_id": ""},
+            "superllm": {},
         },
     }
 

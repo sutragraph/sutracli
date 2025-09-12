@@ -18,7 +18,7 @@ Please analyze the following code snippet from cross-indexing analysis and extra
 "#
 
 function AwsCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
-  client AwsClaudeSonnet4
+  client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
@@ -44,3 +44,29 @@ function ChatGPTCodeManager(tool_results: string, system_info: SystemInfo_CrossI
   "#
 }
 
+function GeminiCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+  client GoogleGemini
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Manager(tool_results) }}
+  "#
+}
+
+function VertexAICodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+  client GCPVertexAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Manager(tool_results) }}
+  "#
+}
+
+function AzureCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+  client AzureOpenAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Manager(tool_results) }}
+  "#
+}

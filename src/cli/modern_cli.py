@@ -63,7 +63,7 @@ class ModernSutraKit:
             Align.center(Text(banner, style="bold blue")),
             title="🚀 Welcome to SutraGraph",
             subtitle="AI-Powered Code Analysis & Automation",
-            border_style="bright_blue"
+            border_style="bright_blue",
         )
         console.print(panel)
 
@@ -73,11 +73,11 @@ class ModernSutraKit:
             if not self.config_path.exists():
                 return False
 
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path, "r") as f:
                 config_data = json.load(f)
 
-            llm_config = config_data.get('llm', {})
-            provider = llm_config.get('provider')
+            llm_config = config_data.get("llm", {})
+            provider = llm_config.get("provider")
 
             if not provider:
                 return False
@@ -88,16 +88,39 @@ class ModernSutraKit:
                 return False
 
             # Basic validation for each provider
-            if provider == 'aws':
-                required_fields = ['access_key_id', 'secret_access_key', 'model_id', 'region']
+            if provider == "aws_bedrock":
+                required_fields = [
+                    "access_key_id",
+                    "secret_access_key",
+                    "model_id",
+                    "region",
+                ]
                 return all(provider_config.get(field) for field in required_fields)
-            elif provider == 'anthropic':
-                return bool(provider_config.get('api_key') and provider_config.get('model_id'))
-            elif provider == 'gcp':
-                required_fields = ['api_key', 'project_id', 'location']
+            elif provider == "anthropic":
+                return bool(
+                    provider_config.get("api_key") and provider_config.get("model_id")
+                )
+            elif provider == "openai":
+                return bool(
+                    provider_config.get("api_key") and provider_config.get("model_id")
+                )
+            elif provider == "google_ai":
+                return bool(
+                    provider_config.get("api_key")
+                    and provider_config.get("model_id")
+                    and provider_config.get("base_url")
+                )
+            elif provider == "vertex_ai":
+                return bool(
+                    provider_config.get("location") and provider_config.get("model_id")
+                )
+            elif provider == "azure_openai":
+                required_fields = [
+                    "api_key",
+                    "base_url",
+                    "api_version",
+                ]
                 return all(provider_config.get(field) for field in required_fields)
-            elif provider == 'openai':
-                return bool(provider_config.get('api_key') and provider_config.get('model_id'))
 
             return True
 
@@ -108,13 +131,10 @@ class ModernSutraKit:
         """Interactive LLM provider setup with arrow keys."""
         console.info("LLM Provider Setup")
 
-        providers = [
-            {"name": "Anthropic (Claude)", "key": "anthropic",
-             "description": "Claude models (claude-3.5-sonnet, etc.)"},
-            {"name": "AWS Bedrock", "key": "aws", "description": "AWS managed AI services"},
-            {"name": "Google Gemini", "key": "gcp", "description": "Google's Gemini models"},
-            {"name": "OpenAI (ChatGPT)", "key": "openai", "description": "GPT models via OpenAI API"}
-        ]
+        # Import providers from centralized config
+        from config.settings import get_provider_info
+
+        providers = get_provider_info()
 
         table = Table()
         table.add_column("Provider", style="green")
@@ -137,22 +157,26 @@ class ModernSutraKit:
         # Collect provider-specific configuration
         config_data = self._get_provider_config(provider_key)
 
-        # Create the full configuration
-        full_config = self._create_full_config(provider_key, config_data)
+        # Update the provider configuration in existing config
+        updated_config = self._update_provider_config(provider_key, config_data)
 
         # Save configuration
-        self._save_config(full_config)
+        self._save_config(updated_config)
 
         console.success("Configuration saved successfully!")
 
     def _get_provider_config(self, provider: str) -> Dict[str, Any]:
         """Get configuration for specific provider."""
-        if provider == "aws":
+        if provider == "aws_bedrock":
             return self._get_aws_config()
         elif provider == "anthropic":
             return self._get_anthropic_config()
-        elif provider == "gcp":
-            return self._get_gcp_config()
+        elif provider == "google_ai":
+            return self._get_gemini_config()
+        elif provider == "vertex_ai":
+            return self._get_vertex_ai_config()
+        elif provider == "azure_openai":
+            return self._get_azure_config()
         elif provider == "openai":
             return self._get_openai_config()
         else:
@@ -164,13 +188,15 @@ class ModernSutraKit:
         access_key = Prompt.ask("AWS Access Key ID", password=False)
         secret_key = prompt("AWS Secret Access Key: ", is_password=True)
         region = Prompt.ask("AWS Region", default="us-east-2")
-        model_id = Prompt.ask("Model ID", default="us.anthropic.claude-sonnet-4-20250514-v1:0")
+        model_id = Prompt.ask(
+            "Model ID", default="us.anthropic.claude-sonnet-4-20250514-v1:0"
+        )
 
         return {
             "access_key_id": access_key,
             "secret_access_key": secret_key,
             "region": region,
-            "model_id": model_id
+            "model_id": model_id,
         }
 
     def _get_anthropic_config(self) -> Dict[str, Any]:
@@ -179,25 +205,125 @@ class ModernSutraKit:
         api_key = prompt("Anthropic API Key: ", is_password=True)
         model_id = Prompt.ask("Model ID", default="claude-3-5-sonnet-20241022")
 
-        return {
-            "api_key": api_key,
-            "model_id": model_id
-        }
+        return {"api_key": api_key, "model_id": model_id}
 
-    def _get_gcp_config(self) -> Dict[str, Any]:
-        """Get Google Cloud configuration."""
-        console.info("Google Cloud Configuration")
-        api_key = prompt("Google API Key: ", is_password=True)
-        project_id = Prompt.ask("Project ID")
-        location = Prompt.ask("Location", default="us-central1")
-        llm_endpoint = Prompt.ask("LLM Endpoint", default="")
+    def _get_gemini_config(self) -> Dict[str, Any]:
+        """Get Google Gemini configuration."""
+        console.info("Google Gemini Configuration")
+        api_key = prompt("Gemini API Key: ", is_password=True)
+        model_id = Prompt.ask("Model ID", default="gemini-1.5-pro")
+        base_url = Prompt.ask(
+            "Base URL", default="https://generativelanguage.googleapis.com/v1beta"
+        )
 
-        return {
-            "api_key": api_key,
-            "project_id": project_id,
-            "location": location,
-            "llm_endpoint": llm_endpoint
-        }
+        return {"api_key": api_key, "model_id": model_id, "base_url": base_url}
+
+    def _get_vertex_ai_config(self) -> Dict[str, Any]:
+        """Get Google Cloud Vertex AI configuration with gcloud authentication."""
+        console.info("Google Cloud Vertex AI Configuration")
+        console.print()
+        console.info("Vertex AI uses Google Cloud authentication via gcloud CLI.")
+        console.print("Please ensure you have:")
+        console.print(
+            "  1. Google Cloud SDK installed (https://cloud.google.com/sdk/docs/install)"
+        )
+        console.print(
+            "  2. Run: gcloud init (to set up your default project and authentication)"
+        )
+        console.print("  3. Vertex AI API enabled in your project")
+        console.print("  4. Proper permissions for Vertex AI")
+        console.print()
+
+        # Prompt for authentication
+        if Confirm.ask("Do you want to authenticate with Google Cloud now?"):
+            self._setup_gcp_auth()
+        else:
+            console.warning(
+                "You can authenticate later using: gcloud auth application-default login --project YOUR_PROJECT_ID"
+            )
+
+        # Get basic configuration
+        location = Prompt.ask("Location (region)", default="global")
+        model_id = Prompt.ask("Model ID", default="gemini-2.5-pro")
+
+        return {"location": location, "model_id": model_id}
+
+    def _setup_gcp_auth(self):
+        """Guide user through GCP authentication setup with retry option."""
+        import subprocess
+        import sys
+
+        console.info("Setting up Google Cloud authentication...")
+
+        # Check if gcloud is installed
+        try:
+            result = subprocess.run(
+                ["gcloud", "--version"], capture_output=True, text=True
+            )
+            if result.returncode != 0:
+                console.error("Google Cloud SDK (gcloud) is not installed.")
+                console.info(
+                    "Please install it from: https://cloud.google.com/sdk/docs/install"
+                )
+                console.info("After installation, run: gcloud init")
+                return
+        except FileNotFoundError:
+            console.error("Google Cloud SDK (gcloud) is not installed or not in PATH.")
+            console.info(
+                "Please install it from: https://cloud.google.com/sdk/docs/install"
+            )
+            console.info("After installation, run: gcloud init")
+            return
+
+        # Retry loop for authentication
+        while True:
+            # Get project ID
+            project_id = Prompt.ask("Enter your Google Cloud Project ID")
+
+            # Run authentication command
+            console.info(
+                f"Running: gcloud auth application-default login --project {project_id}"
+            )
+            console.info("This will open your browser for authentication...")
+
+            try:
+                result = subprocess.run(
+                    [
+                        "gcloud",
+                        "auth",
+                        "application-default",
+                        "login",
+                        "--project",
+                        project_id,
+                    ],
+                    check=True,
+                )
+
+                if result.returncode == 0:
+                    console.success("Google Cloud authentication successful!")
+                    console.info("Vertex AI is now ready to use.")
+                    return  # Success, exit the retry loop
+
+            except subprocess.CalledProcessError as e:
+                console.error(f"Authentication failed: {e}")
+                console.info("Steps:")
+                console.info("1. Run: gcloud init (if not done already)")
+                console.info(
+                    f"2. Run: gcloud auth application-default login --project {project_id}"
+                )
+            except Exception as e:
+                console.error(f"Unexpected error: {e}")
+                console.info("Steps:")
+                console.info("1. Run: gcloud init (if not done already)")
+                console.info(
+                    f"2. Run: gcloud auth application-default login --project {project_id}"
+                )
+
+            # Ask if user wants to retry
+            console.print()
+            if not Confirm.ask("Would you like to try again with a different project ID or retry authentication?", default=True):
+                console.warning("Authentication setup cancelled. You can set up authentication manually later.")
+                break
 
     def _get_openai_config(self) -> Dict[str, Any]:
         """Get OpenAI configuration."""
@@ -205,85 +331,81 @@ class ModernSutraKit:
         api_key = prompt("OpenAI API Key: ", is_password=True)
         model_id = Prompt.ask("Model ID", default="gpt-4o")
 
+        return {"api_key": api_key, "model_id": model_id}
+
+    def _get_azure_config(self) -> Dict[str, Any]:
+        """Get Azure OpenAI configuration."""
+        console.info("Azure OpenAI Configuration")
+        api_key = prompt("Azure OpenAI API Key: ", is_password=True)
+
+        console.print()
+        console.info(
+            "Base URL Example: https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-id"
+        )
+        console.dim(
+            "Replace 'your-resource-name' with your Azure resource name and 'your-deployment-id' with your deployment ID"
+        )
+        console.print()
+
+        base_url = Prompt.ask("Base URL")
+        api_version = Prompt.ask("API Version", default="2025-01-01-preview")
+
         return {
             "api_key": api_key,
-            "model_id": model_id
+            "base_url": base_url,
+            "api_version": api_version,
         }
 
-    def _create_full_config(self, provider: str, provider_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Create full configuration with default values."""
-        return {
-            "database": {
-                "knowledge_graph_db": "~/.sutra/data/knowledge_graph.db",
-                "embeddings_db": "~/.sutra/data/knowledge_graph_embeddings.db",
-                "connection_timeout": 60,
-                "max_retry_attempts": 5,
-                "batch_size": 1000,
-                "enable_wal_mode": True
-            },
-            "storage": {
-                "data_dir": "~/.sutra/data",
-                "sessions_dir": "~/.sutra/data/sessions",
-                "file_changes_dir": "~/.sutra/data/file_changes",
-                "file_edits_dir": "~/.sutra/data/edits",
-                "session_logs_dir": "~/.sutra/data/session_logs",
-                "parser_results_dir": "~/.sutra/parser_results",
-                "models_dir": "~/.sutra/models"
-            },
-            "embedding": {
-                "model_path": "~/.sutra/models/all-MiniLM-L12-v2",
-                "tokenizer_max_length": 256,
-                "max_tokens": 240,
-                "overlap_tokens": 30
-            },
-            "parser": {
-                "config_file": "~/.sutra/config/parsers.json",
-                "build_directory": "~/.sutra/build"
-            },
-            "web_search": {
-                "api_key": "YOUR_WEB_SEARCH_API_KEY",
-                "requests_per_minute": 60,
-                "timeout": 30
-            },
-            "web_scrap": {
-                "timeout": 30,
-                "max_retries": 3,
-                "delay_between_retries": 1.0,
-                "include_comments": True,
-                "include_tables": True,
-                "include_images": True,
-                "include_links": True,
-                "trafilatura_config": {},
-                "markdown_options": {
-                    "heading_style": "ATX",
-                    "bullets": "-",
-                    "wrap": True
-                }
-            },
-            "logging": {
-                "level": "INFO",
-                "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-                "log_file": "~/.sutra/logs/sutraknowledge.log"
-            },
-            "llm": {
-                "provider": provider,
-                "llama_model_id": "meta/llama-4-maverick-17b-128e-instruct-maas",
-                "gemini_model": "gemini-2.5-flash",
-                "claude_model": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-                "aws": provider_config if provider == "aws" else {},
-                "anthropic": provider_config if provider == "anthropic" else {},
-                "gcp": provider_config if provider == "gcp" else {},
-                "openai": provider_config if provider == "openai" else {},
-                "superllm": {}
-            }
-        }
+    def _update_provider_config(self, provider: str, provider_config: Dict[str, Any]):
+        """Update only the provider configuration in existing config file."""
+        # Load existing config or create minimal structure if it doesn't exist
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, "r") as f:
+                    existing_config = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                existing_config = {}
+        else:
+            existing_config = {}
+
+        # Ensure llm section exists
+        if "llm" not in existing_config:
+            existing_config["llm"] = {}
+
+        # Update provider and max_tokens
+        existing_config["llm"]["provider"] = provider
+
+        # Initialize all provider sections if they don't exist
+        provider_keys = [
+            "aws_bedrock",
+            "anthropic",
+            "google_ai",
+            "vertex_ai",
+            "azure_openai",
+            "openai",
+            "superllm",
+        ]
+        for key in provider_keys:
+            if key not in existing_config["llm"]:
+                existing_config["llm"][key] = {}
+
+        # Update only the fields provided by the user, preserving existing fields
+        if provider in existing_config["llm"]:
+            # Merge new config with existing provider config
+            for field_key, field_value in provider_config.items():
+                existing_config["llm"][provider][field_key] = field_value
+        else:
+            # If provider section doesn't exist, create it with the new config
+            existing_config["llm"][provider] = provider_config
+
+        return existing_config
 
     def _save_config(self, config: Dict[str, Any]):
         """Save configuration to file."""
         # Ensure config directory exists
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(self.config_path, 'w') as f:
+        with open(self.config_path, "w") as f:
             json.dump(config, f, indent=2)
 
         # Reload the configuration to update the in-memory instance
@@ -325,52 +447,63 @@ class ModernSutraKit:
         current_index = 0
 
         def get_formatted_text():
-            lines = [('', 'Select LLM provider (↑↓ to navigate, Enter to select, Esc to cancel):\n\n')]
+            lines = [
+                (
+                    "",
+                    "Select LLM provider (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
+                )
+            ]
 
             for i, provider in enumerate(providers):
                 if i == current_index:
-                    lines.append(('class:selected', f'▶ {provider["name"]}\n'))
+                    lines.append(("class:selected", f'▶ {provider["name"]}\n'))
                 else:
-                    lines.append(('', f'  {provider["name"]}\n'))
+                    lines.append(("", f'  {provider["name"]}\n'))
 
             return lines
 
         # Key bindings
         bindings = KeyBindings()
 
-        @bindings.add('up')
+        @bindings.add("up")
         def move_up(event):
             nonlocal current_index
             current_index = (current_index - 1) % len(providers)
 
-        @bindings.add('down')
+        @bindings.add("down")
         def move_down(event):
             nonlocal current_index
             current_index = (current_index + 1) % len(providers)
 
-        @bindings.add('enter')
+        @bindings.add("enter")
         def select_item(event):
             event.app.exit(result=providers[current_index])
 
-        @bindings.add('escape')
-        @bindings.add('c-c')
+        @bindings.add("escape")
+        @bindings.add("c-c")
         def cancel(event):
             event.app.exit(result=None)
 
         # Create the application
         application = Application(
             layout=Layout(
-                HSplit([
-                    Window(FormattedTextControl(get_formatted_text), wrap_lines=True),
-                ])
+                HSplit(
+                    [
+                        Window(
+                            FormattedTextControl(get_formatted_text), wrap_lines=True
+                        ),
+                    ]
+                )
             ),
             key_bindings=bindings,
             mouse_support=False,
             full_screen=False,
-            style=Style([
-                ('selected', 'bg:#0066cc #ffffff bold'),
-                ('dim', '#666666'),
-            ])
+            style=Style(
+                [
+                    ("selected", "bg:#0066cc #ffffff bold"),
+                    ("dim", "#666666"),
+                ]
+            ),
         )
 
         # Run the application
@@ -381,52 +514,63 @@ class ModernSutraKit:
         current_index = 0
 
         def get_formatted_text():
-            lines = [('', 'Select agent (↑↓ to navigate, Enter to select, Esc to cancel):\n\n')]
+            lines = [
+                (
+                    "",
+                    "Select agent (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
+                )
+            ]
 
             for i, agent in enumerate(agents):
                 if i == current_index:
-                    lines.append(('class:selected', f'▶ {agent.name}'))
+                    lines.append(("class:selected", f"▶ {agent.name}"))
                 else:
-                    lines.append(('', f'  {agent.name}'))
+                    lines.append(("", f"  {agent.name}"))
 
             return lines
 
         # Key bindings
         bindings = KeyBindings()
 
-        @bindings.add('up')
+        @bindings.add("up")
         def move_up(event):
             nonlocal current_index
             current_index = (current_index - 1) % len(agents)
 
-        @bindings.add('down')
+        @bindings.add("down")
         def move_down(event):
             nonlocal current_index
             current_index = (current_index + 1) % len(agents)
 
-        @bindings.add('enter')
+        @bindings.add("enter")
         def select_item(event):
             event.app.exit(result=agents[current_index])
 
-        @bindings.add('escape')
-        @bindings.add('c-c')
+        @bindings.add("escape")
+        @bindings.add("c-c")
         def cancel(event):
             event.app.exit(result=None)
 
         # Create the application
         application = Application(
             layout=Layout(
-                HSplit([
-                    Window(FormattedTextControl(get_formatted_text), wrap_lines=True),
-                ])
+                HSplit(
+                    [
+                        Window(
+                            FormattedTextControl(get_formatted_text), wrap_lines=True
+                        ),
+                    ]
+                )
             ),
             key_bindings=bindings,
             mouse_support=False,
             full_screen=False,
-            style=Style([
-                ('selected', 'bg:#0066cc #ffffff bold'),
-                ('dim', '#666666'),
-            ])
+            style=Style(
+                [
+                    ("selected", "bg:#0066cc #ffffff bold"),
+                    ("dim", "#666666"),
+                ]
+            ),
         )
 
         # Run the application
@@ -524,7 +668,9 @@ class ModernSutraKit:
             project_name = project_manager.determine_project_name(project_dir)
 
             if graph_ops.is_cross_indexing_done(project_name):
-                console.success(f"Cross-indexing already completed for project '{project_name}'")
+                console.success(
+                    f"Cross-indexing already completed for project '{project_name}'"
+                )
                 console.dim("📊 Skipping analysis - project already fully analyzed")
                 return
 
@@ -561,7 +707,9 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
 
         if not proceed:
             console.warning("Cross-indexing declined by user.")
-            console.dim("💡 Tip: You can run this later when you're ready to spend the time and tokens.")
+            console.dim(
+                "💡 Tip: You can run this later when you're ready to spend the time and tokens."
+            )
             console.dim("📝 To continue later, simply run the same command again.")
             # Raise a custom exception to stop the workflow
             raise UserCancelledError("User declined cross-indexing analysis")
@@ -596,7 +744,9 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             from cli.commands import handle_agent_command
 
             # Execute the agent - post-processing is handled internally by the agent service
-            agent_result = handle_agent_command(agent_name=agent_name, project_path=project_dir)
+            agent_result = handle_agent_command(
+                agent_name=agent_name, project_path=project_dir
+            )
 
             if agent_result:
                 console.success("Agent execution completed successfully!!!")

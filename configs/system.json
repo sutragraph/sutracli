@@ -53,23 +53,33 @@
   },
   "llm": {
     "provider": "provider_name (aws/anthropic)",
-    "llama_model_id": "meta/llama-4-maverick-17b-128e-instruct-maas",
-    "gemini_model": "gemini-2.5-flash",
-    "aws": {
+    "aws_bedrock": {
       "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
       "access_key_id": "YOUR_ACCESS_KEY_ID",
       "secret_access_key": "YOUR_SECRET_ACCESS",
       "region": "YOUR_AWS_REGION"
     },
     "anthropic": {
-      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+      "model_id": "claude-sonnet-4-20250514",
       "api_key": "YOUR_ANTHROPIC_API_KEY"
     },
-    "gcp": {
-      "api_key": "",
-      "project_id": "YOUR_GCP_PROJECT_ID",
-      "location": "YOUR_GCP_LOCATION",
-      "llm_endpoint": "YOUR_GCP_LLM_ENDPOINT"
+    "openai": {
+      "api_key": "YOUR_OPENAI_API_KEY",
+      "model_id": "gpt-4-turbo"
+    },
+    "google_ai": {
+      "api_key": "YOUR_GEMINI_API_KEY",
+      "model_id": "gemini-2.5-flash",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta"
+    },
+    "vertex_ai": {
+      "location": "global",
+      "model_id": "gemini-1.5-pro"
+    },
+    "azure_openai": {
+      "api_key": "YOUR_AZURE_OPENAI_API_KEY",
+      "base_url": "https://your-resource-name.openai.azure.com/",
+      "api_version": "2025-01-01-preview"
     },
     "superllm": {
       "api_endpoint": "http://localhost:8000",
