@@ -86,6 +86,7 @@ class BAMLService:
         # Token usage tracking
         total_input_tokens = 0
         total_output_tokens = 0
+        total_cached_input_tokens = 0
 
         for attempt in range(max_retries + 1):
             try:
