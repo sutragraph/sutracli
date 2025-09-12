@@ -4,7 +4,7 @@ build-backend="setuptools.build_meta"
 
 [project]
 name="sutrakit"
-version="0.1.15"
+version="0.1.16"
 description="A comprehensive AI-powered code analysis and automation CLI tool"
 readme="README.md"
 license = {text="MIT"}

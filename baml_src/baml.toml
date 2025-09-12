@@ -1,7 +1,7 @@
 [baml]
-version = "0.206.0"
+version = "0.207.0"
 
 [generators.python]
 output_type = "python/pydantic"
 output_dir = "../baml_client"
-version = "0.206.0"
+version = "0.207.0"
