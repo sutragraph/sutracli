@@ -2,30 +2,26 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Any
+from typing import Any, Dict, List, Optional, Set
+
 from loguru import logger
 
-from graph import SQLiteConnection, GraphOperations, ASTToSqliteConverter
-from embeddings import get_embedding_engine
-
-from utils.helpers import load_json_file
 from config.settings import config
-
+from embeddings import get_embedding_engine
+from graph.converter import ASTToSqliteConverter
 from graph.graph_operations import GraphOperations
-
-# Import indexer functions for file processing
-from utils.hash_utils import compute_directory_hashes
+from graph.sqlite_client import SQLiteConnection
 from indexer.ast_parser import ASTParser
+from models.schema import ExtractionData, FileData
 from utils.file_utils import (
     get_extraction_file_path,
     get_last_extraction_file_path,
     should_ignore_file,
 )
 
-from models.schema import (
-    FileData,
-    ExtractionData,
-)
+# Import indexer functions for file processing
+from utils.hash_utils import compute_directory_hashes
+from utils.helpers import load_json_file
 
 
 class ProjectIndexer:
@@ -329,7 +325,9 @@ class ProjectIndexer:
                 deleted_file_str = str(deleted_file)
                 if deleted_file_str in updated_files:
                     del updated_files[deleted_file_str]
-                    logger.debug(f"🗑️ Removed deleted file from results: {deleted_file}")
+                    logger.debug(
+                        f"🗑️ Removed deleted file from results: {deleted_file}"
+                    )
 
             # Get all changed and new files that need parsing
             files_to_parse = list(changes["changed_files"].union(changes["new_files"]))
@@ -682,7 +680,7 @@ class ProjectIndexer:
         self, parser_output_path: Path, project_name: str, project_path: Path
     ) -> Dict[str, Any]:
         """Store parsed data to SQL tables."""
-        from graph import ASTToSqliteConverter
+        from graph.converter import ASTToSqliteConverter
 
         converter = ASTToSqliteConverter()
 

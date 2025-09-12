@@ -17,7 +17,7 @@ CAPABILITIES
    - Webhook integrations: HTTP callbacks between different applications/repositories
    - File-based integrations: Shared file systems, data exchange between different projects in the same ecosystem
    - Media streaming: Real-time data exchange between different code repositories
-   
+
 5. You understand language-specific connection patterns that may not appear in dependency files:
    - JavaScript: await fetch(), XMLHttpRequest, WebSocket, built-in HTTP modules, native fetch API
    - Python: urllib, http.client, socket module for low-level connections, built-in http.server

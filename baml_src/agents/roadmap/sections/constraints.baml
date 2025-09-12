@@ -20,7 +20,7 @@ template_string RoadmapConstraints() #"
   - Unique Contract IDs: Each contract must have a unique identifier for cross-project tracking
 6. MANDATORY COMPLETION: You MUST end your analysis with the `attempt_completion` tool when your work is done. Never leave the conversation hanging without completion.
 7. ZERO GUESSWORK: Never guess or speculate. Always verify facts with tools before proposing changes. If you don't know the exact file paths, symbols, or line ranges, continue discovery until confirmed. Do not call `attempt_completion` until all required change locations are verified across all impacted projects.
-8. Use `search_keyword` only when you have specific keywords found from previous steps like database|semantic_search tools. Avoid generic terms that yield excessive results. 
+8. Use `search_keyword` only when you have specific keywords found from previous steps like database|semantic_search tools. Avoid generic terms that yield excessive results.
 
 ### MANDATORY JSON RESPONSE FORMAT
 

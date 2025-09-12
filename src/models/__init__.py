@@ -2,19 +2,17 @@
 Models module initialization.
 """
 
+from models.agent import AgentAction
+
 # All models now in schema.py
 from models.schema import (
-    File,
-    Project,
-    CodeBlock,
-    Relationship,
-    FileData,
-    ExtractionData,
     BlockType,
-)
-from models.agent import (
-    AgentAction,
-    AgentThought,
+    CodeBlock,
+    ExtractionData,
+    File,
+    FileData,
+    Project,
+    Relationship,
 )
 
 __all__ = [
@@ -26,5 +24,4 @@ __all__ = [
     "Relationship",
     "ExtractionData",
     "AgentAction",
-    "AgentThought",
 ]

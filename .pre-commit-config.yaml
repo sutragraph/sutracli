@@ -1,0 +1,60 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # BAML client generation hook - runs first to ensure client is up-to-date
+  - repo: local
+    hooks:
+      - id: baml-generate
+        name: Generate BAML client
+        entry: ./scripts/generate-baml.sh
+        language: system
+        files: ^baml_src/.*$
+        pass_filenames: false
+        always_run: false
+        verbose: true
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(.*\.md|.*\.txt|baml_client/.*)$  # Exclude BAML auto-generated files
+      - id: end-of-file-fixer
+        exclude: ^(.*\.md|.*\.txt|baml_client/.*)$  # Exclude BAML auto-generated files
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: debug-statements
+        exclude: ^baml_client/.*$  # Exclude BAML auto-generated files
+
+  # Python code formatting and linting
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        language_version: python3
+        exclude: ^baml_client/.*$  # Exclude generated BAML client files
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+        exclude: ^baml_client/.*$  # Exclude generated BAML client files
+
+  # Add generated BAML client files to git if they were updated
+  - repo: local
+    hooks:
+      - id: add-baml-client
+        name: Add updated BAML client files
+        entry: bash -c 'if [ -d "baml_client" ] && [ -n "$(git status --porcelain baml_client/)" ]; then git add baml_client/; echo "Added updated BAML client files to git"; fi'
+        language: system
+        files: ^baml_src/.*$
+        pass_filenames: false
+        always_run: false
+        stages: [pre-commit]

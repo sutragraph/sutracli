@@ -4,14 +4,15 @@ Sutra Memory Manager Operations
 Core operations for managing tasks, code snippets, and file changes.
 """
 
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-from loguru import logger
 import os
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from .models import Task, TaskStatus, CodeSnippet, FileChange, HistoryEntry
+from loguru import logger
+
 from .code_fetcher import CodeFetcher
+from .models import CodeSnippet, FileChange, HistoryEntry, Task, TaskStatus
 
 
 class MemoryOperations:
@@ -61,7 +62,9 @@ class MemoryOperations:
         if status == TaskStatus.CURRENT and self.get_current_task() is not None:
             raise ValueError("Only one current task is allowed at a time")
 
-        self.tasks[actual_task_id] = Task(id=actual_task_id, description=description, status=status)
+        self.tasks[actual_task_id] = Task(
+            id=actual_task_id, description=description, status=status
+        )
 
         logger.debug(
             f"Task {actual_task_id} added successfully (LLM ID {task_id} ignored)"

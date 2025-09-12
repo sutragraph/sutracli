@@ -47,8 +47,8 @@ RULES
       * Task 2: "Found axios imports in src/services/http.js. Use database tool to read this file and analyze axios.get(), axios.post(), axios.put() usage patterns."
       * Task 3: "Found axios imports in src/utils/request.js. Use database tool to read this file and analyze axios.get(), axios.post(), axios.put() usage patterns."
     - Many files (search_keyword - create combined task):
-      * Task 1: "Found express imports in 8 files (src/app.js, src/routes/api.js, src/routes/users.js, src/middleware/auth.js, src/controllers/main.js, src/services/server.js, src/utils/router.js, src/config/routes.js). Use search_keyword with pattern 'app\\.(get|post|put|delete)\\(' to find express route definitions across all files."
-    - Built-in patterns: "Create built-in pattern task: Use search_keyword with pattern 'fetch\\(' to find native fetch API usage across all files."
+      * Task 1: "Found express imports in 8 files (src/app.js, src/routes/api.js, src/routes/users.js, src/middleware/auth.js, src/controllers/main.js, src/services/server.js, src/utils/router.js, src/config/routes.js). Use search_keyword with pattern 'app\.(get|post|put|delete)\(' to find express route definitions across all files."
+    - Built-in patterns: "Create built-in pattern task: Use search_keyword with pattern 'fetch\(' to find native fetch API usage across all files."
 
 9. BUILT-IN PATTERN TASK CREATION (ALWAYS REQUIRED):
    - ALWAYS create built-in pattern tasks
@@ -84,7 +84,7 @@ RULES
             "action": "move|add|remove",
             "id": "task_id_string",
             "from_status": "pending|current|completed",
-            "to_status": "pending|current|completed", 
+            "to_status": "pending|current|completed",
             "description": "task description"
           }
         ],

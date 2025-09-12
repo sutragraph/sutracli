@@ -4,6 +4,7 @@
 _debug_mode = False
 _auto_mode = False
 
+
 def set_debug_mode(enabled: bool) -> None:
     """
     Set debug mode flag.
@@ -13,6 +14,7 @@ def set_debug_mode(enabled: bool) -> None:
     """
     global _debug_mode
     _debug_mode = enabled
+
 
 def set_auto_mode(enabled: bool) -> None:
     """
@@ -24,6 +26,7 @@ def set_auto_mode(enabled: bool) -> None:
     global _auto_mode
     _auto_mode = enabled
 
+
 def is_debug_mode() -> bool:
     """
     Check if debug mode is enabled.
@@ -32,6 +35,7 @@ def is_debug_mode() -> bool:
         bool: True if debug mode is enabled, False otherwise
     """
     return _debug_mode
+
 
 def is_auto_mode() -> bool:
     """
@@ -63,7 +67,7 @@ def get_user_confirmation_for_llm_call() -> bool:
 
     try:
         response = input("Do you want to make new call? (y/n): ").lower().strip()
-        return response in ['yes', 'y']
+        return response in ["yes", "y"]
     except (KeyboardInterrupt, EOFError):
         print("\n❌ User cancelled the operation")
         return False

@@ -10,35 +10,38 @@ query methods for retrieving code structure, relationships, and connections.
 import json
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from loguru import logger
-from queries.graph_queries import (
-    GET_EXISTING_INCOMING_CONNECTIONS,
-    GET_EXISTING_OUTGOING_CONNECTIONS,
-    GET_CONNECTIONS_BY_IDS,
-    INSERT_INCOMING_CONNECTION,
-    INSERT_OUTGOING_CONNECTION,
-    INSERT_CONNECTION_MAPPING,
-    UPDATE_PROJECT_DESCRIPTION,
-)
-from models import File, CodeBlock, ExtractionData
+
+from models import CodeBlock, ExtractionData, File
 from queries.agent_queries import (
-    GET_CODE_BLOCK_BY_ID,
-    GET_FILE_BY_ID,
-    GET_FILE_BLOCK_SUMMARY,
     GET_CHILD_BLOCKS,
-    GET_PARENT_BLOCK,
-    GET_FILE_IMPACT_SCOPE,
-    GET_FILE_IMPORTS,
+    GET_CODE_BLOCK_BY_ID,
+    GET_CONNECTION_IMPACT,
     GET_DEPENDENCY_CHAIN,
     GET_EXTERNAL_CONNECTIONS,
-    GET_PROJECT_EXTERNAL_CONNECTIONS,
-    GET_CONNECTION_IMPACT,
     GET_EXTERNAL_CONNECTIONS_OVERLAPPING_RANGE,
+    GET_FILE_BLOCK_SUMMARY,
+    GET_FILE_BY_ID,
+    GET_FILE_IMPACT_SCOPE,
+    GET_FILE_IMPORTS,
     GET_IMPLEMENTATION_CONTEXT,
     GET_INCOMING_CONNECTIONS,
     GET_OUTGOING_CONNECTIONS,
+    GET_PARENT_BLOCK,
+    GET_PROJECT_EXTERNAL_CONNECTIONS,
 )
+from queries.graph_queries import (
+    GET_CONNECTIONS_BY_IDS,
+    GET_EXISTING_INCOMING_CONNECTIONS,
+    GET_EXISTING_OUTGOING_CONNECTIONS,
+    INSERT_CONNECTION_MAPPING,
+    INSERT_INCOMING_CONNECTION,
+    INSERT_OUTGOING_CONNECTION,
+    UPDATE_PROJECT_DESCRIPTION,
+)
+
 from .sqlite_client import SQLiteConnection
 
 
@@ -719,8 +722,12 @@ class GraphOperations:
                 return None
 
             # Get both connection mappings and basic connections
-            connection_mappings = self._get_connection_mappings_for_display(file_id, None, None)
-            basic_connections = self._get_connections_for_file_and_lines(file_id, None, None)
+            connection_mappings = self._get_connection_mappings_for_display(
+                file_id, None, None
+            )
+            basic_connections = self._get_connections_for_file_and_lines(
+                file_id, None, None
+            )
 
             # Filter out basic connections that are already represented in mappings
             filtered_connections = self._filter_unmapped_connections(
@@ -735,8 +742,6 @@ class GraphOperations:
                 connections["incoming"] = filtered_connections["incoming"]
             if filtered_connections.get("outgoing"):
                 connections["outgoing"] = filtered_connections["outgoing"]
-
-
 
             result = {
                 "file": file_data,
@@ -1310,7 +1315,6 @@ class GraphOperations:
             Dictionary with 'incoming' and 'outgoing' connection lists including IDs
         """
         try:
-
             incoming_results = self.connection.execute_query(
                 GET_EXISTING_INCOMING_CONNECTIONS
             )
@@ -1414,7 +1418,6 @@ class GraphOperations:
             ID of the inserted connection
         """
         try:
-
             cursor = self.connection.connection.execute(
                 INSERT_INCOMING_CONNECTION,
                 (
@@ -1458,7 +1461,6 @@ class GraphOperations:
             ID of the inserted connection
         """
         try:
-
             cursor = self.connection.connection.execute(
                 INSERT_OUTGOING_CONNECTION,
                 (
@@ -1500,7 +1502,6 @@ class GraphOperations:
             ID of the inserted mapping
         """
         try:
-
             cursor = self.connection.connection.execute(
                 INSERT_CONNECTION_MAPPING,
                 (
@@ -1567,10 +1568,14 @@ class GraphOperations:
 
                             # Parse snippet_lines from detail
                             snippet_lines_str = detail.get("snippet_lines", "")
-                            snippet_lines = self._parse_snippet_lines_from_detail(snippet_lines_str)
+                            snippet_lines = self._parse_snippet_lines_from_detail(
+                                snippet_lines_str
+                            )
 
                             code_snippet = (
-                                self._fetch_code_snippet_from_lines(file_path, snippet_lines)
+                                self._fetch_code_snippet_from_lines(
+                                    file_path, snippet_lines
+                                )
                                 if snippet_lines and file_path
                                 else ""
                             )
@@ -1593,15 +1598,21 @@ class GraphOperations:
                             file_id = self._get_file_id_by_path(file_path)
 
                             if not file_id:
-                                logger.warning(f"File not found in database: {file_path}")
+                                logger.warning(
+                                    f"File not found in database: {file_path}"
+                                )
                                 continue
 
                             # Parse snippet_lines from detail
                             snippet_lines_str = detail.get("snippet_lines", "")
-                            snippet_lines = self._parse_snippet_lines_from_detail(snippet_lines_str)
+                            snippet_lines = self._parse_snippet_lines_from_detail(
+                                snippet_lines_str
+                            )
 
                             code_snippet = (
-                                self._fetch_code_snippet_from_lines(file_path, snippet_lines)
+                                self._fetch_code_snippet_from_lines(
+                                    file_path, snippet_lines
+                                )
                                 if snippet_lines and file_path
                                 else ""
                             )
@@ -1736,8 +1747,7 @@ class GraphOperations:
 
             if result and result.get("code"):
                 logger.debug(
-                    f"Fetched and beautified code snippet from {file_path} lines {start_line}-{end_line}: {
-                        result['total_lines']} lines"
+                    f"Fetched and beautified code snippet from {file_path} lines {start_line}-{end_line}: {result['total_lines']} lines"
                 )
                 return result["code"]
             else:
@@ -1874,7 +1884,7 @@ class GraphOperations:
         self,
         basic_connections: Dict[str, Any],
         connection_mappings: List[Dict[str, Any]],
-        current_file_path: str
+        current_file_path: str,
     ) -> Dict[str, Any]:
         """
         Filter out basic connections that are already represented in connection mappings.
@@ -1908,13 +1918,17 @@ class GraphOperations:
 
         # Filter incoming connections (remove if sender file is already mapped)
         for conn in basic_connections.get("incoming", []):
-            source_file = conn.get("source_file_path", conn.get("connected_file_path", ""))
+            source_file = conn.get(
+                "source_file_path", conn.get("connected_file_path", "")
+            )
             if source_file not in mapped_incoming:
                 filtered["incoming"].append(conn)
 
         # Filter outgoing connections (remove if target file is already mapped)
         for conn in basic_connections.get("outgoing", []):
-            target_file = conn.get("target_file_path", conn.get("connected_file_path", ""))
+            target_file = conn.get(
+                "target_file_path", conn.get("connected_file_path", "")
+            )
             if target_file not in mapped_outgoing:
                 filtered["outgoing"].append(conn)
 

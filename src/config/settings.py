@@ -3,18 +3,17 @@ Configuration management for SutraKnowledge.
 Centralizes all configurable paths and settings.
 """
 
-import os
 import json
+import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from dataclasses import dataclass
-
 
 # Centralized provider mappings for easy maintenance
 PROVIDER_MAPPING = {
     "aws_bedrock": "Aws",
     "openai": "ChatGPT",
-    "anthropic": "Anthropic", 
+    "anthropic": "Anthropic",
     "google_ai": "Gemini",
     "vertex_ai": "VertexAI",
     "azure_openai": "Azure",
@@ -101,7 +100,6 @@ class DatabaseConfig:
     connection_timeout: int
     max_retry_attempts: int
     batch_size: int
-    enable_wal_mode: bool = True
 
 
 @dataclass
@@ -186,7 +184,7 @@ class LoggingConfig:
 
     level: str
     format: str
-    log_file: Optional[str] = None
+    logs_dir: str
 
 
 @dataclass
@@ -202,7 +200,6 @@ class StorageConfig:
     # File changes and edits
     file_changes_dir: str
     file_edits_dir: str
-    session_logs_dir: str
 
     # Parser results (system-wide installation)
     parser_results_dir: str
@@ -224,17 +221,6 @@ class EmbeddingConfig:
     # Chunking settings
     max_tokens: int
     overlap_tokens: int
-
-
-@dataclass
-class ParserConfig:
-    """Parser configuration for tree-sitter analyzers."""
-
-    # Parser configuration file path
-    config_file: str
-
-    # Build directory for parser libraries
-    build_directory: str
 
 
 @dataclass
@@ -371,12 +357,6 @@ class Config:
                 )
             else:
                 self.llm = None
-
-            # Initialize parser config
-            parser_config = config_data.get("parser", {})
-            if not parser_config:
-                raise ValueError("Parser configuration is required in config file")
-            self.parser = ParserConfig(**parser_config)
 
         except Exception as e:
             raise ValueError(f"Failed to load config file {self.config_file}: {e}")

@@ -42,9 +42,7 @@ def make_json_serializable(obj: Any) -> Any:
                 result[key] = make_json_serializable(value)
         return result
     elif isinstance(obj, dict):
-        return {
-            key: make_json_serializable(value) for key, value in obj.items()
-        }
+        return {key: make_json_serializable(value) for key, value in obj.items()}
     elif isinstance(obj, (list, tuple)):
         return [make_json_serializable(item) for item in obj]
     elif isinstance(obj, bytes):

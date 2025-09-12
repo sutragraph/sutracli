@@ -3,14 +3,16 @@ Configuration for external agent providers.
 """
 
 import json
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, Optional
+
 from src.config.settings import get_config, reload_config
 
 
 @dataclass
 class AgentProviderConfig:
     """Configuration for an external agent provider."""
+
     name: str
     command: str
     description: str
@@ -20,6 +22,7 @@ class AgentProviderConfig:
     def __post_init__(self):
         if self.config is None:
             self.config = {}
+
 
 class AgentProviderConfigManager:
     """Manages agent provider configurations using existing config system."""
@@ -69,17 +72,17 @@ class AgentProviderConfigManager:
             config_file = config.config_file
 
             # Load existing config
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 config_data = json.load(f)
 
             # Add agent provider selection
-            if 'agent_management' not in config_data:
-                config_data['agent_management'] = {}
+            if "agent_management" not in config_data:
+                config_data["agent_management"] = {}
 
-            config_data['agent_management']['selected_provider'] = provider_name
+            config_data["agent_management"]["selected_provider"] = provider_name
 
             # Save updated config
-            with open(config_file, 'w') as f:
+            with open(config_file, "w") as f:
                 json.dump(config_data, f, indent=2)
 
             # Reload config to apply changes
@@ -97,10 +100,10 @@ class AgentProviderConfigManager:
             config = get_config()
             config_file = config.config_file
 
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 config_data = json.load(f)
 
-            return config_data.get('agent_management', {}).get('selected_provider')
+            return config_data.get("agent_management", {}).get("selected_provider")
         except Exception:
             pass
 

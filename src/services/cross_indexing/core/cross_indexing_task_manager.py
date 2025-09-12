@@ -4,9 +4,11 @@ Cross-indexing task manager with proper phase management.
 
 from datetime import datetime
 from typing import Dict, List, Optional
+
 from loguru import logger
-from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
+
 from services.agent.memory_management.models import TaskStatus
+from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
 
 
 class CrossIndexingTaskManager(SutraMemoryManager):

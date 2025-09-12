@@ -4,9 +4,11 @@ This module provides TypeScript-specific extraction capabilities for identifying
 and extracting code blocks from TypeScript AST nodes using tree-sitter.
 """
 
-from typing import List, Any, Dict, Set, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
+
 from tree_sitter_language_pack import SupportedLanguage
-from . import BaseExtractor, CodeBlock, BlockType
+
+from . import BaseExtractor, BlockType, CodeBlock
 
 
 class TypeScriptExtractor(BaseExtractor):
@@ -21,7 +23,10 @@ class TypeScriptExtractor(BaseExtractor):
     }
 
     CLASS_TYPES = {"class_declaration"}
-    VARIABLE_TYPES = {"variable_declaration"}
+    # Variable detection patterns:
+    # - "variable_declaration": var a = 1, b = 2;
+    # - "lexical_declaration": let x = 'hello'; const PI = 3.14;
+    VARIABLE_TYPES = {"variable_declaration", "lexical_declaration"}
 
     def __init__(self, language: SupportedLanguage, file_id: int = 0):
         super().__init__(language, file_id)
@@ -39,9 +44,20 @@ class TypeScriptExtractor(BaseExtractor):
         return ""
 
     def _extract_names_from_node(self, node: Any) -> List[str]:
-        """Extract all identifier names from a node.
+        """
+        Extract all identifier names from a node, handling various TypeScript patterns.
 
-        Only special-case class field definitions to pick the left-hand field name.
+        Detects these complex patterns:
+        - Simple identifiers: myVar → ['myVar']
+        - Object destructuring: { name, age, city } → ['name', 'age', 'city']
+        - Array destructuring: [first, second, third] → ['first', 'second', 'third']
+        - Rest patterns: [head, ...tail] → ['head', 'tail']
+        - Renamed destructuring: { name: userName } → ['userName']
+        - Class field definitions: public userName: string → ['userName']
+        - Method definitions: getName() → ['getName']
+        - Nested patterns: { user: { name, age } } → ['name', 'age']
+
+        Special handling for class field definitions to pick the correct field name.
         """
         names: List[str] = []
 
@@ -79,6 +95,7 @@ class TypeScriptExtractor(BaseExtractor):
                         break
 
         else:
+
             def find_identifiers(n):
                 if n.type in ["identifier", "property_identifier"]:
                     names.append(self._get_node_text(n))
@@ -99,7 +116,25 @@ class TypeScriptExtractor(BaseExtractor):
     def _replace_nested_functions_with_references(
         self, original_content: str, nested_functions: List[CodeBlock]
     ) -> str:
-        """Replace nested function content with block references for TypeScript."""
+        """
+        Replace nested function content with block references for TypeScript/JavaScript.
+
+        Handles these nested function patterns:
+        - Function declarations inside functions:
+          function outer() {
+            function inner() { ... }  // Replaced with // [BLOCK_REF:123]
+          }
+        - Arrow functions inside methods:
+          class MyClass {
+            method() {
+              const helper = () => { ... }  // Replaced with reference
+            }
+          }
+        - Callback functions:
+          items.map(item => {
+            function transform(x) { ... }  // Replaced with reference
+          })
+        """
         if not nested_functions:
             return original_content
 
@@ -141,7 +176,15 @@ class TypeScriptExtractor(BaseExtractor):
     # ============================================================================
 
     def _extract_destructuring_names(self, node: Any) -> List[str]:
-        """Extract names from destructuring patterns."""
+        """
+        Extract names from destructuring patterns.
+
+        Handles these destructuring patterns:
+        - Object: const { name, age, city } = user → ['name', 'age', 'city']
+        - Object rename: const { name: userName, age: userAge } = user → ['userName', 'userAge']
+        - Array: const [first, second, third] = colors → ['first', 'second', 'third']
+        - Rest: const [head, ...tail] = list → ['head', 'tail']
+        """
         names = []
 
         if node.type == "object_pattern":
@@ -152,29 +195,53 @@ class TypeScriptExtractor(BaseExtractor):
         return names
 
     def _extract_object_pattern_names(self, node: Any) -> List[str]:
-        """Extract names from object destructuring pattern."""
+        """
+        Extract names from object destructuring pattern.
+
+        Handles:
+        - Shorthand: { name, age } → ['name', 'age']
+        - Rename: { name: userName, age: userAge } → ['userName', 'userAge']
+        - Nested: { user: { name, age } } → ['name', 'age']
+        """
         names = []
         for child in node.children:
             if child.type == "shorthand_property_identifier_pattern":
+                # Example: { name, age } - 'name' and 'age' are shorthand
                 names.append(self._get_node_text(child))
             elif child.type == "pair_pattern":
+                # Example: { name: userName } - 'userName' is the value
                 value_node = child.child_by_field_name("value")
                 if value_node:
                     names.extend(self._extract_names_from_node(value_node))
         return names
 
     def _extract_array_pattern_names(self, node: Any) -> List[str]:
-        """Extract names from array destructuring pattern."""
+        """
+        Extract names from array destructuring pattern.
+
+        Handles:
+        - Simple: [first, second, third] → ['first', 'second', 'third']
+        - With holes: [first, , third] → ['first', 'third']
+        - Rest pattern: [head, ...tail] → ['head'] (tail handled elsewhere)
+        """
         names = []
         for child in node.children:
             if child.type == "identifier":
                 names.append(self._get_node_text(child))
+            # Note: rest_pattern (...tail) is handled by _extract_names_from_node recursion
         return names
 
     def _extract_variable_names(self, node: Any) -> List[str]:
-        """Extract variable names from variable declaration."""
+        """
+        Extract variable names from variable declaration.
+
+        Detects these patterns:
+        - Simple: var x = 5 → extracts ['x']
+        - Multiple: var a = 1, b = 2 → calls this for each declarator
+        - Typed: let name: string = 'John' → extracts ['name']
+        """
         names = []
-        if node.type == "variable_declaration":
+        if node.type in ["variable_declaration", "lexical_declaration"]:
             for child in node.children:
                 if child.type == "variable_declarator":
                     name_node = child.child_by_field_name("name")
@@ -183,7 +250,17 @@ class TypeScriptExtractor(BaseExtractor):
         return names
 
     def _extract_import_name(self, node: Any) -> str:
-        """Extract module name from import statement."""
+        """
+        Extract module name from import statement.
+
+        Detects these import patterns:
+        - ES6 imports: import { x } from 'module' → 'module'
+        - Default imports: import React from 'react' → 'react'
+        - Namespace imports: import * as fs from 'fs' → 'fs'
+        - Side-effect imports: import 'styles.css' → 'styles.css'
+        - Dynamic imports: import('module') → 'module'
+        - Type imports: import type { User } from './types' → './types'
+        """
         source_node = node.child_by_field_name("source")
         if source_node and source_node.type == "string":
             return self._get_node_text(source_node).strip("\"'")
@@ -202,7 +279,18 @@ class TypeScriptExtractor(BaseExtractor):
         return names
 
     def _extract_export_names(self, node: Any) -> List[str]:
-        """Extract export names from export statement."""
+        """
+        Extract export names from export statement.
+
+        Detects these export patterns:
+        - Named exports: export { name, age, calculateTotal } → ['name', 'age', 'calculateTotal']
+        - Aliased exports: export { name as userName } → ['userName']
+        - Function exports: export function getName() → ['getName']
+        - Class exports: export class User → ['User']
+        - Variable exports: export const API_URL = '...' → ['API_URL']
+        - Re-exports: export { User } from './types' → ['User']
+        - Default exports: export default MyComponent → ['MyComponent']
+        """
         names = []
 
         # Handle different export types
@@ -234,18 +322,8 @@ class TypeScriptExtractor(BaseExtractor):
         """Extract import statements."""
 
         def process_import(node):
-            import_name = self._extract_import_name(node)
-            names = [import_name] if import_name else []
-
-            # Add imported symbols
-            names.extend(self._extract_named_imports(node))
-
-            # Handle default imports
-            for child in node.children:
-                if child.type == "identifier":
-                    names.append(self._get_node_text(child))
-
-            return self._create_code_block(node, BlockType.IMPORT, names)
+            # Don't extract names for imports - just create the block
+            return self._create_code_block(node, BlockType.IMPORT, [])
 
         import_types = {"import_statement"}
         blocks = self._generic_traversal(root_node, import_types, process_import)
@@ -275,9 +353,18 @@ class TypeScriptExtractor(BaseExtractor):
         return self._generic_traversal(root_node, export_types, process_export)
 
     def extract_functions(self, root_node: Any) -> List[CodeBlock]:
-        """Extract function declarations with nested function extraction for large functions.
+        """
+        Extract function declarations with nested function extraction for large functions.
 
-        Keep this minimal: skip class-member functions inline to avoid duplicates.
+        Detects these function patterns:
+        - Function declarations: function calculateTotal(items) { ... } → ['calculateTotal']
+        - Arrow functions: const handleClick = () => { ... } → ['handleClick']
+        - Method definitions: getName() { ... } → ['getName']
+        - Async functions: async function fetchData() { ... } → ['fetchData']
+        - Generator functions: function* generateIds() { ... } → ['generateIds']
+        - Generic functions: function process<T>(item: T) { ... } → ['process']
+
+        For functions over 300 lines, nested functions are extracted separately.
         """
 
         def process_function(node):
@@ -298,7 +385,24 @@ class TypeScriptExtractor(BaseExtractor):
         return self._generic_traversal(root_node, self.FUNCTION_TYPES, process_function)
 
     def extract_classes(self, root_node: Any) -> List[CodeBlock]:
-        """Extract class declarations with 300-line check for methods."""
+        """
+        Extract class declarations with 300-line check for methods.
+
+        Detects these class patterns:
+        - Basic classes: class User { ... } → ['User']
+        - Generic classes: class Container<T> { ... } → ['Container']
+        - Extended classes: class AdminUser extends User { ... } → ['AdminUser']
+        - Abstract classes: abstract class BaseService { ... } → ['BaseService']
+        - Class expressions: const MyClass = class { ... } → ['MyClass']
+
+        Also extracts class members:
+        - Properties: public name: string → ['name'] (as variables)
+        - Methods: getName() { ... } → ['getName'] (as functions)
+        - Static members: static count = 0 → ['count'] (as variables)
+        - Private members: private #id = 1 → ['#id'] (as variables)
+
+        Methods over 300 lines have nested functions extracted separately.
+        """
 
         def process_class(node):
             name_node = node.child_by_field_name("name")
@@ -351,7 +455,18 @@ class TypeScriptExtractor(BaseExtractor):
         return self._generic_traversal(root_node, self.CLASS_TYPES, process_class)
 
     def extract_interfaces(self, root_node: Any) -> List[CodeBlock]:
-        """Extract interface declarations."""
+        """
+        Extract interface declarations(TypeScript only).
+
+        Detects these interface patterns:
+        - Basic interfaces: interface User {name: string; age: number} →['User']
+        - Generic interfaces: interface Container < T > {item: T} →['Container']
+        - Extended interfaces: interface AdminUser extends User {...} →['AdminUser']
+        - Merged interfaces: interface Window {myProp: string} →['Window']
+        - Namespace interfaces: declare namespace API {interface Response {...}} →['Response']
+
+        Note: Interface properties are NOT extracted as variables(correctly excluded).
+        """
 
         def process_interface(node):
             name_node = node.child_by_field_name("name")
@@ -365,7 +480,17 @@ class TypeScriptExtractor(BaseExtractor):
         )
 
     def extract_type_aliases(self, root_node: Any) -> List[CodeBlock]:
-        """Extract type alias declarations."""
+        """
+        Extract type alias declarations(TypeScript only).
+
+        Detects these type alias patterns:
+        - Union types: type Status = 'pending' | 'approved' | 'rejected' →['Status']
+        - Object types: type Point = {x: number; y: number} →['Point']
+        - Generic types: type Container < T > = {item: T} →['Container']
+        - Function types: type Handler = (event: Event) = > void →['Handler']
+        - Conditional types: type IsString < T > = T extends string ? true: false →['IsString']
+        - Mapped types: type Readonly < T > = {readonly[P in keyof T]: T[P]} →['Readonly']
+        """
 
         def process_type_alias(node):
             name_node = node.child_by_field_name("name")
@@ -379,16 +504,26 @@ class TypeScriptExtractor(BaseExtractor):
         )
 
     def extract_enums(self, root_node: Any) -> List[CodeBlock]:
-        """Extract enum declarations."""
+        """
+        Extract enum declarations (TypeScript only).
+
+        Detects these enum patterns:
+        - Basic enums: enum Status { PENDING = 'pending', APPROVED = 'approved' } → ['Status']
+        - Numeric enums: enum Direction { Up = 1, Down, Left, Right } → ['Direction']
+        - String enums: enum Color { Red = '#ff0000', Green = '#00ff00' } → ['Color']
+        - Const enums: const enum Size { Small = 1, Medium = 2 } → ['Size']
+        - Computed enums: enum Values { A = getValue() } → ['Values']
+
+        Note: Enum members are NOT extracted as variables (correctly excluded).
+        Only the enum declaration itself is detected as a type definition.
+        """
 
         def process_enum(node):
             name_node = node.child_by_field_name("name")
             names = [self._get_node_text(name_node)] if name_node else []
 
-            nested_types = {"property_identifier": BlockType.VARIABLE}
-            return self._create_block_with_nested(
-                node, BlockType.ENUM, names, nested_types
-            )
+            # Don't extract nested blocks for enums (enum members are not variables)
+            return self._create_code_block(node, BlockType.ENUM, names)
 
         return self._generic_traversal(root_node, {"enum_declaration"}, process_enum)
 
@@ -397,19 +532,46 @@ class TypeScriptExtractor(BaseExtractor):
         blocks = []
 
         def process_variable(node):
-            names = self._extract_variable_names(node)
-            return (
-                self._create_code_block(node, BlockType.VARIABLE, names)
-                if names
-                else None
-            )
+            """
+            Process variable declarations and create separate blocks for each variable.
+
+            Handles these patterns:
+            - Multiple declarations: var a = 1, b = 2, c = 3;
+            - Destructuring: const {name, age, city} = user;
+            - Array destructuring: const[first, second, third] = colors;
+            - Mixed types: let x: string = 'hello', y: number = 42;
+            """
+            variable_blocks = []
+            if node.type in ["variable_declaration", "lexical_declaration"]:
+                # Create separate blocks for each variable declarator
+                # Example: "var a = 1, b = 2" has 2 variable_declarator children
+                for child in node.children:
+                    if child.type == "variable_declarator":
+                        # Check if this declarator contains a require call - if so, skip it
+                        # It should be handled by import extraction instead
+                        init_node = child.child_by_field_name("value")
+                        if init_node and self._contains_require_call(init_node):
+                            continue  # Skip require statements, let import extraction handle them
+
+                        name_node = child.child_by_field_name("name")
+                        if name_node:
+                            names = self._extract_names_from_node(name_node)
+                            if names:
+                                # Create separate blocks for each variable name
+                                # This handles destructuring: { name, age } creates 2 blocks
+                                for name in names:
+                                    block = self._create_code_block(
+                                        node, BlockType.VARIABLE, [name]
+                                    )
+                                    variable_blocks.append(block)
+            return variable_blocks
 
         # Only look at direct children of root_node
         for child in root_node.children:
             if child.type in self.VARIABLE_TYPES:
-                block = process_variable(child)
-                if block:
-                    blocks.append(block)
+                variable_blocks = process_variable(child)
+                if variable_blocks:
+                    blocks.extend(variable_blocks)
 
         return blocks
 
@@ -431,17 +593,37 @@ class TypeScriptExtractor(BaseExtractor):
     # ============================================================================
 
     def _find_dynamic_imports(self, root_node: Any) -> List[CodeBlock]:
-        """Find dynamic import() calls."""
+        """
+        Find dynamic import() calls and capture full statement content.
+
+        Captures complete dynamic import statements:
+        - const module = await import('./module') → full statement
+        - import('./utils').then(module => ...) → full statement
+        """
         blocks = []
 
         def traverse(node):
-            if self._is_dynamic_import(node):
-                import_name = self._extract_dynamic_import_name(node)
+            # Look for statements that contain dynamic imports
+            if node.type in [
+                "variable_declaration",
+                "lexical_declaration",
+                "expression_statement",
+            ]:
+                # Check if this statement contains a dynamic import call
+                def find_import_call(n):
+                    if self._is_dynamic_import(n):
+                        return self._extract_dynamic_import_name(n)
+                    for child in getattr(n, "children", []):
+                        result = find_import_call(child)
+                        if result:
+                            return result
+                    return None
+
+                import_name = find_import_call(node)
                 if import_name:
-                    block = self._create_code_block(
-                        node, BlockType.IMPORT, [import_name]
-                    )
+                    block = self._create_code_block(node, BlockType.IMPORT, [])
                     blocks.append(block)
+                    return  # Don't traverse children
 
             for child in node.children:
                 traverse(child)
@@ -450,17 +632,33 @@ class TypeScriptExtractor(BaseExtractor):
         return blocks
 
     def _find_require_calls(self, root_node: Any) -> List[CodeBlock]:
-        """Find require() calls."""
+        """
+        Find require() calls and capture full variable declaration content.
+
+        Captures complete require statements:
+        - const { function1, Class2 } = require("../../utils/azureRepo") → full statement
+        - const utils = require("./utils") → full statement
+        """
         blocks = []
 
         def traverse(node):
-            if self._is_require_call(node):
-                import_name = self._extract_require_name(node)
+            # Look for variable declarations that contain require calls
+            if node.type in ["variable_declaration", "lexical_declaration"]:
+                # Check if this statement contains a require call
+                def find_require_call(n):
+                    if self._is_require_call(n):
+                        return self._extract_require_name(n)
+                    for child in getattr(n, "children", []):
+                        result = find_require_call(child)
+                        if result:
+                            return result
+                    return None
+
+                import_name = find_require_call(node)
                 if import_name:
-                    block = self._create_code_block(
-                        node, BlockType.IMPORT, [import_name]
-                    )
+                    block = self._create_code_block(node, BlockType.IMPORT, [])
                     blocks.append(block)
+                    return  # Don't traverse children
 
             for child in node.children:
                 traverse(child)
@@ -469,7 +667,7 @@ class TypeScriptExtractor(BaseExtractor):
         return blocks
 
     def _is_dynamic_import(self, node: Any) -> bool:
-        """Check if node is a dynamic import() call."""
+        """Check if node is a dynamic import () call."""
         if node.type != "call_expression":
             return False
 
@@ -478,6 +676,15 @@ class TypeScriptExtractor(BaseExtractor):
             return False
 
         return self._get_node_text(function_node) == "import"
+
+    def _contains_require_call(self, node: Any) -> bool:
+        """Check if node contains a require call anywhere in its subtree."""
+        if self._is_require_call(node):
+            return True
+        for child in getattr(node, "children", []):
+            if self._contains_require_call(child):
+                return True
+        return False
 
     def _is_require_call(self, node: Any) -> bool:
         """Check if node is a require() call."""
@@ -491,7 +698,7 @@ class TypeScriptExtractor(BaseExtractor):
         return self._get_node_text(function_node) == "require"
 
     def _extract_dynamic_import_name(self, node: Any) -> str:
-        """Extract module name from dynamic import."""
+        """Extract module name from dynamic import ."""
         arguments = node.child_by_field_name("arguments")
         if arguments and arguments.children:
             first_arg = arguments.children[1] if len(arguments.children) > 1 else None
@@ -516,10 +723,10 @@ class TypeScriptExtractor(BaseExtractor):
         return ""
 
     def _extract_class_level_fields(self, class_node: Any) -> List[CodeBlock]:
-        """Extract class-level field definitions and arrow-function methods.
+        """Extract class -level field definitions and arrow - function methods.
 
-        Minimal approach: detect arrow/functions inline and derive name from the
-        left-hand property identifier only (avoid scanning inner identifiers).
+        Minimal approach: detect arrow / functions inline and derive name from the
+        left - hand property identifier only(avoid scanning inner identifiers).
         """
         fields = []
 
@@ -561,11 +768,13 @@ class TypeScriptExtractor(BaseExtractor):
                             field_name = get_field_name(body_child)
                             if field_name:
                                 # Create as a function block with nested extraction for large functions
-                                method_block = self._create_function_block_with_nested_extraction(
-                                    body_child,
-                                    BlockType.FUNCTION,
-                                    [field_name],
-                                    self.FUNCTION_TYPES,
+                                method_block = (
+                                    self._create_function_block_with_nested_extraction(
+                                        body_child,
+                                        BlockType.FUNCTION,
+                                        [field_name],
+                                        self.FUNCTION_TYPES,
+                                    )
                                 )
                                 fields.append(method_block)
                         else:

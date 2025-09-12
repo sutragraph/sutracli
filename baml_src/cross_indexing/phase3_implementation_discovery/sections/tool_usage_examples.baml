@@ -24,25 +24,25 @@ Example 2: Python - Requests usage analysis in specific files
 SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions)
 
 Example 1: JavaScript - Express usage across many files
-- search_keyword("(app|router)\\.(get|post|put|delete|patch)\\s*\\(", regex=true, after_lines=2)
+- search_keyword("(app|router)\.(get|post|put|delete|patch)", regex=true, case_sensitive=false, after_lines=2)
 - Purpose: Find express route definitions across multiple files efficiently
 - Look for: Route definitions with actual endpoint paths
 - Find: All route definitions found with real endpoints
 
 Example 2: Python - Flask usage across many files
-- search_keyword("@(app|bp)\\.route\\s*\\(\\s*['\"][^'\"]*['\"]", regex=true, after_lines=2)
+- search_keyword("@app.route|@bp.route", regex=true, case_sensitive=false, after_lines=2)
 - Purpose: Find Flask route definitions across multiple files efficiently
 - Look for: Route decorators with actual endpoint paths
 - Find: All route definitions found with real endpoints
 
 Example 3: Multi-language - Wrapper function usage analysis
-- search_keyword("(makeApiCall|apiClient\\.|sendRequest)\\s*\\(", regex=true, after_lines=3)
+- search_keyword("makeApiCall|apiClient|sendRequest", regex=true, case_sensitive=false, after_lines=3)
 - Purpose: Find all usage sites of wrapper functions across the codebase
 - Look for: Wrapper function calls with actual parameters
 - Find: Wrapper function calls with real endpoints and data
 
 Example 4: HTTP calls with improved quote handling
-- search_keyword("axios\\.(get|post|put|delete)\\s*\\(\\s*['\"][^'\"]*['\"]", regex=true, after_lines=2)
+- search_keyword("axios\.(get|post|put|delete)", regex=true, case_sensitive=false, after_lines=2)
 - Purpose: Find axios HTTP calls with actual endpoint URLs
 - Handles both single and double quotes in endpoint strings
 - Look for: HTTP method calls with real URLs and parameters
@@ -65,7 +65,7 @@ const result = await fetch(`${process.env.SERVICE_URL}/api/data`, {
 // FIND THIS - with single quotes
 const data = await axios.post('/api/users', userData)
 
-// FIND THIS - with double quotes  
+// FIND THIS - with double quotes
 const info = await fetch("/api/orders", { method: 'GET' })
 ```
 
@@ -206,7 +206,7 @@ VARIABLE PARAMETER DETECTION PATTERNS:
 - Socket Operations: `eventName`, `event`, `channel` → Search for wrapper calls
 - Database Operations: `tableName`, `collection`, `query` → Search for wrapper calls
 
-WRAPPER FUNCTION DEFINITION CHECK EXAMPLES
+## WRAPPER FUNCTION DEFINITION CHECK EXAMPLES
 
 Example: Python - Socket wrapper function pattern (similar to Socket.IO)
 ```python
@@ -222,17 +222,17 @@ def socket_handler(socketio):
     @socketio.on('connect')
     def handle_connect():
         emit('status', {'msg': 'Connected'})
-    
+
     @socketio.on('user_message')
     def handle_message(data):
         emit('response', {'reply': f"Got: {data['message']}"})
 ```
 
 THINKING: "Found `socket_handler(socketio)` call in main.py - this is in two different files. The call passes connection object to wrapper function. Must use search_keyword to find actual function definition where io is used."
-IMMEDIATE ACTION: CREATE TASK: "Use search_keyword to find socket_handler function definition: def socket_handler\\("
+IMMEDIATE ACTION: CREATE TASK: "Use search_keyword to find socket_handler function definition: def socket_handler\("
 EXPECTED RESULT: Find the actual function definition in handlers.py where socketio connection object is used for real socket operations.
 
-WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - EXAMPLES
+## WHEN TO CREATE TASKS FOR WRAPPER FUNCTION SEARCHES - EXAMPLES
 
 Example 1: Queue operation with variable parameter - CREATE TASK IMMEDIATELY
 When you find connection code like:
@@ -245,18 +245,21 @@ this.channel.sendToQueue(queueName, Buffer.from(message), {
 THINKING: "I found queue operation with variable 'queueName' instead of actual queue name. This is a wrapper function implementation. I need to find where this function is called with real queue names."
 IMMEDIATE ACTION:
 1. Read complete file to find wrapper function name (e.g., `publishMessage`)
-2. CREATE TASK: {
+2. CREATE TASK:
+```
+{
   "sutra_memory": {
     "tasks": [
       {
         "action": "add",
-        "id": "21", 
+        "id": "21",
         "to_status": "current",
-        "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\\s*\\(\\s*['\"][^'\"]*['\"]"
+        "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\("
       }
     ]
   }
 }
+```
 EXPECTED RESULT: Find calls like `publishMessage('user-notifications', data)`, `publishMessage('email-queue', emailData)`
 
 Example 2: HTTP operation with variable endpoint - CREATE TASK IMMEDIATELY
@@ -268,42 +271,48 @@ const response = await axios.get(url, config);
 THINKING: "I found HTTP call with variable 'url' instead of actual endpoint. This is wrapper function usage. I need to find where this function is called with real URLs."
 IMMEDIATE ACTION:
 1. Read complete file to find wrapper function name (e.g., `makeApiCall`)
-2. CREATE TASK: {
-  "sutra_memory": {
-    "tasks": [
-      {
-        "action": "add",
-        "id": "22",
-        "to_status": "current", 
-        "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\\s*\\(\\s*['\"][^'\"]*['\"]"
-      }
-    ]
-  }
-}
-EXPECTED RESULT: Find calls like `makeApiCall('/api/users', 'GET')`, `makeApiCall('/admin/data', 'POST', userData)`
-
-Example 2: Message queue wrapper function with dynamic topics - CREATE TASK
-When you find a queue wrapper function like:
-```python
-def publish_message(topic, message_data):
-    return publisher.send(topic, json.dumps(message_data))
+2. CREATE TASK:
 ```
-THINKING: "I found a message queue wrapper function that takes dynamic topic parameter. I need to search for all publish_message() calls to find the actual topics and message types being sent."
-CREATE TASK: {
+{
   "sutra_memory": {
     "tasks": [
       {
         "action": "add",
         "id": "22",
         "to_status": "current",
-        "description": "Use search_keyword to find all publish_message( wrapper function usage: publish_message\\s*\\(\\s*['\"][^'\"]*['\"]"
+        "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\("
       }
     ]
   }
 }
+```
+EXPECTED RESULT: Find calls like `makeApiCall('/api/users', 'GET')`, `makeApiCall('/admin/data', 'POST', userData)`
+
+Example 3: Message queue wrapper function with dynamic topics - CREATE TASK
+When you find a queue wrapper function like:
+```python
+def publish_message(topic, message_data):
+    return publisher.send(topic, json.dumps(message_data))
+```
+THINKING: "I found a message queue wrapper function that takes dynamic topic parameter. I need to search for all publish_message() calls to find the actual topics and message types being sent."
+CREATE TASK:
+```
+{
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "add",
+        "id": "22",
+        "to_status": "current",
+        "description": "Use search_keyword to find all publish_message( wrapper function usage: publish_message\("
+      }
+    ]
+  }
+}
+```
 Reason: Need to find all actual usage sites to collect the real topics and message data being published
 
-Example 3: Socket wrapper function with dynamic events - CREATE TASK
+Example 4: Socket wrapper function with dynamic events - CREATE TASK
 When you find a socket wrapper function like:
 ```javascript
 function emitEvent(eventName, eventData) {
@@ -311,21 +320,24 @@ function emitEvent(eventName, eventData) {
 }
 ```
 THINKING: "This wrapper function takes dynamic event name and data parameters. I need to find all emitEvent() calls to see what events are being emitted."
-CREATE TASK: {
+CREATE TASK:
+```
+{
   "sutra_memory": {
     "tasks": [
       {
         "action": "add",
         "id": "23",
         "to_status": "current",
-        "description": "Use search_keyword to find all emitEvent( wrapper function calls: emitEvent\\s*\\(\\s*['\"][^'\"]*['\"]"
+        "description": "Use search_keyword to find all emitEvent( wrapper function calls: emitEvent\("
       }
     ]
   }
 }
+```
 Reason: Need to find all usage sites to collect the actual event names and data being emitted
 
-Example 4: Custom client class with dynamic communication methods - CREATE TASK
+Example 5: Custom client class with dynamic communication methods - CREATE TASK
 When you find a custom client class like:
 ```python
 class ServiceClient:
@@ -333,21 +345,51 @@ class ServiceClient:
     def subscribe_to_events(self, channel, callback): ...
 ```
 THINKING: "I found a custom service client class with dynamic parameters. I need to search for all instances where this client is used to find the actual services, actions, and channels being used."
-CREATE TASK: {
+CREATE TASK:
+```{
   "sutra_memory": {
     "tasks": [
       {
         "action": "add",
         "id": "24",
         "to_status": "current",
-        "description": "Use search_keyword to find all serviceClient usage patterns: serviceClient\\.(send_request|subscribe_to_events)\\s*\\("
+        "description": "Use search_keyword to find all serviceClient usage patterns: serviceClient\("
       }
     ]
   }
 }
+```
 Reason: Need to find all method calls on this custom client across the project with real service communication parameters
 
-WHEN NOT TO CREATE TASKS - DECISION MAKING
+Example 6: Environment variable in wrapper function - CHECK SUTRA MEMORY FIRST
+When you find connection code with environment variables like:
+```javascript
+// Found in file analysis
+const response = await axios.get(`${process.env.API_BASE_URL}/users/${userId}`)
+```
+CONDITIONAL TASK CREATION:
+IF environment variable IS already in sutra memory with actual value:
+THINKING: "Environment variable 'API_BASE_URL' is already stored in sutra memory with value 'https://api.production.com'. No need to search for env files."
+ACTION: Continue analysis using the known value from sutra memory
+
+IF environment variable IS NOT in sutra memory:
+THINKING: "Environment variable 'API_BASE_URL' is not found in sutra memory. I need to create task to find .env files or config files where this variable is defined."
+CREATE TASK:
+```
+{
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "add",
+        "id": "25",
+        "to_status": "current",
+        "description": "Search for environment files containing API_BASE_URL: search_keyword('API_BASE_URL', regex=false, case_sensitive=true)"
+      }
+    ]
+  }
+}
+```
+## WHEN NOT TO CREATE TASKS - DECISION MAKING
 
 Example 1: Already found actual connection usage with hardcoded values - DON'T CREATE TASK
 When you find direct connection calls with real parameters:
@@ -438,13 +480,13 @@ When you find any code during analysis, follow this thinking process:
    - If wrapper function with hardcoded values → DON'T CREATE TASK (collect this code)
 
 4. THINK EXPLICITLY: Always include your reasoning with specific examples
-     - "THINKING: Found queue operation `sendToQueue(queueName, message)` with variable 'queueName'. This is wrapper function implementation. Need to search for actual calls with real queue names."
-     - "THINKING: Found HTTP call `axios.get(url, config)` with variable 'url'. This is wrapper function usage. Need to search for actual calls with real endpoints."
+     - "THINKING: Found queue operation `sendToQueue(queueName, message)` with variable 'queueName'. This is wrapper function implementation. Need to search for actual calls with real queue names. so, i will create a task to find actual calls with real queue names."
+     - "THINKING: Found HTTP call `axios.get(url, config)` with variable 'url'. This is wrapper function usage. Need to search for actual calls with real endpoints. so, i will create a task to find actual calls with real endpoints."
      - "THINKING: Found direct queue call `sendToQueue('user-notifications', message)` with hardcoded queue name. This IS the actual connection code to collect."
      - "THINKING: Found direct HTTP call `axios.get('/api/users')` with hardcoded endpoint. This IS the actual connection code to collect."
 
 5. SPECIFIC QUEUE EXAMPLE WORKFLOW:
-   
+
    SCENARIO: Found this code during analysis
    ```javascript
    // Line 49-51 in message-service.js
@@ -452,18 +494,18 @@ When you find any code during analysis, follow this thinking process:
      persistent: true,
    });
    ```
-   
+
    CORRECT ANALYSIS PROCESS:
    1. DETECT: "Found `sendToQueue(queueName, message)` with variable 'queueName' - this is NOT the actual queue name"
    2. IDENTIFY: "This is a wrapper function implementation, not the actual usage site"
    3. READ FILE: Use database tool to read complete message-service.js file
    4. FIND WRAPPER: Look for function name containing this code (e.g., `publishMessage`, `sendNotification`, etc.)
-   5. CREATE TASK: "Use search_keyword to find [wrapperFunctionName] calls with actual queue names: [wrapperFunctionName]\\("
+   5. CREATE TASK: "Use search_keyword to find [wrapperFunctionName] calls with actual queue names: [wrapperFunctionName]\("
    6. EXPECTED RESULTS: Find calls like:
       - `publishMessage('user-notifications', userData)`
       - `publishMessage('email-queue', emailData)`
       - `publishMessage('order-processing', orderData)`
-   
+
    WRONG APPROACH (WHAT NOT TO DO):
    - Collecting `sendToQueue(queueName, message)` as final connection data
    - Moving to next task without searching for actual queue names

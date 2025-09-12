@@ -6,22 +6,23 @@ relationships between files based on import statements.
 """
 
 import os
-
 import zlib
-from loguru import logger
 from pathlib import Path
-from typing import Dict, Optional, Union, Any, cast
+from typing import Any, Dict, Optional, Union, cast
+
+from loguru import logger
 from tree_sitter import Parser
-from tree_sitter_language_pack import get_parser, SupportedLanguage
+from tree_sitter_language_pack import SupportedLanguage, get_parser
 
 from utils.file_utils import (
     get_language_from_extension,
-    should_ignore_file,
-    should_ignore_directory,
     is_text_file,
     read_file_content,
+    should_ignore_directory,
+    should_ignore_file,
 )
 from utils.hash_utils import compute_file_hash
+
 from .extractors import Extractor
 from .relationship_extractors import RelationshipExtractor
 
@@ -128,7 +129,12 @@ class ASTParser:
         file_path = Path(file_path)
 
         # Create file ID first (needed for all cases)
-        file_id = zlib.crc32(str(file_path).encode()) & 0xFFFFFFFF
+        # Convert CRC32 to unsigned 32-bit integer to ensure positive values while preserving full range
+        crc_result = zlib.crc32(str(file_path).encode())
+        file_id = crc_result if crc_result >= 0 else crc_result + (2**32)
+
+        # Read file content once to preserve original formatting
+        file_content = read_file_content(file_path) or ""
 
         # Parse the file first
         ast_tree = self.parse_file(file_path)
@@ -140,11 +146,11 @@ class ASTParser:
                 "language": "unknown",
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": read_file_content(file_path) or "",
+                "content": file_content,
                 "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,
-                "error": "Failed to parse file"
+                "error": "Failed to parse file",
             }
 
         # Get language and check if extractor is available
@@ -157,7 +163,7 @@ class ASTParser:
                 "language": "unknown",
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": read_file_content(file_path) or "",
+                "content": file_content,
                 "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported file type
@@ -174,7 +180,7 @@ class ASTParser:
                 "language": language,
                 "id": file_id,
                 "file_path": str(file_path),
-                "content": ast_tree.root_node.text,
+                "content": file_content,
                 "content_hash": compute_file_hash(file_path) or "",
                 "relationships": [],
                 "unsupported": True,  # Mark as unsupported - no extractor available
@@ -190,7 +196,7 @@ class ASTParser:
             "language": language,
             "id": file_id,
             "file_path": str(file_path),
-            "content": ast_tree.root_node.text,
+            "content": file_content,
             "content_hash": compute_file_hash(file_path) or "",
             "relationships": [],  # Initialize empty relationships list
             "unsupported": False,  # Mark as supported file type

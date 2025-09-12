@@ -70,7 +70,7 @@ def calculate_sum(items):
     return total
 =======
         sum += item
-    return sum 
+    return sum
 >>>>>>> REPLACE
 ```
 

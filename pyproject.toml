@@ -4,7 +4,7 @@ build-backend="setuptools.build_meta"
 
 [project]
 name="sutrakit"
-version="0.1.6"
+version="0.1.13"
 description="A comprehensive AI-powered code analysis and automation CLI tool"
 readme="README.md"
 license = {text="MIT"}
@@ -37,24 +37,17 @@ dependencies = [
     "sqlite-vec==0.1.6",
     "boto3==1.38.36",
     "botocore==1.38.36",
-    "google-auth==2.40.3",
-    "google-cloud-aiplatform==1.98.0",
-    "anthropic==0.55.0",
-    "google-genai==1.21.1",
     "cryptography==44.0.0",
     "requests==2.32.3",
-    "xmltodict==0.14.2",
     "trafilatura==2.0.0",
     "markdownify==1.1.0",
     "dateparser==1.2.2",
     "tree-sitter>=0.25.1",
     "tree-sitter-language-pack>=0.9.0",
-    "PyYAML==6.0.1",
     "setuptools==80.9.0",
     "prompt_toolkit==3.0.48",
     "rich==14.1.0",
     "baml-py==0.206.0",
-    "baml-cli==0.1.0",
 ]
 
 [project.urls]
@@ -62,12 +55,19 @@ Homepage="https://github.com/sutragraph/sutracli"
 Repository="https://github.com/sutragraph/sutracli"
 Issues="https://github.com/sutragraph/sutracli/issues"
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=3.0.0",
+]
+
 [project.scripts]
-sutrakit="cli.main:main"
-sutrakit-setup="sutrakit.setup_directories:main"
+sutrakit="cli:main"
+sutrakit-setup="cli:setup_main"
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-dir]
-"" = "src"
+where = ["src", "."]
+include = ["*"]
+exclude = ["dist*", "build*"]

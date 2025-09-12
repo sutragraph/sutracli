@@ -63,7 +63,7 @@ Example 2: Package file analysis
         "action": "add",
         "id": "2",
         "to_status": "pending",
-        "description": "Use search_keyword tool with pattern 'require\\\\s*\\\\(\\\\s*['\\\"]axios['\\\"]\\\\s*\\\\)|import.*axios' and regex=true to find axios import statements. Look for HTTP client library imports enabling requests to other services."
+        "description": "Use search_keyword tool with pattern 'require.*axios|import.*axios' and regex=true, case_sensitive=false to find axios import statements. Look for HTTP client library imports enabling requests to other services."
       }
     ],
     "add_history": "Used database query GET_FILE_BY_PATH with file_path='package.json' - found axios, express, socket.io packages in dependencies section. Discovered 3 connection packages for import analysis."
@@ -79,11 +79,11 @@ Example 3: Multiple package files analysis
       {
         "action": "add",
         "id": "3",
-        "to_status": "pending", 
-        "description": "Use search_keyword tool with pattern '^\\\\s*import\\\\s+requests|^\\\\s*from\\\\s+requests\\\\s+import' and regex=true to find requests import statements in Python files"
+        "to_status": "pending",
+        "description": "Use search_keyword tool with pattern 'import.*pika|from.*pika' and regex=true, case_sensitive=false to find pika import statements in Python files"
       }
     ],
-    "add_history": "Used database query GET_FILE_BY_PATH with file_path='requirements.txt' - found requests, flask, celery packages. Combined with previous package.json analysis, total 6 connection packages discovered across JavaScript and Python."
+    "add_history": "Used database query GET_FILE_BY_PATH with file_path='requirements.txt' - found pika, flask, celery packages. Combined with previous package.json analysis, total 6 connection packages discovered across JavaScript and Python."
   }
 }
 ```

@@ -162,7 +162,7 @@ def beautify_node_result(
                 mapping.get("sender_file_path", "unknown"),
                 mapping.get("sender_code_snippet", ""),
                 mapping.get("sender_snippet_lines", ""),
-                mapping.get("sender_project", "unknown project")
+                mapping.get("sender_project", "unknown project"),
             )
             if sender_key not in sender_groups:
                 sender_groups[sender_key] = []
@@ -170,10 +170,17 @@ def beautify_node_result(
 
         group_num = 1
         for sender_key, mappings in sender_groups.items():
-            sender_file_path, sender_code_snippet, sender_snippet_lines, sender_project = sender_key
+            (
+                sender_file_path,
+                sender_code_snippet,
+                sender_snippet_lines,
+                sender_project,
+            ) = sender_key
 
             sender_project = mappings[0].get("sender_project", "unknown project")
-            result_parts.append(f"{group_num}. {sender_file_path} [project: {sender_project}]")
+            result_parts.append(
+                f"{group_num}. {sender_file_path} [project: {sender_project}]"
+            )
 
             # Add sender code snippet with line numbers (only once per group)
             if sender_code_snippet and sender_code_snippet.strip():
@@ -203,7 +210,9 @@ def beautify_node_result(
                 receiver_snippet_lines = mapping.get("receiver_snippet_lines", "")
 
                 receiver_project = mapping.get("receiver_project", "unknown project")
-                result_parts.append(f"   {receiver_file_path} [project: {receiver_project}]")
+                result_parts.append(
+                    f"   {receiver_file_path} [project: {receiver_project}]"
+                )
 
                 # Add receiver code snippet with line numbers
                 if receiver_code_snippet and receiver_code_snippet.strip():
@@ -291,7 +300,9 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
             out.append("")
             chains_count = len(chains)
             if max_depth is not None:
-                out.append(f"Dependency Chain (max_depth={max_depth}, chains={chains_count})")
+                out.append(
+                    f"Dependency Chain (max_depth={max_depth}, chains={chains_count})"
+                )
             else:
                 out.append(f"Dependency Chain (chains={chains_count})")
             for i, row in enumerate(chains, 1):
@@ -307,7 +318,9 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
                 itype = imp.get("impact_type", "?")
                 conf = imp.get("match_confidence")
                 desc = imp.get("description", "")
-                conf_str = f"{int(conf)}%" if isinstance(conf, (int, float)) else str(conf)
+                conf_str = (
+                    f"{int(conf)}%" if isinstance(conf, (int, float)) else str(conf)
+                )
                 out.append(
                     f"{i}) {anchor} => {other} [tech={tech_name}; impact={itype}; conf={conf_str}]"
                 )
@@ -336,12 +349,16 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
                         parts.append(code_lines[j])
                     return "\n".join(parts)
 
-                a_snip = _num_snip(imp.get("anchor_code_snippet", ""), imp.get("anchor_snippet_lines"))
+                a_snip = _num_snip(
+                    imp.get("anchor_code_snippet", ""), imp.get("anchor_snippet_lines")
+                )
                 if a_snip:
                     out.append("   code@anchor:")
                     out.extend([f"     {line}" for line in a_snip.split("\n")])
 
-                o_snip = _num_snip(imp.get("other_code_snippet", ""), imp.get("other_snippet_lines"))
+                o_snip = _num_snip(
+                    imp.get("other_code_snippet", ""), imp.get("other_snippet_lines")
+                )
                 if o_snip:
                     out.append("   code@other:")
                     out.extend([f"     {line}" for line in o_snip.split("\n")])
@@ -424,7 +441,7 @@ def beautify_node_result_metadata_only(node, idx=None, total_nodes=None):
             f"Total blocks: {total_nodes}",
             "",
             "File Structure:",
-            tree_line
+            tree_line,
         ]
     else:
         result_parts = [tree_line]

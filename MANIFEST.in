@@ -1,12 +1,9 @@
 include README.md
-include INSTALL.md
-include SETUP.md
 include LICENSE
-include requirements.txt
 include pyproject.toml
-recursive-include src *.py
-recursive-include configs *.json
-recursive-include src/parser/config *.json
+recursive-include . *.py
+recursive-include baml_src *
+recursive-include baml_client *.py
 global-exclude *.pyc
-global-exclude __pycache__
-global-exclude .DS_Store
+global-exclude __pycache__/*
+global-exclude *.egg-info/*

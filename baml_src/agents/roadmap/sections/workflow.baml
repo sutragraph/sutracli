@@ -40,7 +40,6 @@ Phase 2: Code Reuse & Pattern Analysis
     Level 3: Targeted semantic_search (with project_name) - if block summary shows relevant functions
     Level 4: search_keyword - only for specific symbols found in block summaries
     Level 5: GET_FILE_BY_PATH with line ranges - only after confirming relevance
-  - NEGATIVE RESULT EXIT RULE: If same keyword searched >2 times in same project with no results, immediately use GET_FILE_BLOCK_SUMMARY on main files
   - Document reuse decisions: what exists, why it can/cannot be reused, what modifications needed
 
 ### Phase 3: Impact Assessment

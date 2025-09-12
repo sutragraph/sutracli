@@ -1,15 +1,13 @@
-from embeddings.vector_store import VectorStore
+from typing import Any, Dict, Iterator, List, Optional
+
 from loguru import logger
-from typing import Iterator, Dict, Any, List, Optional
+
 from embeddings import get_vector_store
+from embeddings.vector_store import VectorStore
 from graph.graph_operations import GraphOperations
 from graph.sqlite_client import SQLiteConnection
 from models.agent import AgentAction
-from tools.utils.constants import (
-    SEMANTIC_SEARCH_CONFIG,
-)
-
-
+from tools.utils.constants import SEMANTIC_SEARCH_CONFIG
 from tools.utils.enriched_context_formatter import (
     beautify_enriched_context_auto,
     format_chunk_with_enriched_context,
@@ -89,9 +87,7 @@ def _extract_chunk_specific_code(
 
     try:
         # Calculate relative line positions within the content
-        relative_start = max(
-            0, (chunk_start_line or 1) - (node_start_line or 1)
-        )
+        relative_start = max(0, (chunk_start_line or 1) - (node_start_line or 1))
         relative_end = (chunk_end_line or 1) - (node_start_line or 1) + 1
 
         code_lines = content.split("\n")
@@ -147,9 +143,7 @@ def _deduplicate_block_results(
             other_results.append(result)
 
     # Combine deduplicated results
-    deduplicated = (
-        list(block_results.values()) + file_results + other_results
-    )
+    deduplicated = list(block_results.values()) + file_results + other_results
 
     # Sort by similarity to maintain quality order
     deduplicated.sort(key=lambda x: x.get("similarity", 0.0), reverse=True)
@@ -187,9 +181,7 @@ def _process_sequential_chunk_results(
             if result["node_id"].startswith("block_"):
                 # For code blocks: Check block size against threshold
                 block_total_lines = _get_block_total_lines(enriched_context)
-                block_chunk_threshold = SEMANTIC_SEARCH_CONFIG[
-                    "block_chunk_threshold"
-                ]
+                block_chunk_threshold = SEMANTIC_SEARCH_CONFIG["block_chunk_threshold"]
 
                 logger.debug(
                     f"Block {result['node_id']}: {block_total_lines} lines "
@@ -203,16 +195,14 @@ def _process_sequential_chunk_results(
                 # Check if we should try to use chunk
                 if (
                     block_total_lines > block_chunk_threshold
-                    and chunk_start_line and chunk_end_line
+                    and chunk_start_line
+                    and chunk_end_line
                     and "block" in enriched_context
                     and enriched_context["block"].get("content")
                 ):
-
                     # Extract the chunk from the block content
                     block_content = enriched_context["block"]["content"]
-                    block_start_line = enriched_context["block"].get(
-                        "start_line", 1
-                    )
+                    block_start_line = enriched_context["block"].get("start_line", 1)
 
                     # Calculate relative position within the block
                     relative_start = max(0, (chunk_start_line - block_start_line))
@@ -222,9 +212,8 @@ def _process_sequential_chunk_results(
                     content_lines = block_content.split("\n")
 
                     # Only use chunk if boundaries are valid
-                    if (
-                        relative_start < len(content_lines)
-                        and relative_end <= len(content_lines)
+                    if relative_start < len(content_lines) and relative_end <= len(
+                        content_lines
                     ):
                         chunk_lines = content_lines[relative_start:relative_end]
                         chunk_data = "\n".join(chunk_lines)
@@ -233,7 +222,11 @@ def _process_sequential_chunk_results(
                         reason = "chunk extraction failed"
 
                 # Format the result based on whether we're using chunk or full block
-                if use_chunk and chunk_start_line is not None and chunk_end_line is not None:
+                if (
+                    use_chunk
+                    and chunk_start_line is not None
+                    and chunk_end_line is not None
+                ):
                     logger.debug(
                         f"Using chunk for large block {result['node_id']} "
                         f"(lines {chunk_start_line}-{chunk_end_line})"
@@ -248,9 +241,7 @@ def _process_sequential_chunk_results(
                         node_id=result["node_id"],
                     )
                 else:
-                    logger.debug(
-                        f"Using full block for {result['node_id']} ({reason})"
-                    )
+                    logger.debug(f"Using full block for {result['node_id']} ({reason})")
                     beautified_result = beautify_enriched_context_auto(
                         enriched_context,
                         i,

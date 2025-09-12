@@ -6,22 +6,22 @@ Code processing utility functions for handling code snippets, chunking, and line
 def merge_overlapping_ranges(ranges):
     """
     Merge overlapping line ranges for the same file.
-    
+
     Args:
         ranges: List of tuples [(start_line, end_line), ...]
-        
+
     Returns:
         List of merged non-overlapping ranges
     """
     if not ranges:
         return []
-    
+
     # Sort ranges by start line
     sorted_ranges = sorted(ranges, key=lambda x: x[0])
     merged = []
-    
+
     current_start, current_end = sorted_ranges[0]
-    
+
     for start, end in sorted_ranges[1:]:
         # Check if current range overlaps with the next range
         if start <= current_end + 1:  # +1 allows for adjacent ranges to be merged
@@ -31,10 +31,10 @@ def merge_overlapping_ranges(ranges):
             # No overlap, add current range to result and start new range
             merged.append((current_start, current_end))
             current_start, current_end = start, end
-    
+
     # Add the last range
     merged.append((current_start, current_end))
-    
+
     return merged
 
 
@@ -167,7 +167,9 @@ def chunk_large_code_clean(code_snippet, max_lines, chunk_threshold, file_start_
     logger.debug(f"📦 Content has {total_lines} lines")
 
     if total_lines <= chunk_threshold:
-        logger.debug(f"📊 File too small ({total_lines} <= {chunk_threshold}) - no chunking needed")
+        logger.debug(
+            f"📊 File too small ({total_lines} <= {chunk_threshold}) - no chunking needed"
+        )
         numbered_code = add_line_numbers_to_code(code_snippet, file_start_line)
 
         return [
@@ -190,7 +192,11 @@ def chunk_large_code_clean(code_snippet, max_lines, chunk_threshold, file_start_
     remaining_after_full_chunks = total_lines % max_lines
 
     # If the last chunk would be very small (< 50 lines), redistribute
-    if estimated_chunks > 1 and remaining_after_full_chunks > 0 and remaining_after_full_chunks < 50:
+    if (
+        estimated_chunks > 1
+        and remaining_after_full_chunks > 0
+        and remaining_after_full_chunks < 50
+    ):
         logger.debug("📦 Using redistribution to avoid small trailing chunk")
         # Redistribute lines more evenly
         lines_per_chunk = total_lines // (estimated_chunks - 1)
@@ -227,7 +233,6 @@ def chunk_large_code_clean(code_snippet, max_lines, chunk_threshold, file_start_
         start_idx = end_idx
 
     else:
-
         # Regular chunking for normal cases
         chunks = []
         chunk_num = 1

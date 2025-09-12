@@ -7,10 +7,11 @@ and ignore pattern matching.
 
 import fnmatch
 from pathlib import Path
-from typing import Optional, Union, Dict, List
+from typing import Dict, List, Optional, Union
 
 from tree_sitter_language_pack import SupportedLanguage
-from .ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
+
+from .ignore_patterns import IGNORE_DIRECTORY_PATTERNS, IGNORE_FILE_PATTERNS
 from .langauge_extension_map import LANGUAGE_EXTENSION_MAP
 
 
@@ -167,6 +168,7 @@ def get_extraction_file_path(project_name: str) -> Path:
         Absolute path to the extraction file
     """
     import time
+
     from config import config
 
     if not project_name:
@@ -182,7 +184,7 @@ def get_extraction_file_path(project_name: str) -> Path:
     return Path(base_path).resolve() / f"{project_name}_extraction_{timestamp}.json"
 
 
-def get_last_extraction_file_path(project_name: str) -> Union[Path , None]:
+def get_last_extraction_file_path(project_name: str) -> Union[Path, None]:
     """
     Get the most recent extraction file path for a given project.
 
@@ -193,6 +195,7 @@ def get_last_extraction_file_path(project_name: str) -> Union[Path , None]:
         Path to the most recent extraction file, or None if not found
     """
     import glob
+
     from config import config
 
     if not project_name:

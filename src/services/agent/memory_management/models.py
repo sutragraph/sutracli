@@ -4,10 +4,10 @@ Sutra Memory Manager Models
 Data classes and enums for the memory management system.
 """
 
-from typing import Optional
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Optional
 
 
 class TaskStatus(Enum):

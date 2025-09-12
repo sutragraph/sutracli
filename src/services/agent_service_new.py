@@ -1,22 +1,21 @@
 """Agent Service with unified tool status handling."""
 
-
-from typing import Optional, Dict, Any
-from loguru import logger
-from rich.prompt import Confirm
-from rich.panel import Panel
-from rich.text import Text
-from utils.console import console
-from tools import execute_tool, AllToolParams
-
-from baml_client.types import SutraMemoryParams
-from .agent.session_management import SessionManager
-from .agent.memory_management import SutraMemoryManager
-from .project_manager import ProjectManager
 from pathlib import Path
+from typing import Any, Dict, Optional
 
+from loguru import logger
+from rich.panel import Panel
+from rich.prompt import Confirm
+from rich.text import Text
 
-from agents_new import Agent, execute_agent, AgentResponse, RoadmapResponse
+from agents_new import Agent, AgentResponse, RoadmapResponse, execute_agent
+from baml_client.types import SutraMemoryParams
+from tools import AllToolParams, execute_tool
+from utils.console import console
+
+from .agent.memory_management import SutraMemoryManager
+from .agent.session_management import SessionManager
+from .project_manager import ProjectManager
 
 
 class AgentService:
@@ -26,8 +25,7 @@ class AgentService:
         self,
         session_id: Optional[str] = None,
         agent_name: Optional[Agent] = None,
-        project_path: Optional[Path] = None
-
+        project_path: Optional[Path] = None,
     ):
         """Initialize the Agent Service.
 
@@ -93,7 +91,7 @@ class AgentService:
                 project_info,
                 title="[bold yellow]Project Not Found[/bold yellow]",
                 border_style="yellow",
-                padding=(1, 2)
+                padding=(1, 2),
             )
 
             console.print()
@@ -102,7 +100,7 @@ class AgentService:
 
             self._should_index_current_project = Confirm.ask(
                 "[bold cyan]Would you like to index this repository now?[/bold cyan]",
-                default=True
+                default=True,
             )
 
             if self._should_index_current_project:
@@ -112,11 +110,12 @@ class AgentService:
                 try:
                     # Perform the indexing
                     self.project_manager.auto_index_project(
-                        self.current_project_name,
-                        project_path
+                        self.current_project_name, project_path
                     )
 
-                    console.success(f"Successfully indexed project '{self.current_project_name}'")
+                    console.success(
+                        f"Successfully indexed project '{self.current_project_name}'"
+                    )
 
                 except Exception as e:
                     logger.error(f"Failed to index project: {e}")
@@ -124,7 +123,9 @@ class AgentService:
                     console.warning("Continuing with limited functionality...")
 
             else:
-                console.warning("Project indexing skipped. Some features may be limited.")
+                console.warning(
+                    "Project indexing skipped. Some features may be limited."
+                )
 
         except Exception as e:
             logger.error(f"Error during project indexing prompt: {e}")
@@ -168,18 +169,18 @@ class AgentService:
         return self.solve_problem(problem_query=user_input)
 
     def solve_problem(self, problem_query: str) -> Optional[AllToolParams]:
-        if (self._should_index_current_project):
+        if self._should_index_current_project:
             console.warning("Project is not indexed. Some features may be limited.")
         else:
             # Perform incremental indexing
-            self.project_manager.perform_incremental_indexing(
-                self.current_project_name
-            )
+            self.project_manager.perform_incremental_indexing(self.current_project_name)
 
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
 
-        logger.debug(f"Session {self.session_manager.session_id} - Starting new query {query_id}")
+        logger.debug(
+            f"Session {self.session_manager.session_id} - Starting new query {query_id}"
+        )
 
         current_iteration = 0
         max_iterations = 50
@@ -189,28 +190,32 @@ class AgentService:
                 current_iteration += 1
                 if current_iteration == 15:
                     console.print()
-                    console.print("[yellow]Completed 15 iterations. Current progress:[/yellow]")
+                    console.print(
+                        "[yellow]Completed 15 iterations. Current progress:[/yellow]"
+                    )
 
                     should_continue = Confirm.ask(
-                        f"[bold cyan]Continue with the remaining {
-                            max_iterations - current_iteration} iterations?[/bold cyan]",
-                        default=True
+                        f"[bold cyan]Continue with the remaining {max_iterations - current_iteration} iterations?[/bold cyan]",
+                        default=True,
                     )
 
                     if not should_continue:
-                        console.print("[yellow]Task stopped by user after 15 iterations.[/yellow]")
+                        console.print(
+                            "[yellow]Task stopped by user after 15 iterations.[/yellow]"
+                        )
                         return None
 
                 # Store current problem query for potential modification during file verification
                 self._current_problem_query = problem_query
 
-                user_message = self._build_user_message(problem_query, current_iteration)
+                user_message = self._build_user_message(
+                    problem_query, current_iteration
+                )
 
                 logger.debug(f"Invoking agent: {self.agent_name}")
 
                 agent_response: AgentResponse = execute_agent(
-                    self.agent_name,
-                    context=user_message
+                    self.agent_name, context=user_message
                 )
 
                 # Check if completion occurred
@@ -253,6 +258,7 @@ class AgentService:
         """Handle roadmap post-processing and return continuation info if needed."""
         try:
             from src.agent_management.post_requisites.handlers import get_agent_handler
+
             logger.debug("Starting roadmap post-processing...")
             handler = get_agent_handler(self.agent_name)
             post_result = handler.process_agent_result_direct(self.result)
@@ -337,7 +343,9 @@ class AgentService:
 
     def _build_memory_status(self, current_iteration: int) -> str:
         if current_iteration == 1:
-            memory_status = "No previous memory available. This is first message from user."
+            memory_status = (
+                "No previous memory available. This is first message from user."
+            )
             logger.debug("Agent: First iteration with empty memory")
             return f"\nSUTRA MEMORY STATUS\n\n{memory_status}"
         else:
@@ -394,7 +402,7 @@ class AgentService:
                         self._set_feedback_tool_status(feedback)
 
                         # Modify problem query for next iteration
-                        if hasattr(self, '_current_problem_query'):
+                        if hasattr(self, "_current_problem_query"):
                             if "FILE DOES NOT EXIST" in feedback:
                                 self._current_problem_query = f"{self._current_problem_query}\n\nIMPORTANT: The provided file paths for modify or delete operations do not exist. {feedback}"
                             else:
@@ -403,11 +411,7 @@ class AgentService:
                         return False  # Don't show completion, continue agent loop
 
             # Execute tool for formatting and display (only if file paths are valid)
-            self.last_tool_result = execute_tool(
-                Agent.ROADMAP,
-                tool_name,
-                tool_params
-            )
+            self.last_tool_result = execute_tool(Agent.ROADMAP, tool_name, tool_params)
 
         return is_completion
 
@@ -436,7 +440,7 @@ class AgentService:
         header = Text("THINKING", style="bold yellow")
 
         content_lines = []
-        for line in thinking.split('\n'):
+        for line in thinking.split("\n"):
             if line.strip():
                 content_lines.append(line)
             else:
@@ -464,9 +468,14 @@ class AgentService:
                 memory_summary = self.memory_manager.get_memory_for_llm()
                 # Update session manager with the rich memory content
                 self.session_manager.update_sutra_memory(memory_summary)
-                logger.debug(f"Updated Sutra Memory in session: {len(memory_summary)} characters")
-                logger.debug(f"Memory includes {len(self.memory_manager.get_all_code_snippets())} code snippets")
+                logger.debug(
+                    f"Updated Sutra Memory in session: {len(memory_summary)} characters"
+                )
+                logger.debug(
+                    f"Memory includes {len(self.memory_manager.get_all_code_snippets())} code snippets"
+                )
             except Exception as e:
                 logger.error(f"Error updating session memory: {e}")
             logger.debug(
-                f"Processed sutra memory changes: {sum(len(v) for v in results['changes_applied'].values())} total changes")
+                f"Processed sutra memory changes: {sum(len(v) for v in results['changes_applied'].values())} total changes"
+            )

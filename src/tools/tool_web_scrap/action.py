@@ -1,13 +1,14 @@
-import requests
-from typing import Optional, Dict, Any
-from urllib.parse import urlparse
-import trafilatura
-from trafilatura.settings import use_config
 import time
-from loguru import logger
+from typing import Any, Dict, Iterator, Optional
+from urllib.parse import urlparse
+
 import markdownify
+import requests
+import trafilatura
+from loguru import logger
+from trafilatura.settings import use_config
+
 from config.settings import config
-from typing import Iterator, Dict, Any
 from models.agent import AgentAction
 
 

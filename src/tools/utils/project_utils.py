@@ -2,8 +2,9 @@
 Project utilities for auto-detection and path resolution.
 """
 
-from typing import Optional, List, Tuple, Dict, Any
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 from loguru import logger
 
 from graph.sqlite_client import SQLiteConnection

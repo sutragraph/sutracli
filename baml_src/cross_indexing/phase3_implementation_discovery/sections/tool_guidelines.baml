@@ -10,8 +10,8 @@ This section provides specific guidelines for using tools effectively during imp
 CRITICAL THINKING APPROACH: Check your sutra memory history first! If you found ANY results, immediately move to the next task. If the current analysis approach returned NO results and this is your first try, think: "What different search pattern, analysis method, or tool approach should I try to find this implementation?" However, if you see in your sutra memory history that you've already tried 2-3 similar tool calls for the same file/pattern with zero results, mark that task as complete and move to the next task rather than repeating the same approaches.
 
 RETRY THINKING EXAMPLES:
-- If database tool shows no axios usage in a file (1st try), think: "Should I try search_keyword with 'axios\\\\.' pattern across files?"
-- If search_keyword for 'app\\\\.get' returns no results (1st try), think: "Should I try 'router\\\\.', 'express\\\\(\\\\)', or broader patterns?"
+- If database tool shows no axios usage in a file (1st try), think: "Should I try search_keyword with 'axios' pattern across files?"
+- If search_keyword for 'app.get' returns no results (1st try), think: "Should I try 'router', 'express', or broader patterns?"
 - Check sutra memory: If you see 2-3 analysis attempts with zero results already tried for same objective, move to completion
 - Example: "I see in sutra memory I already tried database tool on file1, search_keyword with pattern1, search_keyword with pattern2 - this task should be marked complete"
 
@@ -51,7 +51,7 @@ Before Marking Any Task Complete (Only when results = 0):
 - Only after 2-3 documented different attempts with zero results should you mark task complete
 
 Implementation Discovery Retry Strategy (Only when zero results found):
-- 1st attempt: Use primary tool approach as specified in import discovery task  
+- 1st attempt: Use primary tool approach as specified in import discovery task
 - 2nd attempt: Try alternative tool or broader search pattern - ONLY if 1st attempt found 0 results
 - 3rd attempt: Try different analysis method or alternative file approaches - ONLY if 2nd attempt found 0 results
 - After 3 attempts with zero results: Mark complete and move to next task
@@ -123,8 +123,8 @@ Critical Workflow for Dynamic Parameters:
 
 Task Format Examples:
 - "Found wrapper function with dynamic parameters in src/utils/helper.js. Use database tool to read complete file and identify function name. Then create task to find actual usage patterns."
-- "Found apiCallFunction() wrapper with url parameter. Use search_keyword to find apiCallFunction usage patterns: apiCallFunction\\("
-- "Found makeRequest() function with dynamic endpoint. Use search_keyword to find makeRequest calls: makeRequest\\("
+- "Found apiCallFunction() wrapper with url parameter. Use search_keyword to find apiCallFunction usage patterns: apiCallFunction\("
+- "Found makeRequest() function with dynamic endpoint. Use search_keyword to find makeRequest calls: makeRequest\("
 
 7. COMPLETION CRITERIA
 

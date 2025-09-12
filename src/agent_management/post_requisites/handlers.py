@@ -2,16 +2,18 @@
 Specific handlers for different agents' post-requisites.
 """
 
-from typing import Dict, Any
 import os
+from typing import Any, Dict
+
+from loguru import logger
 from rich.panel import Panel
-from rich.text import Text
 from rich.prompt import Confirm
+from rich.text import Text
+
 from agent_management.providers.manager import get_agent_provider_manager
 from agents_new import Agent
-from utils.console import console
 from tools import RoadmapCompletionParams
-from loguru import logger
+from utils.console import console
 
 
 class RoadmapAgentHandler:
@@ -143,7 +145,8 @@ class RoadmapAgentHandler:
                 prompt_parts.append("## Integration Contracts")
                 prompt_parts.append("")
                 prompt_parts.append(
-                    "The following contracts define the interfaces this project must implement or consume:")
+                    "The following contracts define the interfaces this project must implement or consume:"
+                )
                 prompt_parts.append("")
 
                 for i, contract in enumerate(contracts, 1):
@@ -156,7 +159,9 @@ class RoadmapAgentHandler:
                     input_format = contract.get("input_format", [])
                     output_format = contract.get("output_format", [])
                     error_codes = contract.get("error_codes", [])
-                    authentication_required = contract.get("authentication_required", False)
+                    authentication_required = contract.get(
+                        "authentication_required", False
+                    )
                     examples = contract.get("examples", "")
                     instructions_contract = contract.get("instructions", "")
 
@@ -203,8 +208,12 @@ class RoadmapAgentHandler:
 
                             # Format the 'required' text only if the key is present
                             req_text = ""
-                            if 'required' in field:
-                                req_text = " (required)" if field['required'] else " (optional)"
+                            if "required" in field:
+                                req_text = (
+                                    " (required)"
+                                    if field["required"]
+                                    else " (optional)"
+                                )
 
                             # 1. Add the main line for the current field
                             prompt_parts.append(
@@ -481,14 +490,18 @@ class RoadmapAgentHandler:
         if not selected_provider:
             print("\n🤖 External Agent Provider Setup Required")
             print("=" * 50)
-            print("To process the roadmap results, please select an external agent provider:")
+            print(
+                "To process the roadmap results, please select an external agent provider:"
+            )
 
-            selected_provider = self.provider_manager.prompt_user_for_provider_selection()
+            selected_provider = (
+                self.provider_manager.prompt_user_for_provider_selection()
+            )
             if not selected_provider:
                 return {
                     "success": False,
                     "error": "No external agent provider selected",
-                    "processed_actions": []
+                    "processed_actions": [],
                 }
 
         # Verify the selected provider is available
@@ -504,7 +517,7 @@ class RoadmapAgentHandler:
                 return {
                     "success": False,
                     "error": f"Selected provider '{selected_provider}' is not available",
-                    "processed_actions": []
+                    "processed_actions": [],
                 }
             selected_provider = new_provider
 
@@ -524,17 +537,19 @@ class RoadmapAgentHandler:
         return {
             "success": successful_spawns > 0,
             "message": f"Successfully spawned {successful_spawns}/{total_spawns} external agents",
-            "processed_actions": [{
-                "action": "spawn_external_agents",
-                "success": successful_spawns > 0,
-                "message": f"Spawned {successful_spawns}/{total_spawns} agents",
-                "details": {
-                    "total_projects": total_spawns,
-                    "successful_spawns": successful_spawns,
-                    "failed_spawns": total_spawns - successful_spawns,
-                    "results": spawn_results
+            "processed_actions": [
+                {
+                    "action": "spawn_external_agents",
+                    "success": successful_spawns > 0,
+                    "message": f"Spawned {successful_spawns}/{total_spawns} agents",
+                    "details": {
+                        "total_projects": total_spawns,
+                        "successful_spawns": successful_spawns,
+                        "failed_spawns": total_spawns - successful_spawns,
+                        "results": spawn_results,
+                    },
                 }
-            }]
+            ],
         }
 
     def _get_confirmation(self) -> Dict[str, Any]:
@@ -620,7 +635,7 @@ class BaseAgentHandler:
         return {
             "success": True,
             "message": f"No post-requisites configured for agent: {self.agent_key}",
-            "processed_actions": []
+            "processed_actions": [],
         }
 
 

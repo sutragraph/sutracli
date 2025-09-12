@@ -2,12 +2,13 @@
 Tool Delivery Actions Factory
 
 - Pattern: per-tool subclasses implement delivery batch functionality
-- Usage: ActionExecutor asks factory for a delivery handler by tool name
 - Centralizes all fetch_next_chunk and batch delivery logic
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
 from loguru import logger
+
 from services.agent.delivery_management import delivery_manager
 
 # Delivery queue configuration for different tool types
@@ -350,7 +351,9 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
             start_line = chunk_info.get("start_line", 1)
             end_line = chunk_info.get("end_line", 0)
 
-            logger.debug(f"📦 Delivering chunk {chunk_num}/{total_chunks} (lines {start_line}-{end_line})")
+            logger.debug(
+                f"📦 Delivering chunk {chunk_num}/{total_chunks} (lines {start_line}-{end_line})"
+            )
 
             # Build the event for the first chunk
             query_name = action_parameters.get("query_name", "unknown")
@@ -371,7 +374,7 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                     "delivered_lines": end_line - start_line + 1,
                     "total_lines": original_file_lines,
                 },
-                "chunk_info": chunk_info
+                "chunk_info": chunk_info,
             }
 
             return event
@@ -393,7 +396,9 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 logger.debug(f"📦 Advanced queue position to {delivered_count}")
 
             # Build event for non-chunked content
-            combined_data = "\n\n".join(str(item.get("data", "")) for item in line_based_batch)
+            combined_data = "\n\n".join(
+                str(item.get("data", "")) for item in line_based_batch
+            )
 
             query_name = action_parameters.get("query_name", "unknown")
             is_metadata_only = query_name == "GET_FILE_BLOCK_SUMMARY"
@@ -414,7 +419,10 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                     "delivered_count": delivered_count,
                     "remaining_count": remaining_nodes,
                     "delivered_lines": len(combined_data.split("\n")),
-                    "total_lines": sum(len(str(item.get("data", "")).split("\n")) for item in delivery_items),
+                    "total_lines": sum(
+                        len(str(item.get("data", "")).split("\n"))
+                        for item in delivery_items
+                    ),
                 },
             }
 
@@ -448,7 +456,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 )
 
         if next_item:
-
             # Format the response based on the original query type
             base_response = {
                 "total_nodes": next_item.get("total_nodes", 1),
@@ -464,7 +471,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
                 "data": next_item.get("data", ""),
                 **base_response,
             }
-
 
             return event
         else:
@@ -576,8 +582,6 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
 
 class ListFilesDeliveryAction(BaseDeliveryAction):
     """Delivery action for list_files tool."""
-
-
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
         """Handle fetch_next_chunk requests for list_files."""

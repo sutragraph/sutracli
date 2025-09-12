@@ -3,10 +3,11 @@ Apply diff executor for handling apply_diff tool actions.
 """
 
 import re
-import uuid
 import time
+import uuid
 from pathlib import Path
-from typing import Iterator, Dict, Any, Optional
+from typing import Any, Dict, Iterator, Optional
+
 from loguru import logger
 
 from config.settings import config
@@ -122,28 +123,34 @@ class ApplyDiffExecutor:
         search_blocks = []
 
         # Split by >>>>>>> REPLACE to get individual blocks
-        parts = cleaned_diff.split('>>>>>>> REPLACE')
+        parts = cleaned_diff.split(">>>>>>> REPLACE")
 
         for part in parts[:-1]:  # Last part is empty after split
             # Look for the search header
-            if '<<<<<<<' in part and 'SEARCH' in part:
-                lines = part.strip().split('\n')
+            if "<<<<<<<" in part and "SEARCH" in part:
+                lines = part.strip().split("\n")
 
                 # Find the search header line
                 search_header_idx = -1
                 start_line = None
 
                 for i, line in enumerate(lines):
-                    if '<<<<<<<' in line and 'SEARCH' in line:
+                    if "<<<<<<<" in line and "SEARCH" in line:
                         search_header_idx = i
                         break
 
                 # Look for start_line in the next few lines after the search header
                 if search_header_idx >= 0:
-                    for i in range(search_header_idx, min(search_header_idx + 3, len(lines))):
-                        if ':start_line:' in lines[i]:
+                    for i in range(
+                        search_header_idx, min(search_header_idx + 3, len(lines))
+                    ):
+                        if ":start_line:" in lines[i]:
                             try:
-                                start_line = int(re.search(r':start_line:\s*(\d+)', lines[i]).group(1))
+                                start_line = int(
+                                    re.search(r":start_line:\s*(\d+)", lines[i]).group(
+                                        1
+                                    )
+                                )
                                 break
                             except:
                                 start_line = None
@@ -152,29 +159,33 @@ class ApplyDiffExecutor:
                     # Find the separator line (-------)
                     separator_idx = -1
                     for i in range(search_header_idx + 1, len(lines)):
-                        if '-------' in lines[i]:
+                        if "-------" in lines[i]:
                             separator_idx = i
                             break
 
                     # Find the replace separator (=======)
                     replace_idx = -1
                     for i in range(separator_idx + 1, len(lines)):
-                        if '=======' in lines[i]:
+                        if "=======" in lines[i]:
                             replace_idx = i
                             break
 
                     if separator_idx > 0 and replace_idx > separator_idx:
                         # Extract search and replace content
-                        search_content = '\n'.join(lines[separator_idx + 1:replace_idx]).strip()
-                        replace_content = '\n'.join(lines[replace_idx + 1:]).strip()
+                        search_content = "\n".join(
+                            lines[separator_idx + 1 : replace_idx]
+                        ).strip()
+                        replace_content = "\n".join(lines[replace_idx + 1 :]).strip()
 
                         # Allow empty search content (for empty lines) but require some replace content
                         if replace_content or not search_content:
-                            blocks.append({
-                                "start_line": start_line,
-                                "search": search_content,
-                                "replace": replace_content
-                            })
+                            blocks.append(
+                                {
+                                    "start_line": start_line,
+                                    "search": search_content,
+                                    "replace": replace_content,
+                                }
+                            )
                             logger.debug(f"Found block with start_line: {start_line}")
 
         # Sort blocks by start_line in descending order (bottom to top)
@@ -198,7 +209,7 @@ class ApplyDiffExecutor:
         cleaned = re.sub(
             r"<<<<<<<\s*SEARCH\s*:start_line:\s*(\d+)",
             r"<<<<<<< SEARCH\n:start_line:\1",
-            cleaned
+            cleaned,
         )
 
         # Ensure proper spacing around markers
@@ -207,7 +218,9 @@ class ApplyDiffExecutor:
 
         return cleaned
 
-    def _apply_search_replace(self, content: str, search: str, replace: str, start_line: Optional[int] = None) -> Optional[str]:
+    def _apply_search_replace(
+        self, content: str, search: str, replace: str, start_line: Optional[int] = None
+    ) -> Optional[str]:
         """Apply search and replace operation to content with improved fuzzy matching."""
         try:
             # If start_line is provided, use it as a hint for more precise matching
@@ -444,7 +457,9 @@ class ApplyDiffExecutor:
             "status": (
                 "success"
                 if not failed_files
-                else "partial" if successful_files else "failed"
+                else "partial"
+                if successful_files
+                else "failed"
             ),
             "summary": f"Applied diffs to {len(successful_files)}/{len(file_diffs)} files successfully",
             "total_files": len(file_diffs),
@@ -519,6 +534,6 @@ def execute_apply_diff_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         logger.error(f"Apply diff action execution failed: {e}")
         yield {
             "tool_name": "apply_diff",
-            "status": "error", 
+            "status": "error",
             "data": {"error": f"Apply diff execution failed: {str(e)}"},
         }

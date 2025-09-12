@@ -9,26 +9,31 @@ from pathlib import Path
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+
 def print_tree(blocks, indent=0):
     """Print blocks in a tree structure."""
     for i, block in enumerate(blocks):
         indent_str = "  " * indent
         connector = "├─" if i < len(blocks) - 1 else "└─"
-        child_count = len(block.children) if hasattr(block, 'children') and block.children else 0
+        child_count = (
+            len(block.children) if hasattr(block, "children") and block.children else 0
+        )
         child_info = f" ({child_count} children)" if child_count > 0 else ""
 
         print(f"{indent_str}{connector} {block.type.value}: {block.name}{child_info}")
 
-        if hasattr(block, 'children') and block.children:
+        if hasattr(block, "children") and block.children:
             print_tree(block.children, indent + 1)
+
 
 def count_all_blocks(blocks):
     """Count total blocks including nested ones."""
     total = len(blocks)
     for block in blocks:
-        if hasattr(block, 'children') and block.children:
+        if hasattr(block, "children") and block.children:
             total += count_all_blocks(block.children)
     return total
+
 
 def test_file(file_path):
     """Test hierarchical parsing on a file."""
@@ -43,12 +48,9 @@ def test_file(file_path):
 
         result = parser.parse_and_extract(file_path)
 
-
-
         if result.get("error"):
             print(f"❌ Error: {result['error']}")
             return
-
 
         blocks = result["blocks"]
         language = result.get("language", "unknown")
@@ -68,12 +70,11 @@ def test_file(file_path):
         else:
             print("  No blocks found")
 
-
-
     except ImportError:
         print(f"❌ Parser not available - install requirements")
     except Exception as e:
         print(f"❌ Error: {e}")
+
 
 def main():
     """Main test function."""

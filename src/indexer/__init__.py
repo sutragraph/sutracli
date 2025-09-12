@@ -4,23 +4,24 @@ Provides high-level functions for parsing, extracting, and exporting code data
 without exposing the internal AST parser implementation.
 """
 
-import json
 import hashlib
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
+import json
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
-from .ast_parser import ASTParser
-from utils.json_serializer import make_json_serializable
-from utils.hash_utils import compute_file_hash, compute_directory_hashes
 from utils.file_utils import (
     get_extraction_file_path,
-    get_last_extraction_file_path,
-    should_ignore_file,
-    should_ignore_directory,
-    is_text_file,
     get_language_from_extension,
+    get_last_extraction_file_path,
+    is_text_file,
+    should_ignore_directory,
+    should_ignore_file,
 )
+from utils.hash_utils import compute_directory_hashes, compute_file_hash
+from utils.json_serializer import make_json_serializable
+
+from .ast_parser import ASTParser
 from .export_ast_to_json import main as export_ast_to_json
 
 
@@ -109,9 +110,6 @@ def extract_and_export_directory(
         return False
 
     return export_to_json(results, output_file, indent)
-
-
-
 
 
 def load_previous_results(json_file: Union[str, Path]) -> Dict[str, Dict[str, Any]]:

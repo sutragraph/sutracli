@@ -24,7 +24,7 @@ Usage Format
         "to_status": "current",
       },
       {
-        "action": "move", 
+        "action": "move",
         "id": "task_id",
         "from_status": "current",
         "to_status": "completed",
@@ -54,12 +54,12 @@ Example 1: Wrapper function analysis
       },
       {
         "action": "move",
-        "id": "13", 
+        "id": "13",
         "from_status": "current",
         "to_status": "completed",
       }
     ],
-    "add_history": "Used search_keyword with query='apiClient\\\\.' and regex=true - found 18 matches across 6 files with real endpoints and parameters in current iteration. All wrapper function calls with actual usage analyzed."
+    "add_history": "Used search_keyword with query='apiClient' and regex=false, case_sensitive=false - found 18 matches across 6 files with real endpoints and parameters in current iteration. All wrapper function calls with actual usage analyzed."
   }
 }
 
@@ -70,14 +70,14 @@ Example 2: Wrapper function discovery with task creation
       {
         "action": "move",
         "id": "3",
-        "from_status": "current", 
+        "from_status": "current",
         "to_status": "completed",
       },
       {
         "action": "add",
         "id": "21",
         "to_status": "current",
-        "description": "Use search_keyword to find all apicall( wrapper function usage: apicall\\("
+        "description": "Use search_keyword to find all apicall( wrapper function usage: apicall\("
       }
     ],
     "add_history": "Used database query GET_FILE_BY_PATH with file_path='src/utils/api.js' - found wrapper function definition apicall(endpoint, method, data) in current iteration. Created task to search for all usage sites of this wrapper function across codebase."
@@ -92,13 +92,13 @@ Example 3: Custom API client pattern discovery with task creation
         "action": "move",
         "id": "3",
         "from_status": "current",
-        "to_status": "completed", 
+        "to_status": "completed",
       },
       {
         "action": "add",
         "id": "22",
         "to_status": "current",
-        "description": "Use search_keyword to find all httpClient usage patterns: httpClient\\.(get|post|put|delete)\\("
+        "description": "Use search_keyword to find all httpClient usage patterns: httpClient\.(get|post|put|delete)\("
       }
     ],
     "add_history": "Used database query GET_FILE_BY_PATH with file_path='src/services/client.py' - found custom httpClient class with methods in current iteration. Created task to search for all httpClient method calls across project files."
@@ -116,13 +116,13 @@ Example 4: Wrapper function analysis with dynamic parameters
         "to_status": "completed",
       },
       {
-        "action": "add", 
+        "action": "add",
         "id": "23",
         "to_status": "current",
         "description": "Use database tool to read src/utils/apiHelper.js completely to identify function name containing axios.get(url, config) wrapper calls"
       }
     ],
-    "add_history": "Used search_keyword with query='axios\\\\.get.*url' and regex=true - found wrapper function with dynamic url parameter in src/utils/apiHelper.js in current iteration. Created task to read complete file and identify function name before searching for actual usage patterns with real endpoint values."
+    "add_history": "Used search_keyword with query='axios.get' and regex=false, case_sensitive=false - found wrapper function with dynamic url parameter in src/utils/apiHelper.js in current iteration. Created task to read complete file and identify function name before searching for actual usage patterns with real endpoint values."
   }
 }
 
@@ -138,9 +138,9 @@ Example 5: Wrapper function usage discovery
       },
       {
         "action": "add",
-        "id": "24", 
+        "id": "24",
         "to_status": "current",
-        "description": "Use search_keyword to find makeApiCall usage patterns: makeApiCall\\("
+        "description": "Use search_keyword to find makeApiCall usage patterns: makeApiCall\("
       }
     ],
     "add_history": "Used database query GET_FILE_BY_PATH with file_path='src/utils/apiHelper.js' - identified function name makeApiCall() containing axios wrapper calls with dynamic parameters in current iteration. Created task to search for all makeApiCall usage sites across codebase to find real endpoint values."
@@ -160,7 +160,7 @@ Example 6: Environment variable analysis with config file discovery
       {
         "action": "add",
         "id": "26",
-        "to_status": "current", 
+        "to_status": "current",
         "description": "Use database tool to read .env file to analyze DATABASE_URL and API_BASE_URL values"
       }
     ],
@@ -216,8 +216,8 @@ In the `thinking` JSON field, assess what implementation information you already
 - Note number of connections found and their types from current iteration
 - Include complete file paths and connection details when relevant from current tool results
 - Track comprehensive implementation information and analysis results from current iteration
-- Example: "Used database query GET_FILE_BY_PATH with file_path='src/api/client.js' - found 0 axios calls, then used search_keyword with query='axios\\\\.' and regex=true - found 5 usage sites in current iteration"
-- Example: "Used search_keyword with query='fetch\\\\s*\\\\(' and regex=true in current iteration - discovered 12 native fetch calls across 4 files"
+- Example: "Used database query GET_FILE_BY_PATH with file_path='src/api/client.js' - found 0 axios calls, then used search_keyword with query='axios' and regex=false - found 5 usage sites in current iteration"
+- Example: "Used search_keyword with query='fetch' and regex=false in current iteration - discovered 12 native fetch calls across 4 files"
 
 6. Critical Rules
 - Sutra Memory MUST be updated in every implementation discovery response alongside exactly one tool call

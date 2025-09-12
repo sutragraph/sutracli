@@ -7,6 +7,7 @@ without file system lookups.
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 from tree_sitter_language_pack import get_parser
 
 from indexer.extractors import BlockType

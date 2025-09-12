@@ -6,7 +6,8 @@ GraphOperations.get_enriched_block_context() and GraphOperations.get_enriched_fi
 into human-readable, structured text for display in search results and agent responses.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from tools.utils.code_processing_utils import add_line_numbers_to_code
 
 
@@ -41,7 +42,7 @@ def beautify_enriched_block_context(
     total_nodes: int = 1,
     include_code: bool = True,
     max_code_lines: Optional[int] = None,
-    node_id: Optional[str] = None
+    node_id: Optional[str] = None,
 ) -> str:
     """
     Format enriched block context into a beautiful, readable string.
@@ -60,11 +61,11 @@ def beautify_enriched_block_context(
     if not enriched_context:
         return f"Node {index}/{total_nodes}: No context available"
 
-    block = enriched_context.get('block', {})
-    file_context = enriched_context.get('file_context', {})
+    block = enriched_context.get("block", {})
+    file_context = enriched_context.get("file_context", {})
 
-    parent_block = enriched_context.get('parent_block')
-    child_blocks = enriched_context.get('child_blocks', [])
+    parent_block = enriched_context.get("parent_block")
+    child_blocks = enriched_context.get("child_blocks", [])
 
     # Header
     result_parts = []
@@ -72,8 +73,8 @@ def beautify_enriched_block_context(
     result_parts.append(header)
 
     # Block information
-    block_type = block.get('type', 'unknown').title()
-    block_name = block.get('name', 'unnamed')
+    block_type = block.get("type", "unknown").title()
+    block_name = block.get("name", "unnamed")
     result_parts.append(f"{block_type}: `{block_name}`")
 
     # File context
@@ -81,8 +82,8 @@ def beautify_enriched_block_context(
     result_parts.append(f"File: {file_path}")
 
     # Line information
-    start_line = block.get('start_line')
-    end_line = block.get('end_line')
+    start_line = block.get("start_line")
+    end_line = block.get("end_line")
     if start_line and end_line:
         line_count = end_line - start_line + 1
         result_parts.append(
@@ -91,23 +92,25 @@ def beautify_enriched_block_context(
 
     # Hierarchy information
     if parent_block:
-        parent_name = parent_block.get('name', 'unnamed')
-        parent_type = parent_block.get('type', 'unknown')
+        parent_name = parent_block.get("name", "unnamed")
+        parent_type = parent_block.get("type", "unknown")
         result_parts.append(f"Parent: {parent_type} `{parent_name}`")
 
     if child_blocks:
         child_count = len(child_blocks)
-        child_names = [f"`{child.get('name', 'unnamed')}`" for child in child_blocks[:3]]
+        child_names = [
+            f"`{child.get('name', 'unnamed')}`" for child in child_blocks[:3]
+        ]
         child_summary = ", ".join(child_names)
         if child_count > 3:
             child_summary += f" ... (+{child_count - 3} more)"
         result_parts.append(f"Children ({child_count}): {child_summary}")
 
     # Connection details - show both mappings and remaining basic connections
-    connection_mappings = enriched_context.get('connection_mappings', [])
-    connections = enriched_context.get('connections', {})
-    incoming_conns = connections.get('incoming', [])
-    outgoing_conns = connections.get('outgoing', [])
+    connection_mappings = enriched_context.get("connection_mappings", [])
+    connections = enriched_context.get("connections", {})
+    incoming_conns = connections.get("incoming", [])
+    outgoing_conns = connections.get("outgoing", [])
 
     if connection_mappings or incoming_conns or outgoing_conns:
         if connection_mappings:
@@ -123,19 +126,27 @@ def beautify_enriched_block_context(
                 # Add separator if we already showed mappings
                 result_parts.append("Additional connections:\n")
             else:
-                result_parts.append(f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing")
+                result_parts.append(
+                    f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
+                )
 
             # Show detailed incoming connections grouped by technology
             if incoming_conns:
                 result_parts.append("Incoming connections:")
-                grouped_incoming = _group_connections_by_technology(incoming_conns, "incoming")
+                grouped_incoming = _group_connections_by_technology(
+                    incoming_conns, "incoming"
+                )
                 tech_count = 0
                 for technology, tech_connections in grouped_incoming.items():
                     if tech_count >= 3:  # Limit to 3 technology groups
                         remaining_techs = len(grouped_incoming) - tech_count
-                        result_parts.append(f"   ... and {remaining_techs} more technologies")
+                        result_parts.append(
+                            f"   ... and {remaining_techs} more technologies"
+                        )
                         break
-                    conn_lines = _format_grouped_connections(technology, tech_connections, "incoming")
+                    conn_lines = _format_grouped_connections(
+                        technology, tech_connections, "incoming"
+                    )
                     if conn_lines:
                         result_parts.extend(conn_lines)
                         result_parts.append("")  # Add spacing between technology groups
@@ -144,14 +155,20 @@ def beautify_enriched_block_context(
             # Show detailed outgoing connections grouped by technology
             if outgoing_conns:
                 result_parts.append("Outgoing connections:")
-                grouped_outgoing = _group_connections_by_technology(outgoing_conns, "outgoing")
+                grouped_outgoing = _group_connections_by_technology(
+                    outgoing_conns, "outgoing"
+                )
                 tech_count = 0
                 for technology, tech_connections in grouped_outgoing.items():
                     if tech_count >= 3:  # Limit to 3 technology groups
                         remaining_techs = len(grouped_outgoing) - tech_count
-                        result_parts.append(f"   ... and {remaining_techs} more technologies")
+                        result_parts.append(
+                            f"   ... and {remaining_techs} more technologies"
+                        )
                         break
-                    conn_lines = _format_grouped_connections(technology, tech_connections, "outgoing")
+                    conn_lines = _format_grouped_connections(
+                        technology, tech_connections, "outgoing"
+                    )
                     if conn_lines:
                         result_parts.extend(conn_lines)
                         result_parts.append("")  # Add spacing between technology groups
@@ -161,10 +178,10 @@ def beautify_enriched_block_context(
     if include_code and block.get("content"):
         result_parts.append("Code:")
 
-        content = block['content']
-        if max_code_lines and len(content.split('\n')) > max_code_lines:
-            lines = content.split('\n')
-            content = '\n'.join(lines[:max_code_lines])
+        content = block["content"]
+        if max_code_lines and len(content.split("\n")) > max_code_lines:
+            lines = content.split("\n")
+            content = "\n".join(lines[:max_code_lines])
             content += f"\n... ({len(lines) - max_code_lines} more lines)"
 
         # Add line numbers
@@ -183,7 +200,7 @@ def beautify_enriched_file_context(
     total_nodes: int = 1,
     include_code: bool = True,
     max_code_lines: Optional[int] = None,
-    node_id: Optional[str] = None
+    node_id: Optional[str] = None,
 ) -> str:
     """
     Format enriched file context into a beautiful, readable string.
@@ -202,7 +219,7 @@ def beautify_enriched_file_context(
     if not enriched_context:
         return f"Node {index}/{total_nodes}: No context available"
 
-    file_data = enriched_context.get('file', {})
+    file_data = enriched_context.get("file", {})
 
     # Header
     result_parts = []
@@ -215,10 +232,10 @@ def beautify_enriched_file_context(
     result_parts.append(f"File: {file_path}")
 
     # Connection details - show both mappings and remaining basic connections
-    connection_mappings = enriched_context.get('connection_mappings', [])
-    connections = enriched_context.get('connections', {})
-    incoming_conns = connections.get('incoming', [])
-    outgoing_conns = connections.get('outgoing', [])
+    connection_mappings = enriched_context.get("connection_mappings", [])
+    connections = enriched_context.get("connections", {})
+    incoming_conns = connections.get("incoming", [])
+    outgoing_conns = connections.get("outgoing", [])
 
     if connection_mappings or incoming_conns or outgoing_conns:
         if connection_mappings:
@@ -234,19 +251,27 @@ def beautify_enriched_file_context(
                 # Add separator if we already showed mappings
                 result_parts.append("Additional connections:\n")
             else:
-                result_parts.append(f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing")
+                result_parts.append(
+                    f"Connections: {len(incoming_conns)} incoming | {len(outgoing_conns)} outgoing"
+                )
 
             # Show detailed incoming connections grouped by technology
             if incoming_conns:
                 result_parts.append("Incoming connections:")
-                grouped_incoming = _group_connections_by_technology(incoming_conns, "incoming")
+                grouped_incoming = _group_connections_by_technology(
+                    incoming_conns, "incoming"
+                )
                 tech_count = 0
                 for technology, tech_connections in grouped_incoming.items():
                     if tech_count >= 4:  # Show more for files
                         remaining_techs = len(grouped_incoming) - tech_count
-                        result_parts.append(f"   ... and {remaining_techs} more technologies")
+                        result_parts.append(
+                            f"   ... and {remaining_techs} more technologies"
+                        )
                         break
-                    conn_lines = _format_grouped_connections(technology, tech_connections, "incoming")
+                    conn_lines = _format_grouped_connections(
+                        technology, tech_connections, "incoming"
+                    )
                     if conn_lines:
                         result_parts.extend(conn_lines)
                         result_parts.append("")  # Add spacing between technology groups
@@ -255,28 +280,34 @@ def beautify_enriched_file_context(
             # Show detailed outgoing connections grouped by technology
             if outgoing_conns:
                 result_parts.append("Outgoing connections:")
-                grouped_outgoing = _group_connections_by_technology(outgoing_conns, "outgoing")
+                grouped_outgoing = _group_connections_by_technology(
+                    outgoing_conns, "outgoing"
+                )
                 tech_count = 0
                 for technology, tech_connections in grouped_outgoing.items():
                     if tech_count >= 4:  # Show more for files
                         remaining_techs = len(grouped_outgoing) - tech_count
-                        result_parts.append(f"   ... and {remaining_techs} more technologies")
+                        result_parts.append(
+                            f"   ... and {remaining_techs} more technologies"
+                        )
                         break
-                    conn_lines = _format_grouped_connections(technology, tech_connections, "outgoing")
+                    conn_lines = _format_grouped_connections(
+                        technology, tech_connections, "outgoing"
+                    )
                     if conn_lines:
                         result_parts.extend(conn_lines)
                         result_parts.append("")  # Add spacing between technology groups
                     tech_count += 1
 
     # File content (if requested)
-    if include_code and file_data.get('content'):
+    if include_code and file_data.get("content"):
         result_parts.append("")
         result_parts.append("File Content:")
 
-        content = file_data['content']
-        if max_code_lines and len(content.split('\n')) > max_code_lines:
-            lines = content.split('\n')
-            content = '\n'.join(lines[:max_code_lines])
+        content = file_data["content"]
+        if max_code_lines and len(content.split("\n")) > max_code_lines:
+            lines = content.split("\n")
+            content = "\n".join(lines[:max_code_lines])
             content += f"\n... ({len(lines) - max_code_lines} more lines)"
 
         numbered_code = add_line_numbers_to_code(content, 1)
@@ -291,7 +322,7 @@ def beautify_enriched_context_auto(
     total_nodes: int = 1,
     include_code: bool = True,
     max_code_lines: Optional[int] = None,
-    node_id: Optional[str] = None
+    node_id: Optional[str] = None,
 ) -> str:
     """
     Automatically determine whether to format as block or file context.
@@ -311,11 +342,11 @@ def beautify_enriched_context_auto(
         return f"Node {index}/{total_nodes}: No context available"
 
     # Determine type based on presence of 'block' or 'file' key
-    if 'block' in enriched_context:
+    if "block" in enriched_context:
         return beautify_enriched_block_context(
             enriched_context, index, total_nodes, include_code, max_code_lines, node_id
         )
-    elif 'file' in enriched_context:
+    elif "file" in enriched_context:
         return beautify_enriched_file_context(
             enriched_context, index, total_nodes, include_code, max_code_lines, node_id
         )
@@ -331,7 +362,7 @@ def format_chunk_with_enriched_context(
     chunk_code: str,
     index: int = 1,
     total_nodes: int = 1,
-    node_id: Optional[str] = None
+    node_id: Optional[str] = None,
 ) -> str:
     """
     Format enriched context with specific chunk information.
@@ -372,7 +403,8 @@ def format_chunk_with_enriched_context(
 
 
 def _group_connections_by_technology(
-        connections: List[Dict[str, Any]], direction: str) -> Dict[str, List[Dict[str, Any]]]:
+    connections: List[Dict[str, Any]], direction: str
+) -> Dict[str, List[Dict[str, Any]]]:
     """
     Group connections by technology to handle 1-to-many relationships.
 
@@ -385,7 +417,7 @@ def _group_connections_by_technology(
     """
     grouped = {}
     for conn in connections:
-        technology = conn.get('technology_name', 'Unknown')
+        technology = conn.get("technology_name", "Unknown")
         if technology not in grouped:
             grouped[technology] = []
         grouped[technology].append(conn)
@@ -409,15 +441,15 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
 
     for x, mapping in enumerate(mappings, 1):
         # Get sender and receiver info
-        sender_file = mapping.get('sender_file_path', 'unknown')
-        sender_project = mapping.get('sender_project', 'unknown')
-        sender_snippet = mapping.get('sender_code_snippet', '')
-        sender_lines = mapping.get('sender_snippet_lines', '')
+        sender_file = mapping.get("sender_file_path", "unknown")
+        sender_project = mapping.get("sender_project", "unknown")
+        sender_snippet = mapping.get("sender_code_snippet", "")
+        sender_lines = mapping.get("sender_snippet_lines", "")
 
-        receiver_file = mapping.get('receiver_file_path', 'unknown')
-        receiver_project = mapping.get('receiver_project', 'unknown')
-        receiver_snippet = mapping.get('receiver_code_snippet', '')
-        receiver_lines = mapping.get('receiver_snippet_lines', '')
+        receiver_file = mapping.get("receiver_file_path", "unknown")
+        receiver_project = mapping.get("receiver_project", "unknown")
+        receiver_snippet = mapping.get("receiver_code_snippet", "")
+        receiver_lines = mapping.get("receiver_snippet_lines", "")
 
         technology = mapping.get("technology_name", "Unknown")
 
@@ -427,6 +459,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
             # Parse and display code snippet with line numbers
             try:
                 import json
+
                 # Handle different input formats for lines_data
                 if isinstance(sender_lines, str) and sender_lines.strip():
                     lines_data = json.loads(sender_lines)
@@ -437,7 +470,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
 
                 if isinstance(lines_data, list) and len(lines_data) >= 1:
                     start_line = lines_data[0]
-                    snippet_lines = sender_snippet.split('\n')
+                    snippet_lines = sender_snippet.split("\n")
                     for i, line in enumerate(snippet_lines):
                         result_lines.append(f"{start_line + i} | {line}")
                 else:
@@ -455,6 +488,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
             result_lines.append(f"{receiver_file} [project: {receiver_project}]")
             try:
                 import json
+
                 # Handle different input formats for lines_data
                 if isinstance(receiver_lines, str) and receiver_lines.strip():
                     lines_data = json.loads(receiver_lines)
@@ -465,7 +499,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
 
                 if isinstance(lines_data, list) and len(lines_data) >= 1:
                     start_line = lines_data[0]
-                    snippet_lines = receiver_snippet.split('\n')
+                    snippet_lines = receiver_snippet.split("\n")
                     for i, line in enumerate(snippet_lines):
                         result_lines.append(f"{start_line + i} | {line}")
                 else:
@@ -480,7 +514,9 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
     return result_lines
 
 
-def _format_grouped_connections(technology: str, connections: List[Dict[str, Any]], direction: str) -> List[str]:
+def _format_grouped_connections(
+    technology: str, connections: List[Dict[str, Any]], direction: str
+) -> List[str]:
     """
     Format multiple connections of the same technology with detailed code snippets.
 
@@ -500,22 +536,31 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
     for i, conn in enumerate(connections):
         # Get file and project info based on direction
         if direction == "incoming":
-            file_path = conn.get('source_file_path', conn.get('connected_file_path', 'unknown'))
-            project_name = conn.get('source_project_name', conn.get('connected_project_name', 'unknown'))
+            file_path = conn.get(
+                "source_file_path", conn.get("connected_file_path", "unknown")
+            )
+            project_name = conn.get(
+                "source_project_name", conn.get("connected_project_name", "unknown")
+            )
         else:
-            file_path = conn.get('target_file_path', conn.get('connected_file_path', 'unknown'))
-            project_name = conn.get('target_project_name', conn.get('connected_project_name', 'unknown'))
+            file_path = conn.get(
+                "target_file_path", conn.get("connected_file_path", "unknown")
+            )
+            project_name = conn.get(
+                "target_project_name", conn.get("connected_project_name", "unknown")
+            )
 
         # Add file header
         result_lines.append(f"{file_path} [project: {project_name}]")
 
         # Add code snippet with line numbers if available
-        code_snippet = conn.get('code_snippet', '')
-        snippet_lines = conn.get('snippet_lines', '')
+        code_snippet = conn.get("code_snippet", "")
+        snippet_lines = conn.get("snippet_lines", "")
 
         if code_snippet and snippet_lines:
             try:
                 import json
+
                 # Handle different input formats for lines_data
                 if isinstance(snippet_lines, str) and snippet_lines.strip():
                     lines_data = json.loads(snippet_lines)
@@ -526,20 +571,20 @@ def _format_grouped_connections(technology: str, connections: List[Dict[str, Any
 
                 if isinstance(lines_data, list) and len(lines_data) >= 1:
                     start_line = lines_data[0]
-                    snippet_code_lines = code_snippet.split('\n')
+                    snippet_code_lines = code_snippet.split("\n")
                     for j, line in enumerate(snippet_code_lines):
                         result_lines.append(f"{start_line + j} | {line}")
                 else:
                     # Fallback: show code without line numbers
-                    for line in code_snippet.split('\n'):
+                    for line in code_snippet.split("\n"):
                         result_lines.append(f"   {line}")
             except Exception:
                 # Fallback: show code without line numbers
-                for line in code_snippet.split('\n'):
+                for line in code_snippet.split("\n"):
                     result_lines.append(f"   {line}")
 
         # Add technology info
-        tech_name = conn.get('technology_name', technology)
+        tech_name = conn.get("technology_name", technology)
         result_lines.append(f"[{tech_name}] Connection Connected with")
 
         # Add spacing between connections

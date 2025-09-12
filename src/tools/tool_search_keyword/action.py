@@ -1,15 +1,17 @@
-import subprocess
 import re
+import subprocess
 from pathlib import Path
-from typing import Iterator, Dict, Any, List
+from typing import Any, Dict, Iterator, List
+
 from loguru import logger
+
 from models.agent import AgentAction
+from tools.utils.constants import SEARCH_CONFIG
 from tools.utils.project_utils import (
     auto_detect_project_from_paths,
     resolve_project_base_path,
 )
-from tools.utils.constants import SEARCH_CONFIG
-from utils.ignore_patterns import IGNORE_FILE_PATTERNS, IGNORE_DIRECTORY_PATTERNS
+from utils.ignore_patterns import IGNORE_DIRECTORY_PATTERNS, IGNORE_FILE_PATTERNS
 
 
 def group_matches_by_file(ripgrep_output: str) -> str:
@@ -28,7 +30,7 @@ def group_matches_by_file(ripgrep_output: str) -> str:
     # Dictionary to store matches grouped by file
     file_matches = {}
 
-    lines = ripgrep_output.split('\n')
+    lines = ripgrep_output.split("\n")
     logger.debug(f"🔍 Processing {len(lines)} lines from ripgrep output")
 
     for i, line in enumerate(lines):
@@ -36,7 +38,7 @@ def group_matches_by_file(ripgrep_output: str) -> str:
             continue
 
         # Handle ripgrep separator lines between match groups
-        if line == '--':
+        if line == "--":
             # Add spacing between match groups - find the last file that had content
             if file_matches:
                 last_file = list(file_matches.keys())[-1]
@@ -52,39 +54,41 @@ def group_matches_by_file(ripgrep_output: str) -> str:
         content = None
 
         # Try matching line format first (file:line:content)
-        if ':' in line:
+        if ":" in line:
             # Find all colon positions
-            colon_indices = [i for i, c in enumerate(line) if c == ':']
+            colon_indices = [i for i, c in enumerate(line) if c == ":"]
             if len(colon_indices) >= 2:
                 # The line number should be between the first and second colon
                 # and should be all digits
                 for i in range(len(colon_indices) - 1):
-                    potential_file = line[:colon_indices[i]]
-                    potential_line_num = line[colon_indices[i] + 1:colon_indices[i + 1]]
+                    potential_file = line[: colon_indices[i]]
+                    potential_line_num = line[
+                        colon_indices[i] + 1 : colon_indices[i + 1]
+                    ]
 
                     # Check if this looks like a line number (all digits)
                     if potential_line_num.strip().isdigit():
                         file_path = potential_file
                         line_number = potential_line_num
-                        content = line[colon_indices[i + 1] + 1:]
+                        content = line[colon_indices[i + 1] + 1 :]
                         break
 
         # Try context line format (file-line-content)
-        if file_path is None and '-' in line:
+        if file_path is None and "-" in line:
             # Find all dash positions
-            dash_indices = [i for i, c in enumerate(line) if c == '-']
+            dash_indices = [i for i, c in enumerate(line) if c == "-"]
             if len(dash_indices) >= 2:
                 # The line number should be between the first and second dash
                 # and should be all digits
                 for i in range(len(dash_indices) - 1):
-                    potential_file = line[:dash_indices[i]]
-                    potential_line_num = line[dash_indices[i] + 1:dash_indices[i + 1]]
+                    potential_file = line[: dash_indices[i]]
+                    potential_line_num = line[dash_indices[i] + 1 : dash_indices[i + 1]]
 
                     # Check if this looks like a line number (all digits)
                     if potential_line_num.strip().isdigit():
                         file_path = potential_file
                         line_number = potential_line_num
-                        content = line[dash_indices[i + 1] + 1:]
+                        content = line[dash_indices[i + 1] + 1 :]
                         break
 
         # Process if we successfully parsed the line
@@ -114,7 +118,7 @@ def group_matches_by_file(ripgrep_output: str) -> str:
     if grouped_lines and grouped_lines[-1] == "":
         grouped_lines.pop()
 
-    return '\n'.join(grouped_lines)
+    return "\n".join(grouped_lines)
 
 
 def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str, Any]]:
@@ -132,26 +136,28 @@ def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str,
     if not content:
         return []
 
-    lines = content.split('\n')
+    lines = content.split("\n")
     total_lines = len(lines)
 
     # If content is small enough, return as single chunk
     if total_lines <= chunk_size:
-        return [{
-            "data": content,
-            "chunk_info": {
-                "chunk_num": 1,
-                "total_chunks": 1,
-                "start_line": 1,
-                "end_line": total_lines,
-                "original_file_lines": total_lines
+        return [
+            {
+                "data": content,
+                "chunk_info": {
+                    "chunk_num": 1,
+                    "total_chunks": 1,
+                    "start_line": 1,
+                    "end_line": total_lines,
+                    "original_file_lines": total_lines,
+                },
             }
-        }]
+        ]
 
     # Find file group boundaries (lines that don't start with space and end with :)
     file_boundaries = []
     for i, line in enumerate(lines):
-        if line and not line.startswith('  ') and line.endswith(':'):
+        if line and not line.startswith("  ") and line.endswith(":"):
             file_boundaries.append(i)
 
     # Add the end of content as a boundary
@@ -169,12 +175,14 @@ def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str,
         else:
             group_lines = lines[start_idx:end_idx]
 
-        file_groups.append({
-            'lines': group_lines,
-            'start_line': start_idx + 1,
-            'end_line': end_idx,
-            'line_count': len(group_lines)
-        })
+        file_groups.append(
+            {
+                "lines": group_lines,
+                "start_line": start_idx + 1,
+                "end_line": end_idx,
+                "line_count": len(group_lines),
+            }
+        )
 
     # Create chunks respecting file group boundaries
     chunks = []
@@ -184,38 +192,43 @@ def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str,
 
     for group in file_groups:
         # Check if adding this group would exceed chunk size
-        if (current_chunk_line_count + group['line_count'] > chunk_size and
-                current_chunk_lines):
-
+        if (
+            current_chunk_line_count + group["line_count"] > chunk_size
+            and current_chunk_lines
+        ):
             # Save current chunk
-            chunk_content = '\n'.join(current_chunk_lines)
-            chunks.append({
-                "data": chunk_content,
-                "lines": current_chunk_lines.copy(),
-                "start_line": current_chunk_start,
-                "line_count": current_chunk_line_count
-            })
+            chunk_content = "\n".join(current_chunk_lines)
+            chunks.append(
+                {
+                    "data": chunk_content,
+                    "lines": current_chunk_lines.copy(),
+                    "start_line": current_chunk_start,
+                    "line_count": current_chunk_line_count,
+                }
+            )
 
             # Start new chunk with current group
-            current_chunk_lines = group['lines'].copy()
-            current_chunk_start = group['start_line']
-            current_chunk_line_count = group['line_count']
+            current_chunk_lines = group["lines"].copy()
+            current_chunk_start = group["start_line"]
+            current_chunk_line_count = group["line_count"]
         else:
             # Add group to current chunk
             if not current_chunk_lines:
-                current_chunk_start = group['start_line']
-            current_chunk_lines.extend(group['lines'])
-            current_chunk_line_count += group['line_count']
+                current_chunk_start = group["start_line"]
+            current_chunk_lines.extend(group["lines"])
+            current_chunk_line_count += group["line_count"]
 
     # Don't forget the last chunk
     if current_chunk_lines:
-        chunk_content = '\n'.join(current_chunk_lines)
-        chunks.append({
-            "data": chunk_content,
-            "lines": current_chunk_lines,
-            "start_line": current_chunk_start,
-            "line_count": current_chunk_line_count
-        })
+        chunk_content = "\n".join(current_chunk_lines)
+        chunks.append(
+            {
+                "data": chunk_content,
+                "lines": current_chunk_lines,
+                "start_line": current_chunk_start,
+                "line_count": current_chunk_line_count,
+            }
+        )
 
     # Add chunk info
     total_chunks = len(chunks)
@@ -227,13 +240,10 @@ def chunk_grouped_content(content: str, chunk_size: int = 600) -> List[Dict[str,
             "total_chunks": total_chunks,
             "start_line": chunk["start_line"],
             "end_line": chunk["start_line"] + chunk["line_count"] - 1,
-            "original_file_lines": total_lines
+            "original_file_lines": total_lines,
         }
 
-        result_chunks.append({
-            "data": chunk["data"],
-            "chunk_info": chunk_info
-        })
+        result_chunks.append({"data": chunk["data"], "chunk_info": chunk_info})
 
     return result_chunks
 
@@ -252,10 +262,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         after_lines = int(after_lines_param) if after_lines_param is not None else 5
 
         logger.debug(
-            f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={
-                action.parameters.get(
-                    'regex',
-                    'false')}"
+            f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={action.parameters.get('regex', 'false')}"
         )
         case_sensitive = (
             str(action.parameters.get("case_sensitive", "false")).lower() == "true"
@@ -473,7 +480,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
             chunk_size = SEARCH_CONFIG["chunk_size"]
 
-            lines = data_with_header.split('\n')
+            lines = data_with_header.split("\n")
             total_lines = len(lines)
 
             if total_lines <= chunking_threshold:

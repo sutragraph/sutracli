@@ -14,7 +14,7 @@ Parameters:
 - recursive: (optional) Whether to list files recursively. Use true for recursive listing, false or omit for top-level only.
 - fetch_next_chunk: Set to true to fetch next chunks of results when more are available (default: false)
 
-Note: 
+Note:
 - Either path or project_name must be provided.
 - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
 

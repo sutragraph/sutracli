@@ -1,8 +1,9 @@
 """Sequential delivery manager for chunks and nodes."""
 
 import uuid
-from typing import Dict, Any, List, Optional, Iterator
 from dataclasses import dataclass
+from typing import Any, Dict, Iterator, List, Optional
+
 from loguru import logger
 
 
@@ -57,26 +58,32 @@ class DeliveryManager:
         self, action_type: str, parameters: Dict[str, Any], items: List[Dict[str, Any]]
     ) -> str:
         """Register a new delivery queue for sequential processing."""
-        logger.debug(f"📦 Registering delivery queue: {action_type} with {len(items)} items")
+        logger.debug(
+            f"📦 Registering delivery queue: {action_type} with {len(items)} items"
+        )
 
         query_signature = self._generate_query_signature(action_type, parameters)
         logger.debug(f"🔍 TRACE MANAGER: Generated signature: {query_signature}")
         logger.debug(f"🔍 TRACE MANAGER: Last signature: {self._last_query_signature}")
-        
+
         # Simple logic: if signature changes, clear old data
         if self._last_query_signature and self._last_query_signature != query_signature:
             logger.debug(f"📦 Query changed - clearing old data")
             self.clear_all_queues()
-        
+
         # Update last query signature
         self._last_query_signature = query_signature
-        logger.debug(f"🔍 TRACE MANAGER: Setting last query signature to: {query_signature}")
+        logger.debug(
+            f"🔍 TRACE MANAGER: Setting last query signature to: {query_signature}"
+        )
 
         # If queue already exists for same signature, skip duplicate registration
         if query_signature in self._delivery_queues:
             existing_size = len(self._delivery_queues[query_signature])
             if existing_size >= len(items):
-                logger.debug(f"📦 Skipping duplicate registration - existing queue has {existing_size} items")
+                logger.debug(
+                    f"📦 Skipping duplicate registration - existing queue has {existing_size} items"
+                )
                 return query_signature
 
         delivery_items = []
@@ -106,6 +113,7 @@ class DeliveryManager:
         )
 
         return query_signature
+
     def get_next_item_from_existing_queue(self) -> Optional[Dict[str, Any]]:
         """Get the next item from the most recently used delivery queue without changing query signature."""
         if not self._last_query_signature:
@@ -123,7 +131,9 @@ class DeliveryManager:
         queue_length = len(self._delivery_queues.get(query_signature, []))
 
         if is_complete and current_pos >= queue_length:
-            logger.debug(f"📦 Delivery already complete for {query_signature} - position: {current_pos}, queue_length: {queue_length}")
+            logger.debug(
+                f"📦 Delivery already complete for {query_signature} - position: {current_pos}, queue_length: {queue_length}"
+            )
             return None
         elif is_complete and current_pos < queue_length:
             self._completed_deliveries[query_signature] = False
@@ -132,18 +142,24 @@ class DeliveryManager:
         queue = self._delivery_queues[query_signature]
 
         if current_pos >= len(queue):
-            logger.debug(f"📦 No more items - position {current_pos} >= queue length {len(queue)}")
+            logger.debug(
+                f"📦 No more items - position {current_pos} >= queue length {len(queue)}"
+            )
             return None
 
         next_item = queue[current_pos]
 
         new_position = current_pos + 1
         self._queue_positions[query_signature] = new_position
-        logger.debug(f"📦 Advanced position from {current_pos} to {new_position} (queue length: {len(queue)})")
+        logger.debug(
+            f"📦 Advanced position from {current_pos} to {new_position} (queue length: {len(queue)})"
+        )
 
         if new_position >= len(queue):
             self._completed_deliveries[query_signature] = True
-            logger.debug(f"📦 MARKING COMPLETE: Queue complete after delivering item {current_pos + 1}/{len(queue)}")
+            logger.debug(
+                f"📦 MARKING COMPLETE: Queue complete after delivering item {current_pos + 1}/{len(queue)}"
+            )
 
         delivery_data = next_item.data.copy()
         delivery_data.update(
@@ -188,18 +204,24 @@ class DeliveryManager:
             return None
 
         if current_pos >= len(queue):
-            logger.debug(f"📦 No more items - position {current_pos} >= queue length {len(queue)}")
+            logger.debug(
+                f"📦 No more items - position {current_pos} >= queue length {len(queue)}"
+            )
             return None
 
         next_item = queue[current_pos]
 
         new_position = current_pos + 1
         self._queue_positions[query_signature] = new_position
-        logger.debug(f"📦 Advanced position from {current_pos} to {new_position} (queue length: {len(queue)})")
+        logger.debug(
+            f"📦 Advanced position from {current_pos} to {new_position} (queue length: {len(queue)})"
+        )
 
         if new_position >= len(queue):
             self._completed_deliveries[query_signature] = True
-            logger.debug(f"📦 MARKING COMPLETE: Queue complete after delivering item {current_pos + 1}/{len(queue)}")
+            logger.debug(
+                f"📦 MARKING COMPLETE: Queue complete after delivering item {current_pos + 1}/{len(queue)}"
+            )
 
         delivery_data = next_item.data.copy()
         delivery_data.update(

@@ -1,14 +1,16 @@
 """Project Manager - Centralized project management functionality."""
 
-import time
-import re
 import os
+import re
+import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
 from loguru import logger
+
 from graph.graph_operations import GraphOperations
-from graph.sqlite_client import SQLiteConnection
 from graph.project_indexer import ProjectIndexer
+from graph.sqlite_client import SQLiteConnection
 from models import Project
 
 
@@ -309,9 +311,7 @@ class ProjectManager:
             print(f"❌ Auto-indexing failed: {e}")
             print("   Continuing with limited functionality.")
 
-    def perform_incremental_indexing(
-        self, project_name: str
-    ) -> Dict[str, Any]:
+    def perform_incremental_indexing(self, project_name: str) -> Dict[str, Any]:
         """Perform incremental reindexing of the database for the specified project.
 
         Args:

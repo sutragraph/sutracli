@@ -3,7 +3,7 @@ template_string RoadmapStrategy() #"
 
 ## Thinking Approach
 
-in `thinking` feild, outline your reasoning process step-by-step before each tool call. This helps clarify your approach and ensures thorough analysis. 
+in `thinking` feild, outline your reasoning process step-by-step before each tool call. This helps clarify your approach and ensures thorough analysis.
 
 Example: I’ve stored prior matches for the user-deletion flow (src/services/user_service.py:120-170); now I need exact call and side-effect context, so I’ll use database GET_FILE_BY_PATH; from my previous search_keyword I saw delete_user without audit_log (relevant to the query), so I’ll store this block in Sutra Memory as a potential solution.
 
