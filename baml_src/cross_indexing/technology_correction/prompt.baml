@@ -95,7 +95,7 @@ template_string TechnologyCorrectionUserPrompt(unmatched_names: string, acceptab
 "#
 
 function AwsTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
-  client AwsClaudeSonnet4
+  client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ TechnologyCorrectionSystemPrompt() }}
@@ -116,6 +116,33 @@ function AnthropicTechnologyCorrection(unmatched_names: string, acceptable_enums
 
 function ChatGPTTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
   client OpenAIChatGPT
+  prompt #"
+    {{ _.role("system") }}
+    {{ TechnologyCorrectionSystemPrompt() }}
+    {{ TechnologyCorrectionUserPrompt(unmatched_names, acceptable_enums) }}
+  "#
+}
+
+function GeminiTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+  client GoogleGemini
+  prompt #"
+    {{ _.role("system") }}
+    {{ TechnologyCorrectionSystemPrompt() }}
+    {{ TechnologyCorrectionUserPrompt(unmatched_names, acceptable_enums) }}
+  "#
+}
+
+function VertexAITechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+  client GCPVertexAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ TechnologyCorrectionSystemPrompt() }}
+    {{ TechnologyCorrectionUserPrompt(unmatched_names, acceptable_enums) }}
+  "#
+}
+
+function AzureTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+  client AzureOpenAI
   prompt #"
     {{ _.role("system") }}
     {{ TechnologyCorrectionSystemPrompt() }}

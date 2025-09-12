@@ -9,6 +9,82 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+# Centralized provider mappings for easy maintenance
+PROVIDER_MAPPING = {
+    "aws_bedrock": "Aws",
+    "openai": "ChatGPT",
+    "anthropic": "Anthropic",
+    "google_ai": "Gemini",
+    "vertex_ai": "VertexAI",
+    "azure_openai": "Azure",
+}
+
+# Environment variable mapping for each provider
+ENV_VAR_MAPPING = {
+    "aws_bedrock": {
+        "AWS_ACCESS_KEY_ID": "access_key_id",
+        "AWS_SECRET_ACCESS_KEY": "secret_access_key",
+        "AWS_MODEL_ID": "model_id",
+        "AWS_REGION": "region",
+    },
+    "openai": {
+        "OPENAI_API_KEY": "api_key",
+        "OPENAI_MODEL_ID": "model_id",
+    },
+    "anthropic": {
+        "ANTHROPIC_API_KEY": "api_key",
+        "ANTHROPIC_MODEL_ID": "model_id",
+    },
+    "google_ai": {
+        "GEMINI_API_KEY": "api_key",
+        "GEMINI_MODEL_ID": "model_id",
+        "GEMINI_BASE_URL": "base_url",
+    },
+    "vertex_ai": {
+        "GCP_LOCATION": "location",
+        "GCP_MODEL_ID": "model_id",
+    },
+    "azure_openai": {
+        "AZURE_OPENAI_API_KEY": "api_key",
+        "AZURE_BASE_URL": "base_url",
+        "AZURE_API_VERSION": "api_version",
+    },
+}
+
+# Provider information for UI/CLI display
+PROVIDER_INFO = [
+    {
+        "name": "Anthropic",
+        "key": "anthropic",
+        "description": "Claude models",
+    },
+    {
+        "name": "AWS Bedrock",
+        "key": "aws_bedrock",
+        "description": "AWS managed AI services",
+    },
+    {
+        "name": "Google Gemini",
+        "key": "google_ai",
+        "description": "Google's Gemini models via Google AI API",
+    },
+    {
+        "name": "Google Vertex AI",
+        "key": "vertex_ai",
+        "description": "Google Cloud Vertex AI models with gcloud auth",
+    },
+    {
+        "name": "Azure OpenAI",
+        "key": "azure_openai",
+        "description": "Azure OpenAI Service",
+    },
+    {
+        "name": "OpenAI",
+        "key": "openai",
+        "description": "ChatGPT models via OpenAI API",
+    },
+]
+
 
 @dataclass
 class DatabaseConfig:
@@ -37,21 +113,45 @@ class AWSConfig:
 
 
 @dataclass
-class GCPConfig:
-    """GCP configuration."""
-
-    project_id: str
-    location: str
-    llm_endpoint: str
-    api_key: str = ""  # Optional - for backward compatibility
-
-
-@dataclass
 class AnthropicConfig:
     """Anthropic configuration."""
 
     api_key: str
     model_id: str
+
+
+@dataclass
+class OpenAIConfig:
+    """OpenAI configuration."""
+
+    api_key: str
+    model_id: str
+
+
+@dataclass
+class GeminiConfig:
+    """Gemini configuration."""
+
+    api_key: str
+    model_id: str
+    base_url: str = ""  # Optional base URL
+
+
+@dataclass
+class VertexAIConfig:
+    """Vertex AI configuration."""
+
+    location: str
+    model_id: str
+
+
+@dataclass
+class AzureConfig:
+    """Azure OpenAI configuration."""
+
+    api_key: str
+    base_url: str
+    api_version: str
 
 
 @dataclass
@@ -68,13 +168,13 @@ class SuperLLMConfig:
 class LLMConfig:
     """LLM provider configuration."""
 
-    provider: str  # Options: "gemini", "llama", "claude", "claude_gcp", "anthropic", "superllm"
-    llama_model_id: str
-    claude_model: str
-    gemini_model: str
-    aws: AWSConfig
-    gcp: GCPConfig
+    provider: str  # Options: "anthropic", "superllm", "openai", "vertex_ai", "azure_openai", "google_ai", "aws_bedrock"
+    aws_bedrock: AWSConfig
     anthropic: AnthropicConfig
+    openai: OpenAIConfig
+    google_ai: GeminiConfig
+    vertex_ai: VertexAIConfig
+    azure_openai: AzureConfig
     superllm: SuperLLMConfig
 
 
@@ -226,34 +326,30 @@ class Config:
             # Initialize LLM config
             llm_config = config_data.get("llm", {})
             if llm_config:
-                aws_config = llm_config.get("aws", {})
-                gcp_config = llm_config.get("gcp", {})
+                aws_config = llm_config.get("aws_bedrock", {})
                 anthropic_config = llm_config.get("anthropic", {})
+                openai_config = llm_config.get("openai", {})
+                gemini_config = llm_config.get("google_ai", {})
+                vertex_ai_config = llm_config.get("vertex_ai", {})
+                azure_config = llm_config.get("azure_openai", {})
                 superllm_config = llm_config.get("superllm", {})
                 self.llm = LLMConfig(
-                    provider=llm_config.get("provider", "gemini"),
-                    llama_model_id=llm_config.get(
-                        "llama_model_id", "meta/llama-4-maverick-17b-128e-instruct-maas"
-                    ),
-                    claude_model=llm_config.get(
-                        "claude_model", "claude-3-7-sonnet@20250219"
-                    ),
-                    gemini_model=llm_config.get("gemini_model", "gemini-2.5-flash"),
-                    aws=AWSConfig(**aws_config) if aws_config else None,
-                    gcp=(
-                        GCPConfig(
-                            api_key=gcp_config.get("api_key", ""),
-                            project_id=gcp_config.get("project_id", ""),
-                            location=gcp_config.get("location", ""),
-                            llm_endpoint=gcp_config.get("llm_endpoint", ""),
-                        )
-                        if gcp_config
-                        else None
-                    ),
+                    provider=llm_config.get("provider", "openai"),
+                    aws_bedrock=AWSConfig(**aws_config) if aws_config else None,
                     anthropic=(
                         AnthropicConfig(**anthropic_config)
                         if anthropic_config
                         else None
+                    ),
+                    openai=(OpenAIConfig(**openai_config) if openai_config else None),
+                    google_ai=(
+                        GeminiConfig(**gemini_config) if gemini_config else None
+                    ),
+                    vertex_ai=(
+                        VertexAIConfig(**vertex_ai_config) if vertex_ai_config else None
+                    ),
+                    azure_openai=(
+                        AzureConfig(**azure_config) if azure_config else None
                     ),
                     superllm=(
                         SuperLLMConfig(**superllm_config) if superllm_config else None
@@ -291,10 +387,10 @@ class Config:
 _config_instance = None
 
 
-def get_config() -> Config:
+def get_config(force_reload: bool = False) -> Config:
     """Get the global configuration instance."""
     global _config_instance
-    if _config_instance is None:
+    if _config_instance is None or force_reload:
         _config_instance = Config()
     return _config_instance
 
@@ -303,8 +399,8 @@ def reload_config() -> None:
     """Reload the configuration by resetting the global instance."""
     global _config_instance
     _config_instance = None
-    # Force immediate reload
-    get_config()
+    # Force immediate reload with fresh instance
+    get_config(force_reload=True)
 
 
 # Create a lazy config object
@@ -314,3 +410,28 @@ class _ConfigProxy:
 
 
 config = _ConfigProxy()
+
+
+def get_provider_mapping() -> dict:
+    """Get the provider mapping dictionary."""
+    return PROVIDER_MAPPING
+
+
+def get_env_var_mapping() -> dict:
+    """Get the environment variable mapping dictionary."""
+    return ENV_VAR_MAPPING
+
+
+def get_provider_info() -> list:
+    """Get the provider information list."""
+    return PROVIDER_INFO
+
+
+def get_available_providers() -> list:
+    """Get list of available provider keys."""
+    return list(PROVIDER_MAPPING.keys())
+
+
+def is_provider_supported(provider: str) -> bool:
+    """Check if a provider is supported."""
+    return provider.lower() in PROVIDER_MAPPING

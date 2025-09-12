@@ -10,7 +10,12 @@ import time
 from baml_py import Collector
 from loguru import logger
 
-from config import config
+from config.settings import (
+    get_available_providers,
+    get_config,
+    get_provider_mapping,
+    is_provider_supported,
+)
 
 # Global token usage tracking across all calls
 _global_token_usage = {
@@ -24,38 +29,29 @@ _global_token_usage = {
 class BAMLService:
     """Generic service for calling BAML functions."""
 
-    PROVIDER_MAPPING = {
-        "aws": "Aws",
-        "openai": "ChatGPT",
-        "anthropic": "Anthropic",
-        "gcp": "Gemini",
-    }
-
     def __init__(self):
         """Initialize BAML service."""
-        self.provider = config.llm.provider.lower()
+        config_obj = get_config(force_reload=True)
+        self.provider = config_obj.llm.provider.lower()
+
         self._validate_provider()
 
-        # Import BAML client
-        try:
-            from baml_client.sync_client import b as baml
+        from baml_client.sync_client import b as baml
 
-            self.baml = baml
-        except ImportError as e:
-            logger.error(f"Failed to import BAML client: {e}")
-            raise ImportError("BAML client is required for BAMLService") from e
+        self.baml = baml
 
     def _validate_provider(self):
         """Validate that the configured provider is supported."""
-        if self.provider not in self.PROVIDER_MAPPING:
-            available_providers = list(self.PROVIDER_MAPPING.keys())
+        if not is_provider_supported(self.provider):
+            available_providers = get_available_providers()
             raise ValueError(
                 f"Provider '{self.provider}' not supported. Available providers: {available_providers}"
             )
 
     def _get_full_function_name(self, base_function_name: str) -> str:
         """Get full BAML function name with provider prefix."""
-        function_prefix = self.PROVIDER_MAPPING[self.provider]
+        provider_mapping = get_provider_mapping()
+        function_prefix = provider_mapping[self.provider]
         return f"{function_prefix}{base_function_name}"
 
     def _get_baml_function(self, full_function_name: str):
@@ -242,7 +238,8 @@ class BAMLService:
         Returns:
             List of available function names (without prefix)
         """
-        prefix = self.PROVIDER_MAPPING[self.provider]
+        provider_mapping = get_provider_mapping()
+        prefix = provider_mapping[self.provider]
         all_functions = [attr for attr in dir(self.baml) if not attr.startswith("_")]
 
         # Filter functions that start with our provider prefix
@@ -260,8 +257,9 @@ class BAMLService:
         Returns:
             Dictionary with provider information
         """
+        provider_mapping = get_provider_mapping()
         return {
             "provider": self.provider,
-            "prefix": self.PROVIDER_MAPPING[self.provider],
-            "available_providers": list(self.PROVIDER_MAPPING.keys()),
+            "prefix": provider_mapping[self.provider],
+            "available_providers": get_available_providers(),
         }

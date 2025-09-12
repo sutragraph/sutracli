@@ -34,7 +34,7 @@ Remember: You are generating strategic roadmaps, not implementing code.
 "#
 
 function AwsRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
-  client AwsClaudeSonnet4
+  client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ RoadmapSystemPrompt(params.prompt_params) }}
@@ -53,6 +53,33 @@ function AnthropicRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
 
 function ChatGPTRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client OpenAIChatGPT
+  prompt #"
+    {{ _.role("system") }}
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapUserPrompt(params.context) }}
+  "#
+}
+
+function GeminiRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+  client GoogleGemini
+  prompt #"
+    {{ _.role("system") }}
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapUserPrompt(params.context) }}
+  "#
+}
+
+function VertexAIRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+  client GCPVertexAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapUserPrompt(params.context) }}
+  "#
+}
+
+function AzureRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+  client AzureOpenAI
   prompt #"
     {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params.prompt_params) }}

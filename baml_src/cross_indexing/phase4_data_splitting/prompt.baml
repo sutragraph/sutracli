@@ -1077,7 +1077,7 @@ Process the above connection code snippets and transform them into structured JS
 "#
 
 function AwsConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
-  client AwsClaudeSonnet4
+  client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ ConnectionSplittingPrompt() }}
@@ -1096,6 +1096,33 @@ function AnthropicConnectionSplitting(memory_context: string) -> ConnectionSplit
 
 function ChatGPTConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client OpenAIChatGPT
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionSplittingPrompt() }}
+    {{ ConnectionSplittingUserPrompt(memory_context) }}
+  "#
+}
+
+function GeminiConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+  client GoogleGemini
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionSplittingPrompt() }}
+    {{ ConnectionSplittingUserPrompt(memory_context) }}
+  "#
+}
+
+function VertexAIConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+  client GCPVertexAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionSplittingPrompt() }}
+    {{ ConnectionSplittingUserPrompt(memory_context) }}
+  "#
+}
+
+function AzureConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+  client AzureOpenAI
   prompt #"
     {{ _.role("system") }}
     {{ ConnectionSplittingPrompt() }}

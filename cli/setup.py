@@ -113,7 +113,6 @@ def setup_configuration():
 
     config_dir = INSTALL_DIR / "config"
 
-    # Create system configuration
     system_config = {
         "database": {
             "knowledge_graph_db": f"{INSTALL_DIR}/data/knowledge_graph.db",
@@ -155,31 +154,35 @@ def setup_configuration():
         },
         "llm": {
             "provider": "",
-            "llama_model_id": "meta/llama-3.1-8b-instruct",
-            "claude_model": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-            "gemini_model": "gemini-1.5-flash",
-            "aws": {
-                "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+            "aws_bedrock": {
                 "access_key_id": "",
                 "secret_access_key": "",
-                "region": "us-east-2",
+                "region": "",
+                "model_id": "",
             },
             "anthropic": {
                 "api_key": "",
-                "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+                "model_id": "",
             },
-            "gcp": {
+            "google_ai": {
                 "api_key": "",
-                "project_id": "",
-                "location": "us-central1",
-                "llm_endpoint": "https://us-central1-aiplatform.googleapis.com/v1/projects/{project_id}/locations/us-central1/endpoints/openapi/chat/completions",
+                "model_id": "",
+                "base_url": "",
             },
-            "superllm": {
-                "api_endpoint": "http://localhost:8000",
-                "firebase_token": "",
-                "default_model": "gpt-3.5-turbo",
-                "default_provider": "openai",
+            "vertex_ai": {
+                "location": "",
+                "model_id": "",
             },
+            "azure_openai": {
+                "api_key": "",
+                "base_url": "",
+                "api_version": "",
+            },
+            "openai": {
+                "api_key": "",
+                "model_id": "",
+            },
+            "superllm": {},
         },
     }
 
@@ -229,30 +232,80 @@ def setup_environment():
     console.info("Environment variable set for current session")
 
 
+def _check_vertex_ai_auth():
+    """Check and prompt for Vertex AI authentication if needed."""
+    try:
+        import subprocess
+
+        # Check if gcloud is installed
+        try:
+            result = subprocess.run(
+                ["gcloud", "--version"], capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                console.warning("Google Cloud SDK (gcloud) is not installed.")
+                console.print(
+                    "   Install it from: https://cloud.google.com/sdk/docs/install"
+                )
+                console.print("   After installation, run: gcloud init")
+                return
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            console.warning(
+                "Google Cloud SDK (gcloud) is not installed or not accessible."
+            )
+            console.print(
+                "   Install it from: https://cloud.google.com/sdk/docs/install"
+            )
+            console.print("   After installation, run: gcloud init")
+            return
+
+        # Check if authenticated
+        try:
+            result = subprocess.run(
+                [
+                    "gcloud",
+                    "auth",
+                    "application-default",
+                    "print-access-token",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                # Successfully authenticated
+                return
+        except subprocess.TimeoutExpired:
+            pass
+
+        # Not authenticated, show setup steps and exit
+        console.print("\n🔐 Vertex AI Authentication Required")
+        console.warning(
+            "   You need to authenticate with Google Cloud to use Vertex AI."
+        )
+        console.print("   Steps:")
+        console.print("   1. Run: gcloud init (if not done already)")
+        console.print(
+            "   2. Run: gcloud auth application-default login --project YOUR_PROJECT_ID"
+        )
+        console.print("\n   After completing these steps, run the command again.")
+
+    except Exception:
+        # Silent fail for authentication check
+        pass
+
+
 def setup_baml_environment():
     """Set up BAML environment variables from config at module level."""
     try:
         # Import here to avoid circular imports
-        from src.config.settings import get_config
+        from src.config.settings import get_config, get_env_var_mapping
 
         # Use the config function to get loaded config
         config = get_config()
 
-        # Environment variable mapping for each provider
-        ENV_VAR_MAPPING = {
-            "aws": {
-                "AWS_ACCESS_KEY_ID": "access_key_id",
-                "AWS_SECRET_ACCESS_KEY": "secret_access_key",
-                "AWS_MODEL_ID": "model_id",
-                "AWS_REGION": "region",
-            },
-            "openai": {"OPENAI_API_KEY": "api_key", "OPENAI_MODEL_ID": "model_id"},
-            "anthropic": {
-                "ANTHROPIC_API_KEY": "api_key",
-                "ANTHROPIC_MODEL_ID": "model_id",
-            },
-            "gcp": {"GOOGLE_API_KEY": "api_key", "GOOGLE_MODEL_ID": "model_id"},
-        }
+        # Get environment variable mapping from centralized config
+        ENV_VAR_MAPPING = get_env_var_mapping()
 
         # Check if config has llm attribute
         if not hasattr(config, "llm") or not config.llm:
@@ -270,11 +323,13 @@ def setup_baml_environment():
         # Set environment variables
         env_mapping = ENV_VAR_MAPPING[provider]
         for env_var, config_key in env_mapping.items():
-            # Only set if not already set and config value exists
-            if env_var not in os.environ:
-                value = getattr(provider_config, config_key, None)
-                if value:
-                    os.environ[env_var] = str(value)
+            value = getattr(provider_config, config_key, None)
+            if value:
+                os.environ[env_var] = str(value)
+
+        # Check Vertex AI authentication if using vertex_ai provider
+        if provider == "vertex_ai":
+            _check_vertex_ai_auth()
 
         os.environ["BAML_LOG"] = "OFF"
 

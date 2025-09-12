@@ -86,7 +86,7 @@ class ModernSutraKit:
                 return False
 
             # Basic validation for each provider
-            if provider == "aws":
+            if provider == "aws_bedrock":
                 required_fields = [
                     "access_key_id",
                     "secret_access_key",
@@ -98,13 +98,27 @@ class ModernSutraKit:
                 return bool(
                     provider_config.get("api_key") and provider_config.get("model_id")
                 )
-            elif provider == "gcp":
-                required_fields = ["api_key", "project_id", "location"]
-                return all(provider_config.get(field) for field in required_fields)
             elif provider == "openai":
                 return bool(
                     provider_config.get("api_key") and provider_config.get("model_id")
                 )
+            elif provider == "google_ai":
+                return bool(
+                    provider_config.get("api_key")
+                    and provider_config.get("model_id")
+                    and provider_config.get("base_url")
+                )
+            elif provider == "vertex_ai":
+                return bool(
+                    provider_config.get("location") and provider_config.get("model_id")
+                )
+            elif provider == "azure_openai":
+                required_fields = [
+                    "api_key",
+                    "base_url",
+                    "api_version",
+                ]
+                return all(provider_config.get(field) for field in required_fields)
 
             return True
 
@@ -115,28 +129,10 @@ class ModernSutraKit:
         """Interactive LLM provider setup with arrow keys."""
         console.info("LLM Provider Setup")
 
-        providers = [
-            {
-                "name": "Anthropic (Claude)",
-                "key": "anthropic",
-                "description": "Claude models (claude-3.5-sonnet, etc.)",
-            },
-            {
-                "name": "AWS Bedrock",
-                "key": "aws",
-                "description": "AWS managed AI services",
-            },
-            {
-                "name": "Google Gemini",
-                "key": "gcp",
-                "description": "Google's Gemini models",
-            },
-            {
-                "name": "OpenAI (ChatGPT)",
-                "key": "openai",
-                "description": "GPT models via OpenAI API",
-            },
-        ]
+        # Import providers from centralized config
+        from src.config.settings import get_provider_info
+
+        providers = get_provider_info()
 
         table = Table()
         table.add_column("Provider", style="green")
@@ -159,8 +155,8 @@ class ModernSutraKit:
         # Collect provider-specific configuration
         config_data = self._get_provider_config(provider_key)
 
-        # Update only the LLM configuration
-        updated_config = self._update_llm_config(provider_key, config_data)
+        # Update the provider configuration in existing config
+        updated_config = self._update_provider_config(provider_key, config_data)
 
         # Save configuration
         self._save_config(updated_config)
@@ -169,12 +165,16 @@ class ModernSutraKit:
 
     def _get_provider_config(self, provider: str) -> Dict[str, Any]:
         """Get configuration for specific provider."""
-        if provider == "aws":
+        if provider == "aws_bedrock":
             return self._get_aws_config()
         elif provider == "anthropic":
             return self._get_anthropic_config()
-        elif provider == "gcp":
-            return self._get_gcp_config()
+        elif provider == "google_ai":
+            return self._get_gemini_config()
+        elif provider == "vertex_ai":
+            return self._get_vertex_ai_config()
+        elif provider == "azure_openai":
+            return self._get_azure_config()
         elif provider == "openai":
             return self._get_openai_config()
         else:
@@ -205,20 +205,128 @@ class ModernSutraKit:
 
         return {"api_key": api_key, "model_id": model_id}
 
-    def _get_gcp_config(self) -> Dict[str, Any]:
-        """Get Google Cloud configuration."""
-        console.info("Google Cloud Configuration")
-        api_key = prompt("Google API Key: ", is_password=True)
-        project_id = Prompt.ask("Project ID")
-        location = Prompt.ask("Location", default="us-central1")
-        llm_endpoint = Prompt.ask("LLM Endpoint", default="")
+    def _get_gemini_config(self) -> Dict[str, Any]:
+        """Get Google Gemini configuration."""
+        console.info("Google Gemini Configuration")
+        api_key = prompt("Gemini API Key: ", is_password=True)
+        model_id = Prompt.ask("Model ID", default="gemini-1.5-pro")
+        base_url = Prompt.ask(
+            "Base URL", default="https://generativelanguage.googleapis.com/v1beta"
+        )
 
-        return {
-            "api_key": api_key,
-            "project_id": project_id,
-            "location": location,
-            "llm_endpoint": llm_endpoint,
-        }
+        return {"api_key": api_key, "model_id": model_id, "base_url": base_url}
+
+    def _get_vertex_ai_config(self) -> Dict[str, Any]:
+        """Get Google Cloud Vertex AI configuration with gcloud authentication."""
+        console.info("Google Cloud Vertex AI Configuration")
+        console.print()
+        console.info("Vertex AI uses Google Cloud authentication via gcloud CLI.")
+        console.print("Please ensure you have:")
+        console.print(
+            "  1. Google Cloud SDK installed (https://cloud.google.com/sdk/docs/install)"
+        )
+        console.print(
+            "  2. Run: gcloud init (to set up your default project and authentication)"
+        )
+        console.print("  3. Vertex AI API enabled in your project")
+        console.print("  4. Proper permissions for Vertex AI")
+        console.print()
+
+        # Prompt for authentication
+        if Confirm.ask("Do you want to authenticate with Google Cloud now?"):
+            self._setup_gcp_auth()
+        else:
+            console.warning(
+                "You can authenticate later using: gcloud auth application-default login --project YOUR_PROJECT_ID"
+            )
+
+        # Get basic configuration
+        location = Prompt.ask("Location (region)", default="global")
+        model_id = Prompt.ask("Model ID", default="gemini-2.5-pro")
+
+        return {"location": location, "model_id": model_id}
+
+    def _setup_gcp_auth(self):
+        """Guide user through GCP authentication setup with retry option."""
+        import subprocess
+        import sys
+
+        console.info("Setting up Google Cloud authentication...")
+
+        # Check if gcloud is installed
+        try:
+            result = subprocess.run(
+                ["gcloud", "--version"], capture_output=True, text=True
+            )
+            if result.returncode != 0:
+                console.error("Google Cloud SDK (gcloud) is not installed.")
+                console.info(
+                    "Please install it from: https://cloud.google.com/sdk/docs/install"
+                )
+                console.info("After installation, run: gcloud init")
+                return
+        except FileNotFoundError:
+            console.error("Google Cloud SDK (gcloud) is not installed or not in PATH.")
+            console.info(
+                "Please install it from: https://cloud.google.com/sdk/docs/install"
+            )
+            console.info("After installation, run: gcloud init")
+            return
+
+        # Retry loop for authentication
+        while True:
+            # Get project ID
+            project_id = Prompt.ask("Enter your Google Cloud Project ID")
+
+            # Run authentication command
+            console.info(
+                f"Running: gcloud auth application-default login --project {project_id}"
+            )
+            console.info("This will open your browser for authentication...")
+
+            try:
+                result = subprocess.run(
+                    [
+                        "gcloud",
+                        "auth",
+                        "application-default",
+                        "login",
+                        "--project",
+                        project_id,
+                    ],
+                    check=True,
+                )
+
+                if result.returncode == 0:
+                    console.success("Google Cloud authentication successful!")
+                    console.info("Vertex AI is now ready to use.")
+                    return  # Success, exit the retry loop
+
+            except subprocess.CalledProcessError as e:
+                console.error(f"Authentication failed: {e}")
+                console.info("Steps:")
+                console.info("1. Run: gcloud init (if not done already)")
+                console.info(
+                    f"2. Run: gcloud auth application-default login --project {project_id}"
+                )
+            except Exception as e:
+                console.error(f"Unexpected error: {e}")
+                console.info("Steps:")
+                console.info("1. Run: gcloud init (if not done already)")
+                console.info(
+                    f"2. Run: gcloud auth application-default login --project {project_id}"
+                )
+
+            # Ask if user wants to retry
+            console.print()
+            if not Confirm.ask(
+                "Would you like to try again with a different project ID or retry authentication?",
+                default=True,
+            ):
+                console.warning(
+                    "Authentication setup cancelled. You can set up authentication manually later."
+                )
+                break
 
     def _get_openai_config(self) -> Dict[str, Any]:
         """Get OpenAI configuration."""
@@ -228,40 +336,70 @@ class ModernSutraKit:
 
         return {"api_key": api_key, "model_id": model_id}
 
-    def _load_existing_config(self) -> Dict[str, Any]:
-        """Load existing configuration or exit if not found."""
-        if not self.config_path.exists():
-            console.error(
-                "Configuration file not found. Did you run the 'sutrakit-setup' command?"
-            )
-            console.info(
-                "Please run 'sutrakit-setup' first to initialize the system configuration."
-            )
-            sys.exit(1)
+    def _get_azure_config(self) -> Dict[str, Any]:
+        """Get Azure OpenAI configuration."""
+        console.info("Azure OpenAI Configuration")
+        api_key = prompt("Azure OpenAI API Key: ", is_password=True)
 
-        try:
-            with open(self.config_path, "r") as f:
-                return json.load(f)
-        except json.JSONDecodeError as e:
-            console.error(f"Invalid JSON in configuration file: {e}")
-            console.error(
-                "Configuration file appears to be corrupted. Please run 'sutrakit-setup' again."
-            )
-            sys.exit(1)
-        except Exception as e:
-            console.error(f"Error reading configuration file: {e}")
-            sys.exit(1)
+        console.print()
+        console.info(
+            "Base URL Example: https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-id"
+        )
+        console.dim(
+            "Replace 'your-resource-name' with your Azure resource name and 'your-deployment-id' with your deployment ID"
+        )
+        console.print()
 
-    def _update_llm_config(
-        self, provider: str, provider_config: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Update only the LLM configuration, preserving other settings."""
-        # Load existing configuration (will exit if not found)
-        existing_config = self._load_existing_config()
+        base_url = Prompt.ask("Base URL")
+        api_version = Prompt.ask("API Version", default="2025-01-01-preview")
 
+        return {
+            "api_key": api_key,
+            "base_url": base_url,
+            "api_version": api_version,
+        }
+
+    def _update_provider_config(self, provider: str, provider_config: Dict[str, Any]):
+        """Update only the provider configuration in existing config file."""
+        # Load existing config or create minimal structure if it doesn't exist
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, "r") as f:
+                    existing_config = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                existing_config = {}
+        else:
+            existing_config = {}
+
+        # Ensure llm section exists
+        if "llm" not in existing_config:
+            existing_config["llm"] = {}
+
+        # Update provider and max_tokens
         existing_config["llm"]["provider"] = provider
 
-        existing_config["llm"][provider] = provider_config
+        # Initialize all provider sections if they don't exist
+        provider_keys = [
+            "aws_bedrock",
+            "anthropic",
+            "google_ai",
+            "vertex_ai",
+            "azure_openai",
+            "openai",
+            "superllm",
+        ]
+        for key in provider_keys:
+            if key not in existing_config["llm"]:
+                existing_config["llm"][key] = {}
+
+        # Update only the fields provided by the user, preserving existing fields
+        if provider in existing_config["llm"]:
+            # Merge new config with existing provider config
+            for field_key, field_value in provider_config.items():
+                existing_config["llm"][provider][field_key] = field_value
+        else:
+            # If provider section doesn't exist, create it with the new config
+            existing_config["llm"][provider] = provider_config
 
         return existing_config
 
@@ -275,6 +413,9 @@ class ModernSutraKit:
 
         # Reload the configuration to update the in-memory instance
         reload_config()
+        from cli.setup import setup_baml_environment
+
+        setup_baml_environment()
 
     def select_agent(self) -> Agent:
         """Interactive agent selection with arrow keys."""
