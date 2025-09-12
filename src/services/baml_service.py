@@ -21,6 +21,7 @@ from config.settings import (
 _global_token_usage = {
     "total_input_tokens": 0,
     "total_output_tokens": 0,
+    "total_cached_input_tokens": 0,
     "total_calls": 0,
     "call_history": [],  # List of (call_number, function_name, input_tokens, output_tokens)
 }
@@ -142,20 +143,21 @@ class BAMLService:
                     logger.debug("=" * 80)
 
                 # Extract actual token usage from BAML collector
-                actual_input_tokens = getattr(
-                    collector.last.usage, "input_tokens", 0
-                ) or getattr(collector.last.usage, "prompt_tokens", 0)
-                actual_output_tokens = getattr(
-                    collector.last.usage, "output_tokens", 0
-                ) or getattr(collector.last.usage, "completion_tokens", 0)
+                actual_input_tokens = getattr(collector.last.usage, "input_tokens", 0)
+                actual_output_tokens = getattr(collector.last.usage, "output_tokens", 0)
+                cached_input_tokens = getattr(
+                    collector.last.usage, "cached_input_tokens", 0
+                )
 
                 # Track token usage
                 total_input_tokens += actual_input_tokens
                 total_output_tokens += actual_output_tokens
+                total_cached_input_tokens += cached_input_tokens
 
                 # Update global token usage tracking
                 _global_token_usage["total_input_tokens"] += actual_input_tokens
                 _global_token_usage["total_output_tokens"] += actual_output_tokens
+                _global_token_usage["total_cached_input_tokens"] += cached_input_tokens
                 _global_token_usage["total_calls"] += 1
 
                 # Get current call number
@@ -168,6 +170,7 @@ class BAMLService:
                         full_function_name,
                         actual_input_tokens,
                         actual_output_tokens,
+                        cached_input_tokens,
                     )
                 )
 
@@ -175,6 +178,7 @@ class BAMLService:
                 print(
                     f"🔢 Token Usage #{call_number} - "
                     f"Input: {actual_input_tokens}, Output: {actual_output_tokens}, "
+                    f"Cached: {cached_input_tokens}, "
                     f"Total: {actual_input_tokens + actual_output_tokens}"
                 )
 
@@ -187,6 +191,7 @@ class BAMLService:
                     f"📊 Cumulative Token Usage (Total {call_number} calls) - "
                     f"Input: {_global_token_usage['total_input_tokens']}, "
                     f"Output: {_global_token_usage['total_output_tokens']}, "
+                    f"Cached: {_global_token_usage['total_cached_input_tokens']}, "
                     f"Total: {cumulative_total}"
                 )
 
