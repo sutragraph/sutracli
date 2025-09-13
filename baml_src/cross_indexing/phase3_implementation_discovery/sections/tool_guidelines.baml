@@ -10,10 +10,16 @@ This section provides specific guidelines for using tools effectively during imp
 CRITICAL THINKING APPROACH: Check your sutra memory history first! If you found ANY results, immediately move to the next task. If the current analysis approach returned NO results and this is your first try, think: "What different search pattern, analysis method, or tool approach should I try to find this implementation?" However, if you see in your sutra memory history that you've already tried 2-3 similar tool calls for the same file/pattern with zero results, mark that task as complete and move to the next task rather than repeating the same approaches.
 
 RETRY THINKING EXAMPLES:
-- If database tool shows no axios usage in a file (1st try), think: "Should I try search_keyword with 'axios' pattern across files?"
-- If search_keyword for 'app.get' returns no results (1st try), think: "Should I try 'router', 'express', or broader patterns?"
-- Check sutra memory: If you see 2-3 analysis attempts with zero results already tried for same objective, move to completion
-- Example: "I see in sutra memory I already tried database tool on file1, search_keyword with pattern1, search_keyword with pattern2 - this task should be marked complete"
+
+1st Try Example:
+- Action: search_keyword with pattern 'app.get|app.post|app.put|app.delete'
+- Result: 0 results found
+- Thinking: "Search keyword returned 0 results for Express app patterns. I should try simpler patterns like '.get|.post|.put|.delete' to catch any route definitions."
+
+2nd Try Example:
+- Action: search_keyword with pattern '.get|.post|.put|.delete'
+- Result: 0 results found
+- Thinking: "I can see in sutra memory that 1st attempt with 'app.get|app.post|app.put|app.delete' returned 0 results and 2nd attempt with simpler '.get|.post|.put|.delete' also returned 0 results. I should mark this task complete and move to next task as I tried 2 different approaches."
 
 CRITICAL ANALYSIS DECISION PROCESS: In your `thinking` field, always ask yourself: "Should I track this discovered implementation pattern in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details.
 
@@ -35,7 +41,6 @@ Critical: Update your task list in every iteration based on your thinking:
 1. STANDARD PROCESS: When results ARE found
 - If your analysis finds ANY results (> 0), immediately proceed to process those results
 - Document findings in sutra memory
-- Extract connection details for data splitting phase
 - Mark current task as completed
 - Move to next task
 - DO NOT attempt additional analysis approaches when you already have results
@@ -44,22 +49,18 @@ Critical: Update your task list in every iteration based on your thinking:
 
 IMPORTANT: If you find ANY results, immediately move to the next task. This retry approach is ONLY for when zero results are found.
 
+IMPORTANT: Only search for the SAME keyword patterns with broader search. Do not search for different keywords or packages. If searching for 'axios', search for 'axios' only - do not include 'fetch' or other packages. If 'app.get|app.post' fails, try '.get|.post' - not other frameworks or patterns.
+
 Before Marking Any Task Complete (Only when results = 0):
-- Check sutra memory history: Have I already tried 2-3 different analysis approaches for this same objective?
+- Check sutra memory history: Have I already tried 2 different analysis approaches for this same objective?
 - If YES: Mark task complete and move to next task (avoid repeating same tool calls)
-- If NO and this is 1st try: Attempt alternative approach (different tool/pattern/method)
-- Only after 2-3 documented different attempts with zero results should you mark task complete
+- If NO and this is 1st try: Try broader search pattern
 
-Implementation Discovery Retry Strategy (Only when zero results found):
+Retry Strategy (Only when zero results found):
 - 1st attempt: Use primary tool approach as specified in import discovery task
-- 2nd attempt: Try alternative tool or broader search pattern - ONLY if 1st attempt found 0 results
-- 3rd attempt: Try different analysis method or alternative file approaches - ONLY if 2nd attempt found 0 results
-- After 3 attempts with zero results: Mark complete and move to next task
+- 2nd attempt: Try broader search pattern - ONLY if 1st attempt found 0 results
+- After 2 attempts with zero results: Mark complete and move to next task
 
-Analysis Evolution Strategy:
-- Start specific (exact file) → go broader (multiple files) → try alternatives (different patterns)
-- Precise patterns → common variations → broader matching
-- Document all attempts in sutra memory history
 
 3. TOOL SELECTION STRATEGY
 

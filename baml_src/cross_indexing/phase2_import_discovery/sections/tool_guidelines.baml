@@ -45,6 +45,8 @@ Critical: Update your task list in every iteration based on your thinking:
 
 IMPORTANT: If you find ANY results, immediately move to the next task. This retry approach is ONLY for when zero results are found.
 
+IMPORTANT: Only search for the SAME keyword patterns with broader search. Do not search for different keywords or packages. If searching for 'axios', search for 'axios' only - do not include 'fetch' or other packages. If 'app.get|app.post' fails, try '.get|.post' - not other frameworks or patterns.
+
 Before Marking Any Task Complete (Only when results = 0):
 - Check sutra memory history: Have I already tried 2 different search patterns for this same package?
 - If YES: Mark task complete and move to next task (avoid repeating same search patterns)
@@ -53,8 +55,10 @@ Before Marking Any Task Complete (Only when results = 0):
 
 Import Search Retry Strategy (Only when zero results found):
 - 1st attempt: Use exact pattern from package discovery task
-- 2nd attempt: Try simple keyword search (just package name like 'axios', 'express') - ONLY if 1st attempt found 0 results
+- Thinking: "'require.*axios|import.*axios' returns no results (1st try), I should try simple keyword search 'axios'"
+- 2nd attempt: Try simple keyword search - ONLY if 1st attempt found 0 results
 - After 2 attempts with zero results: Mark complete and move to next task
+- Thinking: "I see in sutra memory I already tried search_keyword with 'require.*axios|import.*axios' and 'axios' patterns - this task should be marked complete"
 
 Pattern Evolution Strategy:
 - Start with provided pattern → try simple keyword → mark complete
