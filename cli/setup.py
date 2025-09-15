@@ -16,6 +16,16 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlretrieve
 
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 
@@ -52,25 +62,81 @@ def setup_directories():
 
 
 def download_file(url: str, destination: Path) -> bool:
-    """Download a file from URL to destination"""
+    """Download a file from URL to destination with Rich progress display"""
     try:
-        console.info(f"Downloading {url}...")
-        urlretrieve(url, destination)
-        console.success(f"Downloaded {destination.name}")
+        console.info(f"Starting download from {url}")
+
+        # Create progress bar for download
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]Downloading"),
+            BarColumn(bar_width=40),
+            "[progress.percentage]{task.percentage:>3.1f}%",
+            "•",
+            DownloadColumn(),
+            "•",
+            TransferSpeedColumn(),
+            "•",
+            TimeRemainingColumn(),
+            console=console.console,
+        ) as progress:
+            # Create task
+            task = progress.add_task("download", total=None)
+
+            def progress_hook(block_num, block_size, total_size):
+                """Progress callback for urlretrieve"""
+                if total_size > 0:
+                    downloaded = block_num * block_size
+                    # Update total size on first call
+                    if progress.tasks[task].total is None:
+                        progress.update(task, total=total_size)
+                    # Update progress
+                    progress.update(task, completed=min(downloaded, total_size))
+
+            urlretrieve(url, destination, reporthook=progress_hook)
+
+        console.success(
+            f"Downloaded {destination.name} ({destination.stat().st_size / (1024*1024):.1f}MB)"
+        )
         return True
+
     except URLError as e:
         console.error(f"Failed to download {url}: {e}")
         return False
 
 
 def extract_tar_gz(archive_path: Path, extract_to: Path) -> bool:
-    """Extract a tar.gz file"""
+    """Extract a tar.gz file with Rich progress display"""
     try:
-        console.info(f"Extracting {archive_path}...")
+        console.info(f"Extracting {archive_path.name}")
+
         with tarfile.open(archive_path, "r:gz") as tar:
-            tar.extractall(extract_to)
-        console.success(f"Extracted {archive_path.name}")
+            members = tar.getmembers()
+            total_files = len(members)
+
+            # Create progress bar for extraction
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[bold green]Extracting"),
+                BarColumn(bar_width=40),
+                TaskProgressColumn(),
+                "•",
+                TextColumn("{task.description}"),
+                console=console.console,
+            ) as progress:
+                task = progress.add_task(
+                    total=total_files, description=f"0/{total_files} files"
+                )
+
+                for i, member in enumerate(members, 1):
+                    tar.extract(member, extract_to)
+                    progress.update(
+                        task, completed=i, description=f"{i}/{total_files} files"
+                    )
+
+        console.success(f"Extracted {archive_path.name} ({total_files} files)")
         return True
+
     except Exception as e:
         console.error(f"Failed to extract {archive_path}: {e}")
         return False
