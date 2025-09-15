@@ -4,7 +4,7 @@ build-backend="setuptools.build_meta"
 
 [project]
 name="sutrakit"
-version="0.1.21"
+version="0.1.22"
 description="A comprehensive AI-powered code analysis and automation CLI tool"
 readme="README.md"
 license = {file = "LICENSE"}
@@ -28,20 +28,15 @@ classifiers = [
 keywords = ["ai", "code-analysis", "automation", "cli", "agent"]
 requires-python=">=3.8"
 dependencies = [
-    "python-dotenv==1.1.0",
     "pydantic==2.11.5",
     "loguru==0.7.3",
     "onnxruntime==1.22.0",
     "numpy==2.2.6",
     "tokenizers==0.21.1",
     "sqlite-vec==0.1.6",
-    "boto3==1.38.36",
-    "botocore==1.38.36",
-    "cryptography==44.0.0",
     "requests==2.32.3",
     "trafilatura==2.0.0",
     "markdownify==1.1.0",
-    "dateparser==1.2.2",
     "tree-sitter>=0.25.1",
     "tree-sitter-language-pack>=0.9.0",
     "setuptools==80.9.0",

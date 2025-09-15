@@ -86,3 +86,21 @@ function AzureRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
+
+function AzureAIFoundryRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapUserPrompt(params.context) }}
+  "#
+}
+
+function OpenRouterRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+  client OpenRouter
+  prompt #"
+    {{ _.role("system") }}
+    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapUserPrompt(params.context) }}
+  "#
+}

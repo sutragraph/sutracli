@@ -248,4 +248,6 @@ IGNORE_DIRECTORY_PATTERNS: List[str] = [
     "backup",
     "backups",
     ".backup",
+    # BAML Auto Generated Files
+    "baml_client",
 ]

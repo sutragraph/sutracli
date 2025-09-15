@@ -118,7 +118,7 @@ Here's a partial view of the config file (focusing on the LLM section for brevit
 {
   ...
   "llm": {
-    "provider": "aws_bedrock|anthropic|google_ai|vertex_ai|azure_openai|openai",
+    "provider": "aws_bedrock|anthropic|google_ai|vertex_ai|azure_openai|openai|azure_aifoundry|openrouter",
     "aws_bedrock": {
       "access_key_id": "YOUR_ACCESS_KEY",
       "secret_access_key": "YOUR_SECRET_KEY",
@@ -146,6 +146,16 @@ Here's a partial view of the config file (focusing on the LLM section for brevit
     "openai": {
       "api_key": "YOUR_API_KEY",
       "model_id": "gpt-4o"
+    },
+    "azure_aifoundry": {
+      "api_key": "YOUR_API_KEY",
+      "base_url": "https://RESOURCE_NAME.REGION.models.ai.azure.com"
+    },
+    "openrouter": {
+      "api_key": "YOUR_API_KEY",
+      "model_id": "openai/gpt-3.5-turbo",
+      "http_referer": "YOUR-SITE-URL", //Optional
+      "x_title": "YOUR-TITLE" //Optional
     }
   }
   ...
@@ -156,7 +166,7 @@ Here's a partial view of the config file (focusing on the LLM section for brevit
 
 The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) and configure credentials. By default, it's set to `"aws_bedrocks"`. To change it:
 
-1. Update `"provider"` to one of: `"aws_bedrock"`, `"anthropic"`, `"google_ai"`, `"vertex_ai"`, `"azure_openai"`, or `"openai"`.
+1. Update `"provider"` to one of: `"aws_bedrock"`, `"anthropic"`, `"google_ai"`, `"vertex_ai"`, `"azure_openai"`, `"openai"`, `"azure_aifoundry"`, or `"openrouter"`.
 2. Fill in the corresponding subsection with your API keys or credentials (leave others blank if unused).
 3. Optionally, adjust model IDs for specific LLMs.
 
@@ -173,7 +183,9 @@ The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) a
   "google_ai": { /* Leave as-is or blank */ },
   "vertex_ai": { /* Leave as-is or blank */ },
   "azure_openai": { /* Leave as-is or blank */ },
-  "openai": { /* Leave as-is or blank */ }
+  "openai": { /* Leave as-is or blank */ },
+  "azure_aifoundry": { /* Leave as-is or blank */ },
+  "openrouter": { /* Leave as-is or blank */ }
 }
 ```
 

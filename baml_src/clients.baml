@@ -70,3 +70,28 @@ client<llm> AzureOpenAI {
     allowed_roles ["system", "user"]
   }
 }
+
+// Azure AI Foundry Client
+client<llm> AzureAIFoundry {
+  provider "openai-generic"
+  options {
+    base_url env.AZURE_AIFOUNDRY_BASE_URL
+    api_key env.AZURE_AIFOUNDRY_API_KEY
+    allowed_roles ["system", "user"]
+  }
+}
+
+// OpenRouter Client
+client<llm> OpenRouter {
+  provider "openai-generic"
+  options {
+    base_url "https://openrouter.ai/api/v1"
+    api_key env.OPENROUTER_API_KEY
+    model env.OPENROUTER_MODEL_ID
+    headers {
+      HTTP-Referer env.OPENROUTER_HTTP_REFERER // Optional
+      X-Title env.OPENROUTER_X_TITLE // Optional
+    }
+    allowed_roles ["system", "user"]
+  }
+}

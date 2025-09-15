@@ -1,7 +1,7 @@
 template_string ConnectionSplittingPrompt() #"
 You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format. Additionally, include a comprehensive top-level "summary" that thoroughly describes the project's purpose, functionality, and architecture based on the collected connections.
 
-## ABSOLUTE CRITICAL RULE - ONE CONNECTION PER SNIPPET
+## CRITICAL RULE - ONE CONNECTION PER SNIPPET
 
 MANDATORY: Each snippet entry must represent EXACTLY ONE connection. You are FORBIDDEN from grouping multiple connections together.
 
@@ -16,7 +16,7 @@ EXAMPLES OF FORBIDDEN GROUPING: (Avoid! Do Not use!)
 - "Multiple operations for data processing"
 - "Connection handlers including X, Y, Z"
 - "40+ REST API endpoints including /get-speech-token, /get-custom-token, /check-room"
-- "REST API endpoints for incoming connections - includes 45+ admin, internal, techyrr-admin"
+- "REST API endpoints for incoming connections - includes 45+ admin, internal, super-admin"
 - "Comprehensive incoming HTTP connection points"
 - Any description mentioning "multiple", "including", "various" , "several", numbers like "40+", "45+"
 
@@ -101,12 +101,14 @@ Examples:
    - Exact endpoints, event names, queue names, method names
    - Protocols, methods, parameters
    - Environment variables and their resolved values in descriptions using format ENV_VAR=actual_value
+   - Variable names resolved to their actual values from same file definitions
    - File paths and line numbers
 8. CORRECT DIRECTION: Classify direction correctly based on data flow
 9. NO DUPLICATES: No duplicates - each data transmission operation must be unique
 10. NO REPEATED CONTENT: CRITICAL: IGNORE REPEATING CONTENT - If you see the same file code with the same lines appearing multiple times in the input, include it only ONCE in your response. Same lines from same files are allowed only one time in splitting.
 11. ENVIRONMENT RESOLUTION: ENVIRONMENT FILE CODE RESOLUTION - If environment file code is provided as a code block, look for env var/config values and include them in connection descriptions for better context
-12. FORBIDDEN LANGUAGE: Never use words like "multiple", "including", "various", "several", "comprehensive", numbers with "+" (like "40+", "45+"), "operations for", "endpoints for"
+12. VARIABLE RESOLUTION: CRITICAL - If any endpoint is having variable value, look for same file path code snippet which has defined value of that variable and resolve in template by mentioning that actual value in description of the code snippet. If that variable's assigned value is also an env variable, then look for env file if it is in code snippets. Final target of phase 4 is to have static value of any variable used in endpoint from which it can be used to send or receive values using that identifier or name.
+13. FORBIDDEN LANGUAGE: Never use words like "multiple", "including", "various", "several", "comprehensive", numbers with "+" (like "40+", "45+"), "operations for", "endpoints for"
 
 ## ENVIRONMENT FILE CODE RESOLUTION
 
@@ -134,6 +136,101 @@ And env file code block contains:
 Then description should be:
 ```
 "Message queue consumer for USER_ADD_QUEUE=user-add queue"
+```
+
+### EXAMPLE OF VARIABLE RESOLUTION IN SAME FILE:
+If you find connection code:
+```
+./src/consumer/AssignmentV2_Parse/index.js:
+  36 | await consumePacketsWithRetries(channel, queueName, interviewRepoParser);
+```
+
+And same file code block contains variable definition:
+```
+./src/consumer/AssignmentV2_Parse/index.js:
+  20 | const queueName = process.env.INTERVIEW_ASSIGNMENT_PARSE_QUEUE;
+```
+
+And env file code block contains:
+```
+./.env:
+  15 | INTERVIEW_ASSIGNMENT_PARSE_QUEUE="interview-assignment-parse"
+```
+
+Then description should be:
+```
+"Message queue consumer using queueName variable resolved to INTERVIEW_ASSIGNMENT_PARSE_QUEUE=interview-assignment-parse queue"
+```
+
+## VARIABLE RESOLUTION WORKFLOW
+
+### STEP-BY-STEP VARIABLE RESOLUTION PROCESS:
+
+1. **IDENTIFY VARIABLES IN CONNECTION CODE**: Look for connection operations using variables instead of hardcoded values
+   - Examples: `queueName`, `endpoint`, `apiUrl`, `eventName`, `topicName`
+   - Pattern: `sendToQueue(queueName, message)`, `axios.get(url)`, `socket.emit(eventName, data)`
+
+2. **SEARCH SAME FILE FOR VARIABLE DEFINITION**: Before creating additional tasks, check if variable is defined in the same file code snippets
+   - Look for patterns like: `const queueName = ...`, `let endpoint = ...`, `var apiUrl = ...`
+   - Check assignment statements: `queueName = process.env.QUEUE_NAME` or `queueName = "hardcoded-value"`
+
+3. **RESOLVE VARIABLE VALUE**:
+   - **If hardcoded value found**: Use that value directly in description
+   - **If environment variable found**: Check if env variable already exists in sutra memory
+     - If in memory: Use the stored value
+     - If not in memory: Look for env file code blocks in current input
+     - If env file available: Resolve and use the value
+     - If env file not available: Note the unresolved env variable
+
+4. **CONNECTION DESCRIPTION**: Include resolved values in format:
+   - For hardcoded: `"using variableName resolved to actual-hardcoded-value"`
+   - For env vars: `"using variableName resolved to ENV_VAR=actual-env-value"`
+   - For unresolved: `"using variableName variable (unresolved)"`
+
+### VARIABLE RESOLUTION EXAMPLES:
+
+#### Case 1: Variable with Hardcoded Value
+Connection Code:
+```javascript
+// Line 36: await publishMessage(queueName, messageData)
+// Line 15: const queueName = "user-notifications"
+```
+Description: `"Message publishing using queueName variable resolved to user-notifications queue"`
+
+#### Case 2: Variable with Environment Variable
+Connection Code:
+```python
+# Line 42: producer.send(topic_name, event_data)
+# Line 18: topic_name = os.environ.get('USER_EVENT_TOPIC')
+```
+With env file: `USER_EVENT_TOPIC=user-events`
+Description: `"Message publishing using topic_name variable resolved to USER_EVENT_TOPIC=user-events topic"`
+
+#### Case 3: Variable with Dynamic Construction
+Connection Code:
+```javascript
+// Line 28: axios.get(`${baseUrl}/api/users`)
+// Line 12: const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000'
+```
+With env file: `API_BASE_URL=https://api.production.com`
+Description: `"HTTP GET request using baseUrl variable resolved to API_BASE_URL=https://api.production.com/api/users endpoint"`
+
+### EXAMPLE OF VARIABLE WITH HARDCODED VALUE:
+If you find connection code:
+```
+./src/services/api.py:
+  45 | response = requests.get(f"{base_url}/users", headers=headers)
+```
+
+And same file code block contains variable definition:
+```
+./src/services/api.py:
+  12 | base_url = "https://api.production.com"
+```
+
+Then description should be:
+```
+"HTTP GET request using base_url variable resolved to https://api.production.com/users endpoint"
 ```
 
 ### EXAMPLE OF INCOMPLETE CODE SNIPPET HANDLING
@@ -239,37 +336,37 @@ You MUST create separate entries for each registration.
 
 Produce a concise, README-like project summary that an agent can rely on with high confidence without scanning other files. The summary MUST:
 
-1) Technology inventory (explicit names)
+1. Technology inventory (explicit names)
 - Name concrete libraries/frameworks detected for each connection type, e.g., axios/requests/node-fetch (HTTP client), Express/FastAPI/Flask (HTTP server), amqplib/pika (RabbitMQ), kafkajs (Kafka), socket.io/ws (WebSockets), grpcio/@grpc/grpc-js (gRPC), apollo-client/server or graphql-request (GraphQL).
 - Prefer exact package names as they appear in code or dependency files.
 - Only assert technologies present in the provided input. Do not speculate.
 
-2) API surface overview (no endpoint listing)
+2. API surface overview (no endpoint listing)
 - Do NOT list individual endpoints, routes, or event names.
 - Describe endpoint/event categories and capabilities instead, e.g., "User management CRUD endpoints", "Order lifecycle operations", "Admin/reporting endpoints".
 
-3) Messaging/streaming overview
+3. Messaging/streaming overview
 - Identify queues/topics/streams by technology and purpose at a category level, e.g., "RabbitMQ queues for order processing and notifications". Avoid listing every queue; focus on roles/patterns.
 
-4) Architecture and data flow
+4. Architecture and data flow
 - Summarize how components interact (HTTP in/out, MQ producers/consumers, WebSocket emits/handlers, gRPC, GraphQL) and where this project sits relative to others when discernible.
 
-5) Wrappers and abstractions (when evident)
+5. Wrappers and abstractions (when evident)
 - Identify helper/wrapper functions used to perform connections instead of direct library calls (e.g., makeApiCall, publishMessage, sendEvent).
 - Name the exact function(s) and describe their argument shape from code, e.g., makeApiCall(path, method, dataOrParams[, config]).
 - Note when wrappers encapsulate auth headers, base URLs, interceptors/retries, or service targeting (e.g., routes calls to order service).
 
-6) Style
+6. Style
 - Plain text, compact, skimmable. Short paragraphs and clear noun phrases. No endpoint lists.
 
-7) Auth/security (when evident)
+7. Auth/security (when evident)
 - State observed authentication methods (tokens, API keys, OAuth, cookies, headers) and where they apply.
 - When visible, specify exact header names and placement, e.g., Authorization: Bearer <token> on outbound HTTP/HTTPS requests.
 
-8) High-certainty language
+8. High-certainty language
 - Use definitive language only for facts evidenced in code/snippets/configs here. Avoid guesses. If something cannot be confirmed, omit it instead of hedging.
 
-9) Operational notes (when evident)
+9. Operational notes (when evident)
 - Include tracing/logging/metrics libraries, and error-handling/retry patterns that affect connections.
 
 Example style: "This service exposes user and order workflows over HTTP using Express and the axios client, publishes order events to RabbitMQ via amqplib for asynchronous processing, and pushes live updates via Socket.IO. Configuration uses ENV vars such as API_BASE_URL and ORDER_QUEUE. Outbound HTTP requests include an Authorization: Bearer <token> header."
@@ -422,23 +519,17 @@ Input Connection Data:
 ```
 ./src/config/api.js:
   12 |     const response = await axios.get(`${process.env.BASE_URL}/update/data`)
-
-  20 |     const apiUrl = 'https://api.example.com/api'
-
-./src/config/queue.js:
-  8 |     const queueName = process.env.QUEUE_NAME || 'default-queue'
 ```
 
 Environment Variables (if provided):
 ```
 BASE_URL=https://api.example.com
-QUEUE_NAME=user-processing
 ```
 
 CORRECT Splitting:
 
 Step-by-step Analysis:
-"I analyzed the connection data and identified environment variable usage. I found 2 outgoing HTTP/HTTPS connections and 1 MessageQueue configuration. For src/config/api.js line 12, I resolved the environment variable BASE_URL=https://api.example.com from the provided env file to create the full endpoint. For src/config/queue.js line 8, I resolved QUEUE_NAME=user-processing. The static API URL on line 20 is set to https://api.example.com/api. I classified the HTTP calls as outgoing connections and the queue configuration as outgoing MessageQueue setup."
+"I analyzed the connection data and identified environment variable usage. I found 1 outgoing HTTP/HTTPS connection. For src/config/api.js line 12, I resolved the environment variable BASE_URL=https://api.example.com from the provided env file to create the full endpoint."
 
 ```json
 {
@@ -449,22 +540,10 @@ Step-by-step Analysis:
           "snippet_lines": "12-12",
           "description": "HTTP GET call using BASE_URL=https://api.example.com for endpoint /update/data"
         },
-        {
-          "snippet_lines": "20-20",
-          "description": "Static API URL configuration for https://api.example.com/api endpoint"
-        }
       ]
     },
-    "MessageQueue": {
-      "src/config/queue.js": [
-        {
-          "snippet_lines": "8-8",
-          "description": "Queue name configuration using environment variable QUEUE_NAME=user-processing with fallback to default-queue"
-        }
-      ]
-    }
   },
-  "summary": "This service performs data synchronization over HTTP using axios and leverages a message queue for asynchronous user processing. Configuration is environment-driven with API_BASE_URL=http://localhost:3001 and QUEUE_NAME=user-processing. Capabilities cover data update fetches and user-processing tasks."
+  "summary": "This service performs data synchronization over HTTP using axios. Configuration is environment-driven with BASE_URL=https://api.example.com."
 }
 ```
 
@@ -1123,6 +1202,24 @@ function VertexAIConnectionSplitting(memory_context: string) -> ConnectionSplitt
 
 function AzureConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client AzureOpenAI
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionSplittingPrompt() }}
+    {{ ConnectionSplittingUserPrompt(memory_context) }}
+  "#
+}
+
+function AzureAIFoundryConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionSplittingPrompt() }}
+    {{ ConnectionSplittingUserPrompt(memory_context) }}
+  "#
+}
+
+function OpenRouterConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+  client OpenRouter
   prompt #"
     {{ _.role("system") }}
     {{ ConnectionSplittingPrompt() }}
