@@ -7,7 +7,59 @@ This section provides comprehensive examples of how to use different tools effec
 
 1. TASK EXECUTION EXAMPLES
 
-DATABASE TOOL EXAMPLES (3-5 files)
+LIST_FILES TASK HANDLING EXAMPLES:
+
+Example 1: Conditional task handling - Check for specific list_files task
+WHEN you see this EXACT task: "No packages/dependencies found in previous analysis. Use list_files tool to list all files recursively in current directory to identify files that might contain connection code."
+THEN use list_files approach, OTHERWISE use normal flow.
+
+Execute list_files tool:
+{
+  "tool_call": {
+    "tool_name": "list_files",
+    "parameters": {
+      "path": ".",
+      "recursive": true
+    }
+  }
+}
+
+Example 2: Creating database tasks after list_files results
+After list_files returns file list, create individual database tasks for potential connection files:
+
+{
+  "tool_call": {
+    "tool_name": "database",
+    "parameters": {
+      "query_type": "GET_FILE_BY_PATH",
+      "file_path": "index.html"
+    }
+  },
+  "sutra_memory": {
+    "tasks": [
+      {
+        "action": "add",
+        "id": "1",
+        "to_status": "current",
+        "description": "Use database tool to read index.html file completely and analyze for any connection patterns: script tags importing packages (axios, socket.io), CDN imports, WebSocket connections (new WebSocket), fetch API calls, XMLHttpRequest usage, and embedded JavaScript connection code."
+      },
+      {
+        "action": "add",
+        "id": "2",
+        "to_status": "pending",
+        "description": "Use database tool to read server.js file completely and analyze for built-in server connections (http.createServer, net.createServer), endpoint definitions, and incoming connection handlers."
+      },
+      {
+        "action": "add",
+        "id": "3",
+        "to_status": "pending",
+        "description": "Use database tool to read client.js file completely and analyze for outgoing HTTP requests using built-in modules (http, https), fetch API usage, and client-side connection patterns."
+      }
+    ]
+  }
+}
+
+DATABASE TOOL EXAMPLES (3-5 files):
 
 Example 1: JavaScript - Axios usage analysis in few files
 - Purpose: Read entire file to analyze all axios method calls within that file
@@ -35,7 +87,8 @@ Example 2: Python - Requests usage analysis in specific files
     }
   }
 }
-SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions)
+
+SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions):
 
 Example 1: JavaScript - Express usage across many files
 - Purpose: Find express route definitions across multiple files efficiently
@@ -97,6 +150,7 @@ Example 4: HTTP calls with improved quote handling
     }
   }
 }
+
 2. CONNECTION CODE ANALYSIS
 
 WHAT TO FIND (ACTUAL USAGE WITH REAL VALUES)

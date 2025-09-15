@@ -66,7 +66,13 @@ RULES
 
 11. COMPLETION REQUIREMENT: When import discovery is complete, you MUST use the `attempt_completion` tool with a summary of discovered imports.
 
-12. JSON FORMAT SPECIFICATION:
+12. NO PACKAGES/DEPENDENCIES HANDLING:
+    - If no tasks exist in sutra_memory, it means no packages/dependencies were found in previous analysis
+    - Use attempt_completion as there are no task for the analysis
+    - MUST create file exploration workflow:
+      - Create list_files task to discover all files recursively
+
+13. JSON FORMAT SPECIFICATION:
     - ALL responses MUST follow the exact JSON structure
     - Complete response structure:
     ```json

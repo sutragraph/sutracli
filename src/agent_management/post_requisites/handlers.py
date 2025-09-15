@@ -315,6 +315,7 @@ class RoadmapAgentHandler:
             string_parts = flatten_to_strings(prompt_parts)
             full_prompt = "\n".join(string_parts)
 
+            logger.debug(f"Generated prompt for project {project_name}:\n{full_prompt}")
             # Create project prompt entry
             project_prompts.append(
                 {
