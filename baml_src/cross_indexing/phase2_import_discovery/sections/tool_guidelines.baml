@@ -15,7 +15,7 @@ RETRY THINKING EXAMPLES:
 - Check sutra memory: If you see 2 search attempts with zero results already tried for same package, move to completion
 - Example: "I see in sutra memory I already tried search_keyword with 'require.*axios|import.*axios' and 'axios' patterns - this task should be marked complete"
 
-CRITICAL ANALYSIS DECISION PROCESS: In your thinking field, always ask yourself: "Should I track this discovered import pattern in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details.
+CRITICAL ANALYSIS DECISION PROCESS: In your thinking field, always ask yourself: "Should I track this discovered import pattern in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details in history.
 
 ANALYSIS DECISION CRITERIA:
 - Track any import statements, import patterns, and usage variations discovered

@@ -3,7 +3,7 @@ template_string Rules_Manager() #"
 
 RULES
 
-1. In the thinking field, assess how many connections you have discovered that can be returned in the response. This analysis should include counting both incoming and outgoing connections found through your search and evaluation process. This count will guide your focus during the extraction phase. example: "I have discovered 15 connections in total, including 7 incoming and 8 outgoing connections. I will store these all 15 connections in the response."
+1. In the `thinking` field, assess how many connections you have discovered that can be returned in the response. This analysis should include counting both incoming and outgoing connections found through your search and evaluation process. This count will guide your focus during the extraction phase. example: "I have discovered 15 connections in total, including 7 incoming and 8 outgoing connections. I will store these all 15 connections in the response."
 
 2. Focus EXCLUSIVELY on EXTRACTING CONNECTION CODE for DATA COMMUNICATION.
 
