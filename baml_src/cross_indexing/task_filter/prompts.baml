@@ -78,3 +78,21 @@ function AzureTaskFilter(task_list: string) -> TaskFilterResponse {
     {{ UserPrompt_TaskFilter(task_list) }}
   "#
 }
+
+function AzureAIFoundryTaskFilter(task_list: string) -> TaskFilterResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_TaskFilter() }}
+    {{ UserPrompt_TaskFilter(task_list) }}
+  "#
+}
+
+function OpenRouterTaskFilter(task_list: string) -> TaskFilterResponse {
+  client OpenRouter
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_TaskFilter() }}
+    {{ UserPrompt_TaskFilter(task_list) }}
+  "#
+}

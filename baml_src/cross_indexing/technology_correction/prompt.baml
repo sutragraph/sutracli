@@ -149,3 +149,21 @@ function AzureTechnologyCorrection(unmatched_names: string, acceptable_enums: st
     {{ TechnologyCorrectionUserPrompt(unmatched_names, acceptable_enums) }}
   "#
 }
+
+function AzureAIFoundryTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ TechnologyCorrectionSystemPrompt() }}
+    {{ TechnologyCorrectionUserPrompt(unmatched_names, acceptable_enums) }}
+  "#
+}
+
+function OpenRouterTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+  client OpenRouter
+  prompt #"
+    {{ _.role("system") }}
+    {{ TechnologyCorrectionSystemPrompt() }}
+    {{ TechnologyCorrectionUserPrompt(unmatched_names, acceptable_enums) }}
+  "#
+}

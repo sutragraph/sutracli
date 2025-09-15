@@ -17,6 +17,8 @@ PROVIDER_MAPPING = {
     "google_ai": "Gemini",
     "vertex_ai": "VertexAI",
     "azure_openai": "Azure",
+    "azure_aifoundry": "Azure AI Foundry",
+    "openrouter": "OpenRouter",
 }
 
 # Environment variable mapping for each provider
@@ -48,6 +50,16 @@ ENV_VAR_MAPPING = {
         "AZURE_OPENAI_API_KEY": "api_key",
         "AZURE_BASE_URL": "base_url",
         "AZURE_API_VERSION": "api_version",
+    },
+    "azure_aifoundry": {
+        "AZURE_AIFOUNDRY_BASE_URL": "base_url",
+        "AZURE_AIFOUNDRY_API_KEY": "api_key",
+    },
+    "openrouter": {
+        "OPENROUTER_API_KEY": "api_key",
+        "OPENROUTER_MODEL_ID": "model_id",
+        "OPENROUTER_HTTP_REFERER": "http_referer",  # Optional
+        "OPENROUTER_X_TITLE": "x_title",  # Optional
     },
 }
 
@@ -82,6 +94,16 @@ PROVIDER_INFO = [
         "name": "OpenAI",
         "key": "openai",
         "description": "ChatGPT models via OpenAI API",
+    },
+    {
+        "name": "Azure AI Foundry",
+        "key": "azure_aifoundry",
+        "description": "All supported models on Azure AI Foundry client",
+    },
+    {
+        "name": "OpenRouter",
+        "key": "openrouter",
+        "description": "All supported models on OpenRouter client",
     },
 ]
 
@@ -155,6 +177,24 @@ class AzureConfig:
 
 
 @dataclass
+class AzureAIFoundryConfig:
+    """Azure AI Foundry configuration."""
+
+    api_key: str
+    base_url: str
+
+
+@dataclass
+class OpenRouterConfig:
+    """OpenRouter configuration."""
+
+    api_key: str
+    model_id: str
+    http_referer: str = ""  # Optional
+    x_title: str = ""  # Optional
+
+
+@dataclass
 class SuperLLMConfig:
     """SuperLLM configuration."""
 
@@ -168,13 +208,15 @@ class SuperLLMConfig:
 class LLMConfig:
     """LLM provider configuration."""
 
-    provider: str  # Options: "anthropic", "superllm", "openai", "vertex_ai", "azure_openai", "google_ai", "aws_bedrock"
+    provider: str  # Options: "anthropic", "superllm", "openai", "vertex_ai", "azure_openai", "google_ai", "aws_bedrock", "azure_aifoundry", "openrouter"
     aws_bedrock: AWSConfig
     anthropic: AnthropicConfig
     openai: OpenAIConfig
     google_ai: GeminiConfig
     vertex_ai: VertexAIConfig
     azure_openai: AzureConfig
+    azure_aifoundry: AzureAIFoundryConfig
+    openrouter: OpenRouterConfig
     superllm: SuperLLMConfig
 
 
@@ -332,6 +374,8 @@ class Config:
                 gemini_config = llm_config.get("google_ai", {})
                 vertex_ai_config = llm_config.get("vertex_ai", {})
                 azure_config = llm_config.get("azure_openai", {})
+                azure_aifoundry_config = llm_config.get("azure_aifoundry", {})
+                openrouter_config = llm_config.get("openrouter", {})
                 superllm_config = llm_config.get("superllm", {})
                 self.llm = LLMConfig(
                     provider=llm_config.get("provider", "openai"),
@@ -350,6 +394,16 @@ class Config:
                     ),
                     azure_openai=(
                         AzureConfig(**azure_config) if azure_config else None
+                    ),
+                    azure_aifoundry=(
+                        AzureAIFoundryConfig(**azure_aifoundry_config)
+                        if azure_aifoundry_config
+                        else None
+                    ),
+                    openrouter=(
+                        OpenRouterConfig(**openrouter_config)
+                        if openrouter_config
+                        else None
                     ),
                     superllm=(
                         SuperLLMConfig(**superllm_config) if superllm_config else None

@@ -119,6 +119,18 @@ class ModernSutraKit:
                     "api_version",
                 ]
                 return all(provider_config.get(field) for field in required_fields)
+            elif provider == "azure_aifoundry":
+                required_fields = [
+                    "api_key",
+                    "base_url",
+                ]
+                return all(provider_config.get(field) for field in required_fields)
+            elif provider == "openrouter":
+                required_fields = [
+                    "api_key",
+                    "model_id",
+                ]
+                return all(provider_config.get(field) for field in required_fields)
 
             return True
 
@@ -177,6 +189,10 @@ class ModernSutraKit:
             return self._get_azure_config()
         elif provider == "openai":
             return self._get_openai_config()
+        elif provider == "azure_aifoundry":
+            return self._get_azure_aifoundry_config()
+        elif provider == "openrouter":
+            return self._get_openrouter_config()
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -359,6 +375,51 @@ class ModernSutraKit:
             "api_version": api_version,
         }
 
+    def _get_azure_aifoundry_config(self) -> Dict[str, Any]:
+        """Get Azure AI Foundry configuration."""
+        console.info("Azure AI Foundry Configuration")
+        api_key = prompt("Azure AI Foundry API Key: ", is_password=True)
+
+        console.print()
+        console.info(
+            "Base URL Example: https://RESOURCE_NAME.REGION.models.ai.azure.com"
+        )
+        console.dim(
+            "Replace 'RESOURCE_NAME' with your Azure resource name and 'REGION' with your region"
+        )
+        console.print()
+
+        base_url = Prompt.ask("Base URL")
+
+        return {
+            "api_key": api_key,
+            "base_url": base_url,
+        }
+
+    def _get_openrouter_config(self) -> Dict[str, Any]:
+        """Get OpenRouter configuration."""
+        console.info("OpenRouter Configuration")
+        api_key = prompt("OpenRouter API Key: ", is_password=True)
+        model_id = Prompt.ask("Model ID", default="openai/gpt-3.5-turbo")
+
+        console.print()
+        console.info("Optional headers (press Enter to skip):")
+        http_referer = Prompt.ask("HTTP-Referer (your site URL)", default="")
+        x_title = Prompt.ask("X-Title (your app title)", default="")
+
+        config = {
+            "api_key": api_key,
+            "model_id": model_id,
+        }
+
+        # Only add optional headers if they have values
+        if http_referer:
+            config["http_referer"] = http_referer
+        if x_title:
+            config["x_title"] = x_title
+
+        return config
+
     def _update_provider_config(self, provider: str, provider_config: Dict[str, Any]):
         """Update only the provider configuration in existing config file."""
         # Load existing config or create minimal structure if it doesn't exist
@@ -386,6 +447,8 @@ class ModernSutraKit:
             "vertex_ai",
             "azure_openai",
             "openai",
+            "azure_aifoundry",
+            "openrouter",
             "superllm",
         ]
         for key in provider_keys:

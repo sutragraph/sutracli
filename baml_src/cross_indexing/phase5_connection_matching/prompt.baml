@@ -262,3 +262,21 @@ function AzureConnectionMatching(incoming_connections: string, outgoing_connecti
     {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
   "#
 }
+
+function AzureAIFoundryConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionMatchingSystemPrompt() }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
+  "#
+}
+
+function OpenRouterConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+  client OpenRouter
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionMatchingSystemPrompt() }}
+    {{ ConnectionMatchingUserPrompt(incoming_connections, outgoing_connections) }}
+  "#
+}

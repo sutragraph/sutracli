@@ -130,6 +130,60 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
+    def AzureAIFoundryCodeManager(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CodeManagerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryCodeManager", llm_response=llm_response, mode="request")
+        return typing.cast(types.CodeManagerResponse, result)
+
+    def AzureAIFoundryConnectionMatching(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionMatchingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionMatching", llm_response=llm_response, mode="request")
+        return typing.cast(types.ConnectionMatchingResponse, result)
+
+    def AzureAIFoundryConnectionSplitting(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionSplittingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionSplitting", llm_response=llm_response, mode="request")
+        return typing.cast(types.ConnectionSplittingResponse, result)
+
+    def AzureAIFoundryImplementationDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryImplementationDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryImportDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryImportDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryPackageDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryPackageDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryRoadmapAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.RoadmapResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryRoadmapAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.RoadmapResponse, result)
+
+    def AzureAIFoundryTaskFilter(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TaskFilterResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryTaskFilter", llm_response=llm_response, mode="request")
+        return typing.cast(types.TaskFilterResponse, result)
+
+    def AzureAIFoundryTechnologyCorrection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TechnologyCorrectionResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryTechnologyCorrection", llm_response=llm_response, mode="request")
+        return typing.cast(types.TechnologyCorrectionResponse, result)
+
     def AzureCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
@@ -290,6 +344,60 @@ class LlmResponseParser:
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiTechnologyCorrection", llm_response=llm_response, mode="request")
+        return typing.cast(types.TechnologyCorrectionResponse, result)
+
+    def OpenRouterCodeManager(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CodeManagerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterCodeManager", llm_response=llm_response, mode="request")
+        return typing.cast(types.CodeManagerResponse, result)
+
+    def OpenRouterConnectionMatching(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionMatchingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionMatching", llm_response=llm_response, mode="request")
+        return typing.cast(types.ConnectionMatchingResponse, result)
+
+    def OpenRouterConnectionSplitting(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionSplittingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionSplitting", llm_response=llm_response, mode="request")
+        return typing.cast(types.ConnectionSplittingResponse, result)
+
+    def OpenRouterImplementationDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterImplementationDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenRouterImportDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterImportDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenRouterPackageDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterPackageDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenRouterRoadmapAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.RoadmapResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterRoadmapAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.RoadmapResponse, result)
+
+    def OpenRouterTaskFilter(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TaskFilterResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterTaskFilter", llm_response=llm_response, mode="request")
+        return typing.cast(types.TaskFilterResponse, result)
+
+    def OpenRouterTechnologyCorrection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TechnologyCorrectionResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
     def VertexAICodeManager(
@@ -462,6 +570,60 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsTechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
+    def AzureAIFoundryCodeManager(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CodeManagerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryCodeManager", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CodeManagerResponse, result)
+
+    def AzureAIFoundryConnectionMatching(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ConnectionMatchingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionMatching", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ConnectionMatchingResponse, result)
+
+    def AzureAIFoundryConnectionSplitting(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ConnectionSplittingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionSplitting", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ConnectionSplittingResponse, result)
+
+    def AzureAIFoundryImplementationDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryImplementationDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryImportDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryImportDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryPackageDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryPackageDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryRoadmapAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.RoadmapResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryRoadmapAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.RoadmapResponse, result)
+
+    def AzureAIFoundryTaskFilter(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TaskFilterResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryTaskFilter", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TaskFilterResponse, result)
+
+    def AzureAIFoundryTechnologyCorrection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TechnologyCorrectionResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryTechnologyCorrection", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TechnologyCorrectionResponse, result)
+
     def AzureCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CodeManagerResponse:
@@ -622,6 +784,60 @@ class LlmStreamParser:
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TechnologyCorrectionResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiTechnologyCorrection", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TechnologyCorrectionResponse, result)
+
+    def OpenRouterCodeManager(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CodeManagerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterCodeManager", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CodeManagerResponse, result)
+
+    def OpenRouterConnectionMatching(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ConnectionMatchingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionMatching", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ConnectionMatchingResponse, result)
+
+    def OpenRouterConnectionSplitting(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ConnectionSplittingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionSplitting", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ConnectionSplittingResponse, result)
+
+    def OpenRouterImplementationDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterImplementationDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenRouterImportDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterImportDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenRouterPackageDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterPackageDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenRouterRoadmapAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.RoadmapResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterRoadmapAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.RoadmapResponse, result)
+
+    def OpenRouterTaskFilter(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TaskFilterResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterTaskFilter", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TaskFilterResponse, result)
+
+    def OpenRouterTechnologyCorrection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TechnologyCorrectionResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterTechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
     def VertexAICodeManager(

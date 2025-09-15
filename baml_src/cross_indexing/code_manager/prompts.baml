@@ -70,3 +70,21 @@ function AzureCodeManager(tool_results: string, system_info: SystemInfo_CrossInd
     {{ UserPrompt_Manager(tool_results) }}
   "#
 }
+
+function AzureAIFoundryCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Manager(tool_results) }}
+  "#
+}
+
+function OpenRouterCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+  client OpenRouter
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Manager(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Manager(tool_results) }}
+  "#
+}

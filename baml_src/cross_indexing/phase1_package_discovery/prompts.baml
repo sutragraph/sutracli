@@ -71,3 +71,21 @@ function AzurePackageDiscovery(analysis_query: string, memory_context: string, s
     {{ UserPrompt_Phase1(analysis_query, memory_context) }}
   "#
 }
+
+function AzureAIFoundryPackageDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Phase1(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Phase1(analysis_query, memory_context) }}
+  "#
+}
+
+function OpenRouterPackageDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+  client OpenRouter
+  prompt #"
+    {{ _.role("system") }}
+    {{ SystemPrompt_Phase1(system_info.home, system_info.current_dir) }}
+    {{ UserPrompt_Phase1(analysis_query, memory_context) }}
+  "#
+}

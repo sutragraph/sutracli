@@ -1208,3 +1208,21 @@ function AzureConnectionSplitting(memory_context: string) -> ConnectionSplitting
     {{ ConnectionSplittingUserPrompt(memory_context) }}
   "#
 }
+
+function AzureAIFoundryConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+  client AzureAIFoundry
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionSplittingPrompt() }}
+    {{ ConnectionSplittingUserPrompt(memory_context) }}
+  "#
+}
+
+function OpenRouterConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+  client OpenRouter
+  prompt #"
+    {{ _.role("system") }}
+    {{ ConnectionSplittingPrompt() }}
+    {{ ConnectionSplittingUserPrompt(memory_context) }}
+  "#
+}

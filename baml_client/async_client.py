@@ -346,6 +346,141 @@ class BamlAsyncClient:
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CodeManagerResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryCodeManager(tool_results=tool_results,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryCodeManager", args={
+                "tool_results": tool_results,"system_info": system_info,
+            })
+            return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionMatchingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryConnectionMatching", args={
+                "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+            })
+            return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionSplittingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryConnectionSplitting(memory_context=memory_context,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryConnectionSplitting", args={
+                "memory_context": memory_context,
+            })
+            return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryImplementationDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryImportDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryPackageDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.RoadmapResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryRoadmapAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryRoadmapAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TaskFilterResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryTaskFilter(task_list=task_list,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryTaskFilter", args={
+                "task_list": task_list,
+            })
+            return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TechnologyCorrectionResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryTechnologyCorrection", args={
+                "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+            })
+            return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
@@ -751,6 +886,141 @@ class BamlAsyncClient:
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CodeManagerResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterCodeManager(tool_results=tool_results,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterCodeManager", args={
+                "tool_results": tool_results,"system_info": system_info,
+            })
+            return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionMatchingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterConnectionMatching", args={
+                "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+            })
+            return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionSplittingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterConnectionSplitting(memory_context=memory_context,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterConnectionSplitting", args={
+                "memory_context": memory_context,
+            })
+            return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterImplementationDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterImportDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterPackageDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.RoadmapResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterRoadmapAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterRoadmapAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TaskFilterResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterTaskFilter(task_list=task_list,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterTaskFilter", args={
+                "task_list": task_list,
+            })
+            return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TechnologyCorrectionResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterTechnologyCorrection", args={
+                "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+            })
+            return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def VertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
@@ -1111,6 +1381,114 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def AzureAIFoundryCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
+          result,
+          lambda x: typing.cast(stream_types.CodeManagerResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        })
+        return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
+          result,
+          lambda x: typing.cast(stream_types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryConnectionSplitting", args={
+            "memory_context": memory_context,
+        })
+        return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
+          result,
+          lambda x: typing.cast(stream_types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryRoadmapAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
+          result,
+          lambda x: typing.cast(stream_types.RoadmapResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryTaskFilter", args={
+            "task_list": task_list,
+        })
+        return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
+          result,
+          lambda x: typing.cast(stream_types.TaskFilterResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureAIFoundryTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        })
+        return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
+          result,
+          lambda x: typing.cast(stream_types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
@@ -1435,6 +1813,114 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def OpenRouterCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
+          result,
+          lambda x: typing.cast(stream_types.CodeManagerResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        })
+        return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
+          result,
+          lambda x: typing.cast(stream_types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterConnectionSplitting", args={
+            "memory_context": memory_context,
+        })
+        return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
+          result,
+          lambda x: typing.cast(stream_types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterRoadmapAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
+          result,
+          lambda x: typing.cast(stream_types.RoadmapResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterTaskFilter", args={
+            "task_list": task_list,
+        })
+        return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
+          result,
+          lambda x: typing.cast(stream_types.TaskFilterResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenRouterTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        })
+        return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
+          result,
+          lambda x: typing.cast(stream_types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def VertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
@@ -1677,6 +2163,69 @@ class BamlHttpRequestClient:
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
+    async def AzureAIFoundryCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryConnectionSplitting", args={
+            "memory_context": memory_context,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryRoadmapAgent", args={
+            "params": params,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryTaskFilter", args={
+            "task_list": task_list,
+        }, mode="request")
+        return result
+    async def AzureAIFoundryTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        }, mode="request")
+        return result
     async def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -1863,6 +2412,69 @@ class BamlHttpRequestClient:
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        }, mode="request")
+        return result
+    async def OpenRouterCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenRouterConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        }, mode="request")
+        return result
+    async def OpenRouterConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterConnectionSplitting", args={
+            "memory_context": memory_context,
+        }, mode="request")
+        return result
+    async def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenRouterImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenRouterPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterRoadmapAgent", args={
+            "params": params,
+        }, mode="request")
+        return result
+    async def OpenRouterTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterTaskFilter", args={
+            "task_list": task_list,
+        }, mode="request")
+        return result
+    async def OpenRouterTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
@@ -2063,6 +2675,69 @@ class BamlHttpStreamRequestClient:
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
+    async def AzureAIFoundryCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryConnectionSplitting", args={
+            "memory_context": memory_context,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryRoadmapAgent", args={
+            "params": params,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryTaskFilter", args={
+            "task_list": task_list,
+        }, mode="stream")
+        return result
+    async def AzureAIFoundryTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        }, mode="stream")
+        return result
     async def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2249,6 +2924,69 @@ class BamlHttpStreamRequestClient:
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        }, mode="stream")
+        return result
+    async def OpenRouterCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenRouterConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        }, mode="stream")
+        return result
+    async def OpenRouterConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterConnectionSplitting", args={
+            "memory_context": memory_context,
+        }, mode="stream")
+        return result
+    async def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenRouterImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenRouterPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterRoadmapAgent", args={
+            "params": params,
+        }, mode="stream")
+        return result
+    async def OpenRouterTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterTaskFilter", args={
+            "task_list": task_list,
+        }, mode="stream")
+        return result
+    async def OpenRouterTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
