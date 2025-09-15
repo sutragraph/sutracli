@@ -10,7 +10,7 @@ RULES
 3. CRITICAL SCOPE: Only extract connection code where one user service/repository sends/receives data to/from another service/repository.
 
 4. MANDATORY EXCLUSIONS - NEVER extract these:
-   - Infrastructure services: Database connections (Redis, PostgreSQL, MongoDB), caching systems, cloud storage that don't represent data communication
+   - Infrastructure services: Database connections/queries (Redis, PostgreSQL, MongoDB, ...), caching systems, cloud storage that don't represent data communication
 
 5. CONNECTION CODE EXTRACTION CRITERIA - ONLY extract these:
    - REST API calls

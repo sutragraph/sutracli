@@ -71,6 +71,7 @@ RULES
     - Use attempt_completion as there are no task for the analysis
     - MUST create file exploration workflow:
       - Create list_files task to discover all files recursively
+      - Do not create any other tasks except list_files and built-in pattern tasks
 
 13. JSON FORMAT SPECIFICATION:
     - ALL responses MUST follow the exact JSON structure
