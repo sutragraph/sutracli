@@ -1539,9 +1539,10 @@ class GraphOperations:
 
             # Update project description if present
             if isinstance(connections_data, dict):
-                project_summary = connections_data.get("summary", "").strip()
+                project_summary = connections_data.get("summary", "")
+                project_summary = project_summary.strip() if project_summary else ""
                 if project_summary:
-                    print(
+                    logger.debug(
                         f"Found project summary to store: {len(project_summary)} characters"
                     )
                     self.update_project_description(project_id, project_summary)
