@@ -70,7 +70,9 @@ RULES
    - Always verify file existence in the list_files output before creating any task
    - Task creation must be based on actual file presence, not assumptions about what package files might exist
 
-16. JSON FORMAT SPECIFICATION:
+16. PROJECT SCOPE RESTRICTION: Always remain within the current project directory structure. Never navigate backward from the project root using ".." in list_files tool path parameters. Only analyze files within the project root and its subdirectories. If no dependency or package files are found in the project, use the attempt_completion tool to complete the analysis.
+
+17. JSON FORMAT SPECIFICATION:
     - ALL responses MUST follow the exact JSON structure
     - Complete response structure:
     ```json

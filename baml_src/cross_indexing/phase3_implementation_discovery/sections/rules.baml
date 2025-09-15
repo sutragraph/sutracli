@@ -14,14 +14,20 @@ RULES
    - Handle different connection types and languages appropriately
    - MANDATORY: When you find environment variables in connection code, IMMEDIATELY check sutra memory and create config file search tasks if needed
 
-4. CONNECTION CODE REQUIREMENTS:
+4. LIST_FILES TASK HANDLING:
+   - If you see task like: "No packages/dependencies found in previous analysis. Use list_files tool to list all files recursively in current directory to identify files that might contain connection code."
+   - Execute list_files tool to discover all files in the project
+   - After getting results, create individual database tool tasks for each file that might contain connection code
+   - Create separate database task for each identified potential connection file
+
+5. CONNECTION CODE REQUIREMENTS:
    - Find actual usage of imported methods with real parameters and endpoint values
    - Include environment variable values and their resolved configurations
    - Find connection establishment lines that show actual service communication
    - Focus on where connections are USED with real values, not where they are defined
    - CRITICAL: When you see process.env.VARIABLE_NAME or config variables in connection code, you MUST create tasks to find and analyze config files
 
-5. TOOL SELECTION STRATEGY:
+6. TOOL SELECTION STRATEGY:
    - Few files (3-5 files with imports): Use database tool to read entire file content for comprehensive analysis
    - Many files (6+ files): Use search_keyword with targeted patterns based on actual imports
    - Wrapper functions: Always use search_keyword to find usage sites across entire codebase
@@ -53,7 +59,7 @@ RULES
    - Python: Built-in `urllib.request`, `http.client`, `socket` module
    - These patterns should be analyzed alongside imported package usage when relevant
 
-10. WRAPPER FUNCTION ANALYSIS RULES - MANDATORY EXECUTION:
+11. WRAPPER FUNCTION ANALYSIS RULES - MANDATORY EXECUTION:
      - CRITICAL DETECTION: When you find ANY connection code with VARIABLE/PARAMETER names instead of actual values, you MUST search for wrapper function calls
      - TRIGGER PATTERNS: Look for these patterns that indicate wrapper functions:
        * HTTP: `axios.get(url, config)`, `fetch(endpoint)`, `requests.get(api_url)`
@@ -78,7 +84,7 @@ RULES
      - CREATE TASKS for ALL wrapper functions with variable parameters: "Use search_keyword to find [functionName] usage patterns: [functionName]\("
      - NEVER accept variable names as final connection data - always search for the actual values passed to wrapper functions
 
-11. TASK CREATION WITHIN IMPLEMENTATION DISCOVERY:
+12. TASK CREATION WITHIN IMPLEMENTATION DISCOVERY:
      - MANDATORY THINKING PROCESS: Before proceeding, ask these specific questions:
        1. "Did I find connection code with VARIABLE NAMES instead of actual values?" (queueName, endpoint, url, topic, eventName, etc.)
        2. "Are these variables being passed as parameters to a function?" (indicating wrapper function usage)
@@ -101,7 +107,7 @@ RULES
        * Found: `axios.get(process.env.API_BASE_URL + endpoint)` → CREATE: "Use list_files to find .env files and search for API_BASE_URL configuration"
        * Found: `socket.emit(eventName, eventData)` → CREATE: "Use search_keyword to find wrapper function calls with actual event names"
 
-12. ENVIRONMENT VARIABLE AND CONFIG FILE ANALYSIS RULES - MANDATORY EXECUTION:
+13. ENVIRONMENT VARIABLE AND CONFIG FILE ANALYSIS RULES - MANDATORY EXECUTION:
     - TRIGGER: When you see process.env.API_URL, process.env.DATABASE_URL, config.endpoint, or any environment/config variable in connection code
     - STEP 1: ALWAYS CHECK SUTRA MEMORY FIRST - review if .env, config files, or environment setup files are already tracked
     - STEP 2: If NOT in sutra memory → IMMEDIATELY CREATE TASK: "Use list_files to find config files (.env, config.*, docker-compose.yml, etc.) then use database tool to analyze them"
@@ -109,19 +115,19 @@ RULES
     - MANDATORY: You CANNOT skip environment variable resolution - it's required for complete connection analysis
     - EXAMPLES OF TRIGGERS: process.env.DISCOVERY_SERVER_URL, process.env.DATA_LAYER_URL, config.apiBaseUrl, process.env.API_BASE_URL
 
-13. EXCLUSION CRITERIA:
+14. EXCLUSION CRITERIA:
     - Skip generic function definitions without actual usage or real parameters
     - Ignore configuration references that don't send/receive data between services
     - Exclude test code, mock implementations, and development debugging code
     - Skip infrastructure connections that don't represent service-to-service communication
 
-14. ADAPTIVE ANALYSIS STRATEGY:
+15. ADAPTIVE ANALYSIS STRATEGY:
     - Analyze connection patterns based on what was actually found in import pattern discovery
     - Focus on technologies and packages that exist in the project
     - Don't search for patterns from packages that weren't found in previous phases
     - Prioritize actual usage over theoretical connection possibilities
 
-15. JSON FORMAT SPECIFICATION:
+16. JSON FORMAT SPECIFICATION:
     - ALL responses MUST follow the exact JSON structure
     - Complete response structure:
     ```json
@@ -157,5 +163,5 @@ RULES
     - Task IDs MUST be strings, not integers
     - All enum values MUST use lowercase aliases: "add", "move", "remove", "pending", "current", "completed"
 
-16. COMPLETION REQUIREMENT: When implementation discovery is complete, you MUST use the `attempt_completion` tool with a summary of discovered connection implementations.
+17. COMPLETION REQUIREMENT: When implementation discovery is complete, you MUST use the `attempt_completion` tool with a summary of discovered connection implementations.
 "#

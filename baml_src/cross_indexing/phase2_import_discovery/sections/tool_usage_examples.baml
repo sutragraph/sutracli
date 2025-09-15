@@ -131,7 +131,17 @@ attempt_completion(result="Import analysis complete. Found imports in 15 files: 
 Example 2: Built-in patterns focus
 attempt_completion(result="Import analysis complete. No advanced packages found. Created 4 built-in pattern tasks for subsequent analysis: JavaScript fetch patterns, Python urllib patterns, Java HttpURLConnection patterns, Go net/http patterns."))
 
-7. CRITICAL GUIDELINES
+7. NO PACKAGES/DEPENDENCIES FOUND - FILE EXPLORATION EXAMPLES
+
+WHEN NO TASKS EXIST IN SUTRA_MEMORY:
+
+1. Completion tool usage
+attempt_completion(result="Import analysis complete. No packages found in previous analysis. Created list_files task for file discovery and built-in pattern tasks for subsequent connection analysis.")
+
+2. Initial file discovery task creation
+Create implementation task(Add): "No packages/dependencies found in previous analysis. Use list_files tool to list all files recursively in current directory to identify files that might contain connection code."
+
+8. CRITICAL GUIDELINES
 
 - Execute ALL pending tasks from previous analysis
 - Use appropriate search patterns with proper regex escaping as specified in previous analysis tasks
