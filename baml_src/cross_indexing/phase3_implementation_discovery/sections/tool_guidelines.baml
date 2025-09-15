@@ -1,7 +1,7 @@
 template_string ToolGuidelines_Phase3() #"
 ====
 
-#TOOL GUIDELINES
+# TOOL GUIDELINES
 
 This section provides specific guidelines for using tools effectively during implementation discovery to find actual usage of imported connection methods.
 
