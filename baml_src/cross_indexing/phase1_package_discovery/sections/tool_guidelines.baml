@@ -5,9 +5,9 @@ template_string ToolGuidelines_Phase1() #"
 
 This section provides specific guidelines for using tools effectively during package discovery.
 
-1. In the thinking field, first review your Sutra Memory to understand current package discovery progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what package information you already have and what you need to discover next. also think about what tools you need to use next based on your current package discovery state. Based on package discovery create new tasks for import discovery.
+1. In the `thinking` field, first review your Sutra Memory to understand current package discovery progress, completed discoveries, and previous tool results to avoid redundancy. Then assess what package information you already have and what you need to discover next. also think about what tools you need to use next based on your current package discovery state. Based on package discovery create new tasks for import discovery.
 
-CRITICAL ANALYSIS DECISION PROCESS: In your thinking field, always ask yourself: "Should I track this discovered package information in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details.
+CRITICAL ANALYSIS DECISION PROCESS: In your thinking field, always ask yourself: "Should I track this discovered package information in sutra memory? Will this information be needed for analysis and future reference?" If yes, track it immediately with complete parameter details in history.
 
 ANALYSIS DECISION CRITERIA:
 - Track any communication packages, HTTP clients, server frameworks, WebSocket libraries discovered
