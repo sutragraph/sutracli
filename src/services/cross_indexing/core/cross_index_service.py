@@ -983,16 +983,18 @@ Tool Results:
         unmatched = set()
 
         # Check incoming connections - BAML format: {"tech_name": {"file": [details]}}
-        incoming_connections = analysis_result.get("incoming_connections", {})
-        for tech_name in incoming_connections.keys():
-            if tech_name and tech_name not in valid_enums:
-                unmatched.add(tech_name)
+        incoming_connections = analysis_result.get("incoming_connections")
+        if incoming_connections is not None:
+            for tech_name in incoming_connections.keys():
+                if tech_name and tech_name not in valid_enums:
+                    unmatched.add(tech_name)
 
         # Check outgoing connections - BAML format: {"tech_name": {"file": [details]}}
-        outgoing_connections = analysis_result.get("outgoing_connections", {})
-        for tech_name in outgoing_connections.keys():
-            if tech_name and tech_name not in valid_enums:
-                unmatched.add(tech_name)
+        outgoing_connections = analysis_result.get("outgoing_connections")
+        if outgoing_connections is not None:
+            for tech_name in outgoing_connections.keys():
+                if tech_name and tech_name not in valid_enums:
+                    unmatched.add(tech_name)
 
         return list(unmatched)
 
@@ -1024,20 +1026,22 @@ Tool Results:
             logger.debug(f"Applying technology corrections: {correction_map}")
 
             # Apply corrections to incoming connections - BAML format
-            incoming_connections = analysis_result.get("incoming_connections", {})
-            corrected_incoming = {}
-            for tech_name, files_dict in incoming_connections.items():
-                corrected_tech_name = correction_map.get(tech_name, tech_name)
-                corrected_incoming[corrected_tech_name] = files_dict
-            analysis_result["incoming_connections"] = corrected_incoming
+            incoming_connections = analysis_result.get("incoming_connections")
+            if incoming_connections is not None:
+                corrected_incoming = {}
+                for tech_name, files_dict in incoming_connections.items():
+                    corrected_tech_name = correction_map.get(tech_name, tech_name)
+                    corrected_incoming[corrected_tech_name] = files_dict
+                analysis_result["incoming_connections"] = corrected_incoming
 
             # Apply corrections to outgoing connections - BAML format
-            outgoing_connections = analysis_result.get("outgoing_connections", {})
-            corrected_outgoing = {}
-            for tech_name, files_dict in outgoing_connections.items():
-                corrected_tech_name = correction_map.get(tech_name, tech_name)
-                corrected_outgoing[corrected_tech_name] = files_dict
-            analysis_result["outgoing_connections"] = corrected_outgoing
+            outgoing_connections = analysis_result.get("outgoing_connections")
+            if outgoing_connections is not None:
+                corrected_outgoing = {}
+                for tech_name, files_dict in outgoing_connections.items():
+                    corrected_tech_name = correction_map.get(tech_name, tech_name)
+                    corrected_outgoing[corrected_tech_name] = files_dict
+                analysis_result["outgoing_connections"] = corrected_outgoing
 
             return analysis_result
 

@@ -29,6 +29,7 @@ IMPORTANT:
     - Use file_paths when you know specific files/directories to search
     - Use project_name when you want to search the entire project
   - If using file_paths, ensure they are absolute paths.
+  - When using `regex: false`, never use pipe `|` or special regex characters in the keyword. Setting regex to false means fixed string matching - it will search for the exact string you provide.
 
 Notes:
   - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively

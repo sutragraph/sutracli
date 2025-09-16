@@ -32,7 +32,6 @@ RULES
     - Many files (6+ files): Use search_keyword with targeted patterns based on actual imports
     - Wrapper functions: Always use search_keyword to find usage sites across entire codebase
     - Built-in patterns: Use search_keyword for language built-ins that don't require imports
-    - Follow specific guidance provided in previous import analysis tasks
 
 6. CONNECTION ANALYSIS PRIORITIES:
     - Find actual connection calls with real parameters and endpoint information
