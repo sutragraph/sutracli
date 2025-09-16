@@ -27,7 +27,7 @@ Notes:
   - Use \b for word boundaries in regex patterns
   - When results return `No results found for keyword search.`, check the history section for previous search attempts. If you see 3-4 failed search attempts with different keywords/patterns, then mark the task complete. However, don't give up after just 1 failed attempt - try different variations of keywords, patterns, or search parameters before concluding no results exist.
   - search_keyword is only for searching codebase - do not use for searching file names or directories - use list_files tool for that
-
+  - When using `regex: false`, never use pipe `|` or special regex characters in the keyword. Setting regex to false means fixed string matching - it will search for the exact string you provide.
 Usage:
 "tool_call": {
   "tool_name": "search_keyword",
