@@ -76,273 +76,273 @@ class BamlAsyncClient:
     def parse_stream(self):
       return self.__llm_stream_parser
     
-    async def AnthropicCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicCodeManager(tool_results=tool_results,system_info=system_info,
+            stream = self.stream.AnthropicClaudeCodeManager(tool_results=tool_results,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicCodeManager", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeCodeManager", args={
                 "tool_results": tool_results,"system_info": system_info,
             })
             return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AnthropicClaudeConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+            stream = self.stream.AnthropicClaudeConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicConnectionMatching", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeConnectionMatching", args={
                 "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
             })
             return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicConnectionSplitting(self, memory_context: str,
+    async def AnthropicClaudeConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicConnectionSplitting(memory_context=memory_context,
+            stream = self.stream.AnthropicClaudeConnectionSplitting(memory_context=memory_context,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicConnectionSplitting", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeConnectionSplitting", args={
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AnthropicClaudeImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicImplementationDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeImplementationDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AnthropicClaudeImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicImportDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeImportDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AnthropicClaudePackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicPackageDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudePackageDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicRoadmapAgent(params=params,
+            stream = self.stream.AnthropicClaudeRoadmapAgent(params=params,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicRoadmapAgent", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeRoadmapAgent", args={
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicTaskFilter(self, task_list: str,
+    async def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicTaskFilter(task_list=task_list,
+            stream = self.stream.AnthropicClaudeTaskFilter(task_list=task_list,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicTaskFilter", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeTaskFilter", args={
                 "task_list": task_list,
             })
             return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AnthropicClaudeTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AnthropicTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+            stream = self.stream.AnthropicClaudeTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicTechnologyCorrection", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeTechnologyCorrection", args={
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsCodeManager(tool_results=tool_results,system_info=system_info,
+            stream = self.stream.AwsBedrockCodeManager(tool_results=tool_results,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsCodeManager", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockCodeManager", args={
                 "tool_results": tool_results,"system_info": system_info,
             })
             return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AwsBedrockConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+            stream = self.stream.AwsBedrockConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsConnectionMatching", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockConnectionMatching", args={
                 "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
             })
             return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsConnectionSplitting(self, memory_context: str,
+    async def AwsBedrockConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsConnectionSplitting(memory_context=memory_context,
+            stream = self.stream.AwsBedrockConnectionSplitting(memory_context=memory_context,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsConnectionSplitting", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockConnectionSplitting", args={
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AwsBedrockImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsImplementationDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockImplementationDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AwsBedrockImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsImportDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockImportDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AwsBedrockPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsPackageDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockPackageDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsRoadmapAgent(params=params,
+            stream = self.stream.AwsBedrockRoadmapAgent(params=params,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsRoadmapAgent", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockRoadmapAgent", args={
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsTaskFilter(self, task_list: str,
+    async def AwsBedrockTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsTaskFilter(task_list=task_list,
+            stream = self.stream.AwsBedrockTaskFilter(task_list=task_list,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsTaskFilter", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockTaskFilter", args={
                 "task_list": task_list,
             })
             return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AwsBedrockTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AwsTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+            stream = self.stream.AwsBedrockTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsTechnologyCorrection", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockTechnologyCorrection", args={
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
@@ -481,408 +481,543 @@ class BamlAsyncClient:
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureCodeManager(tool_results=tool_results,system_info=system_info,
+            stream = self.stream.AzureOpenAICodeManager(tool_results=tool_results,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureCodeManager", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAICodeManager", args={
                 "tool_results": tool_results,"system_info": system_info,
             })
             return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AzureOpenAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+            stream = self.stream.AzureOpenAIConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureConnectionMatching", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAIConnectionMatching", args={
                 "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
             })
             return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureConnectionSplitting(self, memory_context: str,
+    async def AzureOpenAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureConnectionSplitting(memory_context=memory_context,
+            stream = self.stream.AzureOpenAIConnectionSplitting(memory_context=memory_context,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureConnectionSplitting", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAIConnectionSplitting", args={
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AzureOpenAIImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureImplementationDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAIImplementationDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AzureOpenAIImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureImportDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAIImportDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzurePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzurePackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.AzureOpenAIPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzurePackageDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAIPackageDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureRoadmapAgent(params=params,
+            stream = self.stream.AzureOpenAIRoadmapAgent(params=params,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureRoadmapAgent", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAIRoadmapAgent", args={
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureTaskFilter(self, task_list: str,
+    async def AzureOpenAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureTaskFilter(task_list=task_list,
+            stream = self.stream.AzureOpenAITaskFilter(task_list=task_list,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureTaskFilter", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAITaskFilter", args={
                 "task_list": task_list,
             })
             return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AzureOpenAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.AzureTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+            stream = self.stream.AzureOpenAITechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureTechnologyCorrection", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAITechnologyCorrection", args={
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTCodeManager(tool_results=tool_results,system_info=system_info,
+            stream = self.stream.GCPVertexAICodeManager(tool_results=tool_results,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTCodeManager", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAICodeManager", args={
                 "tool_results": tool_results,"system_info": system_info,
             })
             return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def GCPVertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+            stream = self.stream.GCPVertexAIConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTConnectionMatching", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAIConnectionMatching", args={
                 "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
             })
             return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTConnectionSplitting(self, memory_context: str,
+    async def GCPVertexAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTConnectionSplitting(memory_context=memory_context,
+            stream = self.stream.GCPVertexAIConnectionSplitting(memory_context=memory_context,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTConnectionSplitting", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAIConnectionSplitting", args={
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.GCPVertexAIImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTImplementationDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAIImplementationDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.GCPVertexAIImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTImportDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAIImportDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.GCPVertexAIPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTPackageDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAIPackageDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTRoadmapAgent(params=params,
+            stream = self.stream.GCPVertexAIRoadmapAgent(params=params,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTRoadmapAgent", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAIRoadmapAgent", args={
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTTaskFilter(self, task_list: str,
+    async def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTTaskFilter(task_list=task_list,
+            stream = self.stream.GCPVertexAITaskFilter(task_list=task_list,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTTaskFilter", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAITaskFilter", args={
                 "task_list": task_list,
             })
             return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def ChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def GCPVertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.ChatGPTTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+            stream = self.stream.GCPVertexAITechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="ChatGPTTechnologyCorrection", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAITechnologyCorrection", args={
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiCodeManager(tool_results=tool_results,system_info=system_info,
+            stream = self.stream.GoogleGeminiCodeManager(tool_results=tool_results,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiCodeManager", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiCodeManager", args={
                 "tool_results": tool_results,"system_info": system_info,
             })
             return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def GoogleGeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+            stream = self.stream.GoogleGeminiConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiConnectionMatching", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiConnectionMatching", args={
                 "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
             })
             return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiConnectionSplitting(self, memory_context: str,
+    async def GoogleGeminiConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiConnectionSplitting(memory_context=memory_context,
+            stream = self.stream.GoogleGeminiConnectionSplitting(memory_context=memory_context,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiConnectionSplitting", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiConnectionSplitting", args={
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.GoogleGeminiImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiImplementationDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiImplementationDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.GoogleGeminiImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiImportDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiImportDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+            stream = self.stream.GoogleGeminiPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiPackageDiscovery", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiPackageDiscovery", args={
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiRoadmapAgent(params=params,
+            stream = self.stream.GoogleGeminiRoadmapAgent(params=params,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiRoadmapAgent", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiRoadmapAgent", args={
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiTaskFilter(self, task_list: str,
+    async def GoogleGeminiTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiTaskFilter(task_list=task_list,
+            stream = self.stream.GoogleGeminiTaskFilter(task_list=task_list,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiTaskFilter", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiTaskFilter", args={
                 "task_list": task_list,
             })
             return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def GoogleGeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
-            stream = self.stream.GeminiTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+            stream = self.stream.GoogleGeminiTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
                 baml_options=baml_options)
             return await stream.get_final_response()
         else:
             # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GeminiTechnologyCorrection", args={
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiTechnologyCorrection", args={
+                "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+            })
+            return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CodeManagerResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTCodeManager(tool_results=tool_results,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTCodeManager", args={
+                "tool_results": tool_results,"system_info": system_info,
+            })
+            return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionMatchingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTConnectionMatching", args={
+                "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+            })
+            return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionSplittingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTConnectionSplitting(memory_context=memory_context,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTConnectionSplitting", args={
+                "memory_context": memory_context,
+            })
+            return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTImplementationDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTImportDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTPackageDiscovery", args={
+                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+            })
+            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.RoadmapResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTRoadmapAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTRoadmapAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TaskFilterResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTTaskFilter(task_list=task_list,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTTaskFilter", args={
+                "task_list": task_list,
+            })
+            return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TechnologyCorrectionResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTTechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTTechnologyCorrection", args={
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
@@ -1021,141 +1156,6 @@ class BamlAsyncClient:
                 "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
             })
             return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> types.CodeManagerResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAICodeManager(tool_results=tool_results,system_info=system_info,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAICodeManager", args={
-                "tool_results": tool_results,"system_info": system_info,
-            })
-            return typing.cast(types.CodeManagerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
-        baml_options: BamlCallOptions = {},
-    ) -> types.ConnectionMatchingResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAIConnectionMatching(incoming_connections=incoming_connections,outgoing_connections=outgoing_connections,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAIConnectionMatching", args={
-                "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
-            })
-            return typing.cast(types.ConnectionMatchingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAIConnectionSplitting(self, memory_context: str,
-        baml_options: BamlCallOptions = {},
-    ) -> types.ConnectionSplittingResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAIConnectionSplitting(memory_context=memory_context,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAIConnectionSplitting", args={
-                "memory_context": memory_context,
-            })
-            return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> types.CrossIndexingResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAIImplementationDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAIImplementationDiscovery", args={
-                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-            })
-            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> types.CrossIndexingResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAIImportDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAIImportDiscovery", args={
-                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-            })
-            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> types.CrossIndexingResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAIPackageDiscovery(analysis_query=analysis_query,memory_context=memory_context,system_info=system_info,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAIPackageDiscovery", args={
-                "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-            })
-            return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
-        baml_options: BamlCallOptions = {},
-    ) -> types.RoadmapResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAIRoadmapAgent(params=params,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAIRoadmapAgent", args={
-                "params": params,
-            })
-            return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAITaskFilter(self, task_list: str,
-        baml_options: BamlCallOptions = {},
-    ) -> types.TaskFilterResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAITaskFilter(task_list=task_list,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAITaskFilter", args={
-                "task_list": task_list,
-            })
-            return typing.cast(types.TaskFilterResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def VertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
-        baml_options: BamlCallOptions = {},
-    ) -> types.TechnologyCorrectionResponse:
-        # Check if on_tick is provided
-        if 'on_tick' in baml_options:
-            # Use streaming internally when on_tick is provided
-            stream = self.stream.VertexAITechnologyCorrection(unmatched_names=unmatched_names,acceptable_enums=acceptable_enums,
-                baml_options=baml_options)
-            return await stream.get_final_response()
-        else:
-            # Original non-streaming code
-            result = await self.__options.merge_options(baml_options).call_function_async(function_name="VertexAITechnologyCorrection", args={
-                "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
-            })
-            return typing.cast(types.TechnologyCorrectionResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     
 
 
@@ -1165,10 +1165,10 @@ class BamlStreamClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def AnthropicCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    def AnthropicClaudeCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicCodeManager", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
@@ -1177,10 +1177,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    def AnthropicClaudeConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicConnectionMatching", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         })
         return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
@@ -1189,10 +1189,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicConnectionSplitting(self, memory_context: str,
+    def AnthropicClaudeConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicConnectionSplitting", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeConnectionSplitting", args={
             "memory_context": memory_context,
         })
         return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
@@ -1201,10 +1201,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicImplementationDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1213,10 +1213,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AnthropicClaudeImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicImportDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1225,10 +1225,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AnthropicClaudePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicPackageDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudePackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1237,10 +1237,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicRoadmapAgent", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeRoadmapAgent", args={
             "params": params,
         })
         return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
@@ -1249,10 +1249,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicTaskFilter(self, task_list: str,
+    def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicTaskFilter", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeTaskFilter", args={
             "task_list": task_list,
         })
         return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
@@ -1261,10 +1261,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    def AnthropicClaudeTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicTechnologyCorrection", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         })
         return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
@@ -1273,10 +1273,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    def AwsBedrockCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsCodeManager", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
@@ -1285,10 +1285,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    def AwsBedrockConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsConnectionMatching", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         })
         return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
@@ -1297,10 +1297,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsConnectionSplitting(self, memory_context: str,
+    def AwsBedrockConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsConnectionSplitting", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockConnectionSplitting", args={
             "memory_context": memory_context,
         })
         return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
@@ -1309,10 +1309,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsImplementationDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1321,10 +1321,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AwsBedrockImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsImportDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1333,10 +1333,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AwsBedrockPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsPackageDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1345,10 +1345,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsRoadmapAgent", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockRoadmapAgent", args={
             "params": params,
         })
         return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
@@ -1357,10 +1357,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsTaskFilter(self, task_list: str,
+    def AwsBedrockTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsTaskFilter", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockTaskFilter", args={
             "task_list": task_list,
         })
         return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
@@ -1369,10 +1369,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    def AwsBedrockTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsTechnologyCorrection", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         })
         return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
@@ -1489,10 +1489,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    def AzureOpenAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureCodeManager", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAICodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
@@ -1501,10 +1501,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    def AzureOpenAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureConnectionMatching", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         })
         return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
@@ -1513,10 +1513,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureConnectionSplitting(self, memory_context: str,
+    def AzureOpenAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureConnectionSplitting", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIConnectionSplitting", args={
             "memory_context": memory_context,
         })
         return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
@@ -1525,10 +1525,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureImplementationDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1537,10 +1537,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AzureOpenAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureImportDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1549,10 +1549,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzurePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def AzureOpenAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzurePackageDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1561,10 +1561,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureRoadmapAgent", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIRoadmapAgent", args={
             "params": params,
         })
         return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
@@ -1573,10 +1573,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureTaskFilter(self, task_list: str,
+    def AzureOpenAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureTaskFilter", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAITaskFilter", args={
             "task_list": task_list,
         })
         return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
@@ -1585,10 +1585,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    def AzureOpenAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureTechnologyCorrection", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         })
         return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
@@ -1597,10 +1597,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    def GCPVertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTCodeManager", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAICodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
@@ -1609,10 +1609,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    def GCPVertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTConnectionMatching", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         })
         return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
@@ -1621,10 +1621,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTConnectionSplitting(self, memory_context: str,
+    def GCPVertexAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTConnectionSplitting", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIConnectionSplitting", args={
             "memory_context": memory_context,
         })
         return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
@@ -1633,10 +1633,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTImplementationDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1645,10 +1645,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def GCPVertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTImportDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1657,10 +1657,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def GCPVertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTPackageDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1669,10 +1669,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTRoadmapAgent", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIRoadmapAgent", args={
             "params": params,
         })
         return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
@@ -1681,10 +1681,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTTaskFilter(self, task_list: str,
+    def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTTaskFilter", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAITaskFilter", args={
             "task_list": task_list,
         })
         return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
@@ -1693,10 +1693,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def ChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    def GCPVertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="ChatGPTTechnologyCorrection", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         })
         return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
@@ -1705,10 +1705,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    def GoogleGeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiCodeManager", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
@@ -1717,10 +1717,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    def GoogleGeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiConnectionMatching", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         })
         return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
@@ -1729,10 +1729,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiConnectionSplitting(self, memory_context: str,
+    def GoogleGeminiConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiConnectionSplitting", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiConnectionSplitting", args={
             "memory_context": memory_context,
         })
         return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
@@ -1741,10 +1741,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiImplementationDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1753,10 +1753,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def GoogleGeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiImportDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1765,10 +1765,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    def GoogleGeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiPackageDiscovery", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         })
         return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
@@ -1777,10 +1777,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiRoadmapAgent", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiRoadmapAgent", args={
             "params": params,
         })
         return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
@@ -1789,10 +1789,10 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiTaskFilter(self, task_list: str,
+    def GoogleGeminiTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiTaskFilter", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiTaskFilter", args={
             "task_list": task_list,
         })
         return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
@@ -1801,10 +1801,118 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    def GoogleGeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GeminiTechnologyCorrection", args={
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        })
+        return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
+          result,
+          lambda x: typing.cast(stream_types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
+          result,
+          lambda x: typing.cast(stream_types.CodeManagerResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        })
+        return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
+          result,
+          lambda x: typing.cast(stream_types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTConnectionSplitting", args={
+            "memory_context": memory_context,
+        })
+        return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
+          result,
+          lambda x: typing.cast(stream_types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        })
+        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
+          result,
+          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTRoadmapAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
+          result,
+          lambda x: typing.cast(stream_types.RoadmapResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTTaskFilter", args={
+            "task_list": task_list,
+        })
+        return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
+          result,
+          lambda x: typing.cast(stream_types.TaskFilterResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def OpenAIChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         })
         return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
@@ -1921,114 +2029,6 @@ class BamlStreamClient:
           lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def VertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAICodeManager", args={
-            "tool_results": tool_results,"system_info": system_info,
-        })
-        return baml_py.BamlStream[stream_types.CodeManagerResponse, types.CodeManagerResponse](
-          result,
-          lambda x: typing.cast(stream_types.CodeManagerResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.CodeManagerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAIConnectionMatching", args={
-            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
-        })
-        return baml_py.BamlStream[stream_types.ConnectionMatchingResponse, types.ConnectionMatchingResponse](
-          result,
-          lambda x: typing.cast(stream_types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.ConnectionMatchingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAIConnectionSplitting(self, memory_context: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAIConnectionSplitting", args={
-            "memory_context": memory_context,
-        })
-        return baml_py.BamlStream[stream_types.ConnectionSplittingResponse, types.ConnectionSplittingResponse](
-          result,
-          lambda x: typing.cast(stream_types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAIImplementationDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        })
-        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
-          result,
-          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAIImportDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        })
-        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
-          result,
-          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAIPackageDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        })
-        return baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse](
-          result,
-          lambda x: typing.cast(stream_types.CrossIndexingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAIRoadmapAgent", args={
-            "params": params,
-        })
-        return baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse](
-          result,
-          lambda x: typing.cast(stream_types.RoadmapResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAITaskFilter(self, task_list: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAITaskFilter", args={
-            "task_list": task_list,
-        })
-        return baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse](
-          result,
-          lambda x: typing.cast(stream_types.TaskFilterResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.TaskFilterResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
-    def VertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse]:
-        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="VertexAITechnologyCorrection", args={
-            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
-        })
-        return baml_py.BamlStream[stream_types.TechnologyCorrectionResponse, types.TechnologyCorrectionResponse](
-          result,
-          lambda x: typing.cast(stream_types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(types.TechnologyCorrectionResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
-          ctx,
-        )
     
 
 class BamlHttpRequestClient:
@@ -2037,129 +2037,129 @@ class BamlHttpRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    async def AnthropicCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="request")
         return result
-    async def AnthropicConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AnthropicClaudeConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="request")
         return result
-    async def AnthropicConnectionSplitting(self, memory_context: str,
+    async def AnthropicClaudeConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def AnthropicImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AnthropicImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AnthropicPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudePackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AnthropicRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeRoadmapAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def AnthropicTaskFilter(self, task_list: str,
+    async def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeTaskFilter", args={
             "task_list": task_list,
         }, mode="request")
         return result
-    async def AnthropicTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AnthropicClaudeTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
-    async def AwsCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="request")
         return result
-    async def AwsConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AwsBedrockConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="request")
         return result
-    async def AwsConnectionSplitting(self, memory_context: str,
+    async def AwsBedrockConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def AwsImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AwsImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AwsPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AwsRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockRoadmapAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def AwsTaskFilter(self, task_list: str,
+    async def AwsBedrockTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockTaskFilter", args={
             "task_list": task_list,
         }, mode="request")
         return result
-    async def AwsTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AwsBedrockTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
@@ -2226,192 +2226,255 @@ class BamlHttpRequestClient:
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
-    async def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAICodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="request")
         return result
-    async def AzureConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AzureOpenAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="request")
         return result
-    async def AzureConnectionSplitting(self, memory_context: str,
+    async def AzureOpenAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def AzureImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AzureImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AzurePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzurePackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AzureRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIRoadmapAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def AzureTaskFilter(self, task_list: str,
+    async def AzureOpenAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAITaskFilter", args={
             "task_list": task_list,
         }, mode="request")
         return result
-    async def AzureTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AzureOpenAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
-    async def ChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAICodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="request")
         return result
-    async def ChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def GCPVertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="request")
         return result
-    async def ChatGPTConnectionSplitting(self, memory_context: str,
+    async def GCPVertexAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def ChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def ChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def ChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def ChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIRoadmapAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def ChatGPTTaskFilter(self, task_list: str,
+    async def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAITaskFilter", args={
             "task_list": task_list,
         }, mode="request")
         return result
-    async def ChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def GCPVertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
-    async def GeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="request")
         return result
-    async def GeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def GoogleGeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="request")
         return result
-    async def GeminiConnectionSplitting(self, memory_context: str,
+    async def GoogleGeminiConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def GeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def GeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def GeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def GeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiRoadmapAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def GeminiTaskFilter(self, task_list: str,
+    async def GoogleGeminiTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiTaskFilter", args={
             "task_list": task_list,
         }, mode="request")
         return result
-    async def GeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def GoogleGeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTConnectionSplitting", args={
+            "memory_context": memory_context,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTRoadmapAgent", args={
+            "params": params,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTTaskFilter", args={
+            "task_list": task_list,
+        }, mode="request")
+        return result
+    async def OpenAIChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
@@ -2475,69 +2538,6 @@ class BamlHttpRequestClient:
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterTechnologyCorrection", args={
-            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
-        }, mode="request")
-        return result
-    async def VertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAICodeManager", args={
-            "tool_results": tool_results,"system_info": system_info,
-        }, mode="request")
-        return result
-    async def VertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIConnectionMatching", args={
-            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
-        }, mode="request")
-        return result
-    async def VertexAIConnectionSplitting(self, memory_context: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIConnectionSplitting", args={
-            "memory_context": memory_context,
-        }, mode="request")
-        return result
-    async def VertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIImplementationDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        }, mode="request")
-        return result
-    async def VertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIImportDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        }, mode="request")
-        return result
-    async def VertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIPackageDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        }, mode="request")
-        return result
-    async def VertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIRoadmapAgent", args={
-            "params": params,
-        }, mode="request")
-        return result
-    async def VertexAITaskFilter(self, task_list: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAITaskFilter", args={
-            "task_list": task_list,
-        }, mode="request")
-        return result
-    async def VertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="request")
         return result
@@ -2549,129 +2549,129 @@ class BamlHttpStreamRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    async def AnthropicCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AnthropicConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AnthropicClaudeConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="stream")
         return result
-    async def AnthropicConnectionSplitting(self, memory_context: str,
+    async def AnthropicClaudeConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def AnthropicImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AnthropicImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudeImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AnthropicPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AnthropicClaudePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudePackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AnthropicRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeRoadmapAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def AnthropicTaskFilter(self, task_list: str,
+    async def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeTaskFilter", args={
             "task_list": task_list,
         }, mode="stream")
         return result
-    async def AnthropicTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AnthropicClaudeTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
-    async def AwsCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AwsConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AwsBedrockConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="stream")
         return result
-    async def AwsConnectionSplitting(self, memory_context: str,
+    async def AwsBedrockConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def AwsImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AwsImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AwsPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AwsBedrockPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AwsRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockRoadmapAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def AwsTaskFilter(self, task_list: str,
+    async def AwsBedrockTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockTaskFilter", args={
             "task_list": task_list,
         }, mode="stream")
         return result
-    async def AwsTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AwsBedrockTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
@@ -2738,192 +2738,255 @@ class BamlHttpStreamRequestClient:
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
-    async def AzureCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAICodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AzureConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def AzureOpenAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="stream")
         return result
-    async def AzureConnectionSplitting(self, memory_context: str,
+    async def AzureOpenAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def AzureImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AzureImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AzurePackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def AzureOpenAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzurePackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AzureRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIRoadmapAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def AzureTaskFilter(self, task_list: str,
+    async def AzureOpenAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAITaskFilter", args={
             "task_list": task_list,
         }, mode="stream")
         return result
-    async def AzureTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def AzureOpenAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
-    async def ChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAICodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="stream")
         return result
-    async def ChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def GCPVertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="stream")
         return result
-    async def ChatGPTConnectionSplitting(self, memory_context: str,
+    async def GCPVertexAIConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def ChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def ChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def ChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GCPVertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def ChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIRoadmapAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def ChatGPTTaskFilter(self, task_list: str,
+    async def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAITaskFilter", args={
             "task_list": task_list,
         }, mode="stream")
         return result
-    async def ChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def GCPVertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ChatGPTTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
-    async def GeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiCodeManager", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiCodeManager", args={
             "tool_results": tool_results,"system_info": system_info,
         }, mode="stream")
         return result
-    async def GeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+    async def GoogleGeminiConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiConnectionMatching", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiConnectionMatching", args={
             "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
         }, mode="stream")
         return result
-    async def GeminiConnectionSplitting(self, memory_context: str,
+    async def GoogleGeminiConnectionSplitting(self, memory_context: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiConnectionSplitting", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiConnectionSplitting", args={
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def GeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiImplementationDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiImplementationDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def GeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiImportDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiImportDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def GeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+    async def GoogleGeminiPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiPackageDiscovery", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiPackageDiscovery", args={
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def GeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiRoadmapAgent", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiRoadmapAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def GeminiTaskFilter(self, task_list: str,
+    async def GoogleGeminiTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiTaskFilter", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiTaskFilter", args={
             "task_list": task_list,
         }, mode="stream")
         return result
-    async def GeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+    async def GoogleGeminiTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GeminiTechnologyCorrection", args={
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiTechnologyCorrection", args={
+            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTCodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTCodeManager", args={
+            "tool_results": tool_results,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTConnectionMatching", args={
+            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTConnectionSplitting(self, memory_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTConnectionSplitting", args={
+            "memory_context": memory_context,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTImplementationDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTImportDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTPackageDiscovery", args={
+            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTRoadmapAgent", args={
+            "params": params,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTTaskFilter(self, task_list: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTTaskFilter", args={
+            "task_list": task_list,
+        }, mode="stream")
+        return result
+    async def OpenAIChatGPTTechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTTechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result
@@ -2987,69 +3050,6 @@ class BamlHttpStreamRequestClient:
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterTechnologyCorrection", args={
-            "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
-        }, mode="stream")
-        return result
-    async def VertexAICodeManager(self, tool_results: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAICodeManager", args={
-            "tool_results": tool_results,"system_info": system_info,
-        }, mode="stream")
-        return result
-    async def VertexAIConnectionMatching(self, incoming_connections: str,outgoing_connections: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIConnectionMatching", args={
-            "incoming_connections": incoming_connections,"outgoing_connections": outgoing_connections,
-        }, mode="stream")
-        return result
-    async def VertexAIConnectionSplitting(self, memory_context: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIConnectionSplitting", args={
-            "memory_context": memory_context,
-        }, mode="stream")
-        return result
-    async def VertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIImplementationDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        }, mode="stream")
-        return result
-    async def VertexAIImportDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIImportDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        }, mode="stream")
-        return result
-    async def VertexAIPackageDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIPackageDiscovery", args={
-            "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
-        }, mode="stream")
-        return result
-    async def VertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAIRoadmapAgent", args={
-            "params": params,
-        }, mode="stream")
-        return result
-    async def VertexAITaskFilter(self, task_list: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAITaskFilter", args={
-            "task_list": task_list,
-        }, mode="stream")
-        return result
-    async def VertexAITechnologyCorrection(self, unmatched_names: str,acceptable_enums: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.baml_py.HTTPRequest:
-        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VertexAITechnologyCorrection", args={
             "unmatched_names": unmatched_names,"acceptable_enums": acceptable_enums,
         }, mode="stream")
         return result

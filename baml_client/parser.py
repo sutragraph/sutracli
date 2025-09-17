@@ -22,112 +22,112 @@ class LlmResponseParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def AnthropicCodeManager(
+    def AnthropicClaudeCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicCodeManager", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeCodeManager", llm_response=llm_response, mode="request")
         return typing.cast(types.CodeManagerResponse, result)
 
-    def AnthropicConnectionMatching(
+    def AnthropicClaudeConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicConnectionMatching", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionMatching", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionMatchingResponse, result)
 
-    def AnthropicConnectionSplitting(
+    def AnthropicClaudeConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicConnectionSplitting", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
-    def AnthropicImplementationDiscovery(
+    def AnthropicClaudeImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicImplementationDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeImplementationDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AnthropicImportDiscovery(
+    def AnthropicClaudeImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicImportDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeImportDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AnthropicPackageDiscovery(
+    def AnthropicClaudePackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicPackageDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudePackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AnthropicRoadmapAgent(
+    def AnthropicClaudeRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicRoadmapAgent", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
-    def AnthropicTaskFilter(
+    def AnthropicClaudeTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicTaskFilter", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeTaskFilter", llm_response=llm_response, mode="request")
         return typing.cast(types.TaskFilterResponse, result)
 
-    def AnthropicTechnologyCorrection(
+    def AnthropicClaudeTechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicTechnologyCorrection", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
-    def AwsCodeManager(
+    def AwsBedrockCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsCodeManager", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockCodeManager", llm_response=llm_response, mode="request")
         return typing.cast(types.CodeManagerResponse, result)
 
-    def AwsConnectionMatching(
+    def AwsBedrockConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsConnectionMatching", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionMatching", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionMatchingResponse, result)
 
-    def AwsConnectionSplitting(
+    def AwsBedrockConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsConnectionSplitting", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
-    def AwsImplementationDiscovery(
+    def AwsBedrockImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsImplementationDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockImplementationDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AwsImportDiscovery(
+    def AwsBedrockImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsImportDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockImportDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AwsPackageDiscovery(
+    def AwsBedrockPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsPackageDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AwsRoadmapAgent(
+    def AwsBedrockRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsRoadmapAgent", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
-    def AwsTaskFilter(
+    def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsTaskFilter", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockTaskFilter", llm_response=llm_response, mode="request")
         return typing.cast(types.TaskFilterResponse, result)
 
-    def AwsTechnologyCorrection(
+    def AwsBedrockTechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsTechnologyCorrection", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
     def AzureAIFoundryCodeManager(
@@ -184,166 +184,220 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
-    def AzureCodeManager(
+    def AzureOpenAICodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureCodeManager", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAICodeManager", llm_response=llm_response, mode="request")
         return typing.cast(types.CodeManagerResponse, result)
 
-    def AzureConnectionMatching(
+    def AzureOpenAIConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureConnectionMatching", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionMatching", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionMatchingResponse, result)
 
-    def AzureConnectionSplitting(
+    def AzureOpenAIConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureConnectionSplitting", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
-    def AzureImplementationDiscovery(
+    def AzureOpenAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureImplementationDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIImplementationDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AzureImportDiscovery(
+    def AzureOpenAIImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureImportDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIImportDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AzurePackageDiscovery(
+    def AzureOpenAIPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzurePackageDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def AzureRoadmapAgent(
+    def AzureOpenAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureRoadmapAgent", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
-    def AzureTaskFilter(
+    def AzureOpenAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureTaskFilter", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAITaskFilter", llm_response=llm_response, mode="request")
         return typing.cast(types.TaskFilterResponse, result)
 
-    def AzureTechnologyCorrection(
+    def AzureOpenAITechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureTechnologyCorrection", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAITechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
-    def ChatGPTCodeManager(
+    def GCPVertexAICodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTCodeManager", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAICodeManager", llm_response=llm_response, mode="request")
         return typing.cast(types.CodeManagerResponse, result)
 
-    def ChatGPTConnectionMatching(
+    def GCPVertexAIConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTConnectionMatching", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionMatching", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionMatchingResponse, result)
 
-    def ChatGPTConnectionSplitting(
+    def GCPVertexAIConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTConnectionSplitting", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
-    def ChatGPTImplementationDiscovery(
+    def GCPVertexAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTImplementationDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIImplementationDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def ChatGPTImportDiscovery(
+    def GCPVertexAIImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTImportDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIImportDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def ChatGPTPackageDiscovery(
+    def GCPVertexAIPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTPackageDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def ChatGPTRoadmapAgent(
+    def GCPVertexAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTRoadmapAgent", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
-    def ChatGPTTaskFilter(
+    def GCPVertexAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTTaskFilter", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAITaskFilter", llm_response=llm_response, mode="request")
         return typing.cast(types.TaskFilterResponse, result)
 
-    def ChatGPTTechnologyCorrection(
+    def GCPVertexAITechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTTechnologyCorrection", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAITechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
-    def GeminiCodeManager(
+    def GoogleGeminiCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiCodeManager", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiCodeManager", llm_response=llm_response, mode="request")
         return typing.cast(types.CodeManagerResponse, result)
 
-    def GeminiConnectionMatching(
+    def GoogleGeminiConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiConnectionMatching", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionMatching", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionMatchingResponse, result)
 
-    def GeminiConnectionSplitting(
+    def GoogleGeminiConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiConnectionSplitting", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
-    def GeminiImplementationDiscovery(
+    def GoogleGeminiImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiImplementationDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiImplementationDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def GeminiImportDiscovery(
+    def GoogleGeminiImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiImportDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiImportDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def GeminiPackageDiscovery(
+    def GoogleGeminiPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiPackageDiscovery", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
-    def GeminiRoadmapAgent(
+    def GoogleGeminiRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiRoadmapAgent", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
-    def GeminiTaskFilter(
+    def GoogleGeminiTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiTaskFilter", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiTaskFilter", llm_response=llm_response, mode="request")
         return typing.cast(types.TaskFilterResponse, result)
 
-    def GeminiTechnologyCorrection(
+    def GoogleGeminiTechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiTechnologyCorrection", llm_response=llm_response, mode="request")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiTechnologyCorrection", llm_response=llm_response, mode="request")
+        return typing.cast(types.TechnologyCorrectionResponse, result)
+
+    def OpenAIChatGPTCodeManager(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CodeManagerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTCodeManager", llm_response=llm_response, mode="request")
+        return typing.cast(types.CodeManagerResponse, result)
+
+    def OpenAIChatGPTConnectionMatching(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionMatchingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionMatching", llm_response=llm_response, mode="request")
+        return typing.cast(types.ConnectionMatchingResponse, result)
+
+    def OpenAIChatGPTConnectionSplitting(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ConnectionSplittingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionSplitting", llm_response=llm_response, mode="request")
+        return typing.cast(types.ConnectionSplittingResponse, result)
+
+    def OpenAIChatGPTImplementationDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTImplementationDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTImportDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTImportDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTPackageDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTPackageDiscovery", llm_response=llm_response, mode="request")
+        return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTRoadmapAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.RoadmapResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTRoadmapAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.RoadmapResponse, result)
+
+    def OpenAIChatGPTTaskFilter(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TaskFilterResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTTaskFilter", llm_response=llm_response, mode="request")
+        return typing.cast(types.TaskFilterResponse, result)
+
+    def OpenAIChatGPTTechnologyCorrection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TechnologyCorrectionResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
     def OpenRouterCodeManager(
@@ -400,60 +454,6 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterTechnologyCorrection", llm_response=llm_response, mode="request")
         return typing.cast(types.TechnologyCorrectionResponse, result)
 
-    def VertexAICodeManager(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAICodeManager", llm_response=llm_response, mode="request")
-        return typing.cast(types.CodeManagerResponse, result)
-
-    def VertexAIConnectionMatching(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIConnectionMatching", llm_response=llm_response, mode="request")
-        return typing.cast(types.ConnectionMatchingResponse, result)
-
-    def VertexAIConnectionSplitting(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIConnectionSplitting", llm_response=llm_response, mode="request")
-        return typing.cast(types.ConnectionSplittingResponse, result)
-
-    def VertexAIImplementationDiscovery(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIImplementationDiscovery", llm_response=llm_response, mode="request")
-        return typing.cast(types.CrossIndexingResponse, result)
-
-    def VertexAIImportDiscovery(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIImportDiscovery", llm_response=llm_response, mode="request")
-        return typing.cast(types.CrossIndexingResponse, result)
-
-    def VertexAIPackageDiscovery(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIPackageDiscovery", llm_response=llm_response, mode="request")
-        return typing.cast(types.CrossIndexingResponse, result)
-
-    def VertexAIRoadmapAgent(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIRoadmapAgent", llm_response=llm_response, mode="request")
-        return typing.cast(types.RoadmapResponse, result)
-
-    def VertexAITaskFilter(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAITaskFilter", llm_response=llm_response, mode="request")
-        return typing.cast(types.TaskFilterResponse, result)
-
-    def VertexAITechnologyCorrection(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAITechnologyCorrection", llm_response=llm_response, mode="request")
-        return typing.cast(types.TechnologyCorrectionResponse, result)
-
     
 
 class LlmStreamParser:
@@ -462,112 +462,112 @@ class LlmStreamParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
-    def AnthropicCodeManager(
+    def AnthropicClaudeCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicCodeManager", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeCodeManager", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CodeManagerResponse, result)
 
-    def AnthropicConnectionMatching(
+    def AnthropicClaudeConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicConnectionMatching", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionMatching", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionMatchingResponse, result)
 
-    def AnthropicConnectionSplitting(
+    def AnthropicClaudeConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicConnectionSplitting", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
-    def AnthropicImplementationDiscovery(
+    def AnthropicClaudeImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicImplementationDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeImplementationDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AnthropicImportDiscovery(
+    def AnthropicClaudeImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicImportDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeImportDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AnthropicPackageDiscovery(
+    def AnthropicClaudePackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicPackageDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudePackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AnthropicRoadmapAgent(
+    def AnthropicClaudeRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicRoadmapAgent", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
-    def AnthropicTaskFilter(
+    def AnthropicClaudeTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicTaskFilter", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeTaskFilter", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TaskFilterResponse, result)
 
-    def AnthropicTechnologyCorrection(
+    def AnthropicClaudeTechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicTechnologyCorrection", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeTechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
-    def AwsCodeManager(
+    def AwsBedrockCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsCodeManager", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockCodeManager", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CodeManagerResponse, result)
 
-    def AwsConnectionMatching(
+    def AwsBedrockConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsConnectionMatching", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionMatching", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionMatchingResponse, result)
 
-    def AwsConnectionSplitting(
+    def AwsBedrockConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsConnectionSplitting", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
-    def AwsImplementationDiscovery(
+    def AwsBedrockImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsImplementationDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockImplementationDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AwsImportDiscovery(
+    def AwsBedrockImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsImportDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockImportDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AwsPackageDiscovery(
+    def AwsBedrockPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsPackageDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AwsRoadmapAgent(
+    def AwsBedrockRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsRoadmapAgent", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
-    def AwsTaskFilter(
+    def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsTaskFilter", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockTaskFilter", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TaskFilterResponse, result)
 
-    def AwsTechnologyCorrection(
+    def AwsBedrockTechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsTechnologyCorrection", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockTechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
     def AzureAIFoundryCodeManager(
@@ -624,166 +624,220 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryTechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
-    def AzureCodeManager(
+    def AzureOpenAICodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureCodeManager", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAICodeManager", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CodeManagerResponse, result)
 
-    def AzureConnectionMatching(
+    def AzureOpenAIConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureConnectionMatching", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionMatching", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionMatchingResponse, result)
 
-    def AzureConnectionSplitting(
+    def AzureOpenAIConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureConnectionSplitting", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
-    def AzureImplementationDiscovery(
+    def AzureOpenAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureImplementationDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIImplementationDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AzureImportDiscovery(
+    def AzureOpenAIImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureImportDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIImportDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AzurePackageDiscovery(
+    def AzureOpenAIPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzurePackageDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def AzureRoadmapAgent(
+    def AzureOpenAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureRoadmapAgent", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
-    def AzureTaskFilter(
+    def AzureOpenAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureTaskFilter", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAITaskFilter", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TaskFilterResponse, result)
 
-    def AzureTechnologyCorrection(
+    def AzureOpenAITechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureTechnologyCorrection", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAITechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
-    def ChatGPTCodeManager(
+    def GCPVertexAICodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTCodeManager", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAICodeManager", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CodeManagerResponse, result)
 
-    def ChatGPTConnectionMatching(
+    def GCPVertexAIConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTConnectionMatching", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionMatching", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionMatchingResponse, result)
 
-    def ChatGPTConnectionSplitting(
+    def GCPVertexAIConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTConnectionSplitting", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
-    def ChatGPTImplementationDiscovery(
+    def GCPVertexAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTImplementationDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIImplementationDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def ChatGPTImportDiscovery(
+    def GCPVertexAIImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTImportDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIImportDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def ChatGPTPackageDiscovery(
+    def GCPVertexAIPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTPackageDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def ChatGPTRoadmapAgent(
+    def GCPVertexAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTRoadmapAgent", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
-    def ChatGPTTaskFilter(
+    def GCPVertexAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTTaskFilter", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAITaskFilter", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TaskFilterResponse, result)
 
-    def ChatGPTTechnologyCorrection(
+    def GCPVertexAITechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="ChatGPTTechnologyCorrection", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAITechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
-    def GeminiCodeManager(
+    def GoogleGeminiCodeManager(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiCodeManager", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiCodeManager", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CodeManagerResponse, result)
 
-    def GeminiConnectionMatching(
+    def GoogleGeminiConnectionMatching(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiConnectionMatching", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionMatching", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionMatchingResponse, result)
 
-    def GeminiConnectionSplitting(
+    def GoogleGeminiConnectionSplitting(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiConnectionSplitting", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
-    def GeminiImplementationDiscovery(
+    def GoogleGeminiImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiImplementationDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiImplementationDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def GeminiImportDiscovery(
+    def GoogleGeminiImportDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiImportDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiImportDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def GeminiPackageDiscovery(
+    def GoogleGeminiPackageDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiPackageDiscovery", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
-    def GeminiRoadmapAgent(
+    def GoogleGeminiRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiRoadmapAgent", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
-    def GeminiTaskFilter(
+    def GoogleGeminiTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiTaskFilter", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiTaskFilter", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TaskFilterResponse, result)
 
-    def GeminiTechnologyCorrection(
+    def GoogleGeminiTechnologyCorrection(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="GeminiTechnologyCorrection", llm_response=llm_response, mode="stream")
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiTechnologyCorrection", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TechnologyCorrectionResponse, result)
+
+    def OpenAIChatGPTCodeManager(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CodeManagerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTCodeManager", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CodeManagerResponse, result)
+
+    def OpenAIChatGPTConnectionMatching(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ConnectionMatchingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionMatching", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ConnectionMatchingResponse, result)
+
+    def OpenAIChatGPTConnectionSplitting(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ConnectionSplittingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionSplitting", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ConnectionSplittingResponse, result)
+
+    def OpenAIChatGPTImplementationDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTImplementationDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTImportDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTImportDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTPackageDiscovery(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.CrossIndexingResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTPackageDiscovery", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTRoadmapAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.RoadmapResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTRoadmapAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.RoadmapResponse, result)
+
+    def OpenAIChatGPTTaskFilter(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TaskFilterResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTTaskFilter", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TaskFilterResponse, result)
+
+    def OpenAIChatGPTTechnologyCorrection(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TechnologyCorrectionResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTTechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
     def OpenRouterCodeManager(
@@ -838,60 +892,6 @@ class LlmStreamParser:
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TechnologyCorrectionResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterTechnologyCorrection", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.TechnologyCorrectionResponse, result)
-
-    def VertexAICodeManager(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.CodeManagerResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAICodeManager", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.CodeManagerResponse, result)
-
-    def VertexAIConnectionMatching(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.ConnectionMatchingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIConnectionMatching", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.ConnectionMatchingResponse, result)
-
-    def VertexAIConnectionSplitting(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.ConnectionSplittingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIConnectionSplitting", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.ConnectionSplittingResponse, result)
-
-    def VertexAIImplementationDiscovery(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIImplementationDiscovery", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.CrossIndexingResponse, result)
-
-    def VertexAIImportDiscovery(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIImportDiscovery", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.CrossIndexingResponse, result)
-
-    def VertexAIPackageDiscovery(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.CrossIndexingResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIPackageDiscovery", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.CrossIndexingResponse, result)
-
-    def VertexAIRoadmapAgent(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.RoadmapResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAIRoadmapAgent", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.RoadmapResponse, result)
-
-    def VertexAITaskFilter(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.TaskFilterResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAITaskFilter", llm_response=llm_response, mode="stream")
-        return typing.cast(stream_types.TaskFilterResponse, result)
-
-    def VertexAITechnologyCorrection(
-        self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> stream_types.TechnologyCorrectionResponse:
-        result = self.__options.merge_options(baml_options).parse_response(function_name="VertexAITechnologyCorrection", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.TechnologyCorrectionResponse, result)
 
     

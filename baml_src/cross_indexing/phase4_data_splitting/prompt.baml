@@ -1155,7 +1155,7 @@ template_string ConnectionSplittingUserPrompt(memory_context: string) #"
 Process the above connection code snippets and transform them into structured JSON format. Classify each connection as incoming or outgoing, extract complete parameter details, and return the properly formatted JSON.
 "#
 
-function AwsConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+function AwsBedrockConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -1164,7 +1164,7 @@ function AwsConnectionSplitting(memory_context: string) -> ConnectionSplittingRe
   "#
 }
 
-function AnthropicConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+function AnthropicClaudeConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -1173,7 +1173,7 @@ function AnthropicConnectionSplitting(memory_context: string) -> ConnectionSplit
   "#
 }
 
-function ChatGPTConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+function OpenAIChatGPTConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -1182,7 +1182,7 @@ function ChatGPTConnectionSplitting(memory_context: string) -> ConnectionSplitti
   "#
 }
 
-function GeminiConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+function GoogleGeminiConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -1191,7 +1191,7 @@ function GeminiConnectionSplitting(memory_context: string) -> ConnectionSplittin
   "#
 }
 
-function VertexAIConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+function GCPVertexAIConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -1200,7 +1200,7 @@ function VertexAIConnectionSplitting(memory_context: string) -> ConnectionSplitt
   "#
 }
 
-function AzureConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
+function AzureOpenAIConnectionSplitting(memory_context: string) -> ConnectionSplittingResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

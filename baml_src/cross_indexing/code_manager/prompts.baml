@@ -17,7 +17,7 @@ Please analyze the following code snippet from cross-indexing analysis and extra
 {{tool_results}}
 "#
 
-function AwsCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+function AwsBedrockCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -26,7 +26,7 @@ function AwsCodeManager(tool_results: string, system_info: SystemInfo_CrossIndex
   "#
 }
 
-function AnthropicCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+function AnthropicClaudeCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -35,7 +35,7 @@ function AnthropicCodeManager(tool_results: string, system_info: SystemInfo_Cros
   "#
 }
 
-function ChatGPTCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+function OpenAIChatGPTCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -44,7 +44,7 @@ function ChatGPTCodeManager(tool_results: string, system_info: SystemInfo_CrossI
   "#
 }
 
-function GeminiCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+function GoogleGeminiCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -53,7 +53,7 @@ function GeminiCodeManager(tool_results: string, system_info: SystemInfo_CrossIn
   "#
 }
 
-function VertexAICodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+function GCPVertexAICodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -62,7 +62,7 @@ function VertexAICodeManager(tool_results: string, system_info: SystemInfo_Cross
   "#
 }
 
-function AzureCodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
+function AzureOpenAICodeManager(tool_results: string, system_info: SystemInfo_CrossIndexing) -> CodeManagerResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

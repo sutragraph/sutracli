@@ -18,7 +18,7 @@ SUTRA MEMORY CONTEXT:
 {{memory_context if memory_context else "No previous context"}}
 "#
 
-function AwsImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function AwsBedrockImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -27,7 +27,7 @@ function AwsImplementationDiscovery(analysis_query: string, memory_context: stri
   "#
 }
 
-function AnthropicImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function AnthropicClaudeImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -36,7 +36,7 @@ function AnthropicImplementationDiscovery(analysis_query: string, memory_context
   "#
 }
 
-function ChatGPTImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function OpenAIChatGPTImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -45,7 +45,7 @@ function ChatGPTImplementationDiscovery(analysis_query: string, memory_context: 
   "#
 }
 
-function GeminiImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function GoogleGeminiImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -54,7 +54,7 @@ function GeminiImplementationDiscovery(analysis_query: string, memory_context: s
   "#
 }
 
-function VertexAIImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function GCPVertexAIImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -63,7 +63,7 @@ function VertexAIImplementationDiscovery(analysis_query: string, memory_context:
   "#
 }
 
-function AzureImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function AzureOpenAIImplementationDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

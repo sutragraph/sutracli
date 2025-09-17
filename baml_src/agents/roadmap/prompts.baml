@@ -33,7 +33,7 @@ Decision Rule: Does the user want implementation planning?
 Remember: You are generating strategic roadmaps, not implementing code.
 "#
 
-function AwsRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function AwsBedrockRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -42,7 +42,7 @@ function AwsRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   "#
 }
 
-function AnthropicRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function AnthropicClaudeRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -51,7 +51,7 @@ function AnthropicRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   "#
 }
 
-function ChatGPTRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function OpenAIChatGPTRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -60,7 +60,7 @@ function ChatGPTRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   "#
 }
 
-function GeminiRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function GoogleGeminiRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -69,7 +69,7 @@ function GeminiRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   "#
 }
 
-function VertexAIRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function GCPVertexAIRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -78,7 +78,7 @@ function VertexAIRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   "#
 }
 
-function AzureRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function AzureOpenAIRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

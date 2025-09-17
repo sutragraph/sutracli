@@ -25,7 +25,7 @@ The following tasks were created by the previous phase and need to be filtered f
 Please provide the filtered task list now.
 "#
 
-function AwsTaskFilter(task_list: string) -> TaskFilterResponse {
+function AwsBedrockTaskFilter(task_list: string) -> TaskFilterResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -34,7 +34,7 @@ function AwsTaskFilter(task_list: string) -> TaskFilterResponse {
   "#
 }
 
-function AnthropicTaskFilter(task_list: string) -> TaskFilterResponse {
+function AnthropicClaudeTaskFilter(task_list: string) -> TaskFilterResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -43,7 +43,7 @@ function AnthropicTaskFilter(task_list: string) -> TaskFilterResponse {
   "#
 }
 
-function ChatGPTTaskFilter(task_list: string) -> TaskFilterResponse {
+function OpenAIChatGPTTaskFilter(task_list: string) -> TaskFilterResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -52,7 +52,7 @@ function ChatGPTTaskFilter(task_list: string) -> TaskFilterResponse {
   "#
 }
 
-function GeminiTaskFilter(task_list: string) -> TaskFilterResponse {
+function GoogleGeminiTaskFilter(task_list: string) -> TaskFilterResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -61,7 +61,7 @@ function GeminiTaskFilter(task_list: string) -> TaskFilterResponse {
   "#
 }
 
-function VertexAITaskFilter(task_list: string) -> TaskFilterResponse {
+function GCPVertexAITaskFilter(task_list: string) -> TaskFilterResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -70,7 +70,7 @@ function VertexAITaskFilter(task_list: string) -> TaskFilterResponse {
   "#
 }
 
-function AzureTaskFilter(task_list: string) -> TaskFilterResponse {
+function AzureOpenAITaskFilter(task_list: string) -> TaskFilterResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

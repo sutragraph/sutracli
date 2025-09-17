@@ -123,37 +123,45 @@ Here's a partial view of the config file (focusing on the LLM section for brevit
       "access_key_id": "YOUR_ACCESS_KEY",
       "secret_access_key": "YOUR_SECRET_KEY",
       "region": "us-east-2",
-      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0"
+      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+      "max_tokens": "OUTPUT_TOKENS"
     },
     "anthropic": {
       "api_key": "YOUR_API_KEY",
-      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0"
+      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+      "max_tokens": "OUTPUT_TOKENS"
     },
     "google_ai": {
       "api_key": "YOUR_API_KEY",
       "model_id": "gemini-2.5-pro",
-      "base_url": "https://generativelanguage.googleapis.com/v1beta"
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "max_tokens": "OUTPUT_TOKENS"
     },
     "vertex_ai": {
       "location": "global",
       "model_id": "gemini-1.5-flash",
+      "max_tokens": "OUTPUT_TOKENS"
     },
     "azure_openai": {
       "api_key": "YOUR_API_KEY",
       "base_url": "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-id",
-      "api_version": "2025-01-01-preview"
+      "api_version": "2025-01-01-preview",
+      "max_tokens": "OUTPUT_TOKENS"
     },
     "openai": {
       "api_key": "YOUR_API_KEY",
-      "model_id": "gpt-4o"
+      "model_id": "gpt-4.1",
+      "max_tokens": "OUTPUT_TOKENS"
     },
     "azure_aifoundry": {
       "api_key": "YOUR_API_KEY",
-      "base_url": "https://RESOURCE_NAME.REGION.models.ai.azure.com"
+      "base_url": "https://RESOURCE_NAME.REGION.models.ai.azure.com",
+      "max_tokens": "OUTPUT_TOKENS"
     },
     "openrouter": {
       "api_key": "YOUR_API_KEY",
       "model_id": "openai/gpt-3.5-turbo",
+      "max_tokens": "OUTPUT_TOKENS",
       "http_referer": "YOUR-SITE-URL", //Optional
       "x_title": "YOUR-TITLE" //Optional
     }
@@ -178,7 +186,8 @@ The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) a
   "aws_bedrock": { /* Leave as-is or blank */ },
   "anthropic": {
     "api_key": "YOUR_API_KEY",
-    "model_id": "claude-3-5-sonnet-20240620"
+    "model_id": "claude-4-sonnet-20250514",
+    "max_tokens": "OUTPUT_TOKENS"
   },
   "google_ai": { /* Leave as-is or blank */ },
   "vertex_ai": { /* Leave as-is or blank */ },
@@ -190,6 +199,17 @@ The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) a
 ```
 
 After saving, restart Sutrakit to apply changes. For other sections (e.g., logging level or embedding model), edit values directly—refer to the file for details.
+
+### Common Maximum Output Token Limits
+
+Here are typical `max_tokens` values for popular models (as of early 2025):
+
+- **GPT-5**: 128,000 tokens
+- **GPT-4.1**: 32,000 tokens
+- **Claude Sonnet 4**: 64,000 tokens  
+- **Gemini 2.5 Pro**: 64,000 tokens
+
+**Note**: The `max_tokens` parameter controls the maximum number of tokens in the model's output response, not the input context window. Always check your model's documentation for the exact output token limit, as these values may change with model updates.
 
 ## 🛠️ Development Setup
 
