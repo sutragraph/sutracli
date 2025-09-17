@@ -18,7 +18,7 @@ SUTRA MEMORY CONTEXT:
 {{memory_context if memory_context else "No previous context"}}
 "#
 
-function AwsImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function AwsBedrockImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -27,7 +27,7 @@ function AwsImportDiscovery(analysis_query: string, memory_context: string, syst
   "#
 }
 
-function AnthropicImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function AnthropicClaudeImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -36,7 +36,7 @@ function AnthropicImportDiscovery(analysis_query: string, memory_context: string
   "#
 }
 
-function ChatGPTImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function OpenAIChatGPTImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -45,7 +45,7 @@ function ChatGPTImportDiscovery(analysis_query: string, memory_context: string, 
   "#
 }
 
-function GeminiImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function GoogleGeminiImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -54,7 +54,7 @@ function GeminiImportDiscovery(analysis_query: string, memory_context: string, s
   "#
 }
 
-function VertexAIImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function GCPVertexAIImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -63,7 +63,7 @@ function VertexAIImportDiscovery(analysis_query: string, memory_context: string,
   "#
 }
 
-function AzureImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
+function AzureOpenAIImportDiscovery(analysis_query: string, memory_context: string, system_info: SystemInfo_CrossIndexing) -> CrossIndexingResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

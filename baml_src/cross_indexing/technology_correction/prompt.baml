@@ -94,7 +94,7 @@ template_string TechnologyCorrectionUserPrompt(unmatched_names: string, acceptab
     Analyze each unmatched technology name and map it to the most appropriate enum from the acceptable list. Return the corrections in the specified JSON format.
 "#
 
-function AwsTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+function AwsBedrockTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -104,7 +104,7 @@ function AwsTechnologyCorrection(unmatched_names: string, acceptable_enums: stri
   "#
 }
 
-function AnthropicTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+function AnthropicClaudeTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -114,7 +114,7 @@ function AnthropicTechnologyCorrection(unmatched_names: string, acceptable_enums
   "#
 }
 
-function ChatGPTTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+function OpenAIChatGPTTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -123,7 +123,7 @@ function ChatGPTTechnologyCorrection(unmatched_names: string, acceptable_enums: 
   "#
 }
 
-function GeminiTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+function GoogleGeminiTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -132,7 +132,7 @@ function GeminiTechnologyCorrection(unmatched_names: string, acceptable_enums: s
   "#
 }
 
-function VertexAITechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+function GCPVertexAITechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -141,7 +141,7 @@ function VertexAITechnologyCorrection(unmatched_names: string, acceptable_enums:
   "#
 }
 
-function AzureTechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
+function AzureOpenAITechnologyCorrection(unmatched_names: string, acceptable_enums: string) -> TechnologyCorrectionResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

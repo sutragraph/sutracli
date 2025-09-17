@@ -225,28 +225,46 @@ def setup_configuration():
                 "secret_access_key": "",
                 "region": "",
                 "model_id": "",
+                "max_tokens": "",
             },
             "anthropic": {
                 "api_key": "",
                 "model_id": "",
+                "max_tokens": "",
             },
             "google_ai": {
                 "api_key": "",
                 "model_id": "",
                 "base_url": "",
+                "max_tokens": "",
             },
             "vertex_ai": {
                 "location": "",
                 "model_id": "",
+                "max_tokens": "",
             },
             "azure_openai": {
                 "api_key": "",
                 "base_url": "",
                 "api_version": "",
+                "max_tokens": "",
             },
             "openai": {
                 "api_key": "",
                 "model_id": "",
+                "max_tokens": "",
+            },
+            "azure_aifoundry": {
+                "api_key": "",
+                "base_url": "",
+                "max_tokens": "",
+            },
+            "openrouter": {
+                "api_key": "",
+                "model_id": "",
+                "http_referer": "",
+                "x_title": "",
+                "max_tokens": "",
             },
             "superllm": {},
         },
@@ -358,49 +376,6 @@ def _check_vertex_ai_auth():
 
     except Exception:
         # Silent fail for authentication check
-        pass
-
-
-def setup_baml_environment():
-    """Set up BAML environment variables from config at module level."""
-    try:
-        # Import here to avoid circular imports
-        from src.config.settings import get_config, get_env_var_mapping
-
-        # Use the config function to get loaded config
-        config = get_config()
-
-        # Get environment variable mapping from centralized config
-        ENV_VAR_MAPPING = get_env_var_mapping()
-
-        # Check if config has llm attribute
-        if not hasattr(config, "llm") or not config.llm:
-            return
-
-        provider = config.llm.provider.lower()
-        if provider not in ENV_VAR_MAPPING:
-            return
-
-        # Get provider-specific config
-        provider_config = getattr(config.llm, provider, None)
-        if not provider_config:
-            return
-
-        # Set environment variables
-        env_mapping = ENV_VAR_MAPPING[provider]
-        for env_var, config_key in env_mapping.items():
-            value = getattr(provider_config, config_key, None)
-            if value:
-                os.environ[env_var] = str(value)
-
-        # Check Vertex AI authentication if using vertex_ai provider
-        if provider == "vertex_ai":
-            _check_vertex_ai_auth()
-
-        os.environ["BAML_LOG"] = "OFF"
-
-    except Exception as e:
-        # Silent fail - don't break CLI if environment setup fails
         pass
 
 

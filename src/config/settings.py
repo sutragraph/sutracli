@@ -9,57 +9,39 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-# Centralized provider mappings for easy maintenance
-PROVIDER_MAPPING = {
-    "aws_bedrock": "Aws",
-    "openai": "ChatGPT",
-    "anthropic": "Anthropic",
-    "google_ai": "Gemini",
-    "vertex_ai": "VertexAI",
-    "azure_openai": "Azure",
-    "azure_aifoundry": "Azure AI Foundry",
-    "openrouter": "OpenRouter",
-}
-
-# Environment variable mapping for each provider
-ENV_VAR_MAPPING = {
+# BAML provider mapping for dynamic client creation
+BAML_PROVIDER_MAPPING = {
     "aws_bedrock": {
-        "AWS_ACCESS_KEY_ID": "access_key_id",
-        "AWS_SECRET_ACCESS_KEY": "secret_access_key",
-        "AWS_MODEL_ID": "model_id",
-        "AWS_REGION": "region",
-    },
-    "openai": {
-        "OPENAI_API_KEY": "api_key",
-        "OPENAI_MODEL_ID": "model_id",
+        "provider": "aws-bedrock",
+        "client_name": "AwsBedrock",
     },
     "anthropic": {
-        "ANTHROPIC_API_KEY": "api_key",
-        "ANTHROPIC_MODEL_ID": "model_id",
+        "provider": "anthropic",
+        "client_name": "AnthropicClaude",
+    },
+    "openai": {
+        "provider": "openai",
+        "client_name": "OpenAIChatGPT",
     },
     "google_ai": {
-        "GEMINI_API_KEY": "api_key",
-        "GEMINI_MODEL_ID": "model_id",
-        "GEMINI_BASE_URL": "base_url",
+        "provider": "google-ai",
+        "client_name": "GoogleGemini",
     },
     "vertex_ai": {
-        "GCP_LOCATION": "location",
-        "GCP_MODEL_ID": "model_id",
+        "provider": "vertex-ai",
+        "client_name": "GCPVertexAI",
     },
     "azure_openai": {
-        "AZURE_OPENAI_API_KEY": "api_key",
-        "AZURE_BASE_URL": "base_url",
-        "AZURE_API_VERSION": "api_version",
+        "provider": "azure-openai",
+        "client_name": "AzureOpenAI",
     },
     "azure_aifoundry": {
-        "AZURE_AIFOUNDRY_BASE_URL": "base_url",
-        "AZURE_AIFOUNDRY_API_KEY": "api_key",
+        "provider": "openai-generic",
+        "client_name": "AzureAIFoundry",
     },
     "openrouter": {
-        "OPENROUTER_API_KEY": "api_key",
-        "OPENROUTER_MODEL_ID": "model_id",
-        "OPENROUTER_HTTP_REFERER": "http_referer",  # Optional
-        "OPENROUTER_X_TITLE": "x_title",  # Optional
+        "provider": "openai-generic",
+        "client_name": "OpenRouter",
     },
 }
 
@@ -132,6 +114,7 @@ class AWSConfig:
     access_key_id: str
     secret_access_key: str
     region: str
+    max_tokens: str  # Maximum output tokens per response
 
 
 @dataclass
@@ -140,6 +123,7 @@ class AnthropicConfig:
 
     api_key: str
     model_id: str
+    max_tokens: str  # Maximum output tokens per response
 
 
 @dataclass
@@ -148,23 +132,26 @@ class OpenAIConfig:
 
     api_key: str
     model_id: str
+    max_tokens: str  # Maximum output tokens per response
 
 
 @dataclass
 class GeminiConfig:
-    """Gemini configuration."""
+    """Google Gemini configuration."""
 
     api_key: str
     model_id: str
+    max_tokens: str  # Maximum output tokens per response
     base_url: str = ""  # Optional base URL
 
 
 @dataclass
 class VertexAIConfig:
-    """Vertex AI configuration."""
+    """Google Vertex AI configuration."""
 
     location: str
     model_id: str
+    max_tokens: str  # Maximum output tokens per response
 
 
 @dataclass
@@ -174,6 +161,7 @@ class AzureConfig:
     api_key: str
     base_url: str
     api_version: str
+    max_tokens: str  # Maximum output tokens per response
 
 
 @dataclass
@@ -182,6 +170,7 @@ class AzureAIFoundryConfig:
 
     api_key: str
     base_url: str
+    max_tokens: str  # Maximum output tokens per response
 
 
 @dataclass
@@ -190,6 +179,7 @@ class OpenRouterConfig:
 
     api_key: str
     model_id: str
+    max_tokens: str  # Maximum output tokens per response
     http_referer: str = ""  # Optional
     x_title: str = ""  # Optional
 
@@ -199,6 +189,7 @@ class SuperLLMConfig:
     """SuperLLM configuration."""
 
     api_endpoint: str
+    max_tokens: str  # Maximum output tokens per response
     firebase_token: str = ""  # Optional - will use token manager if empty
     default_model: str = "gpt-3.5-turbo"
     default_provider: str = "openai"
@@ -466,14 +457,9 @@ class _ConfigProxy:
 config = _ConfigProxy()
 
 
-def get_provider_mapping() -> dict:
-    """Get the provider mapping dictionary."""
-    return PROVIDER_MAPPING
-
-
-def get_env_var_mapping() -> dict:
-    """Get the environment variable mapping dictionary."""
-    return ENV_VAR_MAPPING
+def get_baml_provider_mapping() -> dict:
+    """Get the BAML provider mapping dictionary for dynamic client creation."""
+    return BAML_PROVIDER_MAPPING
 
 
 def get_provider_info() -> list:
@@ -483,9 +469,9 @@ def get_provider_info() -> list:
 
 def get_available_providers() -> list:
     """Get list of available provider keys."""
-    return list(PROVIDER_MAPPING.keys())
+    return list(BAML_PROVIDER_MAPPING.keys())
 
 
 def is_provider_supported(provider: str) -> bool:
     """Check if a provider is supported."""
-    return provider.lower() in PROVIDER_MAPPING
+    return provider.lower() in BAML_PROVIDER_MAPPING

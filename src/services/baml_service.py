@@ -7,13 +7,13 @@ provider management, and proper error handling.
 
 import time
 
-from baml_py import Collector
+from baml_py import ClientRegistry, Collector
 from loguru import logger
 
 from config.settings import (
     get_available_providers,
+    get_baml_provider_mapping,
     get_config,
-    get_provider_mapping,
     is_provider_supported,
 )
 
@@ -37,6 +37,10 @@ class BAMLService:
 
         self._validate_provider()
 
+        # Create dynamic client registry instead of using static clients
+        self.client_registry = ClientRegistry()
+        self._setup_dynamic_client()
+
         from baml_client.sync_client import b as baml
 
         self.baml = baml
@@ -49,10 +53,161 @@ class BAMLService:
                 f"Provider '{self.provider}' not supported. Available providers: {available_providers}"
             )
 
+    def _setup_dynamic_client(self):
+        """Set up dynamic client based on current provider configuration."""
+        config_obj = get_config()
+        provider = self.provider
+
+        # Get provider config
+        provider_config = getattr(config_obj.llm, provider, None)
+        if not provider_config:
+            raise ValueError(f"No configuration found for provider: {provider}")
+
+        # Get BAML provider mapping from settings
+        baml_provider_mapping = get_baml_provider_mapping()
+        provider_info = baml_provider_mapping.get(provider)
+        if not provider_info:
+            raise ValueError(f"Unsupported provider for dynamic client: {provider}")
+
+        baml_provider = provider_info["provider"]
+        client_name = provider_info["client_name"]
+        options = self._build_client_options(provider, provider_config)
+
+        # Create the dynamic client
+        self.client_registry.add_llm_client(
+            name=client_name, provider=baml_provider, options=options
+        )
+
+        # Set as primary client
+        self.client_registry.set_primary(client_name)
+
+        # Check Vertex AI authentication if using vertex_ai provider
+        if provider == "vertex_ai":
+            self._check_vertex_ai_auth()
+
+    def _build_client_options(self, provider: str, provider_config):
+        """Build client options for the given provider."""
+        options = {}
+
+        if provider == "aws_bedrock":
+            options.update(
+                {
+                    "access_key_id": provider_config.access_key_id,
+                    "secret_access_key": provider_config.secret_access_key,
+                    "model": provider_config.model_id,
+                    "region": provider_config.region,
+                    "inference_configuration": {
+                        "temperature": 0.1,
+                        "max_tokens": int(provider_config.max_tokens),
+                    },
+                    "allowed_role_metadata": ["system", "user", "cache_control"],
+                }
+            )
+
+        elif provider == "anthropic":
+            options.update(
+                {
+                    "api_key": provider_config.api_key,
+                    "model": provider_config.model_id,
+                    "temperature": 0.1,
+                    "max_tokens": int(provider_config.max_tokens),
+                    "allowed_role_metadata": ["system", "user", "cache_control"],
+                    "headers": {"anthropic-beta": "prompt-caching-2024-07-31"},
+                }
+            )
+
+        elif provider == "openai":
+            options.update(
+                {
+                    "api_key": provider_config.api_key,
+                    "model": provider_config.model_id,
+                    "temperature": 0.1,
+                    "max_tokens": int(provider_config.max_tokens),
+                    "allowed_roles": ["system", "user"],
+                }
+            )
+
+        elif provider == "google_ai":
+            options.update(
+                {
+                    "api_key": provider_config.api_key,
+                    "model": provider_config.model_id,
+                    "max_tokens": int(provider_config.max_tokens),
+                    "allowed_roles": ["system", "user"],
+                }
+            )
+            if hasattr(provider_config, "base_url") and provider_config.base_url:
+                options["base_url"] = provider_config.base_url
+
+        elif provider == "vertex_ai":
+            options.update(
+                {
+                    "model": provider_config.model_id,
+                    "location": provider_config.location,
+                    "max_tokens": int(provider_config.max_tokens),
+                    "allowed_roles": ["system", "user"],
+                }
+            )
+
+        elif provider == "azure_openai":
+            options.update(
+                {
+                    "api_key": provider_config.api_key,
+                    "base_url": provider_config.base_url,
+                    "api_version": provider_config.api_version,
+                    "temperature": 0.1,
+                    "max_tokens": int(provider_config.max_tokens),
+                    "allowed_roles": ["system", "user"],
+                }
+            )
+
+        elif provider == "azure_aifoundry":
+            options.update(
+                {
+                    "base_url": provider_config.base_url,
+                    "api_key": provider_config.api_key,
+                    "max_tokens": int(provider_config.max_tokens),
+                    "allowed_roles": ["system", "user"],
+                }
+            )
+
+        elif provider == "openrouter":
+            options.update(
+                {
+                    "base_url": "https://openrouter.ai/api/v1",
+                    "api_key": provider_config.api_key,
+                    "model": provider_config.model_id,
+                    "max_tokens": int(provider_config.max_tokens),
+                    "allowed_roles": ["system", "user"],
+                }
+            )
+            headers = {}
+            if (
+                hasattr(provider_config, "http_referer")
+                and provider_config.http_referer
+            ):
+                headers["HTTP-Referer"] = provider_config.http_referer
+            if hasattr(provider_config, "x_title") and provider_config.x_title:
+                headers["X-Title"] = provider_config.x_title
+            if headers:
+                options["headers"] = headers
+
+        return options
+
+    def _check_vertex_ai_auth(self):
+        """Check Vertex AI authentication."""
+        try:
+            from cli.setup import _check_vertex_ai_auth
+
+            _check_vertex_ai_auth()
+        except ImportError:
+            # If setup module not available, skip check
+            pass
+
     def _get_full_function_name(self, base_function_name: str) -> str:
         """Get full BAML function name with provider prefix."""
-        provider_mapping = get_provider_mapping()
-        function_prefix = provider_mapping[self.provider]
+        baml_provider_mapping = get_baml_provider_mapping()
+        function_prefix = baml_provider_mapping[self.provider]["client_name"]
         return f"{function_prefix}{base_function_name}"
 
     def _get_baml_function(self, full_function_name: str):
@@ -62,7 +217,11 @@ class BAMLService:
         return getattr(self.baml, full_function_name)
 
     def call(
-        self, function_name: str, max_retries: int = 9, retry_delay: int = 30, **kwargs
+        self,
+        function_name: str,
+        max_retries: int = 9,
+        retry_delay: int = 30,
+        **kwargs,
     ):
         """
         Call a BAML function with retry mechanism and token tracking.
@@ -95,9 +254,13 @@ class BAMLService:
                     name=f"{full_function_name}-attempt-{attempt + 1}"
                 )
 
-                # Call BAML function with collector
+                # Call BAML function with collector and client registry
                 response = baml_function(
-                    **kwargs, baml_options={"collector": collector}
+                    **kwargs,
+                    baml_options={
+                        "collector": collector,
+                        "client_registry": self.client_registry,
+                    },
                 )
 
                 # Debug log raw response and user prompts if collector has the data
@@ -248,8 +411,8 @@ class BAMLService:
         Returns:
             List of available function names (without prefix)
         """
-        provider_mapping = get_provider_mapping()
-        prefix = provider_mapping[self.provider]
+        baml_provider_mapping = get_baml_provider_mapping()
+        prefix = baml_provider_mapping[self.provider]["client_name"]
         all_functions = [attr for attr in dir(self.baml) if not attr.startswith("_")]
 
         # Filter functions that start with our provider prefix
@@ -267,9 +430,9 @@ class BAMLService:
         Returns:
             Dictionary with provider information
         """
-        provider_mapping = get_provider_mapping()
+        baml_provider_mapping = get_baml_provider_mapping()
         return {
             "provider": self.provider,
-            "prefix": provider_mapping[self.provider],
+            "prefix": baml_provider_mapping[self.provider]["client_name"],
             "available_providers": get_available_providers(),
         }

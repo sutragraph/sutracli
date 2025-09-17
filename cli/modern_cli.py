@@ -206,31 +206,52 @@ class ModernSutraKit:
             "Model ID", default="us.anthropic.claude-sonnet-4-20250514-v1:0"
         )
 
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim("Common values: Claude Sonnet 4: 64000, Claude Haiku: 64000")
+        max_tokens = Prompt.ask("Max tokens")
+
         return {
             "access_key_id": access_key,
             "secret_access_key": secret_key,
             "region": region,
             "model_id": model_id,
+            "max_tokens": max_tokens,
         }
 
     def _get_anthropic_config(self) -> Dict[str, Any]:
         """Get Anthropic configuration."""
         console.info("Anthropic Configuration")
         api_key = prompt("Anthropic API Key: ", is_password=True)
-        model_id = Prompt.ask("Model ID", default="claude-3-5-sonnet-20241022")
+        model_id = Prompt.ask("Model ID", default="claude-4-sonnet-20250514")
 
-        return {"api_key": api_key, "model_id": model_id}
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim("Common values: Claude Sonnet 4: 64000, Claude Haiku: 64000")
+        max_tokens = Prompt.ask("Max tokens")
+
+        return {"api_key": api_key, "model_id": model_id, "max_tokens": max_tokens}
 
     def _get_gemini_config(self) -> Dict[str, Any]:
         """Get Google Gemini configuration."""
         console.info("Google Gemini Configuration")
         api_key = prompt("Gemini API Key: ", is_password=True)
-        model_id = Prompt.ask("Model ID", default="gemini-1.5-pro")
+        model_id = Prompt.ask("Model ID", default="gemini-2.5-pro")
         base_url = Prompt.ask(
             "Base URL", default="https://generativelanguage.googleapis.com/v1beta"
         )
 
-        return {"api_key": api_key, "model_id": model_id, "base_url": base_url}
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim("Common values: Gemini 2.5 Pro: 64000, Gemini 1.5 Flash: 64000")
+        max_tokens = Prompt.ask("Max tokens")
+
+        return {
+            "api_key": api_key,
+            "model_id": model_id,
+            "base_url": base_url,
+            "max_tokens": max_tokens,
+        }
 
     def _get_vertex_ai_config(self) -> Dict[str, Any]:
         """Get Google Cloud Vertex AI configuration with gcloud authentication."""
@@ -260,7 +281,12 @@ class ModernSutraKit:
         location = Prompt.ask("Location (region)", default="global")
         model_id = Prompt.ask("Model ID", default="gemini-2.5-pro")
 
-        return {"location": location, "model_id": model_id}
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim("Common values: Gemini 2.5 Pro: 64000, Gemini 2.5 Flash: 64000")
+        max_tokens = Prompt.ask("Max tokens")
+
+        return {"location": location, "model_id": model_id, "max_tokens": max_tokens}
 
     def _setup_gcp_auth(self):
         """Guide user through GCP authentication setup with retry option."""
@@ -348,9 +374,14 @@ class ModernSutraKit:
         """Get OpenAI configuration."""
         console.info("OpenAI Configuration")
         api_key = prompt("OpenAI API Key: ", is_password=True)
-        model_id = Prompt.ask("Model ID", default="gpt-4o")
+        model_id = Prompt.ask("Model ID", default="gpt-4.1")
 
-        return {"api_key": api_key, "model_id": model_id}
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim("Common values: GPT-4.1: 32768, GPT-5: 128000, GPT-4o: 64000")
+        max_tokens = Prompt.ask("Max tokens")
+
+        return {"api_key": api_key, "model_id": model_id, "max_tokens": max_tokens}
 
     def _get_azure_config(self) -> Dict[str, Any]:
         """Get Azure OpenAI configuration."""
@@ -369,10 +400,16 @@ class ModernSutraKit:
         base_url = Prompt.ask("Base URL")
         api_version = Prompt.ask("API Version", default="2025-01-01-preview")
 
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim("Common values: GPT-4.1: 32768, GPT-5: 128000, GPT-4o: 64000")
+        max_tokens = Prompt.ask("Max tokens")
+
         return {
             "api_key": api_key,
             "base_url": base_url,
             "api_version": api_version,
+            "max_tokens": max_tokens,
         }
 
     def _get_azure_aifoundry_config(self) -> Dict[str, Any]:
@@ -391,9 +428,17 @@ class ModernSutraKit:
 
         base_url = Prompt.ask("Base URL")
 
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim(
+            "Common values: GPT-4.1: 32768, GPT-5: 128000, Claude Sonnet 4: 64000 check model specs"
+        )
+        max_tokens = Prompt.ask("Max tokens")
+
         return {
             "api_key": api_key,
             "base_url": base_url,
+            "max_tokens": max_tokens,
         }
 
     def _get_openrouter_config(self) -> Dict[str, Any]:
@@ -407,9 +452,17 @@ class ModernSutraKit:
         http_referer = Prompt.ask("HTTP-Referer (your site URL)", default="")
         x_title = Prompt.ask("X-Title (your app title)", default="")
 
+        console.print()
+        console.info("Maximum output tokens per response for your model")
+        console.dim(
+            "Common values: GPT-4.1: 32768, GPT-5: 128000, Claude Sonnet 4: 64000, Gemini 2.5 Pro: 64000 check model specs"
+        )
+        max_tokens = Prompt.ask("Max tokens")
+
         config = {
             "api_key": api_key,
             "model_id": model_id,
+            "max_tokens": max_tokens,
         }
 
         # Only add optional headers if they have values
@@ -476,9 +529,14 @@ class ModernSutraKit:
 
         # Reload the configuration to update the in-memory instance
         reload_config()
-        from cli.setup import setup_baml_environment
+        # Check Vertex AI authentication if using vertex_ai provider
+        from src.config.settings import get_config
 
-        setup_baml_environment()
+        config_obj = get_config()
+        if config_obj.llm.provider.lower() == "vertex_ai":
+            from cli.setup import _check_vertex_ai_auth
+
+            _check_vertex_ai_auth()
 
     def select_agent(self) -> Agent:
         """Interactive agent selection with arrow keys."""

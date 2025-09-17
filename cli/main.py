@@ -8,10 +8,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from cli.setup import setup_baml_environment
 from src.utils.console import console
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["BAML_LOG"] = "OFF"
 
 root_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(root_dir))
@@ -35,8 +35,6 @@ def main():
         handle_web_search_command,
     )
     from src.utils.logging import setup_logging
-
-    setup_baml_environment()
 
     # Check if only --log-level is passed (for modern CLI)
     if len(sys.argv) == 1 or (len(sys.argv) == 3 and sys.argv[1] == "--log-level"):

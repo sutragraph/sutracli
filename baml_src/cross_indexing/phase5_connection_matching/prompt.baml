@@ -209,7 +209,7 @@ template_string ConnectionMatchingUserPrompt(incoming_connections: string, outgo
     Find all connection matches and return as JSON.
 "#
 
-function AwsConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+function AwsBedrockConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -218,7 +218,7 @@ function AwsConnectionMatching(incoming_connections: string, outgoing_connection
   "#
 }
 
-function AnthropicConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+function AnthropicClaudeConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
@@ -227,7 +227,7 @@ function AnthropicConnectionMatching(incoming_connections: string, outgoing_conn
   "#
 }
 
-function ChatGPTConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+function OpenAIChatGPTConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
@@ -236,7 +236,7 @@ function ChatGPTConnectionMatching(incoming_connections: string, outgoing_connec
   "#
 }
 
-function GeminiConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+function GoogleGeminiConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
@@ -245,7 +245,7 @@ function GeminiConnectionMatching(incoming_connections: string, outgoing_connect
   "#
 }
 
-function VertexAIConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+function GCPVertexAIConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
@@ -254,7 +254,7 @@ function VertexAIConnectionMatching(incoming_connections: string, outgoing_conne
   "#
 }
 
-function AzureConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
+function AzureOpenAIConnectionMatching(incoming_connections: string, outgoing_connections: string) -> ConnectionMatchingResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}

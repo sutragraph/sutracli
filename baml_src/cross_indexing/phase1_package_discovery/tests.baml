@@ -1,5 +1,5 @@
-test TestAwsPackageDiscovery {
-  functions [AwsPackageDiscovery]
+test TestAwsBedrockPackageDiscovery {
+  functions [AwsBedrockPackageDiscovery]
   args {
     analysis_query "Analyze the Python packages and dependencies in this project to understand the core functionality and technology stack"
     memory_context "Starting package discovery analysis for a Python CLI project"
@@ -10,8 +10,8 @@ test TestAwsPackageDiscovery {
   }
 }
 
-test TestAnthropicPackageDiscovery {
-  functions [AnthropicPackageDiscovery]
+test TestAnthropicClaudePackageDiscovery {
+  functions [AnthropicClaudePackageDiscovery]
   args {
     analysis_query "Analyze the Python packages and dependencies in this project to understand the core functionality and technology stack"
     memory_context "Starting package discovery analysis for a Python CLI project"
@@ -22,8 +22,8 @@ test TestAnthropicPackageDiscovery {
   }
 }
 
-test TestAzurePackageDiscovery {
-  functions [AzurePackageDiscovery]
+test TestAzureOpenAIPackageDiscovery {
+  functions [AzureOpenAIPackageDiscovery]
   args {
     analysis_query "Analyze the Python packages and dependencies in this project to understand the core functionality and technology stack"
     memory_context "Starting package discovery analysis for a Python CLI project"

@@ -8,6 +8,7 @@ client<llm> AwsBedrock {
     region env.AWS_REGION
     inference_configuration {
       temperature 0.1
+      max_tokens env.AWS_MAX_TOKENS
     }
     allowed_role_metadata ["system", "user", "cache_control"]
   }
@@ -24,6 +25,7 @@ client<llm> AnthropicClaude {
     headers {
       "anthropic-beta" "prompt-caching-2024-07-31"
     }
+    max_tokens env.ANTHROPIC_MAX_TOKENS
   }
 }
 
@@ -35,6 +37,7 @@ client<llm> OpenAIChatGPT {
     model env.OPENAI_MODEL_ID
     temperature 0.1
     allowed_roles ["system", "user"]
+    max_tokens env.OPENAI_MAX_TOKENS
   }
 }
 
@@ -46,6 +49,7 @@ client<llm> GoogleGemini {
     model env.GEMINI_MODEL_ID
     base_url env.GEMINI_BASE_URL
     allowed_roles ["system", "user"]
+    max_tokens env.GEMINI_MAX_TOKENS
   }
 }
 
@@ -56,6 +60,7 @@ client<llm> GCPVertexAI {
     model env.GCP_MODEL_ID
     location env.GCP_LOCATION
     allowed_roles ["system", "user"]
+    max_tokens env.GCP_MAX_TOKENS
   }
 }
 
@@ -68,6 +73,7 @@ client<llm> AzureOpenAI {
     api_version env.AZURE_API_VERSION
     temperature 0.1
     allowed_roles ["system", "user"]
+    max_tokens env.AZURE_MAX_TOKENS
   }
 }
 
@@ -78,6 +84,7 @@ client<llm> AzureAIFoundry {
     base_url env.AZURE_AIFOUNDRY_BASE_URL
     api_key env.AZURE_AIFOUNDRY_API_KEY
     allowed_roles ["system", "user"]
+    max_tokens env.AZURE_AIFOUNDRY_MAX_TOKENS
   }
 }
 
@@ -93,5 +100,6 @@ client<llm> OpenRouter {
       X-Title env.OPENROUTER_X_TITLE // Optional
     }
     allowed_roles ["system", "user"]
+    max_tokens env.OPENROUTER_MAX_TOKENS
   }
 }
