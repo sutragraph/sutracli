@@ -217,7 +217,7 @@ If you want to contribute to the project or modify the BAML configurations, foll
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - Git
 - pip
 
