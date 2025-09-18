@@ -13,7 +13,7 @@ An **intelligent codebase analysis** and **knowledge management tool** that prov
 
 ## ⚡️ Quick Start
 
-First, [download][python_download_url] and install **Python**. Version `3.8` or
+First, [download][python_download_url] and install **Python**. Version `3.11` or
 higher is required.
 
 Installation is done by using the [`pip install`][python_install_url] command:
@@ -217,7 +217,7 @@ If you want to contribute to the project or modify the BAML configurations, foll
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - Git
 - pip
 
@@ -325,7 +325,7 @@ Together, we can make this project **better** every day! 😘
 
 [python_download_url]: https://www.python.org/downloads/
 [python_install_url]: https://pip.pypa.io/en/stable/installation/
-[python_version_img]: https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python
+[python_version_img]: https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python
 [python_report_img]: https://img.shields.io/badge/Python_report-A%2B-success?style=for-the-badge&logo=none
 [python_report_url]: https://github.com/sutragraph/sutracli
 [python_code_coverage_img]: https://img.shields.io/badge/code_coverage-90%25-success?style=for-the-badge&logo=none
