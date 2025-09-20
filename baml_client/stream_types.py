@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (48)
+# Generated classes (50)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -63,6 +63,13 @@ class CodeStorage(BaseModel):
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
     description: typing.Optional[str] = None
+    is_traced: typing.Optional[bool] = None
+    root_element: typing.Optional["TracedElement"] = None
+    needs_tracing: typing.Optional[typing.List["UntracedElement"]] = None
+    traced_element: typing.Optional["TracedElement"] = None
+    source_element_id: typing.Optional[str] = None
+    element_path: typing.Optional[typing.List[str]] = None
+    call_chain_summary: typing.Optional[str] = None
 
 class CodeStorage_CrossIndexing(BaseModel):
     action: typing.Optional[types.CodeStorageAction_CrossIndexing] = None
@@ -280,6 +287,25 @@ class TechnologyCorrection(BaseModel):
 
 class TechnologyCorrectionResponse(BaseModel):
     corrections: typing.Optional[typing.List["TechnologyCorrection"]] = None
+
+class TracedElement(BaseModel):
+    id: typing.Optional[str] = None
+    name: typing.Optional[str] = None
+    element_type: typing.Optional[types.ElementType] = None
+    start_line: typing.Optional[int] = None
+    end_line: typing.Optional[int] = None
+    signature: typing.Optional[str] = None
+    content: typing.Optional[str] = None
+    key_code_lines: typing.Optional[typing.List[str]] = None
+    accessed_elements: typing.Optional[typing.List["TracedElement"]] = None
+    is_fully_traced: typing.Optional[bool] = None
+
+class UntracedElement(BaseModel):
+    id: typing.Optional[str] = None
+    name: typing.Optional[str] = None
+    element_type: typing.Optional[types.ElementType] = None
+    reason: typing.Optional[str] = None
+    accessed_from: typing.Optional[str] = None
 
 # #########################################################################
 # Generated type aliases (2)

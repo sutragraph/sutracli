@@ -160,6 +160,12 @@ type_map = {
     "types.TechnologyCorrectionResponse": types.TechnologyCorrectionResponse,
     "stream_types.TechnologyCorrectionResponse": stream_types.TechnologyCorrectionResponse,
 
+    "types.TracedElement": types.TracedElement,
+    "stream_types.TracedElement": stream_types.TracedElement,
+
+    "types.UntracedElement": types.UntracedElement,
+    "stream_types.UntracedElement": stream_types.UntracedElement,
+
 
     "types.Agent": types.Agent,
 
@@ -168,6 +174,8 @@ type_map = {
     "types.CodeStorageAction_CrossIndexing": types.CodeStorageAction_CrossIndexing,
 
     "types.ContractRole": types.ContractRole,
+
+    "types.ElementType": types.ElementType,
 
     "types.FileOperation": types.FileOperation,
 

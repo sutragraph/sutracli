@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from baml_client.types import TracedElement, UntracedElement
+
 from .code_fetcher import CodeFetcher
 from .models import CodeSnippet, FileChange, HistoryEntry, Task, TaskStatus
 
@@ -25,7 +27,8 @@ class MemoryOperations:
         self.file_changes: List[FileChange] = []
         self.task_id_counter = 0
         self.code_id_counter = 0
-        self.max_history_entries = 40
+
+        self.max_history_entries = 30
         self.code_fetcher = CodeFetcher()
         self.feedback_section: Optional[str] = None  # Store feedback section
 
@@ -38,6 +41,26 @@ class MemoryOperations:
         """Generate next unique code ID"""
         self.code_id_counter += 1
         return str(self.code_id_counter)
+
+    def generate_element_id_from_signature(
+        self,
+        name: str,
+        element_type: str,
+        file_path: str,
+        start_line: int = 0,
+        end_line: int = 0,
+    ) -> str:
+        """Generate deterministic ID from element signature to prevent duplicates"""
+        import hashlib
+
+        # Create signature string
+        signature = f"{file_path}:{start_line}-{end_line}:{element_type}:{name}"
+
+        # Generate hash
+        hash_obj = hashlib.md5(signature.encode())
+        hash_hex = hash_obj.hexdigest()[:6]  # Use first 6 chars
+
+        return f"elem_{hash_hex}"
 
     # Task Management Methods
     def add_task(self, task_id: str, description: str, status: TaskStatus) -> bool:
@@ -168,9 +191,13 @@ class MemoryOperations:
         start_line: int,
         end_line: int,
         description: str,
+        is_traced: bool = False,
+        root_element: Optional[TracedElement] = None,
+        needs_tracing: Optional[List[UntracedElement]] = None,
+        call_chain_summary: Optional[str] = None,
     ) -> bool:
         """
-        Add code snippet to memory.
+        Add code snippet to memory with optional trace chain information.
 
         Args:
             code_id: Unique code identifier (ignored, counter+1 used instead)
@@ -178,6 +205,10 @@ class MemoryOperations:
             start_line: Starting line number
             end_line: Ending line number
             description: Description of the code snippet
+            is_traced: Whether this code snippet has been fully traced
+            root_element: Hierarchical tree of traced elements starting from the main element within this snippet
+            needs_tracing: List of code elements that still need trace chain analysis
+            call_chain_summary: High-level summary of complete trace chains
 
         Returns:
             bool: True if code snippet was added successfully
@@ -192,6 +223,32 @@ class MemoryOperations:
                 file_path, start_line, end_line
             )
 
+            # Auto-generate IDs for needs_tracing elements if missing
+            processed_needs_tracing = []
+            if needs_tracing:
+                for ute in needs_tracing:
+                    if not ute.id:
+                        ute.id = self.generate_element_id_from_signature(
+                            ute.name,
+                            ute.element_type,
+                            file_path,
+                            0,  # UntracedElements don't have line numbers
+                            0,
+                        )
+                    processed_needs_tracing.append(ute)
+
+            # Auto-generate ID for root_element if missing
+            if root_element and not root_element.id:
+                root_element.id = self.generate_element_id_from_signature(
+                    root_element.name,
+                    root_element.element_type,
+                    file_path,
+                    getattr(root_element, "start_line", 0),
+                    getattr(root_element, "end_line", 0),
+                )
+                # Recursively generate IDs for all child elements
+                self._generate_ids_for_hierarchy(root_element, file_path)
+
             # Create and store the code snippet with counter ID
             self.code_snippets[actual_code_id] = CodeSnippet(
                 id=actual_code_id,
@@ -200,6 +257,10 @@ class MemoryOperations:
                 end_line=end_line,
                 description=description,
                 content=code_content,
+                is_traced=is_traced,
+                root_element=root_element,
+                needs_tracing=processed_needs_tracing,
+                call_chain_summary=call_chain_summary,
             )
 
             logger.debug(
@@ -465,3 +526,20 @@ class MemoryOperations:
         self.code_id_counter = 0
         self.feedback_section = None
         return True
+
+    def _generate_ids_for_hierarchy(
+        self, element: TracedElement, file_path: str
+    ) -> None:
+        """Recursively generate IDs for all elements in hierarchy if missing"""
+        if not element.id:
+            element.id = self.generate_element_id_from_signature(
+                element.name,
+                element.element_type,
+                file_path,
+                getattr(element, "start_line", 0),
+                getattr(element, "end_line", 0),
+            )
+
+        if hasattr(element, "accessed_elements") and element.accessed_elements:
+            for child in element.accessed_elements:
+                self._generate_ids_for_hierarchy(child, file_path)

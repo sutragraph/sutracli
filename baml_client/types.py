@@ -37,7 +37,7 @@ def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
 def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
 # #########################################################################
-# Generated enums (12)
+# Generated enums (13)
 # #########################################################################
 
 class Agent(str, Enum):
@@ -46,6 +46,10 @@ class Agent(str, Enum):
 
 class CodeStorageAction(str, Enum):
     Add = "Add"
+    UpdateTracingStatus = "UpdateTracingStatus"
+    MoveToTraced = "MoveToTraced"
+    AddToNeedsTracing = "AddToNeedsTracing"
+    UpdateCallChainSummary = "UpdateCallChainSummary"
 
 class CodeStorageAction_CrossIndexing(str, Enum):
     Add = "Add"
@@ -54,6 +58,14 @@ class CodeStorageAction_CrossIndexing(str, Enum):
 class ContractRole(str, Enum):
     Provider = "Provider"
     Consumer = "Consumer"
+
+class ElementType(str, Enum):
+    FUNCTION = "FUNCTION"
+    PROPERTY = "PROPERTY"
+    VARIABLE = "VARIABLE"
+    ATTRIBUTE = "ATTRIBUTE"
+    METHOD = "METHOD"
+    CLASS = "CLASS"
 
 class FileOperation(str, Enum):
     Create = "Create"
@@ -103,7 +115,7 @@ class ToolName(str, Enum):
     Completion = "Completion"
 
 # #########################################################################
-# Generated classes (48)
+# Generated classes (50)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -139,10 +151,17 @@ class CodeManagerResponse(BaseModel):
 class CodeStorage(BaseModel):
     action: CodeStorageAction
     id: str
-    file: str
-    start_line: int
-    end_line: int
-    description: str
+    file: typing.Optional[str] = None
+    start_line: typing.Optional[int] = None
+    end_line: typing.Optional[int] = None
+    description: typing.Optional[str] = None
+    is_traced: typing.Optional[bool] = None
+    root_element: typing.Optional["TracedElement"] = None
+    needs_tracing: typing.Optional[typing.List["UntracedElement"]] = None
+    traced_element: typing.Optional["TracedElement"] = None
+    source_element_id: typing.Optional[str] = None
+    element_path: typing.Optional[typing.List[str]] = None
+    call_chain_summary: typing.Optional[str] = None
 
 class CodeStorage_CrossIndexing(BaseModel):
     action: CodeStorageAction_CrossIndexing
@@ -360,6 +379,25 @@ class TechnologyCorrection(BaseModel):
 
 class TechnologyCorrectionResponse(BaseModel):
     corrections: typing.Optional[typing.List["TechnologyCorrection"]] = None
+
+class TracedElement(BaseModel):
+    id: typing.Optional[str] = None
+    name: str
+    element_type: ElementType
+    start_line: int
+    end_line: int
+    signature: typing.Optional[str] = None
+    content: typing.Optional[str] = None
+    key_code_lines: typing.Optional[typing.List[str]] = None
+    accessed_elements: typing.Optional[typing.List["TracedElement"]] = None
+    is_fully_traced: typing.Optional[bool] = None
+
+class UntracedElement(BaseModel):
+    id: typing.Optional[str] = None
+    name: str
+    element_type: ElementType
+    reason: typing.Optional[str] = None
+    accessed_from: typing.Optional[str] = None
 
 # #########################################################################
 # Generated type aliases (2)
