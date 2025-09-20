@@ -49,7 +49,10 @@ client<llm> GoogleGemini {
     model env.GEMINI_MODEL_ID
     base_url env.GEMINI_BASE_URL
     allowed_roles ["system", "user"]
-    max_tokens env.GEMINI_MAX_TOKENS
+    generationConfig {
+      maxOutputTokens env.GEMINI_MAX_TOKENS
+      temperature 0.1
+    }
   }
 }
 
@@ -60,7 +63,10 @@ client<llm> GCPVertexAI {
     model env.GCP_MODEL_ID
     location env.GCP_LOCATION
     allowed_roles ["system", "user"]
-    max_tokens env.GCP_MAX_TOKENS
+    generationConfig {
+      maxOutputTokens env.GEMINI_MAX_TOKENS
+      temperature 0.1
+    }
   }
 }
 

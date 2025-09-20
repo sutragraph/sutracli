@@ -132,8 +132,11 @@ class BAMLService:
                 {
                     "api_key": provider_config.api_key,
                     "model": provider_config.model_id,
-                    "max_tokens": int(provider_config.max_tokens),
                     "allowed_roles": ["system", "user"],
+                    "generationConfig": {
+                        "maxOutputTokens": int(provider_config.max_tokens),
+                        "temperature": 0.1,
+                    },
                 }
             )
             if hasattr(provider_config, "base_url") and provider_config.base_url:
@@ -144,8 +147,11 @@ class BAMLService:
                 {
                     "model": provider_config.model_id,
                     "location": provider_config.location,
-                    "max_tokens": int(provider_config.max_tokens),
                     "allowed_roles": ["system", "user"],
+                    "generationConfig": {
+                        "maxOutputTokens": int(provider_config.max_tokens),
+                        "temperature": 0.1,
+                    },
                 }
             )
 
@@ -272,11 +278,12 @@ class BAMLService:
                         # Get the HTTP request body which contains the prompt
                         request_body = collector.last.calls[-1].http_request.body.json()
 
-                        # The messages array in the request body contains all prompts including user prompts
+                        logger.debug("-" * 50)
+                        logger.debug(f"📝 USER PROMPTS ({full_function_name}):")
+                        logger.debug("-" * 50)
+
                         if "messages" in request_body:
-                            logger.debug("-" * 50)
-                            logger.debug(f"📝 USER PROMPTS ({full_function_name}):")
-                            logger.debug("-" * 50)
+                            # OpenAI, Anthropic, etc. format
                             messages = request_body["messages"]
                             # Filter for just user messages
                             user_messages = [
@@ -286,6 +293,23 @@ class BAMLService:
                                 logger.debug(f"🔹 User prompt {i+1}:")
                                 logger.debug(f"   {msg['content'][0]['text']}")
                                 logger.debug("")
+                        elif "contents" in request_body:
+                            # Google AI (Gemini) format
+                            contents = request_body["contents"]
+                            # Filter for just user messages
+                            user_contents = [
+                                content
+                                for content in contents
+                                if content["role"] == "user"
+                            ]
+                            for i, content in enumerate(user_contents):
+                                logger.debug(f"🔹 User prompt {i+1}:")
+                                logger.debug(f"   {content['parts'][0]['text']}")
+                                logger.debug("")
+                        else:
+                            # Fallback: log entire request body
+                            logger.debug(f"{request_body}")
+                            logger.debug("")
 
                         # Log raw LLM response
                         if (
