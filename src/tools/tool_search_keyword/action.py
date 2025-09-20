@@ -474,7 +474,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             # Add project header if project_name is available
             data_with_header = grouped_output
             if project_name:
-                data_with_header = f"PROJECT: {project_name}\n{grouped_output}"
+                data_with_header = f"PROJECT: {project_name}" + "\n" + grouped_output
 
             # Check if content needs chunking
             chunking_threshold = SEARCH_CONFIG["chunking_threshold"]
@@ -519,7 +519,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             no_matches_msg = f"No matches found for '{keyword}' - try different keywords or check spelling."
             # Add project header for no matches case if needed
             if project_name:
-                no_matches_msg = f"PROJECT: {project_name}\n{no_matches_msg}"
+                no_matches_msg = f"PROJECT: {project_name}" + "\n" + no_matches_msg
 
             yield {
                 "type": "tool_use",

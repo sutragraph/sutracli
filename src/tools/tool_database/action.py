@@ -542,9 +542,7 @@ def execute_structured_database_query(
                     and not line_filtered
                 ):
                     # Single result with chunking needed - use delivery manager
-                    logger.debug(
-                        f"📦 Chunking required for {len(code_content.split('\n'))} lines"
-                    )
+                    logger.debug(f"📦 Chunking required for {code_lines} lines")
 
                     # Check if we have a pending delivery for this query
                     next_item = check_pending_delivery(
@@ -568,7 +566,7 @@ def execute_structured_database_query(
                     )
 
                     logger.debug(
-                        f"📦 Created {len(chunks)} chunks from {len(code_content.split('\n'))} lines"
+                        f"📦 Created {len(chunks)} chunks from {code_lines} lines"
                     )
 
                     for i, chunk in enumerate(chunks):
@@ -627,9 +625,7 @@ def execute_structured_database_query(
                     return
                 else:
                     # Single result with small code - no chunking needed
-                    logger.debug(
-                        f"📊 No chunking needed for {len(code_content.split('\n'))} lines"
-                    )
+                    logger.debug(f"📊 No chunking needed for {code_lines} lines")
 
                     beautified_result = beautify_node_result(
                         result_dict,
@@ -735,8 +731,6 @@ def execute_structured_database_query(
 
                     # Note: GET_CODE_FROM_FILE_LINES is no longer supported - removed legacy code
                     line_filtered = False
-
-                    code_lines = code_content.split("\n")
 
                     if (
                         should_chunk_content(
