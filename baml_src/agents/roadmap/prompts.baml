@@ -4,12 +4,11 @@ template_string RoadmapSystemPromptBase() #"
 {{ RoadmapWorkflow() }}
 {{ RoadmapStrategy() }}
 {{ SutraMemoryPrompt() }}
-{{ AttemptCompletionInstructions() }}
 "#
 
 template_string RoadmapUserPrompt(context: string) #"
 {{ _.role("user") }}
-Dynamic Context: {{ context }}
+{{ context }}
 "#
 
 template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"

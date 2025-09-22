@@ -161,12 +161,13 @@ class MemoryFormatter:
 
             # Add traced elements section - handle both old and new format
             content.append("  traced_elements:")
-            if code.root_element:
-                content.extend(
-                    self._format_element_hierarchy(
-                        code.root_element, code.file_path, indent="    "
+            if code.root_elements:
+                for root_element in code.root_elements:
+                    content.extend(
+                        self._format_element_hierarchy(
+                            root_element, code.file_path, indent="    "
+                        )
                     )
-                )
             else:
                 content.append("    [] (none)")
 
@@ -272,14 +273,6 @@ class MemoryFormatter:
             # Split content into lines and add proper indentation
             content_lines = element.content.split("\n")
             for line in content_lines:
-                lines.append(f"{indent}  {line}")
-            lines.append(f"{indent}  ```")
-        elif element.key_code_lines:
-            lines.append(f"{indent}  Key Code:")
-            lines.append(
-                f"{indent}  ```{file_path}#L{element.start_line}-{element.end_line}"
-            )
-            for line in element.key_code_lines:
                 lines.append(f"{indent}  {line}")
             lines.append(f"{indent}  ```")
         elif element.signature:

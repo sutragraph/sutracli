@@ -42,9 +42,9 @@ class CodeSnippet:
     description: str
     content: str = ""  # Actual code content (main snippet only)
     is_traced: bool = False  # Whether trace chains have been fully analyzed
-    root_element: Optional[
-        TracedElement
-    ] = None  # Hierarchical tree of traced elements starting from the main element
+    root_elements: List[TracedElement] = field(
+        default_factory=list
+    )  # List of root-level traced elements
     # Code elements that still need trace chain analysis
     needs_tracing: List[UntracedElement] = field(default_factory=list)
     # High-level summary of complete trace chains (e.g., "validation → obj.property → dataCheck → db_query")

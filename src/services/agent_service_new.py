@@ -140,7 +140,6 @@ class AgentService:
         print("🚀 Welcome to Sutra Agent!")
         print("   I'm here to help you with coding, debugging, and knowledge sharing.")
         print("\n💬 How can I help you? Type your questions or requests below.")
-        print("💡 Tip: Type 'exit', 'quit', 'bye', or 'goodbye' to end the session")
 
         # Get user input
         while True:
@@ -150,10 +149,6 @@ class AgentService:
 
                 if not user_input:
                     continue
-
-                if user_input.lower() in ["exit", "quit", "bye", "goodbye"]:
-                    print("\n👋 Goodbye! Session ended.")
-                    return None
 
                 # Got valid input, break out of input loop
                 break

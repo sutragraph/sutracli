@@ -296,7 +296,6 @@ class TracedElement(BaseModel):
     end_line: typing.Optional[int] = None
     signature: typing.Optional[str] = None
     content: typing.Optional[str] = None
-    key_code_lines: typing.Optional[typing.List[str]] = None
     accessed_elements: typing.Optional[typing.List["TracedElement"]] = None
     is_fully_traced: typing.Optional[bool] = None
 

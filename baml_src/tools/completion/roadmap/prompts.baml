@@ -4,7 +4,22 @@ template_string RoadmapCompletionToolTemplate() #"
 ### Description
 Output a strategic roadmap analysis with standalone, project-specific instructions for sub-agents to execute. Use this tool only after completing all tracing and audits in sutra_memory (e.g., needs_tracing empty, all bugs addressed).
 
-### Parameters
+### DECISION TREE: Evaluate Before Completion
+Think: 'Type? Traced? Analyzed?'
+
+1. For greeting/info: Use attempt_completion(result: 'Response').
+2. For impl/bug/change: Ensure full tracing first. If needs_tracing not empty or any is_traced=false, do not complete—retry with tool to resolve one need.
+
+Check all elements: needs_tracing=[] & traced=true for all? All internals traced? Multi-probs/projects all? Relevance: All needs_tracing query-relevant, <20 total?
+Pre-call: Memory audit – for each: needs_tracing empty & traced=true? All to finals, no partials, matches history (e.g., all bugs)? If no, think 'Incomplete tracing—resolve next need with tool' and continue iteration.
+
+Proceed only if yes: attempt_completion(projects:[...], summary:'...').
+Example: 'Found func → Trace internals first. If needs remain, do not complete.
+
+### Simple Parameters
+- result: - For greetings/info (string).
+
+### Roadmap Parameters
 - projects: REQUIRED - An array of objects, each representing a project roadmap with these fields:
   - project_name: Human-readable name (string).
   - project_path: Root directory path (string).
@@ -45,10 +60,19 @@ Output a strategic roadmap analysis with standalone, project-specific instructio
   }
 }
 
+or
+
+{
+  "tool_name": "attempt_completion",
+    "parameters": {
+      "result": "<anything you would like to respond with>"
+    }
+}
+
 ### Guidelines
 Think step-by-step: 'All traces complete in memory? Projects relevant? Use attempt_completion. Why: Finalize roadmaps.'
 Focus on relevant projects with verified impacts; provide atomic, detailed instructions for changes.
-Limit contracts to essential integrations; use role to define provider/consumer.
+Limit contracts to essential integrations; use role to define provider/consumer. If role is both list contract twice with different roles.
 Use placeholders for flexible values (e.g., {API_PREFIX}).
 Ensure examples show realistic success/error data.
 Keep roadmaps standalone for sub-agents; avoid testing instructions (out of scope).

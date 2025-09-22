@@ -3,7 +3,7 @@ template_string SutraMemoryPrompt() #"
 Use this persistent memory to store info for future iterations, including call chain tracing to finals. Prioritize useful data like task progress, code locations, findings, trace chains to operations (DB, file, net, mem, sys, logic). Store relevant search findings (e.g., code snippets, project connections) incrementally upon discovery to build context before analysis/tracing.
 
 ### Format Requirements
-Include 'add_history' every response: Bulleted key findings (e.g., bugs/symptoms traced, unresolved elements, progress). Structure as actionable log.
+Include 'add_history' every response: key findings, but only new progress, findings, or unresolved items (e.g., bugs/symptoms traced, unresolved elements, progress)—do not repeat or restate points; reference them if needed. Structure as actionable log with deltas only.
 
 Use 'tasks' for operations (one current only; move before new current):
 - Add pending: { "action": "add", "id": "1", "to_status": "pending", "description": "Analyze auth architecture" }
@@ -16,7 +16,7 @@ Use 'tasks' for operations (one current only; move before new current):
 Use 'code' for tracing: Incremental actions like add mains, move to traced, add needs. Limit needs <20; trace to finals (e.g., database: cursor.execute(), logic: if/calc). Example from search: { "action": "add", "id": "search_hit_1", "file": "auth.py", "description": "Relevant auth snippet", "needs_tracing": [...] }
 
 Store: Code signatures/locations, trace chains, file paths/lines, patterns/relationships, task dependencies, error patterns, configs, unresolved traces/bugs.
-Example: { "action": "add", "id": "1", "needs_tracing": [{ "name": "obj.value", "element_type": "property" }] }
+Example: { "action": "add", "id": "1", "needs_tracing": [{ "name": string, "element_type": "method", "reason": string }] }
 
 Practical Guidelines:
 Break complex work into specific tasks.
@@ -33,7 +33,7 @@ Integrate call chain tracing using the 'code' array in sutra_memory: Build exhau
 ### Actions (Incremental)
 Use 'add' for discovery + needs_tracing.
 Use 'add_to_needs_tracing' for new during trace.
-Use 'move_to_traced' from needs with source_element_id/element_path.
+Use 'move_to_traced' from needs_tracing with source_element_id/element_path.
 Use 'update_call_chain_summary' with [✓] progress.
 Use 'update_tracing_status' is_traced=true when needs empty (audit all first).
 
@@ -44,8 +44,10 @@ Use 'update_tracing_status' is_traced=true when needs empty (audit all first).
 
 ### Usage Clarifications
 'id': Code snippet ID (e.g., "1").
-'source_element_id': From needs_tracing (e.g., "elem_001") to move.
+'source_element_id': From needs_tracing (e.g., "elem_001") to move. the id of each element will be shown like [ID:elem_001].
 'element_path': Array for placement ([] root, ["elem_001"] child).
+
+Remember: IDs for the elements are auto-generated strings not numbers unlike the code snippet IDs.
 
 Correct Examples:
 // Root
@@ -58,16 +60,16 @@ Correct Examples:
 { "action": "move_to_traced", "id": "1", "source_element_id": "elem_003", "traced_element": { ... }, "element_path": ["elem_001", "elem_002"] }
 
 ### Workflow: Think 'Element? Internals? New? Update?'
-1. Discovery: Add mains is_traced=false; summary '→ elements [NEEDS TRACING]'. Elements: functions (calls), properties (access), variables (assign/use), attributes (ref), methods (ops).
-2. Recurse: Per need, tools → trace. Think 'Relevance to query? If low, resolve as final (direct_logic). Process one/iter; cap 10/snippet – prioritize semantic match.' Audit issues: Check off-by-one, inversions, gaps; add to needs if found.
+1. Discovery: Add mains is_traced=false; summary '→ elements [NEEDS TRACING]'. Elements: functions (calls), properties (access), variables (assign/use), attributes (ref), methods (ops). Hypothesize related projects/microservices and expand traces across them.
+2. Recurse: Per need, tools → trace. Think 'Relevance to query? If low, resolve as final. Process one/iter; cap 10/snippet.' Audit issues; add to needs if found. Mandate: If needs_tracing exists, select tool to resolve one and update status (e.g., 'move_to_traced').
 3. Complete: Update status true. Pre-CoT: 'All needs_tracing empty? All at finals? Simulated edges?'
 
 Finals: DB (execute), File (write), Net (post), Mem (set), Sys (now), Logic (if/calc).
 
-Recursive Example (with Comments):
-Iteration 1: Add 'processData': needs_tracing [{ "name": "obj.value", "element_type": "property" }, { "name": "service.getData()", "element_type": "method" }, { "name": "logger.info", "element_type": "function" }]. // Comment: Accesses properties/methods.
+Recursive Examples:
+Iteration 1: Add 'processTask' function: needs_tracing [{ "name": "external.callA", "element_type": "method" }, { "name": "internal.updateB", "element_type": "function" }]. // Comment: Methods called but implementations not visible; hypothesize related projects like "external-service" and "internal-service".
 
-Iteration 2: Trace obj.value: Accesses total - used + offset. Move obj.value; add_to_needs_tracing [{ "name": "total", ... }, { "name": "used", ... }]. Update summary: 'processData → obj.value[✓] + service.getData + logger.info → [DIRECT_LOGIC + NEEDS TRACING]'. // Comment: New accesses found.
+Iteration 2: Trace payment.charge: Calls external API. Move payment.charge to traced; add_to_needs_tracing [...]. Update summary: 'processOrder → payment.charge[✓] → [EXTERNAL_API]'. Set is_traced=true if no needs_tracing left.
 
 Iteration 3: Trace total: Direct attr [FINAL - Direct Logic]. Move total; no new.
 

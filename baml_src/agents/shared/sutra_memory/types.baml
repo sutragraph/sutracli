@@ -44,9 +44,8 @@ class TracedElement {
   element_type ElementType          // Type of element being traced
   start_line int                   // Starting line number
   end_line int                     // Ending line number
-  signature string?                // Element signature (for functions/methods) or definition (for variables/properties)
-  content string?                  // Complete code content for this element (for showing full code blocks)
-  key_code_lines string[]?          // 1-2 key lines showing what this element does
+  signature string                // Element signature (for functions/methods) or definition (for variables/properties)
+  content string                  // Complete code content for this element (for showing full code blocks)
   accessed_elements TracedElement[]? // Child elements that this element directly accesses (hierarchical tree)
   is_fully_traced bool?            // Whether all child elements have been traced to completion
 }

@@ -192,7 +192,7 @@ class MemoryOperations:
         end_line: int,
         description: str,
         is_traced: bool = False,
-        root_element: Optional[TracedElement] = None,
+        root_elements: Optional[List[TracedElement]] = None,
         needs_tracing: Optional[List[UntracedElement]] = None,
         call_chain_summary: Optional[str] = None,
     ) -> bool:
@@ -206,7 +206,7 @@ class MemoryOperations:
             end_line: Ending line number
             description: Description of the code snippet
             is_traced: Whether this code snippet has been fully traced
-            root_element: Hierarchical tree of traced elements starting from the main element within this snippet
+            root_elements: List of root-level traced elements within this snippet
             needs_tracing: List of code elements that still need trace chain analysis
             call_chain_summary: High-level summary of complete trace chains
 
@@ -237,17 +237,21 @@ class MemoryOperations:
                         )
                     processed_needs_tracing.append(ute)
 
-            # Auto-generate ID for root_element if missing
-            if root_element and not root_element.id:
-                root_element.id = self.generate_element_id_from_signature(
-                    root_element.name,
-                    root_element.element_type,
-                    file_path,
-                    getattr(root_element, "start_line", 0),
-                    getattr(root_element, "end_line", 0),
-                )
-                # Recursively generate IDs for all child elements
-                self._generate_ids_for_hierarchy(root_element, file_path)
+            # Auto-generate IDs for root_elements if missing
+            processed_root_elements = []
+            if root_elements:
+                for root_element in root_elements:
+                    if not root_element.id:
+                        root_element.id = self.generate_element_id_from_signature(
+                            root_element.name,
+                            root_element.element_type,
+                            file_path,
+                            getattr(root_element, "start_line", 0),
+                            getattr(root_element, "end_line", 0),
+                        )
+                    # Recursively generate IDs for all child elements
+                    self._generate_ids_for_hierarchy(root_element, file_path)
+                    processed_root_elements.append(root_element)
 
             # Create and store the code snippet with counter ID
             self.code_snippets[actual_code_id] = CodeSnippet(
@@ -258,7 +262,7 @@ class MemoryOperations:
                 description=description,
                 content=code_content,
                 is_traced=is_traced,
-                root_element=root_element,
+                root_elements=processed_root_elements,
                 needs_tracing=processed_needs_tracing,
                 call_chain_summary=call_chain_summary,
             )

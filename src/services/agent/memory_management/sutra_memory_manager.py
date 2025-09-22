@@ -13,6 +13,8 @@ This is the main interface that combines all the modular components:
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from loguru import logger
+
 from baml_client.types import (
     CodeStorageAction,
     SutraMemoryParams,
@@ -91,7 +93,7 @@ class SutraMemoryManager:
         end_line: int,
         description: str,
         is_traced: bool = False,
-        root_element: Optional[TracedElement] = None,
+        root_elements: Optional[List[TracedElement]] = None,
         needs_tracing: Optional[List[UntracedElement]] = None,
         call_chain_summary: Optional[str] = None,
     ) -> bool:
@@ -103,7 +105,7 @@ class SutraMemoryManager:
             end_line,
             description,
             is_traced,
-            root_element,
+            root_elements,
             needs_tracing,
             call_chain_summary,
         )
@@ -243,9 +245,9 @@ class SutraMemoryManager:
                             else None
                         )
 
-                        # Use BAML root element directly
-                        root_element = (
-                            code_op.root_element if code_op.root_element else None
+                        # Use BAML root elements directly
+                        root_elements = (
+                            [code_op.root_element] if code_op.root_element else None
                         )
 
                         # Use BAML needs_tracing array directly
@@ -266,7 +268,7 @@ class SutraMemoryManager:
                                 code_op.end_line,
                                 code_op.description,
                                 is_traced,
-                                root_element,
+                                root_elements,
                                 needs_tracing,
                                 call_chain_summary,
                             )
@@ -350,11 +352,9 @@ class SutraMemoryManager:
                             element_id = traced_element.id
 
                             # Check for duplicate elements by ID (hash-based IDs prevent duplicates automatically)
-                            if (
-                                existing_snippet.root_element
-                                and self._element_already_exists(
-                                    existing_snippet.root_element, element_id
-                                )
+                            if any(
+                                self._element_already_exists(root_elem, element_id)
+                                for root_elem in existing_snippet.root_elements
                             ):
                                 results["warnings"].append(
                                     f"Element {element_name} (ID: {element_id}) already exists in hierarchy for code {code_op.id} - skipping duplicate"
@@ -399,22 +399,38 @@ class SutraMemoryManager:
                                 ]
 
                             # Add to hierarchical structure
-                            if existing_snippet.root_element is None:
-                                # This is the root element
-                                existing_snippet.root_element = traced_element
+                            if not element_path:
+                                # This is a root-level element
+                                existing_snippet.root_elements.append(traced_element)
                                 results["changes_applied"]["code"].append(
-                                    f"Set {element_name} as root element for code {code_op.id}"
+                                    f"Added {element_name} as root element for code {code_op.id}"
                                 )
                             else:
                                 # Add as child element following the element_path (using IDs)
-                                self._add_to_hierarchy(
-                                    existing_snippet.root_element,
-                                    traced_element,
-                                    element_path,
-                                )
-                                results["changes_applied"]["code"].append(
-                                    f"Added {element_name} to hierarchy for code {code_op.id}"
-                                )
+                                # Find the correct root element to add to
+                                target_root = None
+                                for root_elem in existing_snippet.root_elements:
+                                    if root_elem.id == element_path[0]:
+                                        target_root = root_elem
+                                        break
+
+                                if target_root:
+                                    self._add_to_hierarchy(
+                                        target_root,
+                                        traced_element,
+                                        # Remove first element as we found the root
+                                        element_path[1:],
+                                    )
+                                    results["changes_applied"]["code"].append(
+                                        f"Added {element_name} to hierarchy for code {code_op.id}"
+                                    )
+                                else:
+                                    logger.warning(
+                                        f"Could not find root element with ID {element_path[0]} for element {element_name}"
+                                    )
+                                    results["warnings"].append(
+                                        f"Could not find parent element for {element_name}"
+                                    )
 
                             if len(existing_snippet.needs_tracing) < original_count:
                                 results["changes_applied"]["code"].append(

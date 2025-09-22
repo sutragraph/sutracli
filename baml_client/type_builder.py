@@ -3289,7 +3289,7 @@ class TracedElementAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("TracedElement")
-        self._properties: typing.Set[str] = set([  "id",  "name",  "element_type",  "start_line",  "end_line",  "signature",  "content",  "key_code_lines",  "accessed_elements",  "is_fully_traced",  ])
+        self._properties: typing.Set[str] = set([  "id",  "name",  "element_type",  "start_line",  "end_line",  "signature",  "content",  "accessed_elements",  "is_fully_traced",  ])
         self._props = TracedElementProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -3344,10 +3344,6 @@ class TracedElementProperties:
     @property
     def content(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("content"))
-    
-    @property
-    def key_code_lines(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("key_code_lines"))
     
     @property
     def accessed_elements(self) -> type_builder.ClassPropertyViewer:
