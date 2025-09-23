@@ -31,6 +31,7 @@ dependencies = [
     "numpy==2.2.6",
     "tokenizers==0.21.1",
     "sqlite-vec==0.1.6",
+    "pysqlite3-binary==0.5.4",
     "requests==2.32.3",
     "trafilatura==2.0.0",
     "markdownify==1.1.0",

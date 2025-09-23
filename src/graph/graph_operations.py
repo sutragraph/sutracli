@@ -9,10 +9,16 @@ query methods for retrieving code structure, relationships, and connections.
 
 import json
 import os
-import sqlite3
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+# This block is only read by type checkers, not at runtime
+if TYPE_CHECKING:
+    import sqlite3
+# This block is only executed at runtime, not by type checkers
+else:
+    import pysqlite3 as sqlite3
 
 from loguru import logger
 
