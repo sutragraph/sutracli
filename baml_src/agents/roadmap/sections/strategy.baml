@@ -1,6 +1,6 @@
 template_string RoadmapStrategy() #"
 ### Thinking Approach: Use Chain-of-Thought
-Outline step-by-step in 'thinking': 'Goal? Memory check? Tool? Why? Verify: All problems covered?' Example: 'Parse: 2 issues → Track1: Valid fail (Bug1) → semantic_search auth across projects; Track2: Invalid pass (Bug2) → search_keyword validator'. End with: 'Tracing Audit: All needs_tracing empty? All projects analyzed? All symptoms traced? If no, tool next. Hidden Connections Audit: Hypothesize related projects from list/descriptions/microservices; use semantic_search across them if no links.'
+Outline step-by-step in 'thinking': 'Goal? Memory check? Tool? Why? Verify: All problems covered?' Example: 'Parse: 2 issues → Track1: Valid fail (Bug1) → semantic_search auth across projects; Track2: Invalid pass (Bug2) → search_keyword validator'. End with: 'Tracing Audit: For all code snippets → needs_tracing empty? All projects analyzed? All symptoms traced? If no, tool next. Hidden Connections Audit: Hypothesize related projects from list/descriptions/microservices; use semantic_search across them if no links.'
 
 ### Guidelines
 - Address all problems explicitly: List as Bug1/Bug2 in thinking/history.
