@@ -6,10 +6,10 @@ CODE MANAGER OUTPUT FORMAT
 The Code Manager is responsible for determining what connection-related code should be extracted and returned based on tool results from cross-indexing analysis. The Code Manager receives tool results and outputs JSON format specifying exactly what connection code to return with proper file paths, line ranges, and descriptions.
 
 Core Responsibilities:
-- Analyze tool results from cross-indexing analysis in `thinking` field in json
-- Identify essential connection code that should be extracted
-- Generate JSON format for connection code output
-- Ensure comprehensive coverage of all connection points
+  - Analyze tool results from cross-indexing analysis in `thinking` field in json
+  - Identify essential connection code that should be extracted
+  - Generate JSON format for connection code output
+  - Ensure comprehensive coverage of all connection points
 
 Output Format:
 
@@ -143,54 +143,54 @@ Example 5: WebSocket connection discovery with socket.emit events
 # Connection Code Extraction Guidelines:
 
 1. Extraction Assessment
-Analyze tool results to identify connection code that should be extracted. Focus on actual connection establishment code, wrapper function calls with real parameters, and environment variable usage for connection configuration.
+Analyze tool results to identify connection code that should be extracted. Focus on actual data communication calls, wrapper function calls with real parameters, and environment variable usage for connection configuration.
 
 2. Extraction Strategy
-- CASE 1: Direct calls with literal connection identifiers → Extract immediately
-- CASE 2: Wrapper function calls with variable identifiers → Extract ALL wrapper calls with actual identifiers
-- CASE 3: Environment variables or static values → Extract the line directly
-- EXCLUDE: Internal implementation details, generic definitions, variable assignments without calls
+  - CASE 1: Direct calls with literal connection identifiers → Extract immediately
+  - CASE 2: Wrapper function calls with variable identifiers → Extract ALL wrapper calls with actual identifiers
+  - CASE 3: Environment variables or static values → Extract the line directly
+  - EXCLUDE: Internal implementation details, generic definitions, variable assignments without calls
 
 3. Extraction Decision Criteria
-- Extract any connection patterns, API endpoints, HTTP calls, or wrapper functions related to connections
-- Extract code that reveals important connection information between services
-- Extract any code that is related to incoming/outgoing connections
-- Extract environment variable configurations and their resolved values
+  - Extract any connection patterns, API endpoints, HTTP calls, or wrapper functions related to connections
+  - Extract code that reveals important connection information between services
+  - Extract any code that is related to incoming/outgoing connections
+  - Extract environment variable configurations and their resolved values
 
 4. Comprehensive Extraction Requirements
-- Extract ALL discovered incoming/outgoing connections without missing any connection types
-- Incoming connections: Extract ALL incoming connections regardless of number
-- Outgoing connections: Extract ALL outgoing connections regardless of number
-- ZERO TOLERANCE for skipping connections: Every single connection found must be extracted
-- NO SAMPLING: Never extract "representative examples" - extract every single connection discovered
-- COMPLETE COVERAGE: If tool results contain 100 connections, extract all 100, not just 5-10
+  - Extract ALL discovered incoming/outgoing connections without missing any connection types
+  - Incoming connections: Extract ALL incoming connections regardless of number
+  - Outgoing connections: Extract ALL outgoing connections regardless of number
+  - ZERO TOLERANCE for skipping connections: Every single connection found must be extracted
+  - NO SAMPLING: Never extract "representative examples" - extract every single connection discovered
+  - COMPLETE COVERAGE: If tool results contain 100 connections, extract all 100, not just 5-10
 
 5. Output Format Requirements
-- Use relative file paths from project root
-- Include exact line numbers for start and end of code snippets
-- Provide descriptive context in one line explaining why the code is important
-- Use unique IDs for each code snippet
-- Group related code snippets in single JSON output
+  - Use relative file paths from project root
+  - Include exact line numbers for start and end of code snippets
+  - Provide descriptive context in one line explaining why the code is important
+  - Use unique IDs for each code snippet
+  - Group related code snippets in single JSON output
 
 6. Description Best Practices
-- Be specific about connection type (HTTP, WebSocket, Queue, etc.)
-- Include actual connection identifiers (endpoints, queue names, event names)
-- Mention technology used (axios, socket.io, RabbitMQ, etc.)
-- Include environment variable context when applicable
-- Keep descriptions to one line for clarity
+  - Be specific about connection type (HTTP, WebSocket, Queue, etc.)
+  - Include actual connection identifiers (endpoints, queue names, event names)
+  - Mention technology used (axios, socket.io, RabbitMQ, etc.)
+  - Include environment variable context when applicable
+  - Keep descriptions to one line for clarity
 
 7. Quality Assurance
-- Verify all file paths are relative to project root
-- Ensure line numbers are accurate and inclusive
-- Check that descriptions are informative and concise
-- Confirm all connection types are covered
-- Validate JSON format is properly structured
+  - Verify all file paths are relative to project root
+  - Ensure line numbers are accurate and inclusive
+  - Check that descriptions are informative and concise
+  - Confirm all connection types are covered
+  - Validate JSON format is properly structured
 
 8. Output Requirements
-- Always output complete JSON format for connection code when found
-- Include all identified connection code in single response
-- Ensure proper JSON structure with arrays for multiple connections
-- Use consistent ID numbering across all code snippets
-- Provide comprehensive coverage without missing any connections
-- If no connection code is found, return nothing
+  - Always output complete JSON format for connection code when found
+  - Include all identified connection code in single response
+  - Ensure proper JSON structure with arrays for multiple connections
+  - Use consistent ID numbering across all code snippets
+  - Provide comprehensive coverage without missing any connections
+  - If no connection code is found, return nothing
 "#

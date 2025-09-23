@@ -1,4 +1,3 @@
-from json import tool
 from typing import Any, Dict
 
 from baml_client.types import Agent
@@ -34,7 +33,8 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
     tool_has_guidance = GuidanceRegistry.get_guidance(tool_name)
 
     # Check if this is a fetch_next_chunk request
-    if action.parameters.get("fetch_next_chunk", False):
+    fetch_next_chunk = action.parameters.get("fetch_next_chunk")
+    if fetch_next_chunk is True:
         delivery_result = handle_fetch_next_request(action, tool_name)
 
         if delivery_result:

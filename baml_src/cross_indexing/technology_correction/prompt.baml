@@ -10,28 +10,28 @@ Correct technology names that do not match the predefined enums by mapping them 
 You MUST use ONLY one of these exact technology type names (case-sensitive):
 
 1. HTTP/HTTPS - HTTP/HTTPS REST API calls and endpoints
-    - Keywords: http, https, rest, api, endpoint, fetch, axios, requests, express, flask, fastapi
-    - Examples: "HTTP", "REST", "API", "HTTPS"
+  - Keywords: http, https, rest, api, endpoint, fetch, axios, requests, express, flask, fastapi
+  - Examples: "HTTP", "REST", "API", "HTTPS"
 
 2. WebSockets - WebSocket connections for real-time bidirectional communication
-    - Keywords: websocket, socket, ws, socket.io, real-time, webrtc
-    - Examples: "WebSocket", "Socket.IO", "WS"
+  - Keywords: websocket, socket, ws, socket.io, real-time, webrtc
+  - Examples: "WebSocket", "Socket.IO", "WS"
 
 3. gRPC - Google RPC framework for high-performance RPC
-    - Keywords: grpc, protobuf, proto, rpc
-    - Examples: "gRPC", "GRPC", "protobuf"
+  - Keywords: grpc, protobuf, proto, rpc
+  - Examples: "gRPC", "GRPC", "protobuf"
 
 4. GraphQL - Query language for APIs
-    - Keywords: graphql, gql, query language
-    - Examples: "GraphQL", "GQL"
+  - Keywords: graphql, gql, query language
+  - Examples: "GraphQL", "GQL"
 
 5. MessageQueue - Message queuing systems
-    - Keywords: queue, mq, rabbitmq, kafka, bull, sqs, message queue, pubsub, messaging
-    - Examples: "Queue", "RabbitMQ", "Kafka", "SQS"
+  - Keywords: queue, mq, rabbitmq, kafka, bull, sqs, message queue, pubsub, messaging
+  - Examples: "Queue", "RabbitMQ", "Kafka", "SQS"
 
 6. Unknown - Use ONLY when technology type cannot be identified
-    - Use as last resort when no other type fits
-    - Examples: "CustomProtocol", "ProprietarySystem"
+  - Use as last resort when no other type fits
+  - Examples: "CustomProtocol", "ProprietarySystem"
 
 ## CORRECTION RULES
 
@@ -40,9 +40,9 @@ You MUST use ONLY one of these exact technology type names (case-sensitive):
 2. Keyword-Based Mapping: Analyze the unmatched name for keywords that indicate the technology type.
 
 3. Best Fit Analysis: Choose the enum that best represents the technology based on:
-    - Primary function (communication, messaging, data transfer)
-    - Protocol type (HTTP, WebSocket, messaging, etc.)
-    - Use case (API calls, real-time communication, queuing, etc.)
+  - Primary function (communication, messaging, data transfer)
+  - Protocol type (HTTP, WebSocket, messaging, etc.)
+  - Use case (API calls, real-time communication, queuing, etc.)
 
 4. Conservative Approach: When uncertain, prefer "Unknown" over incorrect mapping.
 
@@ -75,12 +75,12 @@ Therefore the output is:
 
 ## REQUIREMENTS
 
-- Explain your reasoning step-by-step before providing the JSON response
-- Process ALL unmatched names provided
-- Map each name to the most appropriate enum
-- Use exact enum names (case-sensitive)
-- Prefer accuracy over guessing - use "Unknown" when uncertain
-- Provide technical justification for each mapping
+  - Explain your reasoning step-by-step before providing the JSON response
+  - Process ALL unmatched names provided
+  - Map each name to the most appropriate enum
+  - Use exact enum names (case-sensitive)
+  - Prefer accuracy over guessing - use "Unknown" when uncertain
+  - Provide technical justification for each mapping
 "#
 
 template_string TechnologyCorrectionUserPrompt(unmatched_names: string, acceptable_enums: string) #"

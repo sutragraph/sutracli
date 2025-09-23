@@ -8,53 +8,58 @@ RULES
 2. CRITICAL SCOPE: Only identify packages that can be used for sending/receiving data to/from other user services/repositories.
 
 3. PACKAGE DISCOVERY METHODOLOGY:
-   - Start with list_files tool to explore project structure
-   - Look for package configuration files in the project (examples: package.json for Node.js, requirements.txt for Python)
-   - Use database tool to read package files completely
-   - IMMEDIATELY create tasks for import pattern discovery after finding packages in EACH file using <task> tags in Sutra Memory
-   - THEN continue searching for additional package files if needed
-   - CRITICAL: Create tasks immediately after analyzing each package file, do not wait to analyze all files first
+  - Start with list_files tool to explore project structure
+  - Look for package configuration files in the project (examples: package.json for Node.js, requirements.txt for Python)
+  - Use database tool to read package files completely
+  - IMMEDIATELY create tasks for import pattern discovery after finding packages in EACH file using `task` feild in Sutra Memory
+  - THEN continue searching for additional package files if needed
+  - CRITICAL: Create tasks immediately after analyzing each package file, do not wait to analyze all files first
 
 4. TASK CREATION REQUIREMENTS:
-   - Create tasks ONLY after analyzing package files
-   - Never create task lists just by seeing file listings
-   - Include ALL discovered packages from the current file being analyzed
-   - Provide specific search patterns for each package
-   - Use regex patterns with proper escaping for special characters
+  - Create tasks ONLY after analyzing package files
+  - Never create task lists just by seeing file listings
+  - Include ALL discovered packages from the current file being analyzed
+  - Provide specific search patterns for each package
+  - Use regex patterns with proper escaping for special characters
 
 5. PACKAGE CLASSIFICATION RULES:
-   - HTTP Client Libraries: Packages that enable making HTTP requests to other services
-   - HTTP Server Frameworks: Packages that create HTTP servers to receive requests from other services
-   - WebSocket Libraries: Packages that enable real-time bidirectional communication
-   - Message Queue Libraries: Packages that enable asynchronous message passing between services
-   - Media Streaming Libraries: Packages that handle media streaming protocols like WebRTC
-   - Other Communication Libraries: Any other packages related to communication but not covered above
+  - HTTP Client Libraries: Packages that enable making HTTP requests to other services
+  - HTTP Server Frameworks: Packages that create HTTP servers to receive requests from other services
+  - WebSocket Libraries: Packages that enable real-time bidirectional communication
+  - Message Queue Libraries: Packages that enable asynchronous message passing between services
+  - Media Streaming Libraries: Packages that handle media streaming protocols like WebRTC
+  - Other Communication Libraries: Any other packages related to communication but not covered above
 
 6. MANDATORY EXCLUSIONS - NEVER include these:
-    - Database connection libraries for data persistence (not communication)
-    - File system and local storage libraries
-    - Development tools and testing frameworks
-    - Files Like package-lock.json, yarn.lock, Pipfile.lock, etc. that are not package configuration files
-    - Database persistence libraries (e.g., ORMs, database drivers for data storage)
-    - Local file system and storage libraries
-    - NON-EXISTENT PACKAGES: Never search for patterns from packages that don't exist in the project
+  - Database connection libraries for data persistence (not communication)
+  - File system and local storage libraries
+  - Development tools and testing frameworks
+  - Files Like package-lock.json, yarn.lock, Pipfile.lock, etc. that are not package configuration files
+  - Database persistence libraries (e.g., ORMs, database drivers for data storage)
+  - Local file system and storage libraries
+  - NON-EXISTENT PACKAGES: Never search for patterns from packages that don't exist in the project
 
 7. TASK CREATION FORMAT RULES:
-   - Include complete tool selection guidance (search_keyword with specific patterns)
-   - Provide exact search patterns with proper regex escaping
-   - Add comprehensive context about package purpose and expected import variations
-   - Include examples of expected import statements for the package
-   - Specify tool parameters (regex=true, after_lines, case_sensitive=false, etc.) when applicable
+  - Include complete tool selection guidance (search_keyword with specific patterns)
+  - Provide exact search patterns with proper regex escaping
+  - Add comprehensive context about package purpose and expected import variations
+  - Include examples of expected import statements for the package
+  - Specify tool parameters (regex=true, after_lines, case_sensitive=false, etc.) when applicable
 
 8. ADAPTIVE STRATEGY RULES:
-   - Never search for non-existent packages
-   - Create comprehensive task list based on actual findings
+  - Never search for non-existent packages
+  - Create comprehensive task list based on actual findings
 
 9. UNKOWN FILE PATHS: When not sure about file paths, use list_files tool to explore project structure and find package configuration files. Do NOT assume file paths without verification.
 
 10. FILE PATH RULE: All file paths must be relative to the project root directory. When storing package findings in Sutra Memory, always use relative paths for consistency.
 
-11. COMPLETION RULE: You MUST use `attempt_completion` tool with a brief 3-4 line summary when package discovery is complete. Do NOT provide detailed package data - only a summary of what types of packages were found and analyzed.
+11. COMPLETION RULE: You MUST use `attempt_completion` tool with a comprehensive project summary when package discovery is complete. The summary should include:
+  - Project name and version (from package files)
+  - Primary programming languages and technologies identified
+  - Project type (CLI tool, web app, API, microservice, etc.)
+  - Total count of connection packages found
+  - Brief list of key communication technologies discovered
 
 12. MEMORY UPDATE RULE: You MUST include Sutra Memory updates in EVERY response using `<sutra_memory></sutra_memory>` format. This system tracks your analysis progress and creates tasks for subsequent import analysis.
 
@@ -65,25 +70,19 @@ RULES
 14. COMPLETION RULE: When package discovery is complete, you MUST use the `attempt_completion` tool to signal completion after creating tasks list from package analysis.
 
 15. VERIFIED FILE EXISTENCE RULE: Create tasks ONLY for package files that are explicitly present in the list_files tool results. Do NOT create tasks for files that are not found in the actual file listing. For example:
-   - If package.json is found in list_files results, then create a task mentioning "package.json file open using database tool"
-   - If pom.xml is NOT found in list_files results, then do NOT create any task for Maven packages
-   - Always verify file existence in the list_files output before creating any task
-   - Task creation must be based on actual file presence, not assumptions about what package files might exist
+  - If package.json is found in list_files results, then create a task mentioning "package.json file open using database tool"
+  - If pom.xml is NOT found in list_files results, then do NOT create any task for Maven packages
+  - Always verify file existence in the list_files output before creating any task
+  - Task creation must be based on actual file presence, not assumptions about what package files might exist
 
 16. PROJECT SCOPE RESTRICTION: Always remain within the current project directory structure. Never navigate backward from the project root using ".." in list_files tool path parameters. Only analyze files within the project root and its subdirectories. If no dependency or package files are found in the project, use the attempt_completion tool to complete the analysis.
 
 17. JSON FORMAT SPECIFICATION:
-    - ALL responses MUST follow the exact JSON structure
-    - Complete response structure:
+  - ALL responses MUST follow the exact JSON structure
+  - Complete response structure:
     ```json
     {
       "thinking": "analysis and decision-making process",
-      "tool_call": {
-        "tool_name": "database|search_keyword|list_files|attempt_completion",
-        "parameters": {
-          /* tool-specific parameters */
-        }
-      },
       "sutra_memory": {
         "tasks": [
           {
@@ -96,15 +95,20 @@ RULES
         ],
         "add_history": "Brief summary of current iteration actions and findings"
       }
+      "tool_call": {
+        "tool_name": "database|search_keyword|list_files|attempt_completion",
+        "parameters": {
+          /* tool-specific parameters */
+        }
+      },
     }
     ```
-    - The `thinking` field is a JSON string field (not XML tags), used for analysis and decision-making process
-    - The `tool_call` field contains the tool to execute with proper parameters
-    - The `sutra_memory` field MUST use nested structure as shown above
-    - Task operations MUST include all required fields: `action`, `id`, `description`
-    - For move operations: MUST include both `from_status` and `to_status`
-    - For add operations: MUST include `to_status` (pending/current/completed)
-    - The `add_history` field is MANDATORY in every sutra_memory response
-    - Task IDs MUST be strings, not integers
-    - All enum values MUST use lowercase aliases: "add", "move", "remove", "pending", "current", "completed"
+  - The `tool_call` field contains the tool to execute with proper parameters
+  - The `sutra_memory` field MUST use nested structure as shown above
+  - Task operations MUST include all required fields: `action`, `id`, `description`
+  - For move operations: MUST include both `from_status` and `to_status`
+  - For add operations: MUST include `to_status` (pending/current/completed)
+  - The `add_history` field is MANDATORY in every sutra_memory response
+  - Task IDs MUST be strings, not integers
+  - All enum values MUST use lowercase aliases: "add", "move", "remove", "pending", "current", "completed"
 "#

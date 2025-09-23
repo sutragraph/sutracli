@@ -1,116 +1,130 @@
 template_string ConnectionSplittingPrompt() #"
 You will receive connection data of cross-indexing analysis. Your task is to split this data into incoming and outgoing connections and return them in the required JSON format. Additionally, include a comprehensive top-level "summary" that thoroughly describes the project's purpose, functionality, and architecture based on the collected connections.
 
-## CRITICAL RULE - ONE CONNECTION PER SNIPPET
+====
+
+# CRITICAL RULE - ONE CONNECTION PER SNIPPET
 
 MANDATORY: Each snippet entry must represent EXACTLY ONE connection. You are FORBIDDEN from grouping multiple connections together.
 
 EXAMPLES OF FORBIDDEN GROUPING: (Avoid! Do Not use!)
-- "Incoming HTTP connection points for various endpoints"
-- "Outgoing HTTP connection points for several endpoints"
-- "Various incoming HTTP connection points"
-- "Multiple incoming HTTP connection points"
-- "Several outgoing HTTP connection points"
-- "Message handlers for incoming events including eventA, eventB, eventC"
-- "API endpoints including endpointX, endpointY, endpointZ"
-- "Multiple operations for data processing"
-- "Connection handlers including X, Y, Z"
-- "40+ REST API endpoints including /get-speech-token, /get-custom-token, /check-room"
-- "REST API endpoints for incoming connections - includes 45+ admin, internal, super-admin"
-- "Comprehensive incoming HTTP connection points"
-- Any description mentioning "multiple", "including", "various" , "several", numbers like "40+", "45+"
+  - "Incoming HTTP connection points for various endpoints"
+  - "Outgoing HTTP connection points for several endpoints"
+  - "Various incoming HTTP connection points"
+  - "Multiple incoming HTTP connection points"
+  - "Several outgoing HTTP connection points"
+  - "Message handlers for incoming events including eventA, eventB, eventC"
+  - "API endpoints including endpointX, endpointY, endpointZ"
+  - "Multiple operations for data processing"
+  - "Connection handlers including X, Y, Z"
+  - "40+ REST API endpoints including /get-speech-token, /get-custom-token, /check-room"
+  - "REST API endpoints for incoming connections - includes 45+ admin, internal, super-admin"
+  - "Comprehensive incoming HTTP connection points"
+  - Any description mentioning "multiple", "including", "various" , "several", numbers like "40+", "45+"
+  - "Never combine multiple connections into one snippet even if they are similar"
 
-REQUIRED APPROACH:
-- "Message handler for eventA"
-- "Message handler for eventB"
-- "Message handler for eventC"
-- "GET /endpointX for data retrieval"
-- "POST /endpointY for data creation"
-- "GET /get-speech-token endpoint for speech token retrieval"
-- "POST /check-room endpoint for room validation"
-- "GET /admin/users endpoint for user management"
+**You are ABSOLUTELY FORBIDDEN from creating ANY description that mentions more than ONE connection, endpoint, route, or operation. Each JSON entry must describe EXACTLY ONE connection with EXACTLY ONE endpoint/route/operation.**
 
-## OBJECTIVE
+====
+
+# OBJECTIVE
 
 Process the collected connection data and categorize each connection as either incoming or outgoing, then return structured JSON with complete connection details. Each connection must be a separate entry with its own specific line numbers and description.
 
-## TECHNOLOGY TYPE CLASSIFICATION
+====
 
-### MANDATORY TECHNOLOGY TYPES
+# TECHNOLOGY TYPE CLASSIFICATION
+
+## MANDATORY TECHNOLOGY TYPES
 You MUST classify each connection using ONLY one of these exact technology type names:
 
 1. HTTP/HTTPS - HTTP/HTTPS REST API calls and endpoints
-   - Any HTTP/HTTPS client library or REST API framework should use this type
-   - Examples: axios, fetch, requests, superagent, got, node-fetch, Express routes, Flask routes, FastAPI endpoints
+  - Any HTTP/HTTPS client library or REST API framework should use this type
+  - Examples: axios, fetch, requests, superagent, got, node-fetch, Express routes, Flask routes, FastAPI endpoints
 
 2. WebSockets - WebSocket connections for real-time bidirectional communication
-   - Any WebSocket library or real-time bidirectional connection should use this type
-   - Examples: socket.io, ws, websocket-client, Socket.IO-client, webrtc
+  - Any WebSocket library or real-time bidirectional connection should use this type
+  - Examples: socket.io, ws, websocket-client, Socket.IO-client, webrtc
 
 3. gRPC - Google RPC framework for high-performance RPC
-   - Any gRPC implementation or protobuf-based RPC should use this type
-   - Examples: @grpc/grpc-js, grpcio, grpc-web
+  - Any gRPC implementation or protobuf-based RPC should use this type
+  - Examples: @grpc/grpc-js, grpcio, grpc-web
 
 4. GraphQL - Query language for APIs
-   - Any GraphQL client or server implementation should use this type
-   - Examples: apollo-client, graphql-request, urql, relay
+  - Any GraphQL client or server implementation should use this type
+  - Examples: apollo-client, graphql-request, urql, relay
 
 5. MessageQueue - Message queuing systems
-   - Any message queue, job queue, or task queue system should use this type
-   - Examples: amqplib (RabbitMQ), kafkajs (Kafka), bull (Redis queues), sqs (AWS SQS), pub/sub
+  - Any message queue, job queue, or task queue system should use this type
+  - Examples: amqplib (RabbitMQ), kafkajs (Kafka), bull (Redis queues), sqs (AWS SQS), pub/sub
 
 6. Unknown - Use ONLY when technology type cannot be identified from code
-    - IMPORTANT: This is a last resort. Only use when absolutely no other type fits.
-    - Do NOT use for unclear code - make your best assessment based on context.
+  - IMPORTANT: This is a last resort. Only use when absolutely no other type fits.
+  - Do NOT use for unclear code - make your best assessment based on context.
 
-### CONNECTION CLASSIFICATION
-
-#### INCOMING CONNECTIONS
+## CONNECTION CLASSIFICATION
+### INCOMING CONNECTIONS
 Connections where OTHER services connect TO this service:
 Examples:
-- API endpoints and route handlers (Express routes, Flask routes, etc.)
-- WebSocket server endpoints that accept connections
-- Message queue consumers that receive messages
+  - API endpoints and route handlers (Express routes, Flask routes, etc.)
+  - WebSocket server endpoints that accept connections
+  - Message queue consumers that receive messages
 
-#### OUTGOING CONNECTIONS
+### OUTGOING CONNECTIONS
 Connections where THIS service connects TO other services
 Examples:
-- HTTP client calls (axios, fetch, requests, etc.)
-- WebSocket client connections to other services
-- Message queue producers that send messages
+  - HTTP client calls (axios, fetch, requests, etc.)
+  - WebSocket client connections to other services
+  - Message queue producers that send messages
 
-## PROCESSING RULES
+====
+
+# PROCESSING RULES
 
 1. STRICT ONE-TO-ONE MAPPING: Analyze each connection individually - never group multiple connections
+
 2. INDIVIDUAL ENTRIES ONLY: Create separate entries - If you find code with multiple operations, create separate entries for each
+
 3. PRECISE LINE NUMBERS: Extract individual details - Each entry gets its own specific line numbers (single line "23-23" or very small ranges "23-25" for one logical connection only)
+
 4. SINGLE CONNECTION FOCUS: Focus on data transmission - Only code that sends or receives data (exclude setup and configuration)
+
 5. Include only actual data transmission operations:
-   - Message publishing/producing (publish, send, sendToQueue, produce)
-   - Message consuming/processing (consume, process, subscribe, on('message'))
-   - HTTP requests (axios.get, axios.post, fetch, request calls)
-   - HTTP route handlers (app.get, router.post, endpoint definitions)
-   - WebSocket data transmission (socket.emit, ws.send)
-   - WebSocket event handlers (socket.on, ws.on('message'))
-6. EXCLUDE SETUP CODE: Do not include connection establishment, configuration, or infrastructure setup:
-   - Connection creation (amqp.connect, axios.create, new Server, io.connect)
-   - Event listeners for connection state (on('connect'), on('disconnect'), on('error'))
-   - Channel/queue/exchange setup (createChannel, assertQueue, assertExchange, bindQueue)
-   - Configuration objects and initialization code
+  - Message publishing/producing (publish, send, sendToQueue, produce)
+  - Message consuming/processing (consume, process, subscribe, on('message'))
+  - HTTP requests (axios.get, axios.post, fetch, request calls)
+  - HTTP route handlers (app.get, router.post, endpoint definitions)
+  - WebSocket data transmission (socket.emit, ws.send)
+  - WebSocket event handlers (socket.on, ws.on('message'))
+
+6. EXCLUDE SETUP CODE: Do not include connection setup, configuration, or infrastructure setup:
+  - Connection creation (amqp.connect, axios.create, new Server, io.connect)
+  - Event listeners for connection state (on('connect'), on('disconnect'), on('error'))
+  - Channel/queue/exchange setup (createChannel, assertQueue, assertExchange, bindQueue)
+  - Configuration objects and initialization code
+
 7. COMPLETE PARAMETER DETAILS: Include complete parameter details:
-   - Exact endpoints, event names, queue names, method names
-   - Protocols, methods, parameters
-   - Environment variables and their resolved values in descriptions using format ENV_VAR=actual_value
-   - Variable names resolved to their actual values from same file definitions
-   - File paths and line numbers
+  - Exact endpoints, event names, queue names, method names
+  - Protocols, methods, parameters
+  - Environment variables and their resolved values in descriptions using format ENV_VAR=actual_value
+  - Variable names resolved to their actual values from same file definitions
+  - File paths and line numbers
+
 8. CORRECT DIRECTION: Classify direction correctly based on data flow
+
 9. NO DUPLICATES: No duplicates - each data transmission operation must be unique
+
 10. NO REPEATED CONTENT: CRITICAL: IGNORE REPEATING CONTENT - If you see the same file code with the same lines appearing multiple times in the input, include it only ONCE in your response. Same lines from same files are allowed only one time in splitting.
+
 11. ENVIRONMENT RESOLUTION: ENVIRONMENT FILE CODE RESOLUTION - If environment file code is provided as a code block, look for env var/config values and include them in connection descriptions for better context
+
 12. VARIABLE RESOLUTION: CRITICAL - If any endpoint is having variable value, look for same file path code snippet which has defined value of that variable and resolve in template by mentioning that actual value in description of the code snippet. If that variable's assigned value is also an env variable, then look for env file if it is in code snippets. Final target of phase 4 is to have static value of any variable used in endpoint from which it can be used to send or receive values using that identifier or name.
+
 13. FORBIDDEN LANGUAGE: Never use words like "multiple", "including", "various", "several", "comprehensive", numbers with "+" (like "40+", "45+"), "operations for", "endpoints for"
 
-## ENVIRONMENT FILE CODE RESOLUTION
+====
+
+# ENVIRONMENT FILE CODE RESOLUTION
 
 When environment file code blocks are provided in the input (e.g., .env files, config files), use them to resolve environment variables in connection descriptions:
 
@@ -119,7 +133,7 @@ When environment file code blocks are provided in the input (e.g., .env files, c
 3. ENHANCE DESCRIPTIONS: Include resolved values in connection descriptions using format: ENV_VAR=actual_value
 4. PROVIDE CONTEXT: This gives better context for later users understanding the actual connection endpoints, queue names, etc.
 
-### EXAMPLE OF ENV RESOLUTION:
+## EXAMPLE OF ENV RESOLUTION:
 If you find connection code:
 ```
 ./src/queue/consumer.js:
@@ -141,55 +155,53 @@ Then description should be:
 ### EXAMPLE OF VARIABLE RESOLUTION IN SAME FILE:
 If you find connection code:
 ```
-./src/consumer/AssignmentV2_Parse/index.js:
-  36 | await consumePacketsWithRetries(channel, queueName, interviewRepoParser);
+./src/consumer/DataProcessor/index.js:
+  36 | await consumePacketsWithRetries(channel, queueName, dataHandler);
 ```
 
 And same file code block contains variable definition:
 ```
-./src/consumer/AssignmentV2_Parse/index.js:
-  20 | const queueName = process.env.INTERVIEW_ASSIGNMENT_PARSE_QUEUE;
+./src/consumer/DataProcessor/index.js:
+  20 | const queueName = process.env.DATA_PROCESSING_QUEUE;
 ```
 
 And env file code block contains:
 ```
 ./.env:
-  15 | INTERVIEW_ASSIGNMENT_PARSE_QUEUE="interview-assignment-parse"
+  15 | DATA_PROCESSING_QUEUE="data-processing"
 ```
 
 Then description should be:
 ```
-"Message queue consumer using queueName variable resolved to INTERVIEW_ASSIGNMENT_PARSE_QUEUE=interview-assignment-parse queue"
+"Message queue consumer using queueName variable resolved to DATA_PROCESSING_QUEUE=data-processing queue"
 ```
 
 ## VARIABLE RESOLUTION WORKFLOW
 
 ### STEP-BY-STEP VARIABLE RESOLUTION PROCESS:
+1. IDENTIFY VARIABLES IN CONNECTION CODE: Look for connection operations using variables instead of hardcoded values
+  - Examples: `queueName`, `endpoint`, `apiUrl`, `eventName`, `topicName`
+  - Pattern: `sendToQueue(queueName, message)`, `axios.get(url)`, `socket.emit(eventName, data)`
 
-1. **IDENTIFY VARIABLES IN CONNECTION CODE**: Look for connection operations using variables instead of hardcoded values
-   - Examples: `queueName`, `endpoint`, `apiUrl`, `eventName`, `topicName`
-   - Pattern: `sendToQueue(queueName, message)`, `axios.get(url)`, `socket.emit(eventName, data)`
+2. SEARCH SAME FILE FOR VARIABLE DEFINITION: Before creating additional tasks, check if variable is defined in the same file code snippets
+  - Look for patterns like: `const queueName = ...`, `let endpoint = ...`, `var apiUrl = ...`
+  - Check assignment statements: `queueName = process.env.QUEUE_NAME` or `queueName = "hardcoded-value"`
 
-2. **SEARCH SAME FILE FOR VARIABLE DEFINITION**: Before creating additional tasks, check if variable is defined in the same file code snippets
-   - Look for patterns like: `const queueName = ...`, `let endpoint = ...`, `var apiUrl = ...`
-   - Check assignment statements: `queueName = process.env.QUEUE_NAME` or `queueName = "hardcoded-value"`
+3. RESOLVE VARIABLE VALUE:
+  - If hardcoded value found: Use that value directly in description
+  - If environment variable found: Check if env variable already exists in sutra memory
+    - If in memory: Use the stored value
+    - If not in memory: Look for env file code blocks in current input
+    - If env file available: Resolve and use the value
+    - If env file not available: Note the unresolved env variable
 
-3. **RESOLVE VARIABLE VALUE**:
-   - **If hardcoded value found**: Use that value directly in description
-   - **If environment variable found**: Check if env variable already exists in sutra memory
-     - If in memory: Use the stored value
-     - If not in memory: Look for env file code blocks in current input
-     - If env file available: Resolve and use the value
-     - If env file not available: Note the unresolved env variable
-
-4. **CONNECTION DESCRIPTION**: Include resolved values in format:
-   - For hardcoded: `"using variableName resolved to actual-hardcoded-value"`
-   - For env vars: `"using variableName resolved to ENV_VAR=actual-env-value"`
-   - For unresolved: `"using variableName variable (unresolved)"`
+4. CONNECTION DESCRIPTION: Include resolved values in format:
+  - For hardcoded: `"using variableName resolved to actual-hardcoded-value"`
+  - For env vars: `"using variableName resolved to ENV_VAR=actual-env-value"`
+  - For unresolved: `"using variableName variable (unresolved)"`
 
 ### VARIABLE RESOLUTION EXAMPLES:
-
-#### Case 1: Variable with Hardcoded Value
+Case 1: Variable with Hardcoded Value
 Connection Code:
 ```javascript
 // Line 36: await publishMessage(queueName, messageData)
@@ -197,7 +209,7 @@ Connection Code:
 ```
 Description: `"Message publishing using queueName variable resolved to user-notifications queue"`
 
-#### Case 2: Variable with Environment Variable
+Case 2: Variable with Environment Variable
 Connection Code:
 ```python
 # Line 42: producer.send(topic_name, event_data)
@@ -206,7 +218,7 @@ Connection Code:
 With env file: `USER_EVENT_TOPIC=user-events`
 Description: `"Message publishing using topic_name variable resolved to USER_EVENT_TOPIC=user-events topic"`
 
-#### Case 3: Variable with Dynamic Construction
+Case 3: Variable with Dynamic Construction
 Connection Code:
 ```javascript
 // Line 28: axios.get(`${baseUrl}/api/users`)
@@ -234,7 +246,6 @@ Then description should be:
 ```
 
 ### EXAMPLE OF INCOMPLETE CODE SNIPPET HANDLING
-
 CRITICAL SCENARIO: When search_keyword finds incomplete connection code that appears truncated, you must intelligently expand the line range to capture the complete connection context.
 
 Example 1: Incomplete HTTP Client Call (Java Spring)
@@ -278,23 +289,25 @@ SOLUTION: Extend to lines 42-47 to capture complete message publishing:
 ```
 
 EXTRACTION STRATEGY FOR INCOMPLETE SNIPPETS:
-- For HTTP calls: Extend until you capture method, complete URL/endpoint
-- For message queues: Extend until you capture exchange/queue name, routing key, and message payload structure
-- For WebSocket: Extend until you capture event type, recipient identification, and message content
-- General rule: Add 3-8 additional lines based on code complexity and nesting level
+  - For HTTP calls: Extend until you capture method, complete URL/endpoint
+  - For message queues: Extend until you capture exchange/queue name, routing key, and message payload structure
+  - For WebSocket: Extend until you capture event type, recipient identification, and message content
+  - General rule: Add 3-8 additional lines based on code complexity and nesting level
 
 INTELLIGENT LINE EXTENSION GUIDELINES:
-- Simple method calls: +2-3 lines
-- Complex builder patterns: +4-6 lines
-- Nested configuration objects: +5-8 lines
-- Multi-parameter method calls: +3-5 lines
-- Always prefer capturing complete context over partial information
+  - Simple method calls: +2-3 lines
+  - Complex builder patterns: +4-6 lines
+  - Nested configuration objects: +5-8 lines
+  - Multi-parameter method calls: +3-5 lines
+  - Always prefer capturing complete context over partial information
 
 EXTRACT ALL connections found - no selective sampling allowed.
 
-## GENERIC ANALYSIS INSTRUCTIONS
+====
 
-### FOR CONDITIONAL/SWITCH STATEMENTS:
+# GENERIC ANALYSIS INSTRUCTIONS
+
+## FOR CONDITIONAL/SWITCH STATEMENTS:
 If you find code with multiple branches handling different operations:
 ```
 switch/if (condition) {
@@ -309,7 +322,7 @@ You MUST create separate entries:
 - One for operation B handler
 - One for operation C handler
 
-### FOR MULTIPLE OPERATION DEFINITIONS:
+## FOR MULTIPLE OPERATION DEFINITIONS:
 If you find code defining multiple operations:
 ```
 operation1(params);
@@ -322,7 +335,7 @@ You MUST create separate entries:
 - One for operation2
 - One for operation3
 
-### FOR ROUTER/HANDLER REGISTRATIONS:
+## FOR ROUTER/HANDLER REGISTRATIONS:
 If you find code registering multiple handlers:
 ```
 register('/pathA', handlerA);
@@ -332,92 +345,162 @@ register('/pathC', handlerC);
 
 You MUST create separate entries for each registration.
 
-## PROJECT SUMMARY GUIDELINES
+====
+
+# PROJECT SUMMARY GUIDELINES
 
 Produce a concise, README-like project summary that an agent can rely on with high confidence without scanning other files. The summary MUST:
 
 1. Technology inventory (explicit names)
-- Name concrete libraries/frameworks detected for each connection type, e.g., axios/requests/node-fetch (HTTP client), Express/FastAPI/Flask (HTTP server), amqplib/pika (RabbitMQ), kafkajs (Kafka), socket.io/ws (WebSockets), grpcio/@grpc/grpc-js (gRPC), apollo-client/server or graphql-request (GraphQL).
-- Prefer exact package names as they appear in code or dependency files.
-- Only assert technologies present in the provided input. Do not speculate.
+  - Name concrete libraries/frameworks detected for each connection type, e.g., axios/requests/node-fetch (HTTP client), Express/FastAPI/Flask (HTTP server), amqplib/pika (RabbitMQ), kafkajs (Kafka), socket.io/ws (WebSockets), grpcio/@grpc/grpc-js (gRPC), apollo-client/server or graphql-request (GraphQL).
+  - Prefer exact package names as they appear in code or dependency files.
+  - Only assert technologies present in the provided input. Do not speculate.
 
 2. API surface overview (no endpoint listing)
-- Do NOT list individual endpoints, routes, or event names.
-- Describe endpoint/event categories and capabilities instead, e.g., "User management CRUD endpoints", "Order lifecycle operations", "Admin/reporting endpoints".
+  - Do NOT list individual endpoints, routes, or event names.
+  - Describe endpoint/event categories and capabilities instead, e.g., "User management CRUD endpoints", "Order lifecycle operations", "Admin/reporting endpoints".
 
 3. Messaging/streaming overview
-- Identify queues/topics/streams by technology and purpose at a category level, e.g., "RabbitMQ queues for order processing and notifications". Avoid listing every queue; focus on roles/patterns.
+  - Identify queues/topics/streams by technology and purpose at a category level, e.g., "RabbitMQ queues for order processing and notifications". Avoid listing every queue; focus on roles/patterns.
 
 4. Architecture and data flow
-- Summarize how components interact (HTTP in/out, MQ producers/consumers, WebSocket emits/handlers, gRPC, GraphQL) and where this project sits relative to others when discernible.
+  - Summarize how components interact (HTTP in/out, MQ producers/consumers, WebSocket emits/handlers, gRPC, GraphQL) and where this project sits relative to others when discernible.
 
 5. Wrappers and abstractions (when evident)
-- Identify helper/wrapper functions used to perform connections instead of direct library calls (e.g., makeApiCall, publishMessage, sendEvent).
-- Name the exact function(s) and describe their argument shape from code, e.g., makeApiCall(path, method, dataOrParams[, config]).
-- Note when wrappers encapsulate auth headers, base URLs, interceptors/retries, or service targeting (e.g., routes calls to order service).
+  - Identify helper/wrapper functions used to perform connections instead of direct library calls (e.g., makeApiCall, publishMessage, sendEvent).
+  - Name the exact function(s) and describe their argument shape from code, e.g., makeApiCall(path, method, dataOrParams[, config]).
+  - Note when wrappers encapsulate auth headers, base URLs, interceptors/retries, or service targeting (e.g., routes calls to order service).
 
 6. Style
-- Plain text, compact, skimmable. Short paragraphs and clear noun phrases. No endpoint lists.
+  - Plain text, compact, skimmable. Short paragraphs and clear noun phrases. No endpoint lists.
 
 7. Auth/security (when evident)
-- State observed authentication methods (tokens, API keys, OAuth, cookies, headers) and where they apply.
-- When visible, specify exact header names and placement, e.g., Authorization: Bearer <token> on outbound HTTP/HTTPS requests.
+  - State observed authentication methods (tokens, API keys, OAuth, cookies, headers) and where they apply.
+  - When visible, specify exact header names and placement, e.g., Authorization: Bearer <token> on outbound HTTP/HTTPS requests.
 
 8. High-certainty language
-- Use definitive language only for facts evidenced in code/snippets/configs here. Avoid guesses. If something cannot be confirmed, omit it instead of hedging.
+  - Use definitive language only for facts evidenced in code/snippets/configs here. Avoid guesses. If something cannot be confirmed, omit it instead of hedging.
 
 9. Operational notes (when evident)
-- Include tracing/logging/metrics libraries, and error-handling/retry patterns that affect connections.
+  - Include tracing/logging/metrics libraries, and error-handling/retry patterns that affect connections.
 
 Example style: "This service exposes user and order workflows over HTTP using Express and the axios client, publishes order events to RabbitMQ via amqplib for asynchronous processing, and pushes live updates via Socket.IO. Configuration uses ENV vars such as API_BASE_URL and ORDER_QUEUE. Outbound HTTP requests include an Authorization: Bearer <token> header."
 
-## OUTPUT FORMAT
+====
 
-Before you answer, please explain your reasoning step-by-step.
+# OUTPUT FORMAT
 
-Reasoning content rules (all inputs):
-- Do not list endpoints, file paths, or line numbers in the reasoning; those specifics belong only in the JSON output.
-- Summarize counts by technology type and direction, and mention key environment resolutions (e.g., BASE_URL=api.example.com).
+## CHAIN OF THOUGHTS PROCESS
 
-Reasoning size control (large inputs):
-- Provide only counts by technology type and direction, and mention key environment resolutions (e.g., BASE_URL=api.example.com, QUEUE_NAME=user-processing).
-- Do not list endpoints, files, or line numbers in the reasoning; those details must appear only in the JSON output.
-- State that duplicates were removed and env variables were resolved where provided.
+You MUST use a chain of thoughts approach embedded within JSON comments. While JSON does not traditionally support comments, we accept JSON with comments for this analysis process. Use // comments within the JSON structure to show your thinking process.
 
-Example concise analysis for large inputs:
-"I analyzed the connection data and counted operations by type and direction. Found 48 outgoing HTTP/HTTPS, 6 incoming HTTP/HTTPS, 12 outgoing MessageQueue, and 4 WebSockets. Outbound HTTP/HTTPS calls use a base URL resolved as BASE_URL=api.example.com. I processed each operation individually, resolved environment variables where available, and removed duplicates before producing the JSON."
+## UNIQUE KEYS REQUIREMENT
 
-For example:
-"I analyzed all the connection data systematically. I found 34 incoming HTTP/HTTPS connections across 8 files including REST API endpoints, route handlers, and server configurations. I identified 20 incoming WebSocket connections for real-time event handling. I discovered 12 outgoing HTTP/HTTPS connections for external API calls and microservice communication. I found 8 outgoing MessageQueue connections for asynchronous processing. I processed each connection individually, extracted specific line numbers, resolved environment variables where applicable, and classified each by technology type and data flow direction."
+CRITICAL: All keys in the JSON must be unique. For the same technology type, group all file paths under one technology key. For the same file path within a technology type, group all connections under one file path key.
+
+## CHAIN OF THOUGHTS STRUCTURE
+
+Your JSON output must include the following thinking process using // comments:
+
+1. Before incoming_connections: Think about unique technology types found for incoming connections
+2. Before outgoing_connections: Think about unique technology types found for outgoing connections
+3. Before each technology type: List all unique file paths and connection counts for that technology
+4. Before each file path: Analyze code type similarity with provided examples and apply appropriate splitting rules
+
+## FILE PATH THINKING PROCESS
+
+Before writing file path fields, include // comments that address:
+
+1. Pattern Grouping: If multiple files contain similar code patterns, group them together with one comment mentioning the total count and pattern type
+2. Code Type Analysis: What type of code pattern does this represent?
+3. Example Similarity: Do any rules or examples have similar code snippet patterns?
+4. Splitting Guidelines: If yes, which forbidden/corrected examples apply to this code?
+5. Variable Detection: Does this code use dynamic, global, or environment variables?
+6. Variable Resolution: If variables are found, what are their resolved values?
+
+Pattern Grouping Strategy: When you find similar code patterns across multiple files, use one thinking comment like:
+  - `// Found 3 files with Express route handlers pattern - all use app.get()/app.post() with hardcoded endpoints, no variable resolution needed`
+  - `// Found 5 files with axios HTTP client calls - all use environment variables, BASE_URL resolved to https://api.example.com`
+  - `// Found 2 files with WebSocket emit operations - all use hardcoded event names, no variable resolution needed`
+
+Then proceed directly to write the file path entries, creating separate JSON entries for EVERY SINGLE connection found.
+
+## ENVIRONMENT AND VARIABLE RESOLUTION THINKING
+
+Within the file path comments, think about:
+  - Environment variables: Look for process.env.VAR_NAME, os.environ['VAR_NAME'], etc.
+  - Global variables: Look for variables defined outside the current scope
+  - Dynamic variables: Look for variables constructed at runtime
+  - Resolution sources: Check same file definitions, environment file blocks
+  - Resolution format: Use ENV_VAR=actual_value or variableName=resolved_value
 
 Therefore the output is:
 
 ```json
 {
+  // Found incoming technology types [HTTP/HTTPS, WebSockets] - HTTP/HTTPS for route handlers and API endpoints, WebSockets for real-time event handling
   "incoming_connections": {
-    "<technology_type>": {
-      "file/path.ext": [
+    // Found unique file paths [src/routes/users.js: 2 connections, src/api/handlers.js: 1 connection, src/queue/consumer.js: 1 connection]
+    "HTTP/HTTPS": {
+      // Found 2 files with similar HTTP endpoint patterns - both use Express routing with hardcoded endpoints, no variable resolution needed
+      "src/routes/users.js": [
         {
           "snippet_lines": "23-23",
-          "description": "Specific operation A for incoming data"
+          "description": "GET /api/users endpoint for user retrieval"
         },
         {
           "snippet_lines": "27-27",
-          "description": "Specific operation B for incoming data"
+          "description": "POST /api/users endpoint for user creation"
+        }
+      ],
+      "src/api/handlers.js": [
+        {
+          "snippet_lines": "45-45",
+          "description": "GET /admin/settings endpoint using BASE_URL=api.example.com"
+        }
+      ],
+      // Found 1 file with message consuming pattern - uses consume method with hardcoded queue name, no variable resolution needed
+      "src/queue/consumer.js": [
+        {
+          "snippet_lines": "20-20",
+          "description": "Message queue consumer for USER_ADD_QUEUE=user-add queue"
+        }
+      ]
+    },
+    // Found unique file paths [src/socket/server.js: 1 connection]
+    "WebSockets": {
+      // Found 1 file with WebSocket event handler pattern - uses socket.on() with hardcoded event names
+      "src/socket/server.js": [
+        {
+          "snippet_lines": "30-30",
+          "description": "WebSocket event handler for user_login event"
         }
       ]
     }
   },
+  // Found outgoing technology types [HTTP/HTTPS, MessageQueue] - HTTP/HTTPS for API calls to external services, MessageQueue for publishing messages
   "outgoing_connections": {
-    "<technology_type>": {
-      "file/path.ext": [
+    // Found unique file paths [src/services/api.js: 2 connections]
+    "HTTP/HTTPS": {
+      // Found 1 file with wrapper function pattern - uses makeApiCall wrapper with environment variables, BASE_URL=https://api.example.com
+      "src/services/api.js": [
         {
           "snippet_lines": "37-37",
-          "description": "Specific operation X for outgoing data"
+          "description": "HTTP POST call using makeApiCall wrapper to /api/users endpoint"
         },
         {
           "snippet_lines": "54-54",
-          "description": "Specific operation Y for outgoing data"
+          "description": "HTTP GET call using makeApiCall wrapper to /api/orders endpoint"
+        }
+      ]
+    },
+    // Found unique file paths [src/queue/producer.js: 1 connection]
+    "MessageQueue": {
+      // Found 1 file with message publishing pattern - uses publishMessage wrapper with variable resolution from same file
+      "src/queue/producer.js": [
+        {
+          "snippet_lines": "25-25",
+          "description": "Message publishing using QUEUE_NAME=user-notifications"
         }
       ]
     }
@@ -429,37 +512,43 @@ Therefore the output is:
 Where `<technology_type>` MUST be one of: HTTP/HTTPS, WebSockets, gRPC, GraphQL, MessageQueue, or Unknown.
 
 Summary constraints:
-- Do NOT list individual endpoints, routes, or event names. Describe capability categories only (e.g., user CRUD, order lifecycle, admin/reporting).
-- Explicitly name confirmed libraries/clients/servers detected (e.g., axios for HTTP client, Express/FastAPI/Flask for HTTP server, amqplib/pika for RabbitMQ, kafkajs, socket.io, grpcio/@grpc/grpc-js, apollo-client/server, graphql-request). Include versions if visible.
-- Include environment/config highlights relevant to connections using ENV_VAR=resolved_value when available.
-- Only assert what is evidenced by the provided code/config; avoid speculation.
-- When wrappers/abstractions are used for connections, name them and briefly describe their argument shape and responsibilities (e.g., auth header injection, base URL resolution, retries, service targeting), as evidenced by code.
+  - Do NOT list individual endpoints, routes, or event names. Describe capability categories only (e.g., user CRUD, order lifecycle, admin/reporting).
+  - Explicitly name confirmed libraries/clients/servers detected (e.g., axios for HTTP client, Express/FastAPI/Flask for HTTP server, amqplib/pika for RabbitMQ, kafkajs, socket.io, grpcio/@grpc/grpc-js, apollo-client/server, graphql-request). Include versions if visible.
+  - Include environment/config highlights relevant to connections using ENV_VAR=resolved_value when available.
+  - Only assert what is evidenced by the provided code/config; avoid speculation.
+  - When wrappers/abstractions are used for connections, name them and briefly describe their argument shape and responsibilities (e.g., auth header injection, base URL resolution, retries, service targeting), as evidenced by code.
 
-## MANDATORY SNIPPET SEPARATION RULES
+====
 
-### RULE 1: ONE OPERATION PER SNIPPET
+# MANDATORY SNIPPET SEPARATION RULES
+
+RULE 1: ONE OPERATION PER SNIPPET
 For any code handling multiple operations:
-- Each operation gets its own snippet entry
-- Use specific line numbers for each operation block
-- Description must mention the specific operation
+  - Each operation gets its own snippet entry
+  - Use specific line numbers for each operation block
+  - Description must mention the specific operation
 
-### RULE 2: ONE ENDPOINT/EVENT/METHOD PER SNIPPET
+RULE 2: ONE ENDPOINT/EVENT/METHOD PER SNIPPET
 For any code defining multiple endpoints/events/methods:
-- Each definition gets its own snippet entry
-- Use specific line numbers for each definition
-- Description must include the specific endpoint/event/method details
+  - Each definition gets its own snippet entry
+  - Use specific line numbers for each definition
+  - Description must include the specific endpoint/event/method details
 
-### RULE 3: PRECISE LINE NUMBERS
-- Use exact line numbers for each individual connection
-- For single-line connections: "23-23"
-- For multi-line connections: "23-25" (only if they're truly one logical connection spanning multiple lines)
-- Never use large ranges that span multiple different connections
-- FORBIDDEN: "264-600", "604-674", "100-500" - these indicate multiple connections being grouped
-- REQUIRED: Each connection gets its own precise line number or very small range
+RULE 3: PRECISE LINE NUMBERS
+  - Use exact line numbers for each individual connection
+  - For single-line connections: "23-23"
+  - For multi-line connections: "23-25" (only if they're truly one logical connection spanning multiple lines)
+  - Never use large ranges that span multiple different connections
+  - FORBIDDEN EXAMPLES: "364-600", "104-474", "100-500", "50-120" - these indicate multiple connections being grouped
+  - CORRECT EXAMPLES: "23-23", "45-45", "67-69", "102-107"
+  - REQUIRED: Each connection gets its own precise line number or very small range (maximum 3-10 lines for one connection)
 
-## EXAMPLES OF CORRECT SEPARATION
+**CRITICAL LINE RANGE RULE**: Any range larger than ~7-10 lines (e.g., "504-574" = 70 lines) indicates you are grouping multiple connections, which is STRICTLY FORBIDDEN. Break it down into individual connections with single line numbers or tiny ranges.
 
-### EXAMPLE 1: HTTP API CALLS WITH LITERAL ENDPOINTS
+====
+
+# EXAMPLES OF CORRECT SEPARATION
+EXAMPLE 1: HTTP API CALLS WITH LITERAL ENDPOINTS
 When you receive connection data with HTTP API calls:
 
 Input Connection Data:
@@ -467,7 +556,8 @@ Input Connection Data:
 ./src/api/client.js:
   15 |     axios.post(`${process.env.BASE_URL}/admin/users`, userData)
 
-  23 |     axios.get(`${process.env.BASE_URL}/api/orders`, params)
+  23 |     axios.get(`${process.env.BASE_URL}/api/v1/orders`, paramsv1)
+  24 |     axios.get(`${process.env.BASE_URL}/api/v2/orders`, paramsv2)
 
   31 |     makeApiCall(`${process.env.BASE_URL}/admin/users`, 'POST', userData)
 
@@ -481,13 +571,13 @@ BASE_URL=https://api.example.com
 
 CORRECT Splitting:
 
-Step-by-step Analysis:
-"I analyzed the HTTP API connection data systematically. I found 4 outgoing HTTP/HTTPS connections in src/api/client.js file. These include 2 direct axios calls and 2 wrapper function calls using makeApiCall. Each call uses an environment-based base URL and specific paths (BASE_URL resolved from the provided env block). All connections are outgoing since this service is making calls to external endpoints for user management and order processing."
-
 ```json
 {
+  // Found outgoing technology types [HTTP/HTTPS] - HTTP client calls using axios and makeApiCall wrapper for external API communication
   "outgoing_connections": {
+    // Found unique file paths [src/api/client.js: 5 connections]
     "HTTP/HTTPS": {
+      // src/api/client.js contains HTTP API calls with literal endpoints - matches EXAMPLE 1 pattern. Code uses direct axios calls and makeApiCall wrapper. Environment variables detected: BASE_URL resolved to https://api.example.com from provided env file. All outgoing connections since service makes calls to external endpoints.
       "src/api/client.js": [
         {
           "snippet_lines": "15-15",
@@ -495,7 +585,11 @@ Step-by-step Analysis:
         },
         {
           "snippet_lines": "23-23",
-          "description": "HTTP GET call using BASE_URL=https://api.example.com to /api/orders endpoint for order retrieval"
+          "description": "HTTP GET call using BASE_URL=https://api.example.com to /api/v1/orders endpoint for order retrieval"
+        },
+        {
+          "snippet_lines": "24-24",
+          "description": "HTTP GET call using BASE_URL=https://api.example.com to /api/v2/orders endpoint for order retrieval"
         },
         {
           "snippet_lines": "31-31",
@@ -512,7 +606,7 @@ Step-by-step Analysis:
 }
 ```
 
-### EXAMPLE 2: ENVIRONMENT VARIABLE CONFIGURATIONS
+EXAMPLE 2: ENVIRONMENT VARIABLE CONFIGURATIONS
 When you receive connection data with environment variables and their values:
 
 Input Connection Data:
@@ -528,13 +622,13 @@ BASE_URL=https://api.example.com
 
 CORRECT Splitting:
 
-Step-by-step Analysis:
-"I analyzed the connection data and identified environment variable usage. I found 1 outgoing HTTP/HTTPS connection. For src/config/api.js line 12, I resolved the environment variable BASE_URL=https://api.example.com from the provided env file to create the full endpoint."
-
 ```json
 {
+  // Found outgoing technology types [HTTP/HTTPS] - HTTP GET request for data synchronization using environment-based configuration
   "outgoing_connections": {
+    // Found unique file paths [src/config/api.js: 1 connection]
     "HTTP/HTTPS": {
+      // src/config/api.js contains HTTP GET call with environment variable - matches environment variable pattern. Code uses axios.get() with template literal. Environment variable detected: BASE_URL resolved to https://api.example.com from env file. Single outgoing connection for data synchronization.
       "src/config/api.js": [
         {
           "snippet_lines": "12-12",
@@ -547,7 +641,7 @@ Step-by-step Analysis:
 }
 ```
 
-### EXAMPLE 3: SOCKET EVENTS AND MESSAGE HANDLERS
+EXAMPLE 3: SOCKET EVENTS AND MESSAGE HANDLERS
 When you receive connection data with WebSocket and message queue operations:
 
 Input Connection Data:
@@ -568,13 +662,13 @@ Input Connection Data:
 
 CORRECT Splitting:
 
-Step-by-step Analysis:
-"I analyzed the WebSocket and message queue connection data systematically. I found 2 outgoing WebSocket emits, 2 incoming WebSocket handlers, and 1 incoming MessageQueue consumer. The emits are outgoing since they send data to clients, the event listeners are incoming since they receive data from clients, and the queue consumer is incoming since it receives messages from the queue system."
-
 ```json
 {
+  // Found outgoing technology types [WebSockets] - Real-time event emission to connected clients
   "outgoing_connections": {
+    // Found unique file paths [src/socket/handlers.js: 2 connections]
     "WebSockets": {
+      // Found 1 file with WebSocket emit pattern - uses socket.emit() with hardcoded event names, no variable resolution needed
       "src/socket/handlers.js": [
         {
           "snippet_lines": "15-15",
@@ -587,8 +681,11 @@ Step-by-step Analysis:
       ]
     }
   },
+  // Found incoming technology types [WebSockets, MessageQueue] - WebSockets for client event handling, MessageQueue for consuming queued tasks
   "incoming_connections": {
+    // Found unique file paths [src/socket/server.js: 2 connections]
     "WebSockets": {
+      // Found 1 file with WebSocket event handler pattern - uses socket.on() with hardcoded event names, no variable resolution needed
       "src/socket/server.js": [
         {
           "snippet_lines": "30-30",
@@ -600,7 +697,9 @@ Step-by-step Analysis:
         }
       ]
     },
+    // Found unique file paths [src/queue/consumer.js: 1 connection]
     "MessageQueue": {
+      // Found 1 file with message queue consumer pattern - uses queue.consume() with hardcoded queue name
       "src/queue/consumer.js": [
         {
           "snippet_lines": "42-42",
@@ -613,7 +712,7 @@ Step-by-step Analysis:
 }
 ```
 
-### EXAMPLE 4: EXPRESS ROUTE HANDLERS
+EXAMPLE 4: EXPRESS ROUTE HANDLERS
 When you receive connection data with API route definitions:
 
 Input Connection Data:
@@ -631,13 +730,13 @@ Input Connection Data:
 
 CORRECT Splitting:
 
-Step-by-step Analysis:
-"I analyzed the Express route handler connection data systematically. I found 4 incoming HTTP/HTTPS connections across 2 files spanning user routes and order routes. All connections are incoming since they define endpoints that accept requests from external clients. Each route handler serves a specific HTTP method and endpoint combination for REST API functionality."
-
 ```json
 {
+  // Found incoming technology types [HTTP/HTTPS] - REST API endpoints for user and order management using Express framework
   "incoming_connections": {
+    // Found unique file paths [src/routes/users.js: 2 connections, src/routes/orders.js: 2 connections]
     "HTTP/HTTPS": {
+      // Found 2 files with Express route handler pattern - both use app.get()/router.get() and app.post()/router.put() with hardcoded endpoints, no variable resolution needed
       "src/routes/users.js": [
         {
           "snippet_lines": "10-10",
@@ -664,7 +763,7 @@ Step-by-step Analysis:
 }
 ```
 
-### EXAMPLE 5: WRAPPER FUNCTIONS WITH SPECIFIC IDENTIFIERS
+EXAMPLE 5: WRAPPER FUNCTIONS WITH SPECIFIC IDENTIFIERS
 When you receive connection data with wrapper function calls:
 
 Input Connection Data:
@@ -692,13 +791,13 @@ Input Connection Data:
 
 CORRECT Splitting:
 
-Step-by-step Analysis:
-"I analyzed the wrapper function connection data systematically. I found 4 outgoing connections across 2 files using wrapper functions. In src/services/notification.js, there are 2 MessageQueue publish operations. In src/services/api.js, there are 2 HTTP/HTTPS calls using the makeApiCall wrapper. All connections are outgoing since the wrapper functions are being called to send data to external systems. Each wrapper call has specific identifiers for queues or endpoints. Wrapper fuction uses BASE_URL=https://api.example.com from the provided env file."
-
 ```json
 {
+  // Found outgoing technology types [MessageQueue, HTTP/HTTPS] - MessageQueue for publishing notifications, HTTP/HTTPS for external API calls using wrapper functions
   "outgoing_connections": {
+    // Found unique file paths [src/services/notification.js: 2 connections]
     "MessageQueue": {
+      // Found 1 file with message publishing wrapper pattern - uses publishMessage wrapper with hardcoded queue names, no variable resolution needed
       "src/services/notification.js": [
         {
           "snippet_lines": "25-25",
@@ -710,7 +809,9 @@ Step-by-step Analysis:
         }
       ]
     },
+    // Found unique file paths [src/services/api.js: 2 connections]
     "HTTP/HTTPS": {
+      // Found 1 file with HTTP wrapper pattern - uses makeApiCall wrapper with environment variables, BASE_URL=https://api.example.com
       "src/services/api.js": [
         {
           "snippet_lines": "18-18",
@@ -727,7 +828,7 @@ Step-by-step Analysis:
 }
 ```
 
-### EXAMPLE 6: SWITCH CASE CONNECTIONS
+EXAMPLE 6: SWITCH CASE CONNECTIONS
 When you receive connection data with switch statements handling different connection operations:
 
 Input Connection Data:
@@ -767,13 +868,13 @@ Input Connection Data:
 
 CORRECT Splitting:
 
-Step-by-step Analysis:
-"I analyzed the switch statement connection data systematically. I found 6 outgoing connections across 2 files within switch case structures. In src/handlers/message.js, there are 3 HTTP/HTTPS connections for different message types that use a single environment-based base URL with service paths; BASE_URL=api.example.com. In src/handlers/event.js, there are 3 WebSocket connections for different event types. I focused only on the actual connection operations, not the switch structure lines. Each case represents a distinct connection with specific parameters and target services."
-
 ```json
 {
+  // Found outgoing technology types [HTTP/HTTPS, WebSockets] - HTTP/HTTPS for service-to-service communication based on message types, WebSockets for real-time client updates based on event types
   "outgoing_connections": {
+    // Found unique file paths [src/handlers/message.js: 3 connections]
     "HTTP/HTTPS": {
+      // Found 1 file with switch case HTTP pattern - uses axios calls within switch cases with environment variables, BASE_URL=api.example.com
       "src/handlers/message.js": [
         {
           "snippet_lines": "47-47",
@@ -789,7 +890,9 @@ Step-by-step Analysis:
         }
       ]
     },
+    // Found unique file paths [src/handlers/event.js: 3 connections]
     "WebSockets": {
+      // Found 1 file with switch case WebSocket pattern - uses socket.emit() within switch cases with hardcoded event names
       "src/handlers/event.js": [
         {
           "snippet_lines": "22-22",
@@ -811,182 +914,36 @@ Step-by-step Analysis:
 ```
 
 IMPORTANT NOTES FOR SWITCH CASE SPLITTING:
-- Each case branch with a connection operation gets its own separate entry
-- Use the exact line number of the connection operation (not the case statement line)
-- Include the case condition in the description to provide context
-- Never group all cases together as "switch statement handling multiple operations"
-- Ignore the switch statement structure lines (switch, case labels, breaks) - only capture the actual connection operations
+  - Each case branch with a connection operation gets its own separate entry
+  - Use the exact line number of the connection operation (not the case statement line)
+  - Include the case condition in the description to provide context
+  - Never group all cases together as "switch statement handling multiple operations"
+  - Ignore the switch statement structure lines (switch, case labels, breaks) - only capture the actual connection operations
 
-## EXAMPLES OF FORBIDDEN GROUPING
+====
 
-### FORBIDDEN - Grouping Multiple Operations:
-```json
-{
-  "incoming_connections": {
-    "HTTP/HTTPS": {
-      "src/handlers.js": [
-        {
-          "snippet_lines": "264-600",
-          "description": "40+ REST API endpoints including /get-speech-token, /get-custom-token, /check-room, /admin routes, /super-admin routes - comprehensive incoming HTTP connection points"
-        },
-        {
-          "snippet_lines": "604-674",
-          "description": "REST API endpoints for incoming connections - includes 45+ admin, internal, techyrr-admin, and public routes with various HTTP methods"
-        }
-      ]
-    },
-    "WebSockets": {
-      "src/handlers.js": [
-        {
-          "snippet_lines": "15-55",
-          "description": "Event handlers for multiple events including user_login, user_logout, and data_update"
-        }
-      ]
-    }
-  }
-}
-```
+# EXAMPLES OF FORBIDDEN GROUPING
 
-### CORRECT - Individual Connections:
-```json
-{
-  "incoming_connections": {
-    "HTTP/HTTPS": {
-      "src/handlers.js": [
-        {
-          "snippet_lines": "264-264",
-          "description": "GET /get-speech-token endpoint for speech token retrieval"
-        },
-        {
-          "snippet_lines": "267-267",
-          "description": "POST /get-custom-token endpoint for custom token generation"
-        },
-        {
-          "snippet_lines": "270-270",
-          "description": "GET /check-room endpoint for room validation"
-        },
-        {
-          "snippet_lines": "275-275",
-          "description": "GET /admin/users endpoint for admin user management"
-        }
-      ]
-    },
-    "WebSockets": {
-      "src/handlers.js": [
-        {
-          "snippet_lines": "15-15",
-          "description": "WebSocket event handler for user_login event"
-        },
-        {
-          "snippet_lines": "25-25",
-          "description": "WebSocket event handler for user_logout event"
-        },
-        {
-          "snippet_lines": "35-35",
-          "description": "WebSocket event handler for data_update event"
-        }
-      ]
-    }
-  }
-}
-```
-```
+1. FORBIDDEN - Grouping Multiple Operations:
+  - "40+ REST API endpoints including /get-speech-token, /get-custom-token, /check-room, /admin routes, /super-admin routes - comprehensive incoming HTTP connection points"
+  - "REST API endpoints for incoming connections - includes 45+ admin, internal, techyrr-admin, and public routes with various HTTP methods"
+  - "Event handlers for multiple events including user_login, user_logout, and data_update"
 
-### FORBIDDEN - Grouping Multiple Endpoints:
-```json
-{
-  "outgoing_connections": {
-    "HTTP/HTTPS": {
-      "src/client.js": [
-        {
-          "snippet_lines": "15-31",
-          "description": "HTTP requests including GET, POST, and PUT operations for user management"
-        },
-        {
-          "snippet_lines": "50-100",
-          "description": "Multiple API endpoints for order processing and payment handling"
-        }
-      ]
-    }
-  }
-}
-```
+2. FORBIDDEN - Grouping Multiple Endpoints:
+  - "HTTP requests including GET, POST, and PUT operations for user management"
+  - "Multiple API endpoints for order processing and payment handling"
 
-### CORRECT - Individual Endpoints:
-```json
-{
-  "outgoing_connections": {
-    "HTTP/HTTPS": {
-      "src/client.js": [
-        {
-          "snippet_lines": "15-15",
-          "description": "HTTP GET request to /api/users endpoint for user retrieval"
-        },
-        {
-          "snippet_lines": "20-20",
-          "description": "HTTP POST request to /api/users endpoint for user creation"
-        },
-        {
-          "snippet_lines": "25-25",
-          "description": "HTTP PUT request to /api/users/:id endpoint for user update"
-        }
-      ]
-    }
-  }
-}
-```
-```
+3. FORBIDDEN - Grouping Wrapper Function Calls:
+  - "Multiple API calls using makeApiCall wrapper for various endpoints"
+  - "Several HTTP operations including user, order, and payment API calls"
 
-### FORBIDDEN - Grouping Wrapper Function Calls:
-```json
-{
-  "outgoing_connections": {
-    "HTTP/HTTPS": {
-      "src/services/api.js": [
-        {
-          "snippet_lines": "18-45",
-          "description": "Multiple API calls using makeApiCall wrapper for various endpoints"
-        },
-        {
-          "snippet_lines": "50-80",
-          "description": "Several HTTP operations including user, order, and payment API calls"
-        }
-      ]
-    }
-  }
-}
-```
+====
 
-### CORRECT - Individual Wrapper Calls:
-```json
-{
-  "outgoing_connections": {
-    "HTTP/HTTPS": {
-      "src/services/api.js": [
-        {
-          "snippet_lines": "18-18",
-          "description": "HTTP POST call using makeApiCall wrapper to /api/users endpoint for user creation"
-        },
-        {
-          "snippet_lines": "25-25",
-          "description": "HTTP GET call using makeApiCall wrapper to /api/orders endpoint for order retrieval"
-        },
-        {
-          "snippet_lines": "32-32",
-          "description": "HTTP PUT call using makeApiCall wrapper to /api/payments endpoint for payment update"
-        }
-      ]
-    }
-  }
-}
-```
-```
-
-## DATA EXCLUSION RULES - DO NOT SPLIT THESE
+# DATA EXCLUSION RULES - DO NOT INCLUDE THIS TYPE OF DATA IN YOUR OUTPUT
 
 The following types of connection data should NOT be included in splitting:
 
-### EXCLUDE 1: Connection Setup and Configuration Code
+EXCLUDE 1: Connection Setup and Configuration Code
 Connection Data That Should Be Excluded:
 ```
 ./src/queue/consumer.js:
@@ -1013,7 +970,7 @@ Connection Data That Should Be Excluded:
 ```
 Why Excluded: These are infrastructure setup, not actual data transmission operations.
 
-### EXCLUDE 2: Generic Library Calls Without Identifiers
+EXCLUDE 2: Generic Library Calls Without Identifiers
 Connection Data That Should Be Excluded:
 ```
 ./src/utils/http.js:
@@ -1026,7 +983,7 @@ Connection Data That Should Be Excluded:
 ```
 Why Excluded: These use variable identifiers, not specific connection endpoints.
 
-### EXCLUDE 3: Function Definitions and Imports
+EXCLUDE 3: Function Definitions and Imports
 Connection Data That Should Be Excluded:
 ```
 ./src/api/client.js:
@@ -1040,7 +997,7 @@ Connection Data That Should Be Excluded:
 ```
 Why Excluded: Library imports and generic function definitions are not actual connections.
 
-### EXCLUDE 4: Configuration Without Actual Usage
+EXCLUDE 4: Configuration Without Actual Usage
 Connection Data That Should Be Excluded:
 ```
 ./src/config/settings.js:
@@ -1050,7 +1007,7 @@ Connection Data That Should Be Excluded:
 ```
 Why Excluded: Configuration definitions without actual connection usage.
 
-### EXCLUDE 5: Connection Placeholders
+EXCLUDE 5: Connection Placeholders
 Connection Data That Should Be Excluded:
 ```
 ./src/placeholders/connection.js:
@@ -1060,12 +1017,14 @@ Connection Data That Should Be Excluded:
 ```
 Why Excluded: These are placeholders or abstractions without concrete connection details.
 
-## DATA INCLUSION RULES - MUST BE INCLUDED
+====
 
-### INCLUDE: Only Actual Data Transmission Operations
+# DATA INCLUSION RULES - MUST BE INCLUDED
+
+INCLUDE: Only Actual Data Transmission Operations
 Connection Data That SHOULD Be Included:
 
-#### PRODUCERS/SENDERS (Outgoing):
+PRODUCERS/SENDERS/PROVIDER (Outgoing):
 ```
 ./src/queue/producer.js:
   25 |     channel.publish(exchange, routingKey, message)
@@ -1084,7 +1043,7 @@ Connection Data That SHOULD Be Included:
   20 |     ws.send(JSON.stringify({ type: 'ping', data: pingData }))
 ```
 
-#### CONSUMERS/RECEIVERS/LISTENERS (Incoming):
+CONSUMERS/RECEIVERS/LISTENERS (Incoming):
 ```
 ./src/queue/consumer.js:
   40 |     channel.consume(queueName, messageHandler)
@@ -1105,7 +1064,7 @@ Connection Data That SHOULD Be Included:
 
 Why Included: These show actual data transmission operations - the core purpose of connection analysis.
 
-### FOCUS ON DATA OPERATIONS ONLY (Examples):
+FOCUS ON DATA OPERATIONS ONLY AND THEIR WRAPPER FUCTIONS (Examples):
 - Producers: `publish()`, `send()`, `sendToQueue()`, `produce()`
 - Consumers: `consume()`, `process()`, `subscribe()`, `on('message')`
 - HTTP Senders: `axios.get()`, `axios.post()`, `fetch()`, `request()`
@@ -1113,20 +1072,26 @@ Why Included: These show actual data transmission operations - the core purpose 
 - WebSocket Senders: `socket.emit()`, `ws.send()`
 - WebSocket Receivers: Event handlers like `socket.on()`, `ws.on('message')`
 
-## STEP-BY-STEP ANALYSIS PROCESS
+====
+
+# CHAIN OF THOUGHTS ANALYSIS PROCESS
 
 1. Identify env files: Look for environment file code blocks that contain variable definitions
 2. Identify all connections: Scan through all code snippets and identify every individual connection
 3. Resolve env variables: For each connection using environment variables, find corresponding values from env file blocks
-4. Separate each connection: For each connection found, create a separate JSON entry (excluding duplicates)
+4. Separate each connection: For each connection found, create a separate JSON entry
 5. Extract precise details: Get exact line numbers and specific details for each connection
 6. Write specific descriptions: Each description must be about ONE specific connection with resolved env values when available
 7. Analyze project comprehensively: Review all connections, patterns, and code structure to understand the complete project functionality
 8. Generate detailed summary: Create a comprehensive project description covering purpose, architecture, integrations, and business domain
+9. Resolve global/dynamic variables: If any connection uses global or dynamic variables that cannot be resolved, mention those variables in the description
+10. Embed thinking process: Use // comments throughout JSON to show analysis, pattern matching, and variable resolution
+11. Same repeating code from same file with same line numbers: If the same code snippet with same line number range and same file path appears multiple times in the input, include it only once in the output
+====
 
-## REQUIREMENTS
+# REQUIREMENTS
 
-1. Step-by-step Analysis: Explain your reasoning before providing the JSON response
+1. Chain of Thoughts Process: Use embedded JSON comments to show your reasoning throughout the JSON structure
 2. Connection Counting: Count and categorize all connections by technology type and direction
 3. Complete Processing: Process ALL connections - never skip or sample connections
 4. Individual Separation: Never group multiple connections into one entry
@@ -1135,17 +1100,16 @@ Why Included: These show actual data transmission operations - the core purpose 
 7. Environment Resolution: Resolve environment variables using provided configuration files and include as ENV_VAR=actual_value
 8. Technology Classification: Validate technology type classification for each connection
 9. Comprehensive Summary: Generate detailed project description covering purpose, functionality, architecture, and integrations
-10. Output Format: Start with detailed analysis, then return valid JSON
+10. Output Format: Return valid JSON with embedded chain of thoughts comments
 11. Grouping Structure: Group by technology and file path as shown in format
-12. FORBIDDEN LANGUAGE: No phrases like "including", "multiple", "various", "several", "operations for", "comprehensive", "40+", "45+", numbers with plus signs
+12. FORBIDDEN LANGUAGE: No phrases like "including", "multiple", "various", "several", "operations for", "comprehensive", "40+", "45+", numbers with plus signs, "for [A], [B], and [C]", "endpoints for", "routes for"
 13. INDIVIDUAL ENTRIES REQUIRED: If you find 86 different connections, create 86 separate JSON entries - No exceptions, No sampling, No grouping
 14. MANDATORY SEPARATION: Every single connection must be its own separate JSON entry with specific line numbers
 
 Summary-specific requirements:
-- Do NOT enumerate concrete endpoint paths; describe capabilities/categories only.
-- Name concrete libraries/frameworks used for connections (e.g., axios, requests, Express, FastAPI, amqplib/pika for RabbitMQ, kafkajs, socket.io, grpcio/@grpc/grpc-js, apollo-client/server, graphql-request).
-- Use only facts supported by the input; if uncertain, omit rather than hedge.
-
+  - Do NOT enumerate concrete endpoint paths; describe capabilities/categories only.
+  - Name concrete libraries/frameworks used for connections (e.g., axios, requests, Express, FastAPI, amqplib/pika for RabbitMQ, kafkajs, socket.io, grpcio/@grpc/grpc-js, apollo-client/server, graphql-request).
+  - Use only facts supported by the input; if uncertain, omit rather than hedge.
 "#
 
 template_string ConnectionSplittingUserPrompt(memory_context: string) #"

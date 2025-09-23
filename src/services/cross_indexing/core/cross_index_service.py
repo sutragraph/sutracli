@@ -147,6 +147,15 @@ class CrossIndexService:
                             f"Phase {current_phase} marked complete due to attempt_completion"
                         )
 
+                        # Extract and store project info from Phase 1 completion
+                        if current_phase == 1:
+                            completion_result = tool_params.get("result", "")
+                            if completion_result:
+                                self.task_manager.set_project_info(completion_result)
+                                logger.debug(
+                                    "Project info extracted and stored from Phase 1 completion"
+                                )
+
                 # Process sutra_memory updates using original BAML object
                 if (
                     hasattr(baml_response, "sutra_memory")
@@ -611,23 +620,46 @@ Tool Results:
         try:
             logger.debug(f"Phase {phase} completed - running task filtering")
 
+            # Debug task state before filtering
+            self.task_manager.debug_log_tasks()
+
             # Get tasks created for the next phase
             next_phase = phase + 1
             tasks_to_filter = []
 
             # Get all pending tasks that were created in this phase for next phase
+            # ONLY include PENDING tasks - completed tasks should stay in their completion phase
             for task in self.task_manager.get_tasks_by_status(TaskStatus.PENDING):
                 if task:
                     metadata = self.task_manager._task_phase_metadata.get(task.id, {})
                     created_in_phase = metadata.get("created_in_phase")
                     target_phase = metadata.get("target_phase")
 
+                    # Double-check: only include tasks that are both pending AND targeting next phase
                     if created_in_phase == phase and target_phase == next_phase:
                         tasks_to_filter.append(task)
+                        logger.debug(
+                            f"Including task {task.id} for filtering: created_in_phase={created_in_phase}, target_phase={target_phase}, status={task.status}"
+                        )
+                    else:
+                        logger.debug(
+                            f"Excluding task {task.id} from filtering: created_in_phase={created_in_phase}, target_phase={target_phase}, status={task.status}"
+                        )
 
             logger.debug(
                 f"Found {len(tasks_to_filter)} tasks to filter from Phase {phase} to Phase {next_phase}"
             )
+
+            # Debug the tasks that will be filtered
+            if tasks_to_filter:
+                logger.debug("Tasks selected for filtering:")
+                for i, task in enumerate(tasks_to_filter):
+                    metadata = self.task_manager._task_phase_metadata.get(task.id, {})
+                    logger.debug(
+                        f"  Task {i+1}: ID={task.id}, status={task.status}, created_in_phase={metadata.get('created_in_phase')}, target_phase={metadata.get('target_phase')}, description='{task.description[:60]}...'"
+                    )
+            else:
+                logger.debug("No tasks selected for filtering")
 
             if tasks_to_filter:
                 logger.debug(f"Running task filtering on {len(tasks_to_filter)} tasks")

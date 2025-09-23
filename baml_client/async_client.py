@@ -181,6 +181,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AnthropicClaudeSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AnthropicClaudeSutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeSutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -316,6 +331,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AwsBedrockSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AwsBedrockSutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockSutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AwsBedrockTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -451,6 +481,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundrySutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundrySutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundrySutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AzureAIFoundryTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -586,6 +631,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureOpenAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureOpenAISutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAISutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AzureOpenAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -721,6 +781,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def GCPVertexAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.GCPVertexAISutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAISutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -856,6 +931,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def GoogleGeminiSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.GoogleGeminiSutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiSutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def GoogleGeminiTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -991,6 +1081,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTSutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTSutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def OpenAIChatGPTTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -1126,6 +1231,21 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterSutraCliAssistant(question=question,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterSutraCliAssistant", args={
+                "question": question,
+            })
+            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
     async def OpenRouterTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -1249,6 +1369,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def AnthropicClaudeSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeSutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
@@ -1355,6 +1487,18 @@ class BamlStreamClient:
           result,
           lambda x: typing.cast(stream_types.RoadmapResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AwsBedrockSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockSutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def AwsBedrockTaskFilter(self, task_list: str,
@@ -1465,6 +1609,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def AzureAIFoundrySutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundrySutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def AzureAIFoundryTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
@@ -1571,6 +1727,18 @@ class BamlStreamClient:
           result,
           lambda x: typing.cast(stream_types.RoadmapResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureOpenAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAISutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def AzureOpenAITaskFilter(self, task_list: str,
@@ -1681,6 +1849,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def GCPVertexAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAISutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
@@ -1787,6 +1967,18 @@ class BamlStreamClient:
           result,
           lambda x: typing.cast(stream_types.RoadmapResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def GoogleGeminiSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiSutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def GoogleGeminiTaskFilter(self, task_list: str,
@@ -1897,6 +2089,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def OpenAIChatGPTSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTSutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def OpenAIChatGPTTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
@@ -2005,6 +2209,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RoadmapResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def OpenRouterSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterSutraCliAssistant", args={
+            "question": question,
+        })
+        return baml_py.BamlStream[str, str](
+          result,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def OpenRouterTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.TaskFilterResponse, types.TaskFilterResponse]:
@@ -2086,6 +2302,13 @@ class BamlHttpRequestClient:
             "params": params,
         }, mode="request")
         return result
+    async def AnthropicClaudeSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeSutraCliAssistant", args={
+            "question": question,
+        }, mode="request")
+        return result
     async def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2147,6 +2370,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockRoadmapAgent", args={
             "params": params,
+        }, mode="request")
+        return result
+    async def AwsBedrockSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockSutraCliAssistant", args={
+            "question": question,
         }, mode="request")
         return result
     async def AwsBedrockTaskFilter(self, task_list: str,
@@ -2212,6 +2442,13 @@ class BamlHttpRequestClient:
             "params": params,
         }, mode="request")
         return result
+    async def AzureAIFoundrySutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundrySutraCliAssistant", args={
+            "question": question,
+        }, mode="request")
+        return result
     async def AzureAIFoundryTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2273,6 +2510,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIRoadmapAgent", args={
             "params": params,
+        }, mode="request")
+        return result
+    async def AzureOpenAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAISutraCliAssistant", args={
+            "question": question,
         }, mode="request")
         return result
     async def AzureOpenAITaskFilter(self, task_list: str,
@@ -2338,6 +2582,13 @@ class BamlHttpRequestClient:
             "params": params,
         }, mode="request")
         return result
+    async def GCPVertexAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAISutraCliAssistant", args={
+            "question": question,
+        }, mode="request")
+        return result
     async def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2399,6 +2650,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiRoadmapAgent", args={
             "params": params,
+        }, mode="request")
+        return result
+    async def GoogleGeminiSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiSutraCliAssistant", args={
+            "question": question,
         }, mode="request")
         return result
     async def GoogleGeminiTaskFilter(self, task_list: str,
@@ -2464,6 +2722,13 @@ class BamlHttpRequestClient:
             "params": params,
         }, mode="request")
         return result
+    async def OpenAIChatGPTSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTSutraCliAssistant", args={
+            "question": question,
+        }, mode="request")
+        return result
     async def OpenAIChatGPTTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2525,6 +2790,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterRoadmapAgent", args={
             "params": params,
+        }, mode="request")
+        return result
+    async def OpenRouterSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterSutraCliAssistant", args={
+            "question": question,
         }, mode="request")
         return result
     async def OpenRouterTaskFilter(self, task_list: str,
@@ -2598,6 +2870,13 @@ class BamlHttpStreamRequestClient:
             "params": params,
         }, mode="stream")
         return result
+    async def AnthropicClaudeSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeSutraCliAssistant", args={
+            "question": question,
+        }, mode="stream")
+        return result
     async def AnthropicClaudeTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2659,6 +2938,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockRoadmapAgent", args={
             "params": params,
+        }, mode="stream")
+        return result
+    async def AwsBedrockSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockSutraCliAssistant", args={
+            "question": question,
         }, mode="stream")
         return result
     async def AwsBedrockTaskFilter(self, task_list: str,
@@ -2724,6 +3010,13 @@ class BamlHttpStreamRequestClient:
             "params": params,
         }, mode="stream")
         return result
+    async def AzureAIFoundrySutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundrySutraCliAssistant", args={
+            "question": question,
+        }, mode="stream")
+        return result
     async def AzureAIFoundryTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2785,6 +3078,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIRoadmapAgent", args={
             "params": params,
+        }, mode="stream")
+        return result
+    async def AzureOpenAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAISutraCliAssistant", args={
+            "question": question,
         }, mode="stream")
         return result
     async def AzureOpenAITaskFilter(self, task_list: str,
@@ -2850,6 +3150,13 @@ class BamlHttpStreamRequestClient:
             "params": params,
         }, mode="stream")
         return result
+    async def GCPVertexAISutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAISutraCliAssistant", args={
+            "question": question,
+        }, mode="stream")
+        return result
     async def GCPVertexAITaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2911,6 +3218,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiRoadmapAgent", args={
             "params": params,
+        }, mode="stream")
+        return result
+    async def GoogleGeminiSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiSutraCliAssistant", args={
+            "question": question,
         }, mode="stream")
         return result
     async def GoogleGeminiTaskFilter(self, task_list: str,
@@ -2976,6 +3290,13 @@ class BamlHttpStreamRequestClient:
             "params": params,
         }, mode="stream")
         return result
+    async def OpenAIChatGPTSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTSutraCliAssistant", args={
+            "question": question,
+        }, mode="stream")
+        return result
     async def OpenAIChatGPTTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -3037,6 +3358,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterRoadmapAgent", args={
             "params": params,
+        }, mode="stream")
+        return result
+    async def OpenRouterSutraCliAssistant(self, question: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterSutraCliAssistant", args={
+            "question": question,
         }, mode="stream")
         return result
     async def OpenRouterTaskFilter(self, task_list: str,

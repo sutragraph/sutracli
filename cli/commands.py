@@ -6,6 +6,7 @@ from pathlib import Path
 
 from loguru import logger
 from rich.panel import Panel
+from rich.text import Text
 
 from src.agents_new import Agent
 from src.embeddings import get_vector_store
@@ -21,27 +22,7 @@ from src.tools.tool_web_search.action import (
 )
 from src.tools.utils.code_processing_utils import add_line_numbers_to_code
 from src.utils.console import console
-
-
-def get_version_from_init():
-    """Get version from sutrakit/__init__.py file."""
-    try:
-        import re
-        from pathlib import Path
-
-        # Try to read version from sutrakit/__init__.py directly to avoid circular imports
-        init_file = Path(__file__).parent.parent / "sutrakit" / "__init__.py"
-        if init_file.exists():
-            with open(init_file, "r") as f:
-                content = f.read()
-                version_match = re.search(
-                    r'__version__\s*=\s*["\']([^"\']+)["\']', content
-                )
-                if version_match:
-                    return version_match.group(1)
-    except Exception:
-        pass
-    return "0.1.5"
+from src.utils.version_checker import VersionChecker
 
 
 def handle_single_command(args) -> None:
@@ -536,36 +517,41 @@ def handle_run_phase5_command(args) -> None:
         print(f"❌ Unexpected error: {e}")
 
 
-def handle_version_command(args) -> None:
-    """Handle version command to show version information."""
-    try:
-        # Get version from __init__.py
-        version = get_version_from_init()
+def handle_version_command() -> None:
+    current, latest = (
+        VersionChecker.get_current_version(),
+        VersionChecker.get_latest_version(),
+    )
+    status = (
+        VersionChecker.compare_versions(current, latest)
+        if current and latest
+        else "unknown"
+    )
 
-        print(f"\n📦 Sutra Knowledge CLI Version: {version}")
-        print("🔧 AI-Powered Repository Assistant")
-        print("📚 Intelligent code analysis, indexing, and assistance")
+    version_text = Text()
+    version_text.append("📚 SutraCLI Version\n\n", style="bold blue")
+    version_text.append(f"Current: v{current}\n", style="bold yellow")
+    if latest and status == "outdated":
+        version_text.append(f"Latest:  v{latest}\n", style="bold green")
+        version_text.append("A new version is available!\n", style="bold red")
+        version_text.append("Update with: ", style="dim")
+        version_text.append("pip install --upgrade sutrakit\n", style="cyan")
+    elif latest and status == "latest":
+        version_text.append("You are up to date!\n", style="bold green")
+    elif not latest:
+        version_text.append(
+            "Could not check for updates (network issue)\n", style="dim"
+        )
 
-        # Show Python version
-        import sys
+    version_text.append("\n🔧 AI-Powered Repository Assistant\n", style="bold")
+    version_text.append("📚 Intelligent code analysis, indexing, and assistance\n")
+    version_text.append(f"🐍 Python Version: {sys.version.split()[0]}\n", style="dim")
+    version_text.append(f"📁 Current Directory: {Path.cwd()}\n", style="dim")
 
-        print(f"🐍 Python Version: {sys.version.split()[0]}")
-
-        # Show current directory
-        from pathlib import Path
-
-        print(f"📁 Current Directory: {Path.cwd()}")
-
-        # Show configuration info
-        import os
-
-        config_file = os.getenv("SUTRAKNOWLEDGE_CONFIG", "Not set")
-        if config_file != "Not set":
-            config_name = Path(config_file).name
-            print(f"⚙️  Configuration: {config_name}")
-
-        print()
-
-    except Exception as e:
-        print(f"❌ Error getting version information: {str(e)}")
-        sys.exit(1)
+    panel = Panel.fit(
+        version_text,
+        title="SutraKit Version Info",
+        border_style="bright_blue",
+        padding=(1, 2),
+    )
+    console.print(panel)

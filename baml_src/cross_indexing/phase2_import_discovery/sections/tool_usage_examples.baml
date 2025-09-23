@@ -11,56 +11,56 @@ DIFFERENT IMPORT SYNTAX EXAMPLES:
 
 Example 1: JavaScript/Node.js import variations
 For Example:
-- const axios = require('axios')
-- import axios from 'axios'
-- import { get, post } from 'axios'
-- const { get, post } = require('axios')
+  - const axios = require('axios')
+  - import axios from 'axios'
+  - import { get, post } from 'axios'
+  - const { get, post } = require('axios')
 
 Example 2: Python import variations
 For Example:
-- import requests
-- from requests import get, post
-- import requests as req
-- from requests.auth import HTTPBasicAuth
+  - import requests
+  - from requests import get, post
+  - import requests as req
+  - from requests.auth import HTTPBasicAuth
 
 Example 3: Java import pattern examples
 For Example:
-- import org.springframework.web.client.RestTemplate
-- import retrofit2.http.GET
-- import okhttp3.OkHttpClient
+  - import org.springframework.web.client.RestTemplate
+  - import retrofit2.http.GET
+  - import okhttp3.OkHttpClient
 
 Example 4: Go import pattern examples
 For Example:
-- import "net/http"
-- import "github.com/gorilla/mux"
-- import ( "net/http" "encoding/json" )
+  - import "net/http"
+  - import "github.com/gorilla/mux"
+  - import ( "net/http" "encoding/json" )
 
 Example 5: Router framework import examples
 For Example:
-- const { Router } = require("express");
-- import { Router } from "express";
-- import express from "express";
-- const express = require("express");
+  - const { Router } = require("express");
+  - import { Router } from "express";
+  - import express from "express";
+  - const express = require("express");
 
 2. REGEX PATTERN EXAMPLES FOR SEARCH_KEYWORD
 
 ROBUST REGEX PATTERNS WITH EXPLANATIONS"
 
 JavaScript/Node.js Import Patterns:
-- require.*axios → matches require('axios') or require("axios") with optional whitespace
-- import.*axios.*from.*axios → matches import axios from 'axios' or import axios from "axios"
-- import.*from.*axios → matches import { get, post } from 'axios'
-- const.*require.*axios → matches const { get, post } = require('axios')
+  - require.*axios → matches require('axios') or require("axios") with optional whitespace
+  - import.*axios.*from.*axios → matches import axios from 'axios' or import axios from "axios"
+  - import.*from.*axios → matches import { get, post } from 'axios'
+  - const.*require.*axios → matches const { get, post } = require('axios')
 
 Express Router Patterns:
-- (app|router).(get|post|put|delete|patch) → matches app.get( or router.post( with optional whitespace
-- express.*use → matches express().use for middleware
-- new.*express → matches new express( instantiation
+  - (app|router).(get|post|put|delete|patch) → matches app.get( or router.post( with optional whitespace
+  - express.*use → matches express().use for middleware
+  - new.*express → matches new express( instantiation
 
 Python Import Patterns:
-- import.*requests → matches import requests at line start
-- from.*requests.*import → matches from requests import statements
-- import.*urllib → matches urllib submodule imports
+  - import.*requests → matches import requests at line start
+  - from.*requests.*import → matches from requests import statements
+  - import.*urllib → matches urllib submodule imports
 
 COMPREHENSIVE REGEX PATTERN EXAMPLES"
 
@@ -79,9 +79,9 @@ IMPLEMENTATION ANALYSIS TASK CREATION:
 
 Example 1: After finding axios imports in 3 files
 Create 3 separate implementation tasks (database tool - individual tasks per file):
-- Task 1: "Found axios imports in src/api/client.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
-- Task 2: "Found axios imports in src/services/http.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
-- Task 3: "Found axios imports in src/utils/request.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
+  - Task 1: "Found axios imports in src/api/client.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
+  - Task 2: "Found axios imports in src/services/http.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
+  - Task 3: "Found axios imports in src/utils/request.js. Use database tool to read this file completely and analyze axios.get(), axios.post(), axios.put(), axios.delete() usage patterns. Look for actual HTTP calls with real endpoints and parameters. This HTTP client is used for making requests to other services."
 
 Example 2: After finding express imports in 8 files
 Create implementation task(Add): "Found express imports in 8 files. Use search_keyword tool with pattern 'app.get|app.post|router.get|router.post' and regex=true, case_sensitive=false, after_lines=4 to find express route definitions across all files. Look for actual route handlers with real endpoint paths. This server framework receives requests from other services."
@@ -113,9 +113,9 @@ Create implementation task(Add): "Create built-in pattern task for Go: Use searc
 DATABASE TOOL TASK CREATION (3-5 files)
 When imports found in few files, create separate tasks for each file:
 For Example:
-- Task 1: "Use database tool to read file1 and analyze [package] usage patterns"
-- Task 2: "Use database tool to read file2 and analyze [package] usage patterns"
-- Task 3: "Use database tool to read file3 and analyze [package] usage patterns"
+  - Task 1: "Use database tool to read file1 and analyze [package] usage patterns"
+  - Task 2: "Use database tool to read file2 and analyze [package] usage patterns"
+  - Task 3: "Use database tool to read file3 and analyze [package] usage patterns"
 
 SEARCH_KEYWORD TASK CREATION (6+ files)
 When imports found in many files, create combined tasks:
@@ -143,11 +143,11 @@ Create implementation task(Add): "No packages/dependencies found in previous ana
 
 8. CRITICAL GUIDELINES
 
-- Execute ALL pending tasks from previous analysis
-- Use appropriate search patterns with proper regex escaping as specified in previous analysis tasks
-- CRITICAL: After seeing tool results when marking a task as completed, if you found meaningful import information, create new implementation tasks for the next phase
-- Create implementation analysis tasks based on number of files found with imports
-- ALWAYS create built-in pattern tasks for subsequent analysis regardless of whether packages were found
-- Include specific file paths and usage patterns in implementation task descriptions
+  - Execute ALL pending tasks from previous analysis
+  - Use appropriate search patterns with proper regex escaping as specified in previous analysis tasks
+  - CRITICAL: After seeing tool results when marking a task as completed, if you found meaningful import information, create new implementation tasks for the next phase
+  - Create implementation analysis tasks based on number of files found with imports
+  - ALWAYS create built-in pattern tasks for subsequent analysis regardless of whether packages were found
+  - Include specific file paths and usage patterns in implementation task descriptions
 
 "#

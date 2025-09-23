@@ -28,7 +28,6 @@ class CrossIndexing:
     Cross-indexing service using-based JSON prompts.
 
     This class provides all 5 phases and supporting prompt functions as methods,
-    replacing the old LLM calls with XML parsing with direct JSON-based functions.
     """
 
     def __init__(self):

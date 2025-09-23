@@ -33,6 +33,11 @@ class MemoryFormatter:
             "ID FORMAT: All items use unique IDs for LLM operations (add_task, move_task, remove_task, add_code, remove_code)\n",
         ]
 
+        # Code snippets
+        if self.memory_ops.code_snippets:
+            content.extend(["STORED CODE SNIPPETS:", ""])
+            content.extend(self._format_code_snippets_section())
+
         # Current task
         current_task = self.memory_ops.get_current_task()
         if current_task:
@@ -65,11 +70,6 @@ class MemoryFormatter:
                 content.append(f"ID: {task.id}")
                 content.append(f"Description: {task.description}")
                 content.append("")
-
-        # Code snippets
-        if self.memory_ops.code_snippets:
-            content.extend(["STORED SNIPPETS:", ""])
-            content.extend(self._format_code_snippets_section())
 
         # Recent file changes
         if self.memory_ops.file_changes:

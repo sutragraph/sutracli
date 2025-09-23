@@ -4,8 +4,8 @@ build-backend="setuptools.build_meta"
 
 [project]
 name="sutrakit"
-version="0.1.30"
-description="A comprehensive AI-powered code analysis and automation CLI tool"
+version="0.1.31"
+description="Sutrakit is an AI-powered code manager for coding agents. It spawns agents for multiple projects, connects repos through cross-indexing, and builds dependency graphs for better change suggestions. By automating planning and updates, it helps teams reduce development cost, save time, and improve productivity."
 readme="README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Software Development :: Code Generators",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-keywords = ["ai", "code-analysis", "automation", "cli", "agent"]
+keywords = ["ai", "cli", "code-analysis", "code-completion", "code-manager", "cost-optimization", "code-automation", "coding-agent", "cross-repository-intelligence", "roadmap-planning"]
 requires-python=">=3.11"
 dependencies = [
     "pydantic==2.11.5",

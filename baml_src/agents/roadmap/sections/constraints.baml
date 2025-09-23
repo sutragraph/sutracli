@@ -18,7 +18,7 @@ Output exactly in this structure. Limit 'thinking' to <100 words for brevity.
     "code": [  // OPTIONAL: Array of CodeStorage objects for tracing invisible/external elements
       {
         "action": "add|update_tracing_status|move_to_traced|add_to_needs_tracing|update_call_chain_summary",
-        "id": string, eg. 1,
+        "id": string, // eg. "1",
         "file": string?, "start_line": int?, "end_line": int?, "description": string?,
         "is_traced": bool?, "call_chain_summary": string?,
         "needs_tracing": [  // Elements called/accessed but not visible in snippet that might need tracing

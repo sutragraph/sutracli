@@ -179,6 +179,10 @@ class CrossIndexingTaskManager(SutraMemoryManager):
 
     def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
         """Move task to new status while preserving phase metadata."""
+        logger.debug(
+            f"Moving task {task_id} to status {new_status} in phase {self.current_phase}"
+        )
+
         # Phase validation for phases 1 and 2 only
         if self.current_phase in [1, 2]:
             # Check if task exists and get its metadata
@@ -202,6 +206,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
 
         # Call parent move_task method
         success = super().move_task(task_id, new_status)
+        logger.debug(f"Parent move_task returned {success} for task {task_id}")
 
         # Always update phase metadata for moved tasks, even if parent method returns False
         # This handles cases where LLM tries to move task to same status (e.g., current->current)
@@ -217,21 +222,34 @@ class CrossIndexingTaskManager(SutraMemoryManager):
                     "is_default": False,
                     "created_at": datetime.now().isoformat(),
                 }
+                logger.debug(f"Created default metadata for task {task_id}")
             else:
                 # Special handling for completed tasks: they should remain visible in current phase only
                 if new_status == TaskStatus.COMPLETED:
                     # Completed tasks remain visible in the phase where they were completed
+                    old_target_phase = self._task_phase_metadata[task_id].get(
+                        "target_phase"
+                    )
                     self._task_phase_metadata[task_id][
                         "target_phase"
                     ] = self.current_phase
                     self._task_phase_metadata[task_id][
                         "completed_in_phase"
                     ] = self.current_phase
+                    logger.debug(
+                        f"Updated task {task_id} metadata: target_phase {old_target_phase} → {self.current_phase}, completed_in_phase={self.current_phase}"
+                    )
                 else:
                     # For current/pending tasks, they remain visible in current phase
+                    old_target_phase = self._task_phase_metadata[task_id].get(
+                        "target_phase"
+                    )
                     self._task_phase_metadata[task_id][
                         "target_phase"
                     ] = self.current_phase
+                    logger.debug(
+                        f"Updated task {task_id} metadata: target_phase {old_target_phase} → {self.current_phase}"
+                    )
 
             # If parent method failed but task exists, return True to indicate we handled the metadata update
             if not success and task_id in self.memory_ops.tasks:
@@ -245,43 +263,10 @@ class CrossIndexingTaskManager(SutraMemoryManager):
             "ID FORMAT: All items use unique IDs for LLM operations (add_task, move_task, remove_task, add_code, remove_code)\n"
         ]
 
-        # Get tasks for current phase
-        phase_tasks = self.get_tasks_for_phase(self.current_phase)
-
-        # Add current tasks
-        current_tasks = phase_tasks.get("current", [])
-        if current_tasks:
-            content.append("CURRENT TASK:")
-            task = current_tasks[0]  # Should only be one current task
-            content.append(f"ID: {task.id}")
-            content.append(f"Description: {task.description}")
-            content.append("")
-
-        # Add pending tasks for current phase
-        pending_tasks = phase_tasks.get("pending", [])
-
-        if pending_tasks:
-            content.append("PENDING TASKS:")
-            for task in pending_tasks:
-                content.append(f"ID: {task.id}")
-                content.append(f"Description: {task.description}")
-                content.append("")
-
-        # Add completed tasks for current phase (completed in this phase)
-        completed_tasks = phase_tasks.get("completed", [])
-        if completed_tasks:
-            content.append("COMPLETED TASKS:")
-            for task in completed_tasks:
-                content.append(f"ID: {task.id}")
-                content.append(f"Description: {task.description}")
-                content.append("")
-
-        # Add history from memory operations
-        if hasattr(self, "memory_ops") and self.memory_ops.history:
-            content.append("RECENT HISTORY:")
-            recent_history = self.memory_ops.get_recent_history()
-            for i, entry in enumerate(recent_history, 1):
-                content.append(f"{i}. {entry.summary}")
+        # Add project info if available
+        if hasattr(self, "memory_ops") and self.memory_ops.get_project_info():
+            content.append("PROJECT INFO:")
+            content.append(self.memory_ops.get_project_info())
             content.append("")
 
         # Add code snippets if any
@@ -300,6 +285,52 @@ class CrossIndexingTaskManager(SutraMemoryManager):
                     content.append("")
                 else:
                     content.append("")
+
+        # Get tasks for current phase
+        phase_tasks = self.get_tasks_for_phase(self.current_phase)
+
+        # Add current tasks
+        current_tasks = phase_tasks.get("current", [])
+        if current_tasks:
+            content.append("CURRENT TASK:")
+            task = current_tasks[0]  # Should only be one current task
+            content.append(f"ID: {task.id}")
+            content.append(f"Description: {task.description}")
+            content.append("")
+        else:
+            content.append("CURRENT TASK:")
+            content.append("NOTE: No current task")
+            content.append("")
+
+        # Add pending tasks for current phase
+        pending_tasks = phase_tasks.get("pending", [])
+        if pending_tasks:
+            content.append("PENDING TASKS:")
+            for task in pending_tasks:
+                content.append(f"ID: {task.id}")
+                content.append(f"Description: {task.description}")
+                content.append("")
+        else:
+            content.append("PENDING TASKS:")
+            content.append("NOTE: No pending tasks")
+            content.append("")
+
+        # Add completed tasks for current phase (completed in this phase)
+        completed_tasks = phase_tasks.get("completed", [])
+        if completed_tasks:
+            content.append("COMPLETED TASKS:")
+            for task in completed_tasks:
+                content.append(f"ID: {task.id}")
+                content.append(f"Description: {task.description}")
+                content.append("")
+
+        # Add history from memory operations
+        if hasattr(self, "memory_ops") and self.memory_ops.history:
+            content.append("RECENT HISTORY:")
+            recent_history = self.memory_ops.get_recent_history()
+            for i, entry in enumerate(recent_history, 1):
+                content.append(f"{i}. {entry.summary}")
+            content.append("")
 
         return "\n".join(content)
 
@@ -371,18 +402,17 @@ class CrossIndexingTaskManager(SutraMemoryManager):
             f"All tasks: pending={len(all_pending)}, current={len(all_current)}, completed={len(all_completed)}"
         )
 
-        for task in all_pending:
+        # Debug all tasks with their metadata
+        all_tasks = all_pending + all_current + all_completed
+        for task in all_tasks:
             if task:
                 metadata = self._task_phase_metadata.get(task.id, {})
                 logger.debug(
-                    f"Pending task {task.id}: created_in_phase={metadata.get('created_in_phase')}, target_phase={metadata.get('target_phase')}, completed_in_phase={metadata.get('completed_in_phase')}"
-                )
-
-        for task in all_current:
-            if task:
-                metadata = self._task_phase_metadata.get(task.id, {})
-                logger.debug(
-                    f"Current task {task.id}: created_in_phase={metadata.get('created_in_phase')}, target_phase={metadata.get('target_phase')}, completed_in_phase={metadata.get('completed_in_phase')}"
+                    f"Task {task.id} (status={task.status}): "
+                    f"created_in_phase={metadata.get('created_in_phase')}, "
+                    f"target_phase={metadata.get('target_phase')}, "
+                    f"completed_in_phase={metadata.get('completed_in_phase')}, "
+                    f"description='{task.description[:50]}...'"
                 )
 
         # Show filtered tasks for current phase
