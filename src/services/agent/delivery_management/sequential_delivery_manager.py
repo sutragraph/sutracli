@@ -2,7 +2,7 @@
 
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -77,9 +77,22 @@ class DeliveryManager:
             f"🔍 TRACE MANAGER: Setting last query signature to: {query_signature}"
         )
 
-        # If queue already exists for same signature, skip duplicate registration
+        # If queue already exists for same signature, check if it's completed
         if query_signature in self._delivery_queues:
             existing_size = len(self._delivery_queues[query_signature])
+            is_complete = self._completed_deliveries.get(query_signature, False)
+
+            # If queue is complete, reset it for re-use
+            if is_complete:
+                logger.debug(
+                    f"Resetting completed queue for re-registration: {query_signature}"
+                )
+                self._queue_positions[query_signature] = 0
+                self._completed_deliveries[query_signature] = False
+                logger.debug("Queue reset complete - ready for reuse")
+                return query_signature
+
+            # If queue is not complete and has sufficient items, skip registration
             if existing_size >= len(items):
                 logger.debug(
                     f"📦 Skipping duplicate registration - existing queue has {existing_size} items"
@@ -130,13 +143,16 @@ class DeliveryManager:
         current_pos = self._queue_positions.get(query_signature, 0)
         queue_length = len(self._delivery_queues.get(query_signature, []))
 
-        if is_complete and current_pos >= queue_length:
+        logger.debug(
+            f"📦 Existing queue state: pos={current_pos}, len={queue_length}, complete={is_complete}"
+        )
+
+        # If queue is complete, return None - don't auto-reset
+        if is_complete:
             logger.debug(
-                f"📦 Delivery already complete for {query_signature} - position: {current_pos}, queue_length: {queue_length}"
+                f"Delivery already complete for {query_signature} - position: {current_pos}, queue_length: {queue_length}"
             )
             return None
-        elif is_complete and current_pos < queue_length:
-            self._completed_deliveries[query_signature] = False
 
         current_pos = self._queue_positions[query_signature]
         queue = self._delivery_queues[query_signature]
@@ -197,11 +213,29 @@ class DeliveryManager:
         queue = self._delivery_queues[query_signature]
         is_complete = self._completed_deliveries.get(query_signature, False)
 
+        logger.debug(
+            f"📦 Queue state check: signature={query_signature[:50]}..., pos={current_pos}, "
+            f"queue_len={len(queue)}, is_complete={is_complete}"
+        )
+
+        # If queue is complete, check if we should reset it for reuse
         if is_complete:
+            consecutive_count = self._consecutive_completions.get(query_signature, 0)
+            if (
+                consecutive_count >= 3
+            ):  # Prevent infinite loops after 3 consecutive completions
+                logger.debug(
+                    f"Queue completed {consecutive_count} times consecutively, stopping to prevent infinite loop"
+                )
+                return None
+
             logger.debug(
-                f"📦 Delivery already complete for {query_signature} - position: {current_pos}, queue_length: {len(queue)}"
+                f"📦 Queue was complete, resetting for reuse - position: {current_pos}, queue_length: {len(queue)}"
             )
-            return None
+            self._queue_positions[query_signature] = 0
+            self._completed_deliveries[query_signature] = False
+            self._consecutive_completions[query_signature] = consecutive_count + 1
+            current_pos = 0
 
         if current_pos >= len(queue):
             logger.debug(
@@ -245,9 +279,6 @@ class DeliveryManager:
         query_signature = self._generate_query_signature(action_type, parameters)
 
         if query_signature not in self._delivery_queues:
-            return False
-
-        if self._completed_deliveries.get(query_signature, False):
             return False
 
         current_pos = self._queue_positions[query_signature]
@@ -319,14 +350,54 @@ class DeliveryManager:
         current_pos = self._queue_positions[query_signature]
         total_items = len(self._delivery_queues[query_signature])
         remaining_items = max(0, total_items - current_pos)
+        is_complete = self._completed_deliveries.get(query_signature, False)
+
+        # If complete but has remaining items, it will be reset on next access
+        effective_has_next = remaining_items > 0 or (is_complete and total_items > 0)
 
         return {
-            "has_next": remaining_items > 0,
+            "has_next": effective_has_next,
             "total_items": total_items,
             "current_position": current_pos,
             "remaining_items": remaining_items,
-            "is_complete": self._completed_deliveries.get(query_signature, False),
+            "is_complete": is_complete,
         }
+
+    def reset_queue(self, action_type: str, parameters: Dict[str, Any]) -> bool:
+        """Explicitly reset a delivery queue for debugging and recovery."""
+        query_signature = self._generate_query_signature(action_type, parameters)
+
+        if query_signature not in self._delivery_queues:
+            logger.debug(f"Cannot reset - queue not found: {query_signature[:50]}...")
+            return False
+
+        self._queue_positions[query_signature] = 0
+        self._completed_deliveries[query_signature] = False
+        total_items = len(self._delivery_queues[query_signature])
+
+        logger.info(
+            f"RESET: Queue reset for {query_signature[:50]}... ({total_items} items, position reset to 0)"
+        )
+        return True
+
+    def get_all_queue_statuses(self) -> Dict[str, Dict[str, Any]]:
+        """Get status of all registered queues for debugging."""
+        statuses = {}
+        for signature, queue in self._delivery_queues.items():
+            current_pos = self._queue_positions.get(signature, 0)
+            is_complete = self._completed_deliveries.get(signature, False)
+
+            statuses[signature[:50] + "..."] = {
+                "total_items": len(queue),
+                "current_position": current_pos,
+                "remaining_items": max(0, len(queue) - current_pos),
+                "is_complete": is_complete,
+                "progress_percentage": (
+                    (current_pos / len(queue) * 100) if len(queue) > 0 else 0
+                ),
+            }
+
+        return statuses
 
 
 delivery_manager = DeliveryManager()
