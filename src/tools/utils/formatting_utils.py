@@ -200,7 +200,8 @@ def beautify_node_result(
 
             # Add single arrow with technology name for the group
             technology_name = mappings[0].get("technology_name", "unknown")
-            result_parts.append(f"   ↓ [{technology_name}]")
+            result_parts.append("")
+            result_parts.append(f"    [{technology_name}] Connection Connected with")
             result_parts.append("")
 
             # Add all targets for this sender

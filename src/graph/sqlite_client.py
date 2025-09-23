@@ -51,10 +51,22 @@ class SQLiteConnection:
                 check_same_thread=False,
             )
 
-            connection.execute("PRAGMA foreign_keys = ON")
-            connection.execute("PRAGMA journal_mode = WAL")
-            connection.execute("PRAGMA synchronous = NORMAL")
-            connection.execute("PRAGMA cache_size = 10000")
+            # Enable WAL mode for better concurrency
+            connection.execute("PRAGMA journal_mode=WAL")
+
+            # Set busy timeout to handle concurrent access
+            connection.execute(
+                f"PRAGMA busy_timeout={config.sqlite.connection_timeout * 1000}"
+            )
+
+            # Enable foreign key constraints
+            connection.execute("PRAGMA foreign_keys=ON")
+
+            # Optimize for concurrent reads
+            connection.execute("PRAGMA synchronous=NORMAL")
+            connection.execute("PRAGMA cache_size=10000")
+            connection.execute("PRAGMA temp_store=memory")
+
             connection.execute("SELECT 1")
 
             logger.debug(

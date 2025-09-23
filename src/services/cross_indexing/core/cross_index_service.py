@@ -440,10 +440,7 @@ Tool Results:
                 return
 
             # Get connection code from response data
-            connection_code_list = response_data.get("connection_code", [])
-            if connection_code_list is None:
-                connection_code_list = []
-
+            connection_code_list = response_data.get("connection_code", None) or []
             logger.debug(f"Found {len(connection_code_list)} connection code items")
 
             if connection_code_list:

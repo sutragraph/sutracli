@@ -290,7 +290,7 @@ class BAMLService:
                                 msg for msg in messages if msg["role"] == "user"
                             ]
                             for i, msg in enumerate(user_messages):
-                                logger.debug(f"🔹 User prompt {i+1}:")
+                                logger.debug(f"🔹 User prompt {i + 1}:")
                                 logger.debug(f"   {msg['content'][0]['text']}")
                                 logger.debug("")
                         elif "contents" in request_body:
@@ -303,7 +303,7 @@ class BAMLService:
                                 if content["role"] == "user"
                             ]
                             for i, content in enumerate(user_contents):
-                                logger.debug(f"🔹 User prompt {i+1}:")
+                                logger.debug(f"🔹 User prompt {i + 1}:")
                                 logger.debug(f"   {content['parts'][0]['text']}")
                                 logger.debug("")
                         else:
@@ -443,7 +443,7 @@ class BAMLService:
         prefixed_functions = [f for f in all_functions if f.startswith(prefix)]
 
         # Remove the prefix to get base function names
-        base_functions = [f[len(prefix) :] for f in prefixed_functions]
+        base_functions = [f[len(prefix):] for f in prefixed_functions]
 
         return base_functions
 

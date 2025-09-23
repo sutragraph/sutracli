@@ -1,141 +1,77 @@
-// Sutra Memory System Documentation Template
-// Comprehensive guidelines for all agents using persistent working memory
-// Original content preserved with JSON format examples
-
 template_string SutraMemoryPrompt() #"
-====
+## SUTRA MEMORY SYSTEM
+Use this persistent memory to store info for future iterations, including call chain tracing to finals. Prioritize useful data like task progress, code locations, findings, trace chains to operations (DB, file, net, mem, sys, logic). Store relevant search findings (e.g., code snippets, project connections) incrementally upon discovery to build context before analysis/tracing.
 
-# SUTRA MEMORY SYSTEM
+### Format Requirements
+Include 'add_history' every response: key findings, but only new progress, findings, or unresolved items (e.g., bugs/symptoms traced, unresolved elements, progress)—do not repeat or restate points; reference them if needed. Structure as actionable log with deltas only.
 
-Sutra Memory is your persistent working memory across conversation iterations. Its primary purpose is to store necessary and useful information that will help you in future calls. Think of it as your engineering notebook that survives between iterations.
+Use 'tasks' for operations (one current only; move before new current):
+- Add pending: { "action": "add", "id": "1", "to_status": "pending", "description": "Analyze auth architecture" }
+- Add current: { "action": "add", "id": "2", "to_status": "current", "description": "Review user model" }
+- Add completed: { "action": "add", "id": "3", "to_status": "completed", "description": "Project exploration done" }
+- Move to complete: { "action": "move", "id": "1", "from_status": "current", "to_status": "completed" }
+- Start pending: { "action": "move", "id": "2", "from_status": "pending", "to_status": "current" }
+- Pause current: { "action": "move", "id": "1", "from_status": "current", "to_status": "pending" }; then add new current.
 
-## CORE PURPOSE
+Use 'code' for tracing: Incremental actions like add mains, move to traced, add needs. Limit needs <20; trace to finals (e.g., database: cursor.execute(), logic: if/calc). Example from search: { "action": "add", "id": "search_hit_1", "file": "auth.py", "description": "Relevant auth snippet", "needs_tracing": [...] }
 
-Store information you'll need later: task progress, code locations, and important findings. This prevents redundant operations and maintains context across multiple iterations of complex problem-solving.
+Store: Code signatures/locations, trace chains, file paths/lines, patterns/relationships, task dependencies, error patterns, configs, unresolved traces/bugs.
+Example: { "action": "add", "id": "1", "needs_tracing": [{ "name": string, "element_type": "method", "reason": string }] }
 
-## MANDATORY JSON FORMAT
+Practical Guidelines:
+Break complex work into specific tasks.
+Update history with findings/actions (e.g., 'Bug1 traced to DB').
+Clean obsolete tasks/code regularly.
+Trace elements (functions, properties, variables, attributes, methods) to finals.
 
-The "add_history" field is required in every response - no exceptions.
+Focus on: Specific task descriptions, query-relevant storage, complete traces.
+Prioritize: Exact references, avoiding redundancy.
 
-Parameter Requirements:
-  - add_history: "Summary of current iteration actions and key findings" (required)
-  - tasks: Task operations array (optional)
-  - code: Code storage operations array (optional)
-  - files: File change tracking (optional)
+## Call Chain Tracing Section
+Integrate call chain tracing using the 'code' array in sutra_memory: Build exhaustive chains to finals, storing via actions below.
 
-## SYSTEM CONSTRAINTS
+### Actions (Incremental)
+Use 'add' for discovery + needs_tracing.
+Use 'add_to_needs_tracing' for new during trace.
+Use 'move_to_traced' from needs_tracing with source_element_id/element_path.
+Use 'update_call_chain_summary' with [✓] progress.
+Use 'update_tracing_status' is_traced=true when needs empty (audit all first).
 
-1. SINGLE CURRENT TASK RULE
-    Only one task can have "current" status at any time
-    Complete or move existing current task before setting a new one
+### Hierarchy Rules
+1. First traced: element_path = [] (root).
+2. Subsequent: element_path = [parent_id] (accessed by parent).
+3. Deep: element_path = [grandparent_id, parent_id].
 
-2. MANDATORY HISTORY RULE
-    Every response must include "add_history" with iteration summary
+### Usage Clarifications
+'id': Code snippet ID (e.g., "1").
+'source_element_id': From needs_tracing (e.g., "elem_001") to move. the id of each element will be shown like [ID:elem_001].
+'element_path': Array for placement ([] root, ["elem_001"] child).
 
-## CRITICAL: Single Current Task Examples
+Remember: IDs for the elements are auto-generated strings not numbers unlike the code snippet IDs.
 
-INCORRECT - This will fail:
-Task Parameters: action: "add", id: "2", to_status: "current", description: "New urgent task"
-<!-- If task "1" is already current, this violates the constraint -->
+Correct Examples:
+// Root
+{ "action": "move_to_traced", "id": "1", "source_element_id": "elem_001", "traced_element": { ... }, "element_path": [] }
 
-CORRECT - Move existing current task first:
-Task Parameters:
-  - Move existing: action: "move", id: "1", from_status: "current", to_status: "completed"
-  - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
+// Child
+{ "action": "move_to_traced", "id": "1", "source_element_id": "elem_002", "traced_element": { ... }, "element_path": ["elem_001"] }
 
-Alternative - Move current to pending:
-Task Parameters:
-  - Pause existing: action: "move", id: "1", from_status: "current", to_status: "pending"
-  - Add new: action: "add", id: "2", to_status: "current", description: "New urgent task"
+// Grandchild
+{ "action": "move_to_traced", "id": "1", "source_element_id": "elem_003", "traced_element": { ... }, "element_path": ["elem_001", "elem_002"] }
 
-## TASK MANAGEMENT
+### Workflow: Think 'Element? Internals? New? Update?'
+1. Discovery: Add mains is_traced=false; summary '→ elements [NEEDS TRACING]'. Elements: functions (calls), properties (access), variables (assign/use), attributes (ref), methods (ops). Hypothesize related projects/microservices and expand traces across them.
+2. Recurse: Per need, tools → trace. Think 'Relevance to query? If low, resolve as final. Process one/iter; cap 10/snippet.' Audit issues; add to needs if found. Mandate: If needs_tracing exists, select tool to resolve one and update status (e.g., 'move_to_traced').
+3. Complete: Update status true. Pre-CoT: 'All needs_tracing empty? All at finals? Simulated edges?'
 
-Organize your work using three task states:
+Finals: DB (execute), File (write), Net (post), Mem (set), Sys (now), Logic (if/calc).
 
-pending → current → completed
+Recursive Examples:
+Iteration 1: Add 'processTask' function: needs_tracing [{ "name": "external.callA", "element_type": "method" }, { "name": "internal.updateB", "element_type": "function" }]. // Comment: Methods called but implementations not visible; hypothesize related projects like "external-service" and "internal-service".
 
-### Add Tasks:
-Task Parameters:
-  - Add pending: action: "add", id: "1", to_status: "pending", description: "Analyze authentication system architecture"
-  - Add current: action: "add", id: "2", to_status: "current", description: "Review user model structure"
-  - Add completed: action: "add", id: "3", to_status: "completed", description: "Initial project exploration finished"
+Iteration 2: Trace payment.charge: Calls external API. Move payment.charge to traced; add_to_needs_tracing [...]. Update summary: 'processOrder → payment.charge[✓] → [EXTERNAL_API]'. Set is_traced=true if no needs_tracing left.
 
-### Move Tasks:
-Task Parameters:
-  - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
-  - Start pending: action: "move", id: "2", from_status: "pending", to_status: "current"
+Iteration 3: Trace total: Direct attr [FINAL - Direct Logic]. Move total; no new.
 
-## CODE STORAGE
-
-  Store code snippets you'll reference in future iterations:
-  Code Parameters: action: "add", id: "1", file: "src/auth/validator.py", start_line: 15, end_line: 28, description: "validateUser function signature - needs role parameter"
-
-
-## WHAT TO STORE
-
-Store information that will be useful in future iterations:
-  - Code function signatures and locations you'll modify
-  - File paths and line numbers for precise references
-  - Architectural patterns and important relationships
-  - Task dependencies discovered during analysis
-  - Error patterns and successful approaches
-  - Configuration details and environment information
-
-## COMPLETE WORKFLOW EXAMPLES
-
-### Multi-Step Implementation:
-Task Parameters:
-  - Current task: action: "add", id: "1", to_status: "current", description: "Understand current authentication system"
-  - Pipeline tasks: action: "add", id: "2-4", to_status: "pending", description: "Design → Implementation → Updates"
-
-### Discovering and Storing Key Code:
-Task Parameters:
-  - Complete current: action: "move", id: "1", from_status: "current", to_status: "completed"
-  - Start next: action: "move", id: "2", from_status: "pending", to_status: "current"
-  Code Parameters:
-  - Store validator: action: "add", id: "1", file: "src/auth/validator.py", start_line: 45, end_line: 67, description: "validateUser() implementation"
-  - Store user model: action: "add", id: "2", file: "src/models/user.py", start_line: 12, end_line: 25, description: "User class structure"
-
-### Implementing Changes:
-Task Parameters:
-  - Complete current: action: "move", id: "2", from_status: "current", to_status: "completed"
-  - Start next: action: "move", id: "3", from_status: "pending", to_status: "current"
-
-## PRACTICAL GUIDELINES
-
-### Task Management:
-  - Break complex work into specific, actionable tasks
-  - Keep one current task for focused execution
-  - Add new tasks as you discover dependencies
-
-### Code Storage Strategy:
-  - Store functions/classes you'll modify in multiple steps
-  - Include exact file paths and line ranges
-  - Focus on architectural and integration code
-
-### Memory Maintenance:
-  - Update history with specific findings and actions taken
-  - Track file changes that affect stored references
-  - Clean up obsolete tasks and code regularly
-  - Use memory to inform tool selection and avoid redundancy
-
-## DO'S AND DON'TS
-
-DO:
-  - Include "add_history" in every response with specific findings
-  - Complete or move current task before setting new current task
-  - Store code snippets which is relevant with current user query
-  - Use specific, actionable task descriptions
-  - Remove completed tasks and obsolete code to keep memory clean
-  - Break complex work into manageable pending tasks
-  - Record exact file paths and line numbers for precision
-
-DON'T:
-  - Try to add new current task while another task is already current
-  - Skip mandatory history updates - they're required every time
-  - Use vague task descriptions like "fix the system" or "analyze code"
-  - Leave obsolete tasks and code cluttering memory indefinitely
-  - Create pending tasks for work that's already finished
-
-The Sutra Memory system enables you to work on complex, multi-iteration tasks by preserving essential context, tracking progress, and maintaining references to important code locations across conversation turns.
+Continue until empty; summary: 'processData → obj.value[✓] + service.getData[✓] + logger.info[✓] → [DIRECT_LOGIC + DATABASE + FILE_IO]'.
 "#

@@ -325,11 +325,11 @@ class MemoryUpdater:
 
         logger.debug(f"Code snippet {code_snippet.id} stripped content:")
         for i, line in enumerate(stripped_original_lines[:3]):
-            logger.debug(f"  {i+1}: {line}")
+            logger.debug(f"  {i + 1}: {line}")
 
         logger.debug(f"Current file content (first 5 lines):")
         for i, line in enumerate(current_lines[:5]):
-            logger.debug(f"  {i+1}: {line}")
+            logger.debug(f"  {i + 1}: {line}")
 
         # Try to find the content in the current file
         new_location = self._find_content_in_file(
@@ -591,6 +591,10 @@ class MemoryUpdater:
                 end_line=max(new_start, new_end),  # Ensure end >= start
                 description=snippet.description,
                 content=snippet.content,
+                is_traced=snippet.is_traced,
+                root_elements=snippet.root_elements,
+                needs_tracing=snippet.needs_tracing,
+                call_chain_summary=snippet.call_chain_summary,
                 created_at=snippet.created_at,
             )
 

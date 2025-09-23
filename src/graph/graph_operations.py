@@ -9,6 +9,8 @@ query methods for retrieving code structure, relationships, and connections.
 
 import json
 import os
+import sqlite3
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -643,6 +645,7 @@ class GraphOperations:
     def get_enriched_block_context(self, block_id: int) -> Optional[Dict[str, Any]]:
         """
         Get comprehensive context for a code block including file info and connections.
+        Includes retry logic for database locking issues.
 
         Args:
             block_id: Database ID of the code block
@@ -650,61 +653,114 @@ class GraphOperations:
         Returns:
             Dictionary with enriched block context or None if not found
         """
-        try:
-            block_data = self.resolve_block(block_id)
-            if not block_data:
+        max_retries = 3
+        base_delay = 0.1
+
+        for attempt in range(max_retries):
+            try:
+                block_data = self.resolve_block(block_id)
+                if not block_data:
+                    logger.warning(f"Block {block_id} not found")
+                    return None
+
+                # Get connection mappings with error handling
+                connection_mappings = []
+                try:
+                    connection_mappings = self._get_connection_mappings_for_display(
+                        block_data["file_id"],
+                        block_data["start_line"],
+                        block_data["end_line"],
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to get connection mappings for block {block_id}: {e}"
+                    )
+
+                # Get basic connections with error handling
+                basic_connections = {"incoming": [], "outgoing": []}
+                try:
+                    basic_connections = self._get_connections_for_file_and_lines(
+                        block_data["file_id"],
+                        block_data["start_line"],
+                        block_data["end_line"],
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to get basic connections for block {block_id}: {e}"
+                    )
+
+                # Filter connections with error handling
+                filtered_connections = basic_connections
+                try:
+                    filtered_connections = self._filter_unmapped_connections(
+                        basic_connections, connection_mappings, block_data["file_path"]
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to filter connections for block {block_id}: {e}"
+                    )
+
+                # Combine mappings and remaining basic connections
+                connections = {}
+                if connection_mappings:
+                    connections["mappings"] = connection_mappings
+                if filtered_connections.get("incoming"):
+                    connections["incoming"] = filtered_connections["incoming"]
+                if filtered_connections.get("outgoing"):
+                    connections["outgoing"] = filtered_connections["outgoing"]
+
+                # Get parent info with error handling
+                parent_info = None
+                try:
+                    if block_data.get("parent_block_id"):
+                        parent_info = self.resolve_block(block_data["parent_block_id"])
+                except Exception as e:
+                    logger.warning(f"Failed to get parent block for {block_id}: {e}")
+
+                # Get child blocks with error handling
+                child_blocks = []
+                try:
+                    child_blocks = self.get_block_children(block_id)
+                except Exception as e:
+                    logger.warning(f"Failed to get child blocks for {block_id}: {e}")
+
+                result = {
+                    "block": block_data,
+                    "connections": connections,
+                    "parent_block": parent_info,
+                    "child_blocks": child_blocks,
+                    "file_context": {
+                        "file_path": block_data["file_path"],
+                        "language": block_data["language"],
+                        "project_name": block_data["project_name"],
+                    },
+                }
+
+                logger.debug(
+                    f"Successfully retrieved enriched context for block {block_id}"
+                )
+                return result
+
+            except (sqlite3.OperationalError, sqlite3.DatabaseError) as e:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)  # Exponential backoff
+                    logger.warning(
+                        f"Database busy getting enriched context for block {block_id}, retrying in {delay:.2f}s (attempt {attempt + 1}/{max_retries}): {e}"
+                    )
+                    time.sleep(delay)
+                    continue
+                else:
+                    logger.error(
+                        f"Database error getting enriched block context for {block_id} after {attempt + 1} attempts: {e}"
+                    )
+                    return None
+            except Exception as e:
+                logger.error(
+                    f"Error getting enriched block context for {block_id} after {attempt + 1} attempts: {e}"
+                )
                 return None
 
-            # Get both connection mappings and basic connections
-            connection_mappings = self._get_connection_mappings_for_display(
-                block_data["file_id"], block_data["start_line"], block_data["end_line"]
-            )
-            basic_connections = self._get_connections_for_file_and_lines(
-                block_data["file_id"], block_data["start_line"], block_data["end_line"]
-            )
-
-            # Filter out basic connections that are already represented in mappings
-            filtered_connections = self._filter_unmapped_connections(
-                basic_connections, connection_mappings, block_data["file_path"]
-            )
-
-            # Combine mappings and remaining basic connections
-            connections = {}
-            if connection_mappings:
-                connections["mappings"] = connection_mappings
-            if filtered_connections.get("incoming"):
-                connections["incoming"] = filtered_connections["incoming"]
-            if filtered_connections.get("outgoing"):
-                connections["outgoing"] = filtered_connections["outgoing"]
-
-            # Get parent/child relationships
-            parent_info = None
-            if block_data.get("parent_block_id"):
-                parent_info = self.resolve_block(block_data["parent_block_id"])
-
-            child_blocks = self.get_block_children(block_id)
-
-            result = {
-                "block": block_data,
-                "connections": connections,
-                "parent_block": parent_info,
-                "child_blocks": child_blocks,
-                "file_context": {
-                    "file_path": block_data["file_path"],
-                    "language": block_data["language"],
-                    "project_name": block_data["project_name"],
-                },
-            }
-
-            # Add connection mappings to the result if available
-            if connection_mappings:
-                result["connection_mappings"] = connection_mappings
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Error getting enriched block context for {block_id}: {e}")
-            return None
+        return None
 
     def get_enriched_file_context(self, file_id: int) -> Optional[Dict[str, Any]]:
         """
@@ -763,32 +819,56 @@ class GraphOperations:
     # ============================================================================
 
     def resolve_block(self, block_id: int) -> Optional[Dict[str, Any]]:
-        """Convert an embedding-derived block reference to full details."""
-        try:
-            results = self.connection.execute_query(GET_CODE_BLOCK_BY_ID, (block_id,))
-            if not results:
+        """Convert an embedding-derived block reference to full details with retry logic."""
+        max_retries = 3
+        base_delay = 0.1
+
+        for attempt in range(max_retries):
+            try:
+                results = self.connection.execute_query(
+                    GET_CODE_BLOCK_BY_ID, (block_id,)
+                )
+                if not results:
+                    logger.warning(f"Block {block_id} not found in database")
+                    return None
+
+                result = results[0]
+                return {
+                    "id": result["id"],
+                    "type": result["type"],
+                    "name": result["name"],
+                    "content": result["content"],
+                    "start_line": result["start_line"],
+                    "end_line": result["end_line"],
+                    "start_col": result["start_col"],
+                    "end_col": result["end_col"],
+                    "parent_block_id": result["parent_block_id"],
+                    "file_id": result["file_id"],
+                    "file_path": result["file_path"],
+                    "language": result["language"],
+                    "project_name": result["project_name"],
+                    "project_id": result["project_id"],
+                }
+            except (sqlite3.OperationalError, sqlite3.DatabaseError) as e:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)  # Exponential backoff
+                    logger.warning(
+                        f"Database busy resolving block {block_id}, retrying in {delay:.2f}s (attempt {attempt + 1}/{max_retries}): {e}"
+                    )
+                    time.sleep(delay)
+                    continue
+                else:
+                    logger.error(
+                        f"Database error resolving block {block_id} after {attempt + 1} attempts: {e}"
+                    )
+                    return None
+            except Exception as e:
+                logger.error(
+                    f"Error resolving block {block_id} after {attempt + 1} attempts: {e}"
+                )
                 return None
 
-            result = results[0]
-            return {
-                "id": result["id"],
-                "type": result["type"],
-                "name": result["name"],
-                "content": result["content"],
-                "start_line": result["start_line"],
-                "end_line": result["end_line"],
-                "start_col": result["start_col"],
-                "end_col": result["end_col"],
-                "parent_block_id": result["parent_block_id"],
-                "file_id": result["file_id"],
-                "file_path": result["file_path"],
-                "language": result["language"],
-                "project_name": result["project_name"],
-                "project_id": result["project_id"],
-            }
-        except Exception as e:
-            logger.error(f"Error resolving block {block_id}: {e}")
-            return None
+        return None
 
     def resolve_file(self, file_id: int) -> Optional[Dict[str, Any]]:
         """Convert a file reference to file metadata and block count."""

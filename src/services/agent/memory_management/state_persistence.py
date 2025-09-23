@@ -43,6 +43,34 @@ class StatePersistence:
                     "end_line": code.end_line,
                     "description": code.description,
                     "content": code.content,
+                    "is_traced": code.is_traced,
+                    "root_elements": [
+                        {
+                            "id": elem.id,
+                            "name": elem.name,
+                            "element_type": elem.element_type.value
+                            if hasattr(elem.element_type, "value")
+                            else str(elem.element_type),
+                            "start_line": elem.start_line,
+                            "end_line": elem.end_line,
+                            "signature": elem.signature,
+                            "is_fully_traced": elem.is_fully_traced,
+                        }
+                        for elem in code.root_elements
+                    ],
+                    "needs_tracing": [
+                        {
+                            "id": ute.id,
+                            "name": ute.name,
+                            "element_type": ute.element_type.value
+                            if hasattr(ute.element_type, "value")
+                            else str(ute.element_type),
+                            "reason": ute.reason,
+                            "accessed_from": ute.accessed_from,
+                        }
+                        for ute in code.needs_tracing
+                    ],
+                    "call_chain_summary": code.call_chain_summary,
                     "created_at": code.created_at.isoformat(),
                 }
                 for code_id, code in self.memory_ops.code_snippets.items()

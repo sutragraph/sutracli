@@ -7,7 +7,9 @@ Data classes and enums for the memory management system.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
+
+from baml_client.types import TracedElement, UntracedElement
 
 
 class TaskStatus(Enum):
@@ -31,14 +33,22 @@ class Task:
 
 @dataclass
 class CodeSnippet:
-    """Code snippet representation"""
+    """Code snippet representation with comprehensive trace chain analysis"""
 
     id: str
     file_path: str
     start_line: int
     end_line: int
     description: str
-    content: str = ""  # Actual code content
+    content: str = ""  # Actual code content (main snippet only)
+    is_traced: bool = False  # Whether trace chains have been fully analyzed
+    root_elements: List[TracedElement] = field(
+        default_factory=list
+    )  # List of root-level traced elements
+    # Code elements that still need trace chain analysis
+    needs_tracing: List[UntracedElement] = field(default_factory=list)
+    # High-level summary of complete trace chains (e.g., "validation → obj.property → dataCheck → db_query")
+    call_chain_summary: Optional[str] = None
     created_at: datetime = field(default_factory=datetime.now)
 
 
