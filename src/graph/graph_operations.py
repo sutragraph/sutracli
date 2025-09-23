@@ -28,8 +28,6 @@ from queries.agent_queries import (
     GET_CODE_BLOCK_BY_ID,
     GET_CONNECTION_IMPACT,
     GET_DEPENDENCY_CHAIN,
-    GET_EXTERNAL_CONNECTIONS,
-    GET_EXTERNAL_CONNECTIONS_OVERLAPPING_RANGE,
     GET_FILE_BLOCK_SUMMARY,
     GET_FILE_BY_ID,
     GET_FILE_IMPACT_SCOPE,
@@ -924,45 +922,6 @@ class GraphOperations:
             )
             return []
 
-    def get_connections_overlapping_range(
-        self, file_id: int, start_line: int, end_line: int
-    ) -> List[Dict[str, Any]]:
-        """Fetch incoming/outgoing connections whose snippet_lines overlap the given line range."""
-        try:
-            results = self.connection.execute_query(
-                GET_EXTERNAL_CONNECTIONS_OVERLAPPING_RANGE,
-                (
-                    file_id,
-                    start_line,
-                    end_line,
-                    start_line,
-                    end_line,
-                    start_line,
-                    end_line,
-                    file_id,
-                    start_line,
-                    end_line,
-                    start_line,
-                    end_line,
-                    start_line,
-                    end_line,
-                ),
-            )
-            return [
-                {
-                    "direction": result["direction"],
-                    "description": result["description"],
-                    "technology_name": result["technology_name"],
-                    "snippet_lines": result["snippet_lines"],
-                }
-                for result in results
-            ]
-        except Exception as e:
-            logger.error(
-                f"Error getting connections overlapping range for file {file_id}: {e}"
-            )
-            return []
-
     def get_file_block_summary(self, file_id: int) -> List[Dict[str, Any]]:
         """Overview of classes/functions in a file (no content)."""
         try:
@@ -1218,25 +1177,6 @@ class GraphOperations:
                 "connection_impacts": [],
                 "max_depth": max_depth,
             }
-
-    def get_external_connections(self, file_id: int) -> List[Dict[str, Any]]:
-        """Incoming/outgoing integrations for a file."""
-        try:
-            results = self.connection.execute_query(
-                GET_EXTERNAL_CONNECTIONS, (file_id, file_id)
-            )
-            return [
-                {
-                    "direction": result["direction"],
-                    "description": result["description"],
-                    "technology_name": result["technology_name"],
-                    "snippet_lines": result["snippet_lines"],
-                }
-                for result in results
-            ]
-        except Exception as e:
-            logger.error(f"Error getting external connections for file {file_id}: {e}")
-            return []
 
     def get_project_external_connections(self, project_id: int) -> List[Dict[str, Any]]:
         """All external integrations in a project."""

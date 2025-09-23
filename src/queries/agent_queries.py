@@ -32,28 +32,6 @@ WHERE cb.file_id = ?
 ORDER BY cb.start_line
 """
 
-GET_EXTERNAL_CONNECTIONS_OVERLAPPING_RANGE = """
-SELECT
-    'incoming' as direction, ic.description, ic.technology_name, ic.snippet_lines
-FROM incoming_connections ic
-WHERE ic.file_id = ? AND (
-    json_extract(ic.snippet_lines, '$[0]') BETWEEN ? AND ? OR
-    json_extract(ic.snippet_lines, '$[1]') BETWEEN ? AND ? OR
-    (json_extract(ic.snippet_lines, '$[0]') <= ? AND json_extract(ic.snippet_lines, '$[1]') >= ?)
-)
-UNION ALL
-SELECT
-    'outgoing' as direction, oc.description, oc.technology_name, oc.snippet_lines
-FROM outgoing_connections oc
-WHERE oc.file_id = ? AND (
-    json_extract(oc.snippet_lines, '$[0]') BETWEEN ? AND ? OR
-    json_extract(oc.snippet_lines, '$[1]') BETWEEN ? AND ? OR
-    (json_extract(oc.snippet_lines, '$[0]') <= ? AND json_extract(oc.snippet_lines, '$[1]') >= ?)
-)
-ORDER BY direction, technology_name
-LIMIT 15
-"""
-
 # ============================================================================
 # EXPOSED QUERIES
 # ============================================================================
@@ -171,7 +149,7 @@ SELECT
     ic.code_snippet, ic.created_at,
     f.file_path as target_file_path, f.language as target_language,
     p.name as target_project_name, p.id as target_project_id,
-    oc.technology_name, cm.match_confidence,
+    oc.technology_name as source_technology_name, cm.match_confidence,
     oc.description as source_description,
     sf.file_path as source_file_path, sf.language as source_language,
     sp.name as source_project_name, sp.id as source_project_id,
@@ -193,7 +171,7 @@ SELECT
     oc.code_snippet, oc.created_at,
     f.file_path as source_file_path, f.language as source_language,
     p.name as source_project_name, p.id as source_project_id,
-    ic.technology_name, cm.match_confidence,
+    ic.technology_name as target_technology_name, cm.match_confidence,
     ic.description as target_description,
     tf.file_path as target_file_path, tf.language as target_language,
     tp.name as target_project_name, tp.id as target_project_id,
@@ -207,34 +185,6 @@ LEFT JOIN files tf ON ic.file_id = tf.id
 LEFT JOIN projects tp ON tf.project_id = tp.id
 WHERE oc.file_id = ?
 ORDER BY oc.created_at DESC, cm.match_confidence DESC
-"""
-
-GET_EXTERNAL_CONNECTIONS = """
-SELECT
-    'incoming' as direction, ic.description, ic.technology_name, ic.snippet_lines,
-    cm.match_confidence,
-    sf.file_path as connected_file_path, sp.name as connected_project_name,
-    sp.id as connected_project_id
-FROM incoming_connections ic
-LEFT JOIN connection_mappings cm ON ic.id = cm.receiver_id
-LEFT JOIN outgoing_connections oc ON cm.sender_id = oc.id
-LEFT JOIN files sf ON oc.file_id = sf.id
-LEFT JOIN projects sp ON sf.project_id = sp.id
-WHERE ic.file_id = ?
-UNION ALL
-SELECT
-    'outgoing' as direction, oc.description, oc.technology_name, oc.snippet_lines,
-    cm.match_confidence,
-    tf.file_path as connected_file_path, tp.name as connected_project_name,
-    tp.id as connected_project_id
-FROM outgoing_connections oc
-LEFT JOIN connection_mappings cm ON oc.id = cm.sender_id
-LEFT JOIN incoming_connections ic ON cm.receiver_id = ic.id
-LEFT JOIN files tf ON ic.file_id = tf.id
-LEFT JOIN projects tp ON tf.project_id = tp.id
-WHERE oc.file_id = ?
-ORDER BY direction, technology_name, match_confidence DESC
-LIMIT 15
 """
 
 GET_PROJECT_EXTERNAL_CONNECTIONS = """

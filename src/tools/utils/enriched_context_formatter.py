@@ -166,7 +166,8 @@ def beautify_enriched_block_context(
                     )
                     if conn_lines:
                         result_parts.extend(conn_lines)
-                        result_parts.append("")  # Add spacing between technology groups
+                        # Add spacing between technology groups
+                        result_parts.append("")
                     tech_count += 1
 
             # Show detailed outgoing connections grouped by technology
@@ -188,7 +189,8 @@ def beautify_enriched_block_context(
                     )
                     if conn_lines:
                         result_parts.extend(conn_lines)
-                        result_parts.append("")  # Add spacing between technology groups
+                        # Add spacing between technology groups
+                        result_parts.append("")
                     tech_count += 1
 
     return "\n".join(result_parts)
@@ -288,7 +290,8 @@ def beautify_enriched_file_context(
                     )
                     if conn_lines:
                         result_parts.extend(conn_lines)
-                        result_parts.append("")  # Add spacing between technology groups
+                        # Add spacing between technology groups
+                        result_parts.append("")
                     tech_count += 1
 
             # Show detailed outgoing connections grouped by technology
@@ -310,7 +313,8 @@ def beautify_enriched_file_context(
                     )
                     if conn_lines:
                         result_parts.extend(conn_lines)
-                        result_parts.append("")  # Add spacing between technology groups
+                        # Add spacing between technology groups
+                        result_parts.append("")
                     tech_count += 1
 
     return "\n".join(result_parts)
@@ -536,22 +540,27 @@ def _format_grouped_connections(
     for i, conn in enumerate(connections):
         # Get file and project info based on direction
         if direction == "incoming":
-            file_path = conn.get(
-                "source_file_path", conn.get("connected_file_path", "unknown")
-            )
-            project_name = conn.get(
-                "source_project_name", conn.get("connected_project_name", "unknown")
-            )
+            # For unmapped incoming connections, show where connection exists (target)
+            # For mapped incoming connections, show where it comes from (source)
+            if conn.get("match_confidence") is None:
+                file_path = conn.get("target_file_path") or "unknown"
+                project_name = conn.get("target_project_name") or "unknown"
+            else:
+                file_path = conn.get("source_file_path") or "unknown"
+                project_name = conn.get("source_project_name") or "unknown"
         else:
-            file_path = conn.get(
-                "target_file_path", conn.get("connected_file_path", "unknown")
-            )
-            project_name = conn.get(
-                "target_project_name", conn.get("connected_project_name", "unknown")
-            )
+            file_path = conn.get("target_file_path") or "unknown"
+            project_name = conn.get("target_project_name") or "unknown"
 
         # Add file header
         result_lines.append(f"{file_path} [project: {project_name}]")
+
+        # For unmapped connections, add technology info before code snippet
+        is_unmapped = conn.get("match_confidence") is None
+        if is_unmapped:
+            tech_name = conn.get("technology_name") or technology or "Unknown"
+            description = conn.get("description", "Connection")
+            result_lines.append(f"[{tech_name}] {description}")
 
         # Add code snippet with line numbers if available
         code_snippet = conn.get("code_snippet", "")
@@ -582,10 +591,6 @@ def _format_grouped_connections(
                 # Fallback: show code without line numbers
                 for line in code_snippet.split("\n"):
                     result_lines.append(f"   {line}")
-
-        # Add technology info
-        tech_name = conn.get("technology_name", technology)
-        result_lines.append(f"[{tech_name}] Connection Connected with")
 
         # Add spacing between connections
         if i < len(connections) - 1:
