@@ -75,7 +75,9 @@ class SemanticSearchDeliveryAction(BaseDeliveryAction):
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
         """Handle fetch_next_chunk requests for semantic search."""
-        if not action.parameters.get("fetch_next_chunk", False):
+        fetch_next_chunk = action.parameters.get("fetch_next_chunk")
+        # Only handle as fetch_next if explicitly set to True
+        if fetch_next_chunk is not True:
             return None
 
         logger.debug("🔄 Fetch next request for semantic search")
@@ -430,7 +432,9 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
         """Handle fetch_next_chunk requests for database search."""
-        if not action.parameters.get("fetch_next_chunk", False):
+        fetch_next_chunk = action.parameters.get("fetch_next_chunk")
+        # Only handle as fetch_next if explicitly set to True
+        if fetch_next_chunk is not True:
             return None
         logger.debug("🔄 Fetch next request for database search")
 
@@ -552,7 +556,8 @@ class DatabaseSearchDeliveryAction(BaseDeliveryAction):
     ) -> Optional[Dict[str, Any]]:
         """Check if there's a pending delivery for this query."""
         # If this is a fetch_next_chunk request, handle it as such
-        if action_parameters.get("fetch_next_chunk", False):
+        fetch_next_chunk = action_parameters.get("fetch_next_chunk")
+        if fetch_next_chunk is True:
             return self.handle_fetch_next(
                 type("Action", (), {"parameters": action_parameters})()
             )
@@ -585,7 +590,9 @@ class ListFilesDeliveryAction(BaseDeliveryAction):
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
         """Handle fetch_next_chunk requests for list_files."""
-        if not action.parameters.get("fetch_next_chunk", False):
+        fetch_next_chunk = action.parameters.get("fetch_next_chunk")
+        # Only handle as fetch_next if explicitly set to True
+        if fetch_next_chunk is not True:
             return None
 
         logger.debug("🔄 Fetch next request for list_files")
@@ -649,7 +656,9 @@ class SearchKeywordDeliveryAction(BaseDeliveryAction):
 
     def handle_fetch_next(self, action) -> Optional[Dict[str, Any]]:
         """Handle fetch_next_chunk requests for search_keyword."""
-        if not action.parameters.get("fetch_next_chunk", False):
+        fetch_next_chunk = action.parameters.get("fetch_next_chunk")
+        # Only handle as fetch_next if explicitly set to True
+        if fetch_next_chunk is not True:
             return None
 
         logger.debug("🔄 Fetch next request for search_keyword")
@@ -771,7 +780,9 @@ def handle_fetch_next_request(action, tool_name: str) -> Optional[Dict[str, Any]
     Returns:
         Response dict if this is a fetch_next request, None otherwise
     """
-    if not action.parameters.get("fetch_next_chunk", False):
+    fetch_next_chunk = action.parameters.get("fetch_next_chunk")
+    # Only handle as fetch_next if explicitly set to True
+    if fetch_next_chunk is not True:
         return None
 
     delivery_action = get_delivery_action(tool_name)

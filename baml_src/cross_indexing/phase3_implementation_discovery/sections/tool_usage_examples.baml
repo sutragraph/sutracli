@@ -61,95 +61,115 @@ After list_files returns file list, create individual database tasks for potenti
 
 DATABASE TOOL EXAMPLES (3-5 files):
 
-Example 1: JavaScript - Axios usage analysis in few files
-- Purpose: Read entire file to analyze all axios method calls within that file
-- Look for: axios.get(), axios.post(), axios.put(), axios.delete() with actual parameters
-- Find: Actual API calls with real endpoints and environment variables
-{
-  "tool_call": {
-    "tool_name": "database",
-    "parameters": {
-      "query_type": "GET_FILE_BY_PATH",
-      "file_path": "src/api/client.js"
+Example 1: Axios usage analysis in few files
+  - Purpose: Read entire file to analyze all axios method calls within that file
+  - Look for: axios.get(), axios.post(), axios.put(), axios.delete() with actual parameters
+  - Find: Actual API calls with real endpoints and environment variables
+    {
+      "sutra_memory": {
+        "tasks": [
+          {
+            "action": "add",
+            "id": "1",
+            "to_status": "current",
+            "description": "Use database tool to read client.js completely to find actual axios HTTP calls with real endpoints and parameters."
+          },
+          {
+            "action": "add",
+            "id": "2",
+            "to_status": "pending",
+            "description": "Use database tool to read api.js completely to find actual axios HTTP calls with real endpoints and parameters."
+          }
+        ]
+      }
+      "tool_call": {
+        "tool_name": "database",
+        "parameters": {
+          "query_type": "GET_FILE_BY_PATH",
+          "file_path": "src/api/client.js"
+        }
+      }
     }
-  }
-}
-Example 2: Python - Requests usage analysis in specific files
-- Purpose: Read entire file to analyze all requests method calls within that file
-- Look for: requests.get(), requests.post() with actual parameters and endpoints
-- Find: Actual API calls with real URLs and configuration data
-{
-  "tool_call": {
-    "tool_name": "database",
-    "parameters": {
-      "query_type": "GET_FILE_BY_PATH",
-      "file_path": "src/services/api_client.py"
+
+Example 2:Requests usage analysis in specific files
+  - Purpose: Read entire file to analyze all requests method calls within that file
+  - Look for: requests.get(), requests.post() with actual parameters and endpoints
+  - Find: Actual API calls with real URLs and configuration data
+    {
+      "tool_call": {
+        "tool_name": "database",
+        "parameters": {
+          "query_type": "GET_FILE_BY_PATH",
+          "file_path": "src/services/api_client.py"
+        }
+      }
     }
-  }
-}
 
 SEARCH_KEYWORD EXAMPLES (6+ files or wrapper functions):
 
 Example 1: JavaScript - Express usage across many files
-- Purpose: Find express route definitions across multiple files efficiently
-- Look for: Route definitions with actual endpoint paths
-- Find: All route definitions found with real endpoints
-{
-  "tool_call": {
-    "tool_name": "search_keyword",
-    "parameters": {
-      "pattern": "(app|router)\.(get|post|put|delete|patch)",
-      "regex": true,
-      "case_sensitive": false,
-      "after_lines": 2
+  - Purpose: Find express route definitions across multiple files efficiently
+  - Look for: Route definitions with actual endpoint paths
+  - Find: All route definitions found with real endpoints
+    {
+      "tool_call": {
+        "tool_name": "search_keyword",
+        "parameters": {
+          "pattern": "(app|router)\.(get|post|put|delete|patch)",
+          "regex": true,
+          "case_sensitive": false,
+          "after_lines": 2
+        }
+      }
     }
-  }
-}
+
 Example 2: Python - Flask usage across many files
-- Purpose: Find Flask route definitions across multiple files efficiently
-- Look for: Route decorators with actual endpoint paths
-- Find: All route definitions found with real endpoints
-{
-  "tool_call": {
-    "tool_name": "search_keyword",
-    "parameters": {
-      "pattern": "@app.route|@bp.route",
-      "regex": true,
-      "case_sensitive": false,
-      "after_lines": 2
+  - Purpose: Find Flask route definitions across multiple files efficiently
+  - Look for: Route decorators with actual endpoint paths
+  - Find: All route definitions found with real endpoints
+    {
+      "tool_call": {
+        "tool_name": "search_keyword",
+        "parameters": {
+          "pattern": "@app.route|@bp.route",
+          "regex": true,
+          "case_sensitive": false,
+          "after_lines": 2
+        }
+      }
     }
-  }
-}
+
 Example 3: Multi-language - Wrapper function usage analysis
-- Purpose: Find all usage sites of wrapper functions across the codebase
-- Look for: Wrapper function calls with actual parameters
-- Find: Wrapper function calls with real endpoints and data
-{
-  "tool_call": {
-    "tool_name": "search_keyword",
-    "parameters": {
-      "pattern": "makeApiCall|apiClient|sendRequest",
-      "regex": true,
-      "case_sensitive": false,
-      "after_lines": 3
+  - Purpose: Find all usage sites of wrapper functions across the codebase
+  - Look for: Wrapper function calls with actual parameters
+  - Find: Wrapper function calls with real endpoints and data
+    {
+      "tool_call": {
+        "tool_name": "search_keyword",
+        "parameters": {
+          "pattern": "makeApiCall|apiClient|sendRequest",
+          "regex": true,
+          "case_sensitive": false,
+          "after_lines": 3
+        }
+      }
     }
-  }
-}
+
 Example 4: HTTP calls with improved quote handling
-- Purpose: Find axios HTTP calls with actual endpoint URLs
-- Handles both single and double quotes in endpoint strings
-- Look for: HTTP method calls with real URLs and parameters
-{
-  "tool_call": {
-    "tool_name": "search_keyword",
-    "parameters": {
-      "pattern": "axios\.(get|post|put|delete)",
-      "regex": true,
-      "case_sensitive": false,
-      "after_lines": 2
+  - Purpose: Find axios HTTP calls with actual endpoint URLs
+  - Handles both single and double quotes in endpoint strings
+  - Look for: HTTP method calls with real URLs and parameters
+    {
+      "tool_call": {
+        "tool_name": "search_keyword",
+        "parameters": {
+          "pattern": "axios\.(get|post|put|delete)",
+          "regex": true,
+          "case_sensitive": false,
+          "after_lines": 2
+        }
+      }
     }
-  }
-}
 
 2. CONNECTION CODE ANALYSIS
 
@@ -247,9 +267,23 @@ channel.sendToQueue('user-notifications', Buffer.from(message))
 producer.send("email-queue", emailData)
 ```
 
-WHAT NOT TO FOCUS ON (GENERIC DEFINITIONS)
+WHAT NOT TO FOCUS ON (GENERIC DEFINITIONS/CONNECTION SETUP ONLY)
 
-Example 1: JavaScript - Generic wrapper functions
+Example 1: AMQP - Connection establishment WITHOUT data communication
+```
+// DON'T STOP HERE - connection establishment only
+const amqp = require("amqp-connection-manager");
+const connection = amqp.connect(process.env.URL);
+
+// DON'T STOP HERE - channel creation without usage
+const channel = connection.createChannel();
+
+// MANDATORY: Find the actual usage like:
+// channel.sendToQueue('notifications', Buffer.from(data))
+// channel.consume('events', processMessage)
+```
+
+Example 2: Generic wrapper functions
 ```
 // DON'T FOCUS ON THIS - generic wrapper function definition
 function makeApiCall(url, method, data) {
@@ -262,7 +296,7 @@ const apiClient = axios.create({
 })
 ```
 
-Example 2: Python - Generic wrapper functions
+Example 3: Generic wrapper functions
 ```
 # DON'T FOCUS ON THIS - generic wrapper function definition
 def make_api_call(url, method, data):
@@ -277,44 +311,44 @@ session.headers.update({'Authorization': f'Bearer {token}'})
 
 DATABASE TOOL USAGE (Few files)
 When import discovery found few files (3-5):
-- Use for complete file analysis to understand all usage patterns
-- Read entire file content to analyze context and relationships between methods
-- Get comprehensive view of all connections and their actual usage within the file
-- Best for thorough analysis when dealing with limited number of files
+  - Use for complete file analysis to understand all usage patterns
+  - Read entire file content to analyze context and relationships between methods
+  - Get comprehensive view of all connections and their actual usage within the file
+  - Best for thorough analysis when dealing with limited number of files
 
 SEARCH_KEYWORD USAGE (Many files or wrapper functions)
 When import discovery found many files (6+) or wrapper functions:
-- Use targeted patterns to find specific usage across multiple files efficiently
-- Essential for wrapper function usage discovery across entire codebase
-- Essential for built-in language patterns that don't require imports
-- Include appropriate context lines (after_lines=2-3) to capture complete usage
+  - Use targeted patterns to find specific usage across multiple files efficiently
+  - Essential for wrapper function usage discovery across entire codebase
+  - Essential for built-in language patterns that don't require imports
+  - Include appropriate context lines (after_lines=2-3) to capture complete usage
 
 4. TASK CREATION EXAMPLES
 
 CRITICAL THINKING PROCESS FOR TASK CREATION - WRAPPER FUNCTION DETECTION
 
-Before creating any task, ask yourself these specific questions:
+Before creating any task, ask yourself these specific questions in `thinking` feild:
 1. "Did I find connection code with VARIABLE NAMES instead of actual hardcoded values?"
-   - Examples: `sendToQueue(queueName, message)`, `axios.get(url)`, `socket.emit(eventName, data)`
-   - These indicate wrapper functions that need further analysis
+  - Examples: `sendToQueue(queueName, message)`, `axios.get(url)`, `socket.emit(eventName, data)`
+  - These indicate wrapper functions that need further analysis
 2. "Are these variables being passed as parameters from a calling function?"
-   - This means I found the low-level implementation, not the actual usage
+  - This means I found the low-level implementation, not the actual usage
 3. "Do I need to search for where this wrapper function is called with real connection values?"
-   - YES if I see variables/parameters, NO if I see hardcoded strings
+  - YES if I see variables/parameters, NO if I see hardcoded strings
 4. "Have I already found the actual usage sites with real endpoint/queue/event names?"
-   - If YES, collect this data. If NO, create search tasks.
+  - If YES, collect this data. If NO, create search tasks.
 
 VARIABLE PARAMETER DETECTION PATTERNS:
-- Queue Operations: `queueName`, `topicName`, `channelName` → Search for wrapper calls
-- HTTP Operations: `url`, `endpoint`, `apiUrl`, `baseUrl` → Search for wrapper calls
-- Socket Operations: `eventName`, `event`, `channel` → Search for wrapper calls
-- Database Operations: `tableName`, `collection`, `query` → Search for wrapper calls
+  - Queue Operations: `queueName`, `topicName`, `channelName` → Search for wrapper calls
+  - HTTP Operations: `url`, `endpoint`, `apiUrl`, `baseUrl` → Search for wrapper calls
+  - Socket Operations: `eventName`, `event`, `channel` → Search for wrapper calls
+  - Database Operations: `tableName`, `collection`, `query` → Search for wrapper calls
 
 VARIABLE RESOLUTION IN SAME FILE DETECTION:
-- If variable found in connection code → First check same file for variable definition
-- If variable defined with hardcoded value → Use that value directly
-- If variable defined with env variable → Search for env file if not in sutra memory
-- Pattern: `const queueName = process.env.QUEUE_NAME` or `queue_name = "hardcoded-queue"`
+  - If variable found in connection code → First check same file for variable definition
+  - If variable defined with hardcoded value → Use that value directly
+  - If variable defined with env variable → Search for env file if not in sutra memory
+  - Pattern: `const queueName = process.env.QUEUE_NAME` or `queue_name = "hardcoded-queue"`
 
 ## WRAPPER FUNCTION DEFINITION CHECK EXAMPLES
 
@@ -405,9 +439,9 @@ EFFICIENT WORKFLOW:
 }
 
 3. ANALYZE RESULTS:
-   - If hardcoded: `queueName = "user-notifications"` → Use this value, move to next task
-   - If env variable: `queueName = process.env.QUEUE_NAME` → Check sutra memory first
-   - If not in sutra memory, create task to find env definition. find env or config file using list_file tool
+  - If hardcoded: `queueName = "user-notifications"` → Use this value, move to next task
+  - If env variable: `queueName = process.env.QUEUE_NAME` → Check sutra memory first
+  - If not in sutra memory, create task to find env definition. find env or config file using list_file tool
 
 EXPECTED RESULT: Find calls like `publishMessage('user-notifications', data)` or resolve variable to actual queue names
 
@@ -816,86 +850,86 @@ STEP-BY-STEP THINKING PROCESS
 When you find any code during analysis, follow this thinking process:
 
 1. IDENTIFY: "What type of code did I find?"
-   - Direct library call (HTTP: axios.get, requests.post; Queue: producer.send, consumer.subscribe; Socket: socket.emit, io.on)
-   - Wrapper function definition (function apicall(...), def publish_message(...), function emitEvent(...))
-   - Wrapper function usage (apicall('/api/users'), publish_message('user_topic', data), emitEvent('join_room', roomData))
-   - Configuration/setup code
+  - Direct library call (HTTP: axios.get, requests.post; Queue: producer.send, consumer.subscribe; Socket: socket.emit, io.on)
+  - Wrapper function definition (function apicall(...), def publish_message(...), function emitEvent(...))
+  - Wrapper function usage (apicall('/api/users'), publish_message('user_topic', data), emitEvent('join_room', roomData))
+  - Configuration/setup code
 
 2. ANALYZE PARAMETERS: "Are the parameters dynamic or hardcoded?"
-   - Dynamic: Takes variables, environment variables, function parameters (endpoints, topics, event names, channels)
-   - Hardcoded: Has fixed strings (URLs, topic names, event names, channel names)
+  - Dynamic: Takes variables, environment variables, function parameters (endpoints, topics, event names, channels)
+  - Hardcoded: Has fixed strings (URLs, topic names, event names, channel names)
 
 3. DECIDE: "Do I need to search further?"
-   - If wrapper function definition with dynamic parameters → CREATE TASK to find usage
-   - If wrapper function usage with real values → DON'T CREATE TASK (collect this code)
-   - If direct library call with real values → DON'T CREATE TASK (collect this code)
-   - If wrapper function with hardcoded values → DON'T CREATE TASK (collect this code)
+  - If wrapper function definition with dynamic parameters → CREATE TASK to find usage
+  - If wrapper function usage with real values → DON'T CREATE TASK (collect this code)
+  - If direct library call with real values → DON'T CREATE TASK (collect this code)
+  - If wrapper function with hardcoded values → DON'T CREATE TASK (collect this code)
 
 4. THINK EXPLICITLY: Always include your reasoning with specific examples
-     - "THINKING: Found queue operation `sendToQueue(queueName, message)` with variable 'queueName'. This is wrapper function implementation. Need to search for actual calls with real queue names. so, i will create a task to find actual calls with real queue names."
-     - "THINKING: Found HTTP call `axios.get(url, config)` with variable 'url'. This is wrapper function usage. Need to search for actual calls with real endpoints. so, i will create a task to find actual calls with real endpoints."
-     - "THINKING: Found direct queue call `sendToQueue('user-notifications', message)` with hardcoded queue name. This IS the actual connection code to collect."
-     - "THINKING: Found direct HTTP call `axios.get('/api/users')` with hardcoded endpoint. This IS the actual connection code to collect."
+  - "THINKING: Found queue operation `sendToQueue(queueName, message)` with variable 'queueName'. This is wrapper function implementation. Need to search for actual calls with real queue names. so, i will create a task to find actual calls with real queue names."
+  - "THINKING: Found HTTP call `axios.get(url, config)` with variable 'url'. This is wrapper function usage. Need to search for actual calls with real endpoints. so, i will create a task to find actual calls with real endpoints."
+  - "THINKING: Found direct queue call `sendToQueue('user-notifications', message)` with hardcoded queue name. This IS the actual connection code to collect."
+  - "THINKING: Found direct HTTP call `axios.get('/api/users')` with hardcoded endpoint. This IS the actual connection code to collect."
 
 5. SPECIFIC QUEUE EXAMPLE WORKFLOW:
 
-   SCENARIO: Found this code during analysis
-   ```
-   // Line 49-51 in message-service.js
-   this.channel.sendToQueue(queueName, Buffer.from(message), {
-     persistent: true,
-   });
-   ```
+  SCENARIO: Found this code during analysis
+    ```
+    // Line 49-51 in message-service.js
+    this.channel.sendToQueue(queueName, Buffer.from(message), {
+      persistent: true,
+    });
+    ```
 
-   CORRECT ANALYSIS PROCESS:
-   1. DETECT: "Found `sendToQueue(queueName, message)` with variable 'queueName' - this is NOT the actual queue name"
-   2. IDENTIFY: "This is a wrapper function implementation, not the actual usage site"
-   3. READ FILE: Use database tool to read complete message-service.js file
-   4. FIND WRAPPER: Look for function name containing this code (e.g., `publishMessage`, `sendNotification`, etc.)
-   5. CREATE TASK: "Use search_keyword to find [wrapperFunctionName] calls with actual queue names: [wrapperFunctionName]\("
-   6. EXPECTED RESULTS: Find calls like:
+  CORRECT ANALYSIS PROCESS:
+    1. DETECT: "Found `sendToQueue(queueName, message)` with variable 'queueName' - this is NOT the actual queue name"
+    2. IDENTIFY: "This is a wrapper function implementation, not the actual usage site"
+    3. READ FILE: Use database tool to read complete message-service.js file
+    4. FIND WRAPPER: Look for function name containing this code (e.g., `publishMessage`, `sendNotification`, etc.)
+    5. CREATE TASK: "Use search_keyword to find [wrapperFunctionName] calls with actual queue names: [wrapperFunctionName]\("
+    6. EXPECTED RESULTS: Find calls like:
       - `publishMessage('user-notifications', userData)`
       - `publishMessage('email-queue', emailData)`
       - `publishMessage('order-processing', orderData)`
 
-   WRONG APPROACH (WHAT NOT TO DO):
-   - Collecting `sendToQueue(queueName, message)` as final connection data
-   - Moving to next task without searching for actual queue names
-   - Accepting variable names as connection endpoints
+  WRONG APPROACH (WHAT NOT TO DO):
+    - Collecting `sendToQueue(queueName, message)` as final connection data
+    - Moving to next task without searching for actual queue names
+    - Accepting variable names as connection endpoints
 
 6. COMPLETION EXAMPLES
 
 ATTEMPT_COMPLETION USAGE
 
 Example 1: Multi-language comprehensive implementation discovery
-- Purpose: Complete implementation discovery after analyzing all connection patterns
-- Result: Comprehensive summary of all discovered connections across the codebase
-{
-  "tool_call": {
-    "tool_name": "attempt_completion",
-    "parameters": {
-      "result": "Implementation discovery complete. Analyzed connection usage in 20 files across JavaScript and Python: found 35 HTTP API calls, 18 server routes, 12 WebSocket connections, and 8 message queue operations. All connection code found and analyzed."
+  - Purpose: Complete implementation discovery after analyzing all connection patterns
+  - Result: Comprehensive summary of all discovered connections across the codebase
+    {
+      "tool_call": {
+        "tool_name": "attempt_completion",
+        "parameters": {
+          "result": "Implementation discovery complete. Analyzed connection usage in 20 files across JavaScript and Python: found 35 HTTP API calls, 18 server routes, 12 WebSocket connections, and 8 message queue operations. All connection code found and analyzed."
+        }
+      }
     }
-  }
-}
 
 Example 2: Wrapper function analysis completion
-- Purpose: Complete analysis after discovering all wrapper function usage patterns
-- Result: Summary of wrapper function analysis with real endpoint discoveries
-{
-  "tool_call": {
-    "tool_name": "attempt_completion",
-    "parameters": {
-      "result": "Implementation discovery complete. Found 45 wrapper function calls across 15 files with real endpoints and parameters. All connection implementations found and analyzed for data splitting."
+  - Purpose: Complete analysis after discovering all wrapper function usage patterns
+  - Result: Summary of wrapper function analysis with real endpoint discoveries
+    {
+      "tool_call": {
+        "tool_name": "attempt_completion",
+        "parameters": {
+          "result": "Implementation discovery complete. Found 45 wrapper function calls across 15 files with real endpoints and parameters. All connection implementations found and analyzed for data splitting."
+        }
+      }
     }
-  }
-}
 
 7. CRITICAL GUIDELINES
-- Execute ALL pending tasks from import pattern discovery systematically
-- Use tool selection guidance provided in tasks from previous phase
-- Focus on actual usage with real parameters, not generic definitions
-- Connection code is handled automatically after each tool call
-- Create additional tasks within implementation discovery when discovering new patterns
-- ALWAYS THINK EXPLICITLY about whether you need to create tasks for further searching
+  - Execute ALL pending tasks from import pattern discovery systematically
+  - Use tool selection guidance provided in tasks from previous phase
+  - Focus on actual usage with real parameters, not generic definitions
+  - Connection code is handled automatically after each tool call
+  - Create additional tasks within implementation discovery when discovering new patterns
+  - ALWAYS THINK EXPLICITLY about whether you need to create tasks for further searching
 "#

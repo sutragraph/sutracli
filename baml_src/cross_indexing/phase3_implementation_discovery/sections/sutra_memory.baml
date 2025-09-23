@@ -5,10 +5,10 @@ SUTRA MEMORY
 Sutra Memory is a dynamic memory system that tracks implementation discovery state across iterations. It ensures continuity, prevents redundant operations, and maintains context for comprehensive implementation analysis. The system tracks iteration history and manages analysis tasks that can be created within implementation discovery.
 
 Required Components:
-- add_history: Comprehensive summary of current iteration actions, tool usage, and implementation discoveries (MANDATORY in every response)
+  - add_history: Comprehensive summary of current iteration actions, tool usage, and implementation discoveries (MANDATORY in every response)
 
 Optional Components:
-- task: Manage analysis tasks by executing tasks and creating additional tasks when needed
+  - task: Manage analysis tasks by executing tasks and creating additional tasks when needed
 
 NOTE: `description` is only required for "add" actions do not include description for "move" actions
 
@@ -186,44 +186,44 @@ Example 7: Task completion scenario
 # Sutra Memory Guidelines:
 
 1. Memory Assessment
-In the `thinking` JSON field, assess what implementation information you already have and what import pattern discovery tasks you need to execute. Review your current sutra_memory state and determine what updates are needed based on implementation discovery progress.
+  - In the `thinking` JSON field, assess what implementation information you already have and what import pattern discovery tasks you need to execute. Review your current sutra_memory state and determine what updates are needed based on implementation discovery progress.
 
 2. Task Execution Protocol
-- Execute pending tasks from import pattern discovery one by one
-- Move tasks from pending to current when starting execution
-- Try 2-3 different approaches/patterns before marking tasks as completed
-- If initial tool approach fails, try alternative methods in same iteration
-- Only mark task as completed after exhausting reasonable analysis variations
-- Use tool selection guidance provided in import pattern discovery tasks
-- Process results after each tool call
+  - Execute pending tasks from import pattern discovery one by one
+  - Move tasks from pending to current when starting execution
+  - Try 2-3 different approaches/patterns before marking tasks as completed
+  - If initial tool approach fails, try alternative methods in same iteration
+  - Only mark task as completed after exhausting reasonable analysis variations
+  - Use tool selection guidance provided in import pattern discovery tasks
+  - Process results after each tool call
 
 3. Task Management
-- Can create additional tasks for further analysis when needed
-- Add tasks when discovering wrapper functions that need usage analysis with specific search patterns
-- Create tasks for environment variable resolution with complete tool guidance
-- Add tasks for complex connection patterns requiring deeper analysis with proper tool parameters
+  - Can create additional tasks for further analysis when needed
+  - Add tasks when discovering wrapper functions that need usage analysis with specific search patterns
+  - Create tasks for environment variable resolution with complete tool guidance
+  - Add tasks for complex connection patterns requiring deeper analysis with proper tool parameters
 
 4. Task Creation Guidelines
-- Create additional tasks ONLY when discovering new patterns requiring analysis
-- Include specific search patterns for wrapper functions or complex patterns
-- Provide context about discoveries that led to additional task creation
-- Use descriptive task names with clear analysis objectives
+  - Create additional tasks ONLY when discovering new patterns requiring analysis
+  - Include specific search patterns for wrapper functions or complex patterns
+  - Provide context about discoveries that led to additional task creation
+  - Use descriptive task names with clear analysis objectives
 
 5. History Best Practices
-- Be specific about tools used and connection implementations found in current iteration
-- Mention all tool attempts made in current iteration with specific approaches
-- If analysis approach failed, mention the failed method and any alternatives tried
-- Note number of connections found and their types from current iteration
-- Include complete file paths and connection details when relevant from current tool results
-- Track comprehensive implementation information and analysis results from current iteration
-- Example: "Used database query GET_FILE_BY_PATH with file_path='src/api/client.js' - found 0 axios calls, then used search_keyword with query='axios' and regex=false - found 5 usage sites in current iteration"
-- Example: "Used search_keyword with query='fetch' and regex=false in current iteration - discovered 12 native fetch calls across 4 files"
+  - Be specific about tools used and connection implementations found in current iteration
+  - Mention all tool attempts made in current iteration with specific approaches
+  - If analysis approach failed, mention the failed method and any alternatives tried
+  - Note number of connections found and their types from current iteration
+  - Include complete file paths and connection details when relevant from current tool results
+  - Track comprehensive implementation information and analysis results from current iteration
+  - Example: "Used database query GET_FILE_BY_PATH with file_path='src/api/client.js' - found 0 axios calls, then used search_keyword with query='axios' and regex=false - found 5 usage sites in current iteration"
+  - Example: "Used search_keyword with query='fetch' and regex=false in current iteration - discovered 12 native fetch calls across 4 files"
 
 6. Critical Rules
-- Sutra Memory MUST be updated in every implementation discovery response alongside exactly one tool call
-- At minimum, add_history must be included in each iteration
-- Execute import pattern discovery tasks before creating additional tasks
-- Task IDs must be unique and sequential
-- Tool results are automatically processed after each call
-- COMPLETION RULE: When using attempt_completion, mark implementation discovery as completed
+  - Sutra Memory MUST be updated in every implementation discovery response alongside exactly one tool call
+  - At minimum, add_history must be included in each iteration
+  - Execute import pattern discovery tasks before creating additional tasks
+  - Task IDs must be unique and sequential
+  - Tool results are automatically processed after each call
+  - COMPLETION RULE: When using attempt_completion, mark implementation discovery as completed
 "#

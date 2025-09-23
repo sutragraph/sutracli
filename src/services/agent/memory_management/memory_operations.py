@@ -28,6 +28,7 @@ class MemoryOperations:
         self.max_history_entries = 40
         self.code_fetcher = CodeFetcher()
         self.feedback_section: Optional[str] = None  # Store feedback section
+        self.project_info: Optional[str] = None  # Store project information
 
     def get_next_task_id(self) -> str:
         """Generate next unique task ID"""
@@ -375,6 +376,30 @@ class MemoryOperations:
         self.feedback_section = None
         logger.debug("Feedback section cleared from memory operations")
         return True
+
+    # Project Info Management Methods
+    def set_project_info(self, project_info_content: str) -> bool:
+        """
+        Set project info content.
+
+        Args:
+            project_info_content: Complete project info content
+
+        Returns:
+            bool: True if project info was set successfully
+        """
+        self.project_info = project_info_content
+        logger.debug("Project info set in memory operations")
+        return True
+
+    def get_project_info(self) -> Optional[str]:
+        """
+        Get project info content.
+
+        Returns:
+            str or None: Project info content if available
+        """
+        return self.project_info
 
     # Memory State Methods
     def get_memory_summary(self) -> Dict[str, Any]:

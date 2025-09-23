@@ -6,10 +6,10 @@ SUTRA MEMORY
 Sutra Memory is a dynamic memory system that tracks import analysis state across iterations. It ensures continuity, prevents redundant operations, and maintains context for comprehensive import analysis. The system tracks iteration history and manages analysis tasks for subsequent implementation analysis.
 
 Required Components:
-- add_history: Comprehensive summary of current iteration actions, tool usage, import discoveries, and task creation (MANDATORY in every response)
+  - add_history: Comprehensive summary of current iteration actions, tool usage, import discoveries, and task creation (MANDATORY in every response)
 
 Optional Components:
-- task: Manage analysis tasks by executing tasks and creating new ones with unique IDs
+  - task: Manage analysis tasks by executing tasks and creating new ones with unique IDs
 
 NOTE: `description` is only required for "add" actions do not include description for "move" actions
 
@@ -182,63 +182,63 @@ Example 6: Task completion scenario
 In the thinking field, assess what import information you already have and what package discovery tasks you need to execute. Review your current sutra_memory state and determine what updates are needed based on import discovery progress.
 
 2. Task Execution Protocol
-- Execute pending tasks from package discovery one by one
-- Move tasks from pending to current when starting execution
-- Try 2 different search patterns maximum before marking tasks as completed
-- If initial search pattern fails, try simple keyword search in same iteration
-- Only mark task as completed after 2 pattern attempts maximum
-- Use search_keyword with patterns provided in package discovery tasks
-- CRITICAL: After seeing tool results when marking a task as completed, if you found meaningful import information, create new implementation tasks for the next phase
-- Create implementation discovery tasks based on findings
+  - Execute pending tasks from package discovery one by one
+  - Move tasks from pending to current when starting execution
+  - Try 2 different search patterns maximum before marking tasks as completed
+  - If initial search pattern fails, try simple keyword search in same iteration
+  - Only mark task as completed after 2 pattern attempts maximum
+  - Use search_keyword with patterns provided in package discovery tasks
+  - CRITICAL: After seeing tool results when marking a task as completed, if you found meaningful import information, create new implementation tasks for the next phase
+  - Create implementation discovery tasks based on findings
 
 3. Task Management
-- Create tasks with complete tool guidance and file paths when imports are found
-- Few files (3-5): Create individual database tasks for each file (1 task per file)
-- Many files (6+): Create combined search_keyword tasks with usage patterns and regex parameters
-- ALWAYS create built-in pattern tasks regardless of package findings
-- Include comprehensive tool selection guidance and expected usage patterns
+  - Create tasks with complete tool guidance and file paths when imports are found
+  - Few files (3-5): Create individual database tasks for each file (1 task per file)
+  - Many files (6+): Create combined search_keyword tasks with usage patterns and regex parameters
+  - ALWAYS create built-in pattern tasks regardless of package findings
+  - Include comprehensive tool selection guidance and expected usage patterns
 
 4. Task Creation Guidelines
-- Create tasks ONLY after finding imports from analysis
-- CRITICAL: When completing a task, review tool results and create new implementation tasks if meaningful import information was found
-- Include exact file paths discovered during import search
-- Provide context about import patterns found
-- Add appropriate tool selection based on number of files found
-- ALWAYS create built-in pattern tasks covering multiple languages
-- File paths must be complete and accurate for implementation analysis
+  - Create tasks ONLY after finding imports from analysis
+  - CRITICAL: When completing a task, review tool results and create new implementation tasks if meaningful import information was found
+  - Include exact file paths discovered during import search
+  - Provide context about import patterns found
+  - Add appropriate tool selection based on number of files found
+  - ALWAYS create built-in pattern tasks covering multiple languages
+  - File paths must be complete and accurate for implementation analysis
 
 5. History Best Practices
-- Be specific about search patterns used and results found in current iteration
-- Mention all tool attempts made in current iteration with specific queries
-- If search failed, mention the failed pattern and any alternative patterns tried
-- Note number of files found for each package in current iteration
-- Include complete file paths when relevant from current tool results
-- Track comprehensive import information for implementation discovery
-- Example: "Used search_keyword with query='require.*axios|import.*axios' and regex=true - found 0 results, tried query='axios' and regex=false - found 3 matches in current iteration"
-- Example: "Used search_keyword with query='express.*Router' and regex=true in current iteration - discovered 5 import statements in 3 files"
-- Do not mention specific task IDs in history - focus on actions and discoveries made in current iteration
+  - Be specific about search patterns used and results found in current iteration
+  - Mention all tool attempts made in current iteration with specific queries
+  - If search failed, mention the failed pattern and any alternative patterns tried
+  - Note number of files found for each package in current iteration
+  - Include complete file paths when relevant from current tool results
+  - Track comprehensive import information for implementation discovery
+  - Example: "Used search_keyword with query='require.*axios|import.*axios' and regex=true - found 0 results, tried query='axios' and regex=false - found 3 matches in current iteration"
+  - Example: "Used search_keyword with query='express.*Router' and regex=true in current iteration - discovered 5 import statements in 3 files"
+  - Do not mention specific task IDs in history - focus on actions and discoveries made in current iteration
 
 6. Critical Rules
-- Sutra Memory MUST be updated in every import discovery response alongside exactly one tool call
-- At minimum, add_history must be included in each iteration
-- Execute previous analysis tasks before creating implementation tasks
-- Task IDs must be unique and sequential
-- Tasks created here will be used in subsequent implementation analysis
-- COMPLETION RULE: When using attempt_completion, mark import analysis as completed
+  - Sutra Memory MUST be updated in every import discovery response alongside exactly one tool call
+  - At minimum, add_history must be included in each iteration
+  - Execute previous analysis tasks before creating implementation tasks
+  - Task IDs must be unique and sequential
+  - Tasks created here will be used in subsequent implementation analysis
+  - COMPLETION RULE: When using attempt_completion, mark import analysis as completed
 
 7. Previous Task Execution Strategy
-- Process pending tasks from previous analysis systematically
-- Use exact search patterns provided in previous analysis tasks as starting point
-- If initial pattern fails, try simple keyword search (just package name) before giving up
-- Handle different import syntaxes appropriately for each language
-- Only mark tasks complete after 2 pattern attempts maximum
-- Create comprehensive implementation analysis tasks based on findings
-- ALWAYS create built-in pattern tasks for subsequent analysis regardless of package findings
+  - Process pending tasks from previous analysis systematically
+  - Use exact search patterns provided in previous analysis tasks as starting point
+  - If initial pattern fails, try simple keyword search (just package name) before giving up
+  - Handle different import syntaxes appropriately for each language
+  - Only mark tasks complete after 2 pattern attempts maximum
+  - Create comprehensive implementation analysis tasks based on findings
+  - ALWAYS create built-in pattern tasks for subsequent analysis regardless of package findings
 
 8. Retry Pattern Guidelines
-- First attempt: Use exact pattern from package discovery task
-- Second attempt: Try simple keyword search (just the package name) if first attempt found 0 results
-- After 2 attempts with zero results: Mark complete and move to next task
-- Document all attempts in history with specific patterns used
-- Example retry sequence: 'require.*axios|import.*axios' → 'axios'
+  - First attempt: Use exact pattern from package discovery task
+  - Second attempt: Try simple keyword search (just the package name) if first attempt found 0 results
+  - After 2 attempts with zero results: Mark complete and move to next task
+  - Document all attempts in history with specific patterns used
+  - Example retry sequence: 'require.*axios|import.*axios' → 'axios'
 "#

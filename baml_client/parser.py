@@ -64,6 +64,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
+    def AnthropicClaudeSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeSutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
+
     def AnthropicClaudeTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -117,6 +123,12 @@ class LlmResponseParser:
     ) -> types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
+
+    def AwsBedrockSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockSutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
 
     def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -172,6 +184,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
+    def AzureAIFoundrySutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundrySutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
+
     def AzureAIFoundryTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -225,6 +243,12 @@ class LlmResponseParser:
     ) -> types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
+
+    def AzureOpenAISutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAISutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
 
     def AzureOpenAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -280,6 +304,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
+    def GCPVertexAISutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAISutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
+
     def GCPVertexAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -333,6 +363,12 @@ class LlmResponseParser:
     ) -> types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
+
+    def GoogleGeminiSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiSutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
 
     def GoogleGeminiTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -388,6 +424,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
 
+    def OpenAIChatGPTSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTSutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
+
     def OpenAIChatGPTTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -441,6 +483,12 @@ class LlmResponseParser:
     ) -> types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterRoadmapAgent", llm_response=llm_response, mode="request")
         return typing.cast(types.RoadmapResponse, result)
+
+    def OpenRouterSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterSutraCliAssistant", llm_response=llm_response, mode="request")
+        return typing.cast(str, result)
 
     def OpenRouterTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -504,6 +552,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
+    def AnthropicClaudeSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeSutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
+
     def AnthropicClaudeTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
@@ -557,6 +611,12 @@ class LlmStreamParser:
     ) -> stream_types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
+
+    def AwsBedrockSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockSutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
 
     def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -612,6 +672,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
+    def AzureAIFoundrySutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundrySutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
+
     def AzureAIFoundryTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
@@ -665,6 +731,12 @@ class LlmStreamParser:
     ) -> stream_types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
+
+    def AzureOpenAISutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAISutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
 
     def AzureOpenAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -720,6 +792,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
+    def GCPVertexAISutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAISutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
+
     def GCPVertexAITaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
@@ -773,6 +851,12 @@ class LlmStreamParser:
     ) -> stream_types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
+
+    def GoogleGeminiSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiSutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
 
     def GoogleGeminiTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -828,6 +912,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
 
+    def OpenAIChatGPTSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTSutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
+
     def OpenAIChatGPTTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.TaskFilterResponse:
@@ -881,6 +971,12 @@ class LlmStreamParser:
     ) -> stream_types.RoadmapResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterRoadmapAgent", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoadmapResponse, result)
+
+    def OpenRouterSutraCliAssistant(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterSutraCliAssistant", llm_response=llm_response, mode="stream")
+        return typing.cast(str, result)
 
     def OpenRouterTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},

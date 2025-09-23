@@ -334,3 +334,11 @@ class SutraMemoryManager:
     def clear_feedback_section(self) -> bool:
         """Clear feedback section content from memory operations"""
         return self.memory_ops.clear_feedback_section()
+
+    def set_project_info(self, project_info_content: str) -> bool:
+        """Set project info content in memory operations"""
+        return self.memory_ops.set_project_info(project_info_content)
+
+    def get_project_info(self) -> Optional[str]:
+        """Get project info content from memory operations"""
+        return self.memory_ops.get_project_info()

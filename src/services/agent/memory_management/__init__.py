@@ -6,7 +6,6 @@ This package provides modular memory management functionality for the Sutra syst
 Components:
 - Models: Data classes and enums (Task, CodeSnippet, etc.)
 - Memory Operations: Core task and code snippet management
-- XML Processor: XML parsing and processing
 - State Persistence: Import/export functionality
 - Memory Formatter: LLM context formatting
 - Code Fetcher: Database code retrieval
