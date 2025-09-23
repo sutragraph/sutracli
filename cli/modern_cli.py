@@ -26,6 +26,7 @@ from src.agents_new import Agent
 from src.config.settings import reload_config
 from src.utils.console import console
 from src.utils.logging import setup_logging
+from src.utils.version_checker import show_update_notification
 
 
 class UserCancelledError(Exception):
@@ -64,6 +65,15 @@ class ModernSutraKit:
             border_style="bright_blue",
         )
         console.print(panel)
+
+    def check_for_updates(self):
+        """Check for SutraKit updates and show notification if available."""
+        try:
+            # Show update notification if available (non-blocking)
+            show_update_notification()
+        except Exception:
+            # Silently fail if update check fails - don't interrupt the user experience
+            pass
 
     def check_llm_provider_configured(self) -> bool:
         """Check if LLM provider is already configured."""
@@ -887,6 +897,9 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
         """Main CLI execution flow."""
         # Show banner
         self.print_banner()
+
+        # Check for updates (non-blocking)
+        self.check_for_updates()
 
         # Check if LLM provider is configured
         if not self.check_llm_provider_configured():

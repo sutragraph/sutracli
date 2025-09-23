@@ -97,7 +97,7 @@ def main():
         elif args.command == "web_scrap":
             handle_web_scrap_command(args)
         elif args.command == "version":
-            handle_version_command(args)
+            handle_version_command()
         elif args.command == "cross-indexing":
             handle_cross_indexing_command(args)
         elif args.command == "run-phase5":
