@@ -42,7 +42,7 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
                 delivery_result = tool_has_guidance.on_event(delivery_result, action)
             return build_tool_status(tool_name, delivery_result, agent, tool_params)
         else:
-            return f"No more results available for {tool_name}"
+            return f"\n parameters: {tool_params}\nNo more results available for {tool_name} all results have been delivered. (use fetch_next_chunk: false to restart the results delivery)"
 
     # Handle regular (non-fetch_next) requests
     delivery_items = []
@@ -67,4 +67,4 @@ def execute_tool(agent: Agent, tool_name: str, tool_params: Dict[str, Any]) -> s
 
             return build_tool_status(tool_name, delivery_result, agent, tool_params)
 
-    return f"No more results available for {tool_name}\n parameters: {tool_params}"
+    return f"\n parameters: {tool_params}\nNo more results available for {tool_name} all results have been delivered. (use fetch_next_chunk: false to restart the results delivery)"
