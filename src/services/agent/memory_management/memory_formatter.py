@@ -6,6 +6,8 @@ Handles formatting of memory state for LLM context and other display purposes.
 
 from typing import List
 
+from baml_client.types import ElementType, TracedElement
+
 from .memory_operations import MemoryOperations
 from .models import TaskStatus
 
@@ -58,7 +60,7 @@ class MemoryFormatter:
             recent_completed = sorted(
                 completed_tasks, key=lambda t: t.updated_at, reverse=True
             )[:5]
-            content.extend(["RECENTLY COMPLETED TASKS:", ""])
+            content.extend(["COMPLETED TASKS:", ""])
             for task in recent_completed:
                 content.append(f"ID: {task.id}")
                 content.append(f"Description: {task.description}")
@@ -66,7 +68,7 @@ class MemoryFormatter:
 
         # Code snippets
         if self.memory_ops.code_snippets:
-            content.extend(["STORED CODE SNIPPETS:", ""])
+            content.extend(["STORED SNIPPETS:", ""])
             content.extend(self._format_code_snippets_section())
 
         # Recent file changes
@@ -74,7 +76,7 @@ class MemoryFormatter:
             recent_changes = sorted(
                 self.memory_ops.file_changes, key=lambda f: f.timestamp, reverse=True
             )[:10]
-            content.extend(["RECENT FILE CHANGES:", ""])
+            content.extend(["FILES CHANGED:", ""])
             for change in recent_changes:
                 content.append(f"- {change.operation.upper()}: {change.path}")
             content.append("")
@@ -82,7 +84,7 @@ class MemoryFormatter:
         # Recent history (last 20 entries)
         recent_history = self.memory_ops.get_recent_history()
         if recent_history:
-            content.extend(["RECENT HISTORY:", ""])
+            content.extend(["HISTORY:", ""])
             for i, entry in enumerate(reversed(recent_history), 1):
                 content.append(f"{i}. {entry.summary}")
             content.append("")
@@ -137,19 +139,59 @@ class MemoryFormatter:
 
     def _format_code_snippets_section(self) -> List[str]:
         """
-        Format code snippets section using the same format as sutra memory.
+        Format code snippets section with call chain tracing information.
 
         Returns:
             List of formatted lines
         """
         content = []
         for code in self.memory_ops.code_snippets.values():
+            # Add tracing status indicator
+            trace_status = "yes" if code.is_traced else "no"
             content.extend(
                 [
-                    f"Code {code.id}: {code.file_path} (lines {code.start_line}-{code.end_line})",
+                    f"SNIPPET {code.id}: {code.file_path}(lines {code.start_line} - {code.end_line})[TRACED: {trace_status}]",
                     f"  Description: {code.description}",
                 ]
             )
+
+            # Add call chain summary if available
+            if code.call_chain_summary:
+                content.append(f"  call_chain: {code.call_chain_summary}")
+
+            # Add traced elements section - handle both old and new format
+            content.append("  traced_elements:")
+            if code.root_elements:
+                for root_element in code.root_elements:
+                    content.extend(
+                        self._format_element_hierarchy(
+                            root_element, code.file_path, indent="    "
+                        )
+                    )
+            else:
+                content.append("    [] (none)")
+
+            # Add needs tracing section - always show header
+            content.append("  needs_tracing:")
+            if code.needs_tracing:
+                for ute in code.needs_tracing:
+                    reason_text = f" ({ute.reason})" if ute.reason else ""
+                    accessed_from_text = (
+                        f" [accessed from {ute.accessed_from}]"
+                        if ute.accessed_from
+                        else ""
+                    )
+                    element_display = self._format_element_name_with_type(
+                        ute.name, ute.element_type
+                    )
+                    element_id_display = (
+                        f" [ID: {ute.id}]" if (ute.id and ute.id.strip()) else ""
+                    )
+                    content.append(
+                        f"    - {element_display}{reason_text}{accessed_from_text}{element_id_display}"
+                    )
+            else:
+                content.append("    [] (none)")
 
             # Include actual code content if available with line numbers
             if code.content:
@@ -189,6 +231,85 @@ class MemoryFormatter:
         # Use the same formatting as sutra memory
         content = self._format_code_snippets_section()
         return "\n".join(content)
+
+    def _format_element_hierarchy(
+        self, element: TracedElement, file_path: str, indent: str = "    "
+    ) -> List[str]:
+        """
+        Format element hierarchy in tree structure like:
+        processData (lines 292-328) [✓] [ID: elem_1]
+          ├── service.getData (lines 103-105) [✓] [ID: elem_2]
+          ├── service.checkStatus (lines 107-112) [✓] [ID: elem_3]
+          │   └── obj.property (lines 39-41) [✓] [ID: elem_4]
+          └── logger.info [✓] [ID: elem_5]
+
+        Args:
+            element: TracedElement to format
+            indent: Current indentation level
+
+        Returns:
+            List of formatted lines
+        """
+        lines = []
+
+        # Format current element with ID
+        status = "yes" if element.is_fully_traced else "no"
+        element_display = self._format_element_name_with_type(
+            element.name, element.element_type
+        )
+        element_id_display = (
+            f" [ID: {element.id}]" if (element.id and element.id.strip()) else ""
+        )
+        lines.append(
+            f"{indent}{element_display} (lines {element.start_line}-{element.end_line}) [traced: {status}]{element_id_display}"
+        )
+
+        # Show complete code content if available, otherwise show key code lines
+        if element.content:
+            lines.append(f"{indent}  Code:")
+            lines.append(
+                f"{indent}  ```{file_path}#L{element.start_line}-{element.end_line}"
+            )
+            # Split content into lines and add proper indentation
+            content_lines = element.content.split("\n")
+            for line in content_lines:
+                lines.append(f"{indent}  {line}")
+            lines.append(f"{indent}  ```")
+        elif element.signature:
+            # Show signature or basic info if no code content available
+            lines.append(f"{indent}  Signature: {element.signature}")
+
+        # Recursively format child elements with tree structure
+        if element.accessed_elements:
+            for i, child in enumerate(element.accessed_elements):
+                is_last = i == len(element.accessed_elements) - 1
+                child_prefix = "└── " if is_last else "├── "
+                continuation_indent = "    " if is_last else "│   "
+
+                child_lines = self._format_element_hierarchy(child, file_path, "")
+                if child_lines:
+                    # Add the tree prefix to the first line
+                    first_line = child_lines[0].lstrip()
+                    lines.append(f"{indent}  {child_prefix}{first_line}")
+
+                    # Add continuation lines with proper indentation
+                    for line in child_lines[1:]:
+                        lines.append(f"{indent}  {continuation_indent}{line}")
+
+        return lines
+
+    def _format_element_name_with_type(
+        self, name: str, element_type: ElementType
+    ) -> str:
+        """Format element name with appropriate notation based on element type"""
+        if not element_type:
+            return name
+
+        type_value = element_type.value.lower()
+
+        if type_value:
+            return f"{name} [{type_value}]"
+        return name
 
 
 def clean_sutra_memory_content(content: str) -> str:

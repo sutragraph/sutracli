@@ -13,7 +13,15 @@ This is the main interface that combines all the modular components:
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from baml_client.types import CodeStorageAction, SutraMemoryParams, TaskOperationAction
+from loguru import logger
+
+from baml_client.types import (
+    CodeStorageAction,
+    SutraMemoryParams,
+    TaskOperationAction,
+    TracedElement,
+    UntracedElement,
+)
 
 from .memory_formatter import MemoryFormatter
 from .memory_operations import MemoryOperations
@@ -84,10 +92,22 @@ class SutraMemoryManager:
         start_line: int,
         end_line: int,
         description: str,
+        is_traced: bool = False,
+        root_elements: Optional[List[TracedElement]] = None,
+        needs_tracing: Optional[List[UntracedElement]] = None,
+        call_chain_summary: Optional[str] = None,
     ) -> bool:
-        """Add code snippet to memory (code_id is ignored, counter+1 used instead)"""
+        """Add code snippet to memory with optional tracing information (code_id is ignored, counter+1 used instead)"""
         return self.memory_ops.add_code_snippet(
-            code_id, file_path, start_line, end_line, description
+            code_id,
+            file_path,
+            start_line,
+            end_line,
+            description,
+            is_traced,
+            root_elements,
+            needs_tracing,
+            call_chain_summary,
         )
 
     def remove_code_snippet(self, code_id: str) -> bool:
@@ -163,43 +183,36 @@ class SutraMemoryManager:
             if hasattr(sutra_memory, "tasks") and sutra_memory.tasks:
                 for task_op in sutra_memory.tasks:
                     if task_op.action == TaskOperationAction.Add:
-                        # Convert BAML status to TaskStatus enum
-                        try:
-                            if task_op.to_status:
-                                if isinstance(task_op.to_status, str):
-                                    # BAML sends uppercase (CURRENT), convert to lowercase for our enum
-                                    status = TaskStatus(task_op.to_status.lower())
-                                else:
-                                    # Handle TaskStatus enum directly
-                                    status = task_op.to_status
-                            else:
-                                status = TaskStatus.PENDING
+                        # Convert BAML TaskStatus to internal TaskStatus
+                        status = (
+                            TaskStatus(task_op.to_status.value.lower())
+                            if task_op.to_status
+                            else TaskStatus.PENDING
+                        )
 
-                            # add_task will use counter+1 internally and ignore the LLM provided ID
-                            if self.add_task(task_op.id, task_op.description, status):
-                                # Get the actual ID that was assigned (current counter value)
-                                actual_task_id = str(self.memory_ops.task_id_counter)
-                                results["changes_applied"]["tasks"].append(
-                                    f"Added task {actual_task_id}: {task_op.description} (LLM ID {task_op.id} ignored)"
-                                )
-                            else:
+                        # add_task will use counter+1 internally and ignore the LLM provided ID
+                        if task_op.description and self.add_task(
+                            task_op.id, task_op.description, status
+                        ):
+                            # Get the actual ID that was assigned (current counter value)
+                            actual_task_id = str(self.memory_ops.task_id_counter)
+                            results["changes_applied"]["tasks"].append(
+                                f"Added task {actual_task_id}: {task_op.description} (LLM ID {task_op.id} ignored)"
+                            )
+                        else:
+                            if task_op.description:
                                 results["errors"].append(
                                     f"Failed to add task (LLM ID {task_op.id})"
                                 )
-                        except ValueError as e:
-                            results["errors"].append(
-                                f"Invalid status '{task_op.to_status}' for new task (LLM ID {task_op.id}): {e}"
-                            )
+                            else:
+                                results["errors"].append(
+                                    f"Failed to add task - missing description (LLM ID {task_op.id})"
+                                )
 
                     elif task_op.action == TaskOperationAction.Move:
-                        # Convert BAML status to TaskStatus enum
-                        try:
-                            if isinstance(task_op.to_status, str):
-                                # BAML sends uppercase (CURRENT), convert to lowercase for our enum
-                                target_status = TaskStatus(task_op.to_status.lower())
-                            else:
-                                # Handle TaskStatus enum directly
-                                target_status = task_op.to_status
+                        # Convert BAML TaskStatus to internal TaskStatus
+                        if task_op.to_status:
+                            target_status = TaskStatus(task_op.to_status.value.lower())
 
                             if self.move_task(task_op.id, target_status):
                                 results["changes_applied"]["tasks"].append(
@@ -209,9 +222,9 @@ class SutraMemoryManager:
                                 results["errors"].append(
                                     f"Failed to move task {task_op.id}"
                                 )
-                        except ValueError as e:
+                        else:
                             results["errors"].append(
-                                f"Invalid status '{task_op.to_status}' for task {task_op.id}: {e}"
+                                f"Failed to move task {task_op.id} - missing to_status"
                             )
 
                     # elif task_op.action == TaskOperationAction.Remove:
@@ -224,13 +237,41 @@ class SutraMemoryManager:
             if hasattr(sutra_memory, "code") and sutra_memory.code:
                 for code_op in sutra_memory.code:
                     if code_op.action == CodeStorageAction.Add:
+                        # Extract tracing information from BAML code operation
+                        is_traced = code_op.is_traced if code_op.is_traced else False
+                        call_chain_summary = (
+                            code_op.call_chain_summary
+                            if code_op.call_chain_summary
+                            else None
+                        )
+
+                        # Use BAML root elements directly
+                        root_elements = (
+                            [code_op.root_element] if code_op.root_element else None
+                        )
+
+                        # Use BAML needs_tracing array directly
+                        needs_tracing = (
+                            code_op.needs_tracing if code_op.needs_tracing else []
+                        )
+
                         # add_code_snippet will use counter+1 internally and ignore the LLM provided ID
-                        if self.add_code_snippet(
-                            code_op.id,
-                            code_op.file,
-                            code_op.start_line,
-                            code_op.end_line,
-                            code_op.description,
+                        if (
+                            code_op.file
+                            and code_op.start_line is not None
+                            and code_op.end_line is not None
+                            and code_op.description
+                            and self.add_code_snippet(
+                                code_op.id,
+                                code_op.file,
+                                code_op.start_line,
+                                code_op.end_line,
+                                code_op.description,
+                                is_traced,
+                                root_elements,
+                                needs_tracing,
+                                call_chain_summary,
+                            )
                         ):
                             # Get the actual ID that was assigned (current counter value)
                             actual_code_id = str(self.memory_ops.code_id_counter)
@@ -238,18 +279,212 @@ class SutraMemoryManager:
                                 f"Added code {actual_code_id}: {code_op.description} (LLM ID {code_op.id} ignored)"
                             )
                         else:
-                            results["errors"].append(
-                                f"Failed to add code snippet (LLM ID {code_op.id})"
-                            )
+                            missing_fields = []
+                            if not code_op.file:
+                                missing_fields.append("file")
+                            if code_op.start_line is None:
+                                missing_fields.append("start_line")
+                            if code_op.end_line is None:
+                                missing_fields.append("end_line")
+                            if not code_op.description:
+                                missing_fields.append("description")
 
-                    elif code_op.action == CodeStorageAction.Remove:
-                        if self.remove_code_snippet(code_op.id):
+                            if missing_fields:
+                                results["errors"].append(
+                                    f"Failed to add code snippet - missing fields: {', '.join(missing_fields)} (LLM ID {code_op.id})"
+                                )
+                            else:
+                                results["errors"].append(
+                                    f"Failed to add code snippet (LLM ID {code_op.id})"
+                                )
+
+                    # elif code_op.action == CodeStorageAction.Remove:
+                    #     if self.remove_code_snippet(code_op.id):
+                    #         results["changes_applied"]["code"].append(
+                    #             f"Removed code {code_op.id}"
+                    #         )
+                    #     else:
+                    #         results["errors"].append(
+                    #             f"Failed to remove code snippet {code_op.id}"
+                    #         )
+
+                    elif code_op.action == CodeStorageAction.UpdateTracingStatus:
+                        # Update the tracing status of an existing code snippet
+                        existing_snippet = self.get_code_snippet(code_op.id)
+                        if existing_snippet:
+                            existing_snippet.is_traced = (
+                                code_op.is_traced if code_op.is_traced else False
+                            )
                             results["changes_applied"]["code"].append(
-                                f"Removed code {code_op.id}"
+                                f"Updated tracing status for code {code_op.id}: {existing_snippet.is_traced}"
                             )
                         else:
                             results["errors"].append(
-                                f"Failed to remove code snippet {code_op.id}"
+                                f"Code snippet {code_op.id} not found for status update"
+                            )
+
+                    elif code_op.action == CodeStorageAction.MoveToTraced:
+                        # Add an element to the hierarchical tree structure
+                        existing_snippet = self.get_code_snippet(code_op.id)
+                        if existing_snippet and code_op.traced_element:
+                            traced_element = code_op.traced_element
+                            element_name = traced_element.name
+                            element_path = (
+                                code_op.element_path if code_op.element_path else []
+                            )
+
+                            # Auto-generate ID if not provided
+                            if not traced_element.id:
+                                traced_element.id = (
+                                    self.memory_ops.generate_element_id_from_signature(
+                                        traced_element.name,
+                                        traced_element.element_type,
+                                        existing_snippet.file_path,
+                                        getattr(traced_element, "start_line", 0),
+                                        getattr(traced_element, "end_line", 0),
+                                    )
+                                )
+                                # Recursively generate IDs for child elements
+                                self.memory_ops._generate_ids_for_hierarchy(
+                                    traced_element, existing_snippet.file_path
+                                )
+
+                            element_id = traced_element.id
+
+                            # Check for duplicate elements by ID (hash-based IDs prevent duplicates automatically)
+                            if any(
+                                self._element_already_exists(root_elem, element_id)
+                                for root_elem in existing_snippet.root_elements
+                            ):
+                                results["warnings"].append(
+                                    f"Element {element_name} (ID: {element_id}) already exists in hierarchy for code {code_op.id} - skipping duplicate"
+                                )
+                                # Still remove from needs_tracing if source_element_id provided
+                                source_element_id = code_op.source_element_id
+                                if source_element_id:
+                                    original_count = len(existing_snippet.needs_tracing)
+                                    existing_snippet.needs_tracing = [
+                                        ute
+                                        for ute in existing_snippet.needs_tracing
+                                        if ute.id != source_element_id
+                                    ]
+                                    if (
+                                        len(existing_snippet.needs_tracing)
+                                        < original_count
+                                    ):
+                                        results["changes_applied"]["code"].append(
+                                            f"Removed {element_name} from needs_tracing for code {code_op.id} (duplicate element)"
+                                        )
+                                continue
+
+                            # Find and remove the element from needs_tracing by ID
+                            source_element_id = code_op.source_element_id
+                            original_count = len(existing_snippet.needs_tracing)
+                            if source_element_id:
+                                existing_snippet.needs_tracing = [
+                                    ute
+                                    for ute in existing_snippet.needs_tracing
+                                    if ute.id != source_element_id
+                                ]
+                            else:
+                                # Fallback to name+type matching if no source_element_id provided
+                                existing_snippet.needs_tracing = [
+                                    ute
+                                    for ute in existing_snippet.needs_tracing
+                                    if not (
+                                        ute.name == element_name
+                                        and ute.element_type
+                                        == traced_element.element_type
+                                    )
+                                ]
+
+                            # Add to hierarchical structure
+                            if not element_path:
+                                # This is a root-level element
+                                existing_snippet.root_elements.append(traced_element)
+                                results["changes_applied"]["code"].append(
+                                    f"Added {element_name} as root element for code {code_op.id}"
+                                )
+                            else:
+                                # Add as child element following the element_path (using IDs)
+                                # Find the correct root element to add to
+                                target_root = None
+                                for root_elem in existing_snippet.root_elements:
+                                    if root_elem.id == element_path[0]:
+                                        target_root = root_elem
+                                        break
+
+                                if target_root:
+                                    self._add_to_hierarchy(
+                                        target_root,
+                                        traced_element,
+                                        # Remove first element as we found the root
+                                        element_path[1:],
+                                    )
+                                    results["changes_applied"]["code"].append(
+                                        f"Added {element_name} to hierarchy for code {code_op.id}"
+                                    )
+                                else:
+                                    logger.warning(
+                                        f"Could not find root element with ID {element_path[0]} for element {element_name}"
+                                    )
+                                    results["warnings"].append(
+                                        f"Could not find parent element for {element_name}"
+                                    )
+
+                            if len(existing_snippet.needs_tracing) < original_count:
+                                results["changes_applied"]["code"].append(
+                                    f"Removed {element_name} from needs_tracing for code {code_op.id}"
+                                )
+                        else:
+                            results["errors"].append(
+                                f"Code snippet {code_op.id} not found or traced_element missing"
+                            )
+
+                    elif code_op.action == CodeStorageAction.AddToNeedsTracing:
+                        # Add elements to needs_tracing list
+                        existing_snippet = self.get_code_snippet(code_op.id)
+                        if existing_snippet and code_op.needs_tracing:
+                            # Auto-generate IDs for new untraced elements if not provided
+                            processed_needs_tracing = []
+                            for ute in code_op.needs_tracing:
+                                if not ute.id:
+                                    ute.id = self.memory_ops.generate_element_id_from_signature(
+                                        ute.name,
+                                        ute.element_type,
+                                        existing_snippet.file_path,
+                                        0,  # UntracedElements don't have line numbers
+                                        0,
+                                    )
+                                processed_needs_tracing.append(ute)
+
+                            existing_snippet.needs_tracing.extend(
+                                processed_needs_tracing
+                            )
+                            element_names = [
+                                ute.name for ute in processed_needs_tracing
+                            ]
+                            results["changes_applied"]["code"].append(
+                                f"Added {', '.join(element_names)} to needs_tracing for code {code_op.id}"
+                            )
+                        else:
+                            results["errors"].append(
+                                f"Code snippet {code_op.id} not found or needs_tracing missing"
+                            )
+
+                    elif code_op.action == CodeStorageAction.UpdateCallChainSummary:
+                        # Update the call chain summary
+                        existing_snippet = self.get_code_snippet(code_op.id)
+                        if existing_snippet and code_op.call_chain_summary:
+                            existing_snippet.call_chain_summary = (
+                                code_op.call_chain_summary
+                            )
+                            results["changes_applied"]["code"].append(
+                                f"Updated call chain summary for code {code_op.id}"
+                            )
+                        else:
+                            results["errors"].append(
+                                f"Code snippet {code_op.id} not found or call_chain_summary missing"
                             )
 
             # Process file changes (optional field)
@@ -283,6 +518,7 @@ class SutraMemoryManager:
             return results
 
     # State Management Methods
+
     def get_memory_summary(self) -> Dict[str, Any]:
         """Get a summary of current memory state"""
         return self.memory_ops.get_memory_summary()
@@ -321,6 +557,85 @@ class SutraMemoryManager:
         return self.memory_updater.update_memory_for_file_changes(
             changed_files, deleted_files, project_id
         )
+
+    def _add_to_hierarchy(
+        self, root: TracedElement, new_element: TracedElement, element_path: List[str]
+    ) -> None:
+        """Add element to hierarchical tree structure following the element_path (using element IDs)"""
+        # Prevent self-referencing
+        if root.id and new_element.id and root.id == new_element.id:
+            return
+
+        if not element_path:
+            # Add as direct child of root
+            if root.accessed_elements is None:
+                root.accessed_elements = []
+            # Check for duplicates before adding (by ID if available, otherwise by name+type)
+            if new_element.id:
+                duplicate_exists = any(
+                    child.id == new_element.id
+                    for child in root.accessed_elements
+                    if child.id
+                )
+            else:
+                duplicate_exists = any(
+                    child.name == new_element.name
+                    and child.element_type == new_element.element_type
+                    for child in root.accessed_elements
+                )
+
+            if not duplicate_exists:
+                root.accessed_elements.append(new_element)
+        else:
+            # Navigate to the correct parent using element_path (IDs)
+            current = root
+            for path_element_id in element_path:
+                if current.accessed_elements:
+                    found = False
+                    for child in current.accessed_elements:
+                        if child.id and child.id == path_element_id:
+                            current = child
+                            found = True
+                            break
+                    if not found:
+                        # Path element not found, add to root instead
+                        current = root
+                        break
+
+            # Prevent adding element as child of itself
+            if current.id and new_element.id and current.id == new_element.id:
+                return
+
+            # Add new_element as child of current
+            if current.accessed_elements is None:
+                current.accessed_elements = []
+            # Check for duplicates before adding (by ID if available, otherwise by name+type)
+            if new_element.id:
+                duplicate_exists = any(
+                    child.id == new_element.id
+                    for child in current.accessed_elements
+                    if child.id
+                )
+            else:
+                duplicate_exists = any(
+                    child.name == new_element.name
+                    and child.element_type == new_element.element_type
+                    for child in current.accessed_elements
+                )
+
+            if not duplicate_exists:
+                current.accessed_elements.append(new_element)
+
+    def _element_already_exists(self, root: TracedElement, element_id: str) -> bool:
+        """Check if an element already exists in the hierarchy (using element ID)"""
+        if root.id and root.id == element_id:
+            return True
+
+        if hasattr(root, "accessed_elements") and root.accessed_elements:
+            for child in root.accessed_elements:
+                if self._element_already_exists(child, element_id):
+                    return True
+        return False
 
     # Feedback Management Methods
     def set_feedback_section(self, feedback_content: str) -> bool:

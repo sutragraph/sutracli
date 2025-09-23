@@ -1,59 +1,48 @@
 // Database Tool Prompts
 
 template_string DatabaseToolTemplate() #"
-====
-
 ## database
 
-Description: Query structured codebase metadata and retrieve complete code content. Use this tool to get file information, code block summaries, and dependency chains. This tool provides structured access to the codebase knowledge graph.
+### Description
+Query codebase metadata for file info, code blocks, dependencies. Use for structured access to knowledge graph.
 
-Available Query Types:
+### Parameters
+- query_name: REQUIRED - Type (e.g., GET_FILE_BY_PATH) (type: string).
+- file_path: OPTIONAL - For file queries (type: string?).
+- start_line: OPTIONAL - 1-indexed start (type: int?).
+- end_line: OPTIONAL - 1-indexed end (type: int?).
+- block_id: OPTIONAL - For block queries (type: string?).
+- fetch_next_chunk: OPTIONAL - For more (type: bool?).
 
-1. GET_FILE_BLOCK_SUMMARY:
-Gets summary of all code blocks (functions, classes, methods) within a file.
-Required: query_name, file_path
-
-2. GET_FILE_BY_PATH:
-Gets complete file information by file path including content, language, and project details.
-Required: query_name, file_path
-Optional: start_line, end_line, fetch_next_chunk
-
-3. GET_BLOCK_DETAILS:
-Gets detailed information about a specific code block (function, class, method) including its content and all connections with other project nodes.
-Required: query_name, block_id
-Optional: fetch_next_chunk
-
-Notes:
-- Use complete file paths for all file operations
-- use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
-- Most queries now use file_path directly - the system handles internal ID conversion automatically
-- For block-specific operations, you may need block_id (obtained from GET_FILE_BLOCK_SUMMARY)
-- Line numbers are 1-indexed
-- Use this tool when you need structured codebase information and relationships
-- IMPORTANT: When using database queries, always store relevant results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration
-
-Usage:
+### Usage
 {
-  tool_name: "database",
-  parameters: {
-    "query_name": "query_type",
-    "file_path": "path/to/file",
-    "start_line": "start_line_number",
-    "end_line": "end_line_number",
-    "block_id": "block_identifier",
-    "fetch_next_code": "true|false"
+  "tool_name": "database",
+  "parameters": {
+    "query_name": "GET_FILE_BY_PATH",
+    "file_path": "path/file.py",
+    "start_line": 10,
+    "end_line": 50,
+    "block_id": "123",
+    "fetch_next_chunk": true
   }
 }
 
-Parameters Examples:
+### Guidelines
+Think step-by-step: 'Goal: Structured info? Tool: database. Why: Relationships/details.'
+Use full paths; store results in sutra_memory for persistence if needed.
+Fetch next only when indicated.
+Query Types:
+1. GET_FILE_BY_PATH: File content/language/project (req: file_path; opt: start/end_line).
+2. GET_BLOCK_DETAILS: Block content/connections (req: block_id).
 
-1. Get file information by path:
+### Examples
+1. Full file:
 {
   "query_name": "GET_FILE_BY_PATH",
   "file_path": "path/to/your/file.py"
 }
 
-2. Get specific section of a file:
+2. File section:
 {
   "query_name": "GET_FILE_BY_PATH",
   "file_path": "path/to/your/file.py",
@@ -61,22 +50,9 @@ Parameters Examples:
   "end_line": 50
 }
 
-3. Get all code blocks in a file:
-{
-  "query_name": "GET_FILE_BLOCK_SUMMARY",
-  "file_path": "path/to/your/file.py"
-}
-
-4. Get block details:
+3. Block:
 {
   "query_name": "GET_BLOCK_DETAILS",
   "block_id": "123"
-}
-
-5. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
-{
-  "query_name": "GET_FILE_BLOCK_SUMMARY",
-  "file_path": "path/to/your/file.py",
-  "fetch_next_code": true
 }
 "#

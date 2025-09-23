@@ -106,6 +106,23 @@ def beautify_enriched_block_context(
             child_summary += f" ... (+{child_count - 3} more)"
         result_parts.append(f"Children ({child_count}): {child_summary}")
 
+    # Code content
+    if include_code and block.get("content"):
+        result_parts.append("Code:")
+
+        content = block["content"]
+        if max_code_lines and len(content.split("\n")) > max_code_lines:
+            lines = content.split("\n")
+            content = "\n".join(lines[:max_code_lines])
+            content += f"\n... ({len(lines) - max_code_lines} more lines)"
+
+        # Add line numbers
+        if start_line:
+            numbered_code = add_line_numbers_to_code(content, start_line)
+            result_parts.append(numbered_code)
+        else:
+            result_parts.append(content)
+
     # Connection details - show both mappings and remaining basic connections
     connection_mappings = enriched_context.get("connection_mappings", [])
     connections = enriched_context.get("connections", {})
@@ -173,23 +190,6 @@ def beautify_enriched_block_context(
                         result_parts.extend(conn_lines)
                         result_parts.append("")  # Add spacing between technology groups
                     tech_count += 1
-
-    # Code content
-    if include_code and block.get("content"):
-        result_parts.append("Code:")
-
-        content = block["content"]
-        if max_code_lines and len(content.split("\n")) > max_code_lines:
-            lines = content.split("\n")
-            content = "\n".join(lines[:max_code_lines])
-            content += f"\n... ({len(lines) - max_code_lines} more lines)"
-
-        # Add line numbers
-        if start_line:
-            numbered_code = add_line_numbers_to_code(content, start_line)
-            result_parts.append(numbered_code)
-        else:
-            result_parts.append(content)
 
     return "\n".join(result_parts)
 
@@ -231,6 +231,20 @@ def beautify_enriched_file_context(
     file_path = file_data.get("file_path", "unknown")
     result_parts.append(f"File: {file_path}")
 
+    # File content (if requested)
+    if include_code and file_data.get("content"):
+        result_parts.append("")
+        result_parts.append("File Content:")
+
+        content = file_data["content"]
+        if max_code_lines and len(content.split("\n")) > max_code_lines:
+            lines = content.split("\n")
+            content = "\n".join(lines[:max_code_lines])
+            content += f"\n... ({len(lines) - max_code_lines} more lines)"
+
+        numbered_code = add_line_numbers_to_code(content, 1)
+        result_parts.append(numbered_code)
+
     # Connection details - show both mappings and remaining basic connections
     connection_mappings = enriched_context.get("connection_mappings", [])
     connections = enriched_context.get("connections", {})
@@ -298,20 +312,6 @@ def beautify_enriched_file_context(
                         result_parts.extend(conn_lines)
                         result_parts.append("")  # Add spacing between technology groups
                     tech_count += 1
-
-    # File content (if requested)
-    if include_code and file_data.get("content"):
-        result_parts.append("")
-        result_parts.append("File Content:")
-
-        content = file_data["content"]
-        if max_code_lines and len(content.split("\n")) > max_code_lines:
-            lines = content.split("\n")
-            content = "\n".join(lines[:max_code_lines])
-            content += f"\n... ({len(lines) - max_code_lines} more lines)"
-
-        numbered_code = add_line_numbers_to_code(content, 1)
-        result_parts.append(numbered_code)
 
     return "\n".join(result_parts)
 
@@ -481,7 +481,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
             result_lines.append(f"{sender_file} [project: {sender_project}]")
 
         # Add connection indicator
-        result_lines.append(f"[{technology}] Connection Connected with")
+        result_lines.append(f"    [{technology}] Connection Connected with")
 
         # Add receiver info with code snippet
         if receiver_snippet and receiver_lines:

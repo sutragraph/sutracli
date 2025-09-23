@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from loguru import logger
@@ -24,8 +25,13 @@ def get_project_context_for_agent() -> Optional[ProjectContext]:
         # Convert project objects to BAML Project format
         baml_projects = []
         for project in projects:
+            # Check if current directory matches project path
+            project_name = project.name
+            if os.getcwd() == project.path:
+                project_name += " [CURRENT]"
+
             baml_project = Project(
-                name=project.name,
+                name=project_name,
                 path=project.path,
                 description=getattr(project, "description", "No description available"),
             )

@@ -1,74 +1,67 @@
 // Semantic Search Tool Prompts
 
 template_string SemanticSearchToolTemplate() #"
-====
-
 ## semantic_search
 
-Description: Find similar implementations and patterns in codebase using semantic similarity. Use when you DON'T have specific function/class/file/method names (use database for specific names). Use for discovering existing patterns before creating new code.
+### Description
+Find similar implementations and patterns in the codebase using semantic similarity. Use this tool when seeking conceptual matches without specific names (e.g., for discovering patterns before new code). For exact names, prefer database or search_keyword.
 
-Parameters:
-  - query: (required) The search terms to find similar implementations - describe what you're looking for in natural language
-  - project_name: (optional) Name of the project to search within. If not provided, searches across all projects
-  - fetch_next_chunk: (optional) Set to true to fetch next chunks of results when more are available
+### Parameters
+- query: REQUIRED - Describe the concept in natural language (type: string).
+- project_name: OPTIONAL - Limit to a specific project (type: string?).
+- fetch_next_chunk: OPTIONAL - Set to true only if more results are available (type: bool?).
 
-Usage:
+### Usage
 {
-  tool_name: "semantic_search",
-  parameters: {
-    "query": "search terms here",
-    "project_name": "project_name_here",
-    "fetch_next_code": "true|false"
+  "tool_name": "semantic_search",
+  "parameters": {
+    "query": "descriptive terms",
+    "project_name": "project_name",
+    "fetch_next_chunk": true
   }
 }
 
-Parameter Details:
-  - query: Use descriptive terms that capture the concept you're looking for (e.g., "user authentication", "file upload handler", "database connection setup")
-  - project_name: Specify a project name to limit search scope to that project only. Useful when you want to find patterns within a specific codebase
-  - fetch_next_chunk: Only use when the system explicitly tells you there are more results available - do not use preemptively
+### Guidelines
+Think step-by-step: 'Goal: Discover patterns? Tool: semantic_search. Why: Conceptual search.'
+Use dense, explicit queries for best results.
+Store relevant results in sutra_memory for later use or if not acting immediately, as results do not persist.
+Fetch next chunk only when indicated.
 
-Notes:
-  - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
-  - Results are delivered in batches for performance - the system will tell you if more chunks are available
-  - IMPORTANT: When using semantic search, always store relevant results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration
-  - The query parameter is passed through the JSON structure and processed as action.parameters.get("query")
-
-Parameters Examples:
-
-1. Finding authentication patterns:
+### Examples
+1. Authentication patterns:
 {
   "query": "user authentication login"
 }
 
-2. Finding API routing patterns:
+2. API routing:
 {
   "query": "API routing router express"
 }
 
-3. Finding file upload implementations:
+3. File uploads:
 {
   "query": "file upload multer storage"
 }
 
-4. Finding database patterns in a specific project:
+4. Database in specific project:
 {
   "query": "database connection setup",
   "project_name": "my-backend-project"
 }
 
-5. Finding error handling patterns:
+5. Error handling:
 {
   "query": "error handling try catch exception"
 }
 
-6. Finding specific implementation patterns:
+6. Payments:
 {
   "query": "payment processing stripe integration"
 }
 
-7. Fetch next chunk of results (only when user explicitly tells you to use fetch_next_code):
+7. Next chunk:
 {
   "query": "database connection setup mongodb",
-  "fetch_next_code": true
+  "fetch_next_chunk": true
 }
 "#
