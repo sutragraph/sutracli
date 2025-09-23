@@ -235,7 +235,7 @@ def setup_configuration():
             "google_ai": {
                 "api_key": "",
                 "model_id": "",
-                "base_url": "",
+                "base_url": "https://generativelanguage.googleapis.com/v1beta",
                 "max_tokens": "",
             },
             "vertex_ai": {
@@ -245,7 +245,7 @@ def setup_configuration():
             },
             "azure_openai": {
                 "api_key": "",
-                "base_url": "",
+                "base_url": "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-id",
                 "api_version": "",
                 "max_tokens": "",
             },
@@ -256,7 +256,7 @@ def setup_configuration():
             },
             "azure_aifoundry": {
                 "api_key": "",
-                "base_url": "",
+                "base_url": "https://RESOURCE_NAME.REGION.models.ai.azure.com",
                 "max_tokens": "",
             },
             "openrouter": {
