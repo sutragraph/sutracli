@@ -1,369 +1,140 @@
-<div align="center">
 
-# Sutra Knowledge CLI
+# From Manual Tracing to Instant Roadmaps: Unlocking Microservices Flows with SutraCLI
 
-[![Python version][python_version_img]][python_dev_url]
-[![Python report][python_report_img]][python_report_url]
-[![Code coverage][python_code_coverage_img]][repo_url]
-[![License][repo_license_img]][repo_license_url]
+Hey there, if you've ever found yourself buried in a web of microservices repos, trying to map out how one piece connects to another just to grasp a basic flow like order creation through to fulfillment, you're in good company. We've all been elbow-deep in that—separate codebases, manually flipping between files to trace API calls and message queues. It gets the job done... eventually, but it's a grind, eating up way too much time on what should be straightforward insights. This is a staple pain point in distributed systems, popping up in everything from e-commerce setups to scalable cloud architectures. As devs always on the lookout for smarter workflows, the question arises: How can we automate this cross-repo tracing with AI? Enter SutraCLI—it cuts flow-mapping time from minutes of tedium to seconds of clarity. But the old manual method is painfully slow. In this post, we'll break down why that approach drags and how SutraCLI turbocharges efficiency, zooming in on its standout feature: cross-indexing.
 
-An **intelligent codebase analysis** and **knowledge management tool** that provides **AI-powered insights**, **semantic search capabilities**, and **comprehensive project understanding** through advanced parsing and embedding technologies. Focus on **writing your code** and **thinking of the business-logic**! The CLI will take care of the rest.
+To illustrate the concepts, we'll reference a simple GitHub demo repo with three microservices: github.com/example-user/microservices-demo. Feel free to clone it and follow along, but we'll keep the focus here on the high-level pains and how SutraCLI solves them without diving deep into the repo's code.
 
-</div>
+## The Naive Approach
 
-## ⚡️ Quick Start
+The initial tactic is dead simple and hands-on: Open up each repo in your editor, search for key terms like API endpoints or queue names, and manually sketch out the connections. For our demo repo with three services, you'd trace how one publishes events, another consumes them, and APIs tie it all together.
 
-First, [download][python_download_url] and install **Python**. Version `3.11` or
-higher is required.
+![A snapshot of manual notes for the flow—already turning into a scribble fest.]
 
-Installation is done by using the [`pip install`][python_install_url] command:
+Sure, it works for a rough diagram, but the execution has a glaring issue: combing through files across repos every time. If you've wrangled complex systems before, you know this scales poorly—even for a small setup, it's a time sink, and with more repos, it spirals.
 
-```bash
-pip install sutrakit
-```
+### Why It Fell Short
 
-### Setup environment
+Relying on manual scans means effort grows with the system's size. In a small setup, it's manageable, but as repos multiply, so does the hassle. Think of it as linearly expanding work: Scanning one repo might take a minute or two, but multiple ones triple that, plus the brain drain from constant context shifts. It's not just about time—it's the inefficiency of revisiting irrelevant code and manually piecing together integrations.
 
-Sets up `~/.sutra` directory, downloads ML models, creates config files, sets environment variables, and prepares BAML client for AI code analysis.
+### The Process in Action
 
-```bash
-sutrakit-setup
-```
+Here's how it plays out at a high level:
 
-![Setup Demo](https://raw.githubusercontent.com/sutragraph/sutracli/refs/heads/main/media/setup.gif)
+**Manual tracing routine (in pseudo-steps):**
 
-That's all you need to know to start! 🎉
+1. Find the entry point for the initial request and trace its logic.
+2. Identify where events or messages are sent out.
+3. Switch to the consuming service and follow the handling logic.
+4. Track any external calls or operations triggered.
+5. Check how updates propagate back through the system.
+   ...and iterate for any side paths or error handling.
 
-### Indexing Your Projects
+**The downsides are clear:**
 
-To enable analysis, each project must be indexed. This process parses the codebase, extracts structures, and builds embeddings for semantic search.
+- **Full scans every time:** No shortcuts, just exhaustive reads.
+- **Wasted effort:** Skimming unrelated sections.
+- **Heavy switching:** Loading repos, recalling connections by hand.
+- **No smart linking:** Spot integrations yourself—no auto-magic.
 
-1. Navigate to your project directory (e.g., `cd my-project`).
-2. Run `sutrakit` – if the project isn't indexed, you'll be prompted to do so.
-   - Confirm indexing when asked; it typically takes a few minutes depending on project size.
+**Outcome?** For a 3-repo example like our demo, tracing one flow averages 5-10 minutes. Bump to more repos? It could stretch to half an hour or more, turning quick checks into productivity black holes.
 
-For ecosystems with multiple related projects (e.g., backend, frontend, microservices):
+You can spot the pattern—it ramps up fast. Time for a better way.
 
-- Repeat the above in each project's directory.
-- Sutrakit automatically links them by matching connections, creating a dependency graph for ecosystem-wide analysis.
+## The Optimized Approach: SutraCLI to the Rescue
 
-![Indexing Demo](https://raw.githubusercontent.com/sutragraph/sutracli/refs/heads/main/media/indexing.gif)
+To crank up the speed, lean on SutraCLI. It indexes repos with AI smarts, weaves a unified dependency graph through cross-indexing, and lets you query flows in plain English. The payoff? Dropping trace times to near-instant, courtesy of pre-linked graphs and clever search. This directly tackles limitations in tools like Cursor and other AI code assistants, which often fixate on a single repo. They lack the broader context of how one repo connects to others—missing inter-service ties like API calls or message queues—which can lead to incomplete or erroneous insights. If they misinterpret something in one repo, it cascades to affect connected ones, requiring manual corrections. SutraCLI sidesteps this by building a holistic graph across all indexed repos, ensuring accurate, ecosystem-wide tracing without the need for constant fixes.
 
-**Important Note:**
+### Drawing from Smart Search: The Power of Cross-Indexing
 
-- For the Roadmap Agent to fully discover and navigate inter-project connections (e.g., API calls, message queues, WebSockets), **cross-indexing** is required during the indexing phase. This builds a dependency graph of external links that standard parsing might miss. Without it, the agent can't trace code flows across projects, resulting in incomplete roadmaps.
-- Do not run cross-indexing parallelly for multiple projects, as it can lead to conflicts and incomplete or incorrect dependency graphs.
+Taking a cue from efficient algorithms that prep data for quick access, SutraCLI's cross-indexing is like organizing the entire ecosystem upfront for lightning-fast queries. It bridges the repos by detecting cross-repo hooks—think API endpoints, RabbitMQ publishes/consumes, or shared data models. This builds a navigable graph where queries jump straight to connections, skipping the brute force.
 
-**Supported Languages and Parsing:**
+**Here's the nitty-gritty:**
 
-Sutrakit uses [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) for advanced AST-based parsing to extract code blocks such as functions, classes, methods, etc. Currently, this is fully supported only for Python, TypeScript, and JavaScript, where custom extractors have been implemented for precise structure extraction and embedding. For other languages, the tool falls back to default file-based indexing, where individual code blocks are not extracted—instead, embeddings are generated based on chunks of a certain word length. As a result, the quality of semantic search, analysis, and insights may vary for unsupported languages.
+- **Per-repo indexing:** Pulls out code structures and embeds for meaning-based search.
+- **Cross-indexing magic:** Scans for matches like queue keys or API signatures across repos, forging links for seamless flow tracing.
+- **End result:** Queries navigate the graph efficiently, delivering complete roadmaps without repo-hopping.
 
-## 📝 Key Features
+After indexing each repo one after another (to dodge any graph mix-ups), cross-indexing automatically ties together messaging pipelines and API calls.
 
-Sutrakit is an orchestrator for AI agents and services, focused on multi-project codebase analysis and management. It helps developers handle complex ecosystems by providing intelligent insights and automated workflows. Below are the core features, with a diagram for the key component.
+#### How Cross-Repo Connections Are Stored
 
-- **AI-Powered Roadmap Agent**:
+Once cross-indexing identifies connections between repos, SutraCLI stores them in a structured format for efficient querying. For instance, a mapped connection might describe: "The outgoing HTTP GET request to the path '/health' is an exact match for the incoming HTTP GET endpoint defined at the path '/health'."
 
-  - Processes user queries to create minimal plans across projects.
-  - Identifies change locations, reuses code, and defines integrations.
-  - Refines via feedback; orchestrates sub-agents for execution.
-
-- **Orchestration of Sub-Agents**:
-
-  - Spawns AI sub-agents for parallel project updates.
-  - Handles dependencies seamlessly.
-  - Note: Before spawning sub-agents, set up and authenticate **rovodev** or **gemini CLI** tools (currently supported providers). Install them via their respective docs (e.g., pip install rovodev or Google Cloud SDK for Gemini) and ensure auth (API keys, tokens) is configured to avoid runtime issues.
-
-- **Cross-Indexing Service**:
-
-  - Discovers and indexes external connections (e.g., APIs, message queues, WebSockets) beyond standard parsing, using advanced matching for identifiers, parameters, wrappers, and variables.
-  - Builds a dependency graph by scanning new projects against existing ones, creating links for matched connections to enable seamless navigation and hopping between projects during analysis.
-
-- **Semantic Search and Code Analysis**:
-
-  - Queries codebases with semantic/keyword tools.
-  - Manages memory to optimize operations.
-
-### Roadmap Agent Workflow
+To visualize this connection, here's a UML diagram linking the sender and receiver code snippets across repos:
 
 ```mermaid
-flowchart TD
-    A[User Query] --> D[Analyze & Plan]
-    D --> E[Verify & Review]
-    E -->|Refine| D
-    E -->|Approve| F[Execute via Sub-Agents]
-    F --> SA[Sub-Agent: Project A]
-    F --> SB[Sub-Agent: Project B]
-    F --> SC[Sub-Agent: Project C]
+graph LR
+    A["order-service<br/>src/api.ts<br/><br/>280 | const response = await axios.get<br/>281 | `${DATA_SERVICE_URL}/health`, {<br/>282 |   timeout: 5000<br/>283 | });"] 
+    
+    B["data-service<br/>src/server.ts<br/><br/>312 | app.get('/health', (req, res) => {<br/>313 |   res.json({<br/>314 |     status: 'healthy',<br/>315 |     timestamp: new Date().toISOString(),<br/>316 |     service: 'data-service'<br/>317 |   })<br/>318 | });"]
+    
+    A -->|"[HTTP/GET]"| B
+    
+    style A text-align:left
+    style B text-align:left
 ```
 
-## Use Cases
+These connections are integrated directly with the tool results so the agent never misses them, which helps it hop to the right repo while tracing.
 
-Sutrakit excels in interconnected projects like microservices or full-stack apps:
+## Putting It to Work and Seeing the Gains
 
-- **New Feature**: Maps backend-to-frontend changes; generates contracts; updates via sub-agents.
-- **Bug Fix**: Traces dependencies; plans minimal fixes.
-- **Refactor**: Analyzes patterns; roadmaps reusable updates.
-- **Onboard Repo**: Indexes and links to ecosystem for integrations.
+To illustrate how this plays out in real time, let's look at a recent SutraCLI session on our demo repo.
 
-This keeps focus on practical value to see if it fits your needs.
+### Brief Overview of the Demo Services
 
-## Configuration
+Our demo consists of three microservices:
 
-Sutrakit allows customization through the system configuration file located at `~/.sutra/config/system.config`. This JSON file controls various aspects of the tool, such as database paths, storage directories, embedding models, logging, and LLM providers. You can edit it manually to tweak settings—changes take effect on the next run. Always back up the file before modifying, and ensure valid JSON format to avoid errors.
+- **data-service**: A Node.js/Express service handling storage via JSON files and REST endpoints.
+- **inventory-service**: A Python service using RabbitMQ for stock updates.
+- **order-service**: A Node.js service with event publishing and subscriptions.
 
-Here's a partial view of the config file (focusing on the LLM section for brevity; other sections like database and storage are omitted):
+The query was:
 
-```json
-{
-  ...
-  "llm": {
-    "provider": "aws_bedrock|anthropic|google_ai|vertex_ai|azure_openai|openai|azure_aifoundry|openrouter",
-    "aws_bedrock": {
-      "access_key_id": "YOUR_ACCESS_KEY",
-      "secret_access_key": "YOUR_SECRET_KEY",
-      "region": "us-east-2",
-      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-      "max_tokens": "OUTPUT_TOKENS"
-    },
-    "anthropic": {
-      "api_key": "YOUR_API_KEY",
-      "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-      "max_tokens": "OUTPUT_TOKENS"
-    },
-    "google_ai": {
-      "api_key": "YOUR_API_KEY",
-      "model_id": "gemini-2.5-pro",
-      "base_url": "https://generativelanguage.googleapis.com/v1beta",
-      "max_tokens": "OUTPUT_TOKENS"
-    },
-    "vertex_ai": {
-      "location": "global",
-      "model_id": "gemini-1.5-flash",
-      "max_tokens": "OUTPUT_TOKENS"
-    },
-    "azure_openai": {
-      "api_key": "YOUR_API_KEY",
-      "base_url": "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-id",
-      "api_version": "2025-01-01-preview",
-      "max_tokens": "OUTPUT_TOKENS"
-    },
-    "openai": {
-      "api_key": "YOUR_API_KEY",
-      "model_id": "gpt-4.1",
-      "max_tokens": "OUTPUT_TOKENS"
-    },
-    "azure_aifoundry": {
-      "api_key": "YOUR_API_KEY",
-      "base_url": "https://RESOURCE_NAME.REGION.models.ai.azure.com",
-      "max_tokens": "OUTPUT_TOKENS"
-    },
-    "openrouter": {
-      "api_key": "YOUR_API_KEY",
-      "model_id": "openai/gpt-3.5-turbo",
-      "max_tokens": "OUTPUT_TOKENS",
-      "http_referer": "YOUR-SITE-URL", //Optional
-      "x_title": "YOUR-TITLE" //Optional
-    }
-  }
-  ...
-}
+```
+can you describe me the flow for order creation to order fulfillment?
 ```
 
-### Example: Changing the LLM Provider
+The tool processed it smoothly, producing a detailed roadmap. Here's the result (feel free to compare it against the demo repo's code after reading through—it's a great way to verify and see the magic in action):
 
-The `"llm"` section lets you switch AI providers (e.g., for the Roadmap Agent) and configure credentials. By default, it's set to `"aws_bedrocks"`. To change it:
+```
+Here is the end-to-end flow for order creation to fulfillment, spanning across the three services:
 
-1. Update `"provider"` to one of: `"aws_bedrock"`, `"anthropic"`, `"google_ai"`, `"vertex_ai"`, `"azure_openai"`, `"openai"`, `"azure_aifoundry"`, or `"openrouter"`.
-2. Fill in the corresponding subsection with your API keys or credentials (leave others blank if unused).
-3. Optionally, adjust model IDs for specific LLMs.
+### 1. Order Creation (`order-service`)
+1. **API Request**: A client sends a `POST` request to the `/orders` endpoint in the `order-service` with customer and product details.
+2. **Order Initialization**: The service validates the request, finds the product in its local catalog, calculates the price, and creates a new order object with a unique ID and an initial status of 'CREATED'.
+3. **Data Persistence**: The `order-service` immediately persists this new order by making a `POST` HTTP call to the `/orders` endpoint of the `data-service`.
+4. **Event Publishing**: After successfully saving the order, the `order-service` publishes an `order.created` message to the `orders.exchange` in RabbitMQ. This message contains the order ID, product name, and quantity.
 
-**Switch to Anthropic Example:**
+### 2. Order Processing (`inventory-service`)
+1. **Event Consumption**: The `inventory-service` is continuously listening to the `order.created` queue. When the message from the `order-service` arrives, it triggers the processing logic.
+2. **Inventory Check & Reservation**: The service begins a series of HTTP calls to the `data-service` to manage inventory:
+   - It first checks if the product exists and if there is enough stock available (`GET /inventory/:product` and `POST /inventory/:product/check`).
+   - If stock is available, it reserves the required quantity (`POST /inventory/:product/reserve`). This prevents other orders from taking the same stock.
+3. **Order Fulfillment**: Once the stock is reserved, the service fulfills the order, which atomically decrements the stock quantity and the reserved quantity (`POST /inventory/:product/fulfill`).
+4. **Status Update**: After processing, the `inventory-service` publishes a new message to the `orders.exchange` with a routing key indicating the outcome (e.g., `order.status.fulfilled` or `order.status.failed`).
 
-```json
-"llm": {
-  "provider": "anthropic",
-  "aws_bedrock": { /* Leave as-is or blank */ },
-  "anthropic": {
-    "api_key": "YOUR_API_KEY",
-    "model_id": "claude-4-sonnet-20250514",
-    "max_tokens": "OUTPUT_TOKENS"
-  },
-  "google_ai": { /* Leave as-is or blank */ },
-  "vertex_ai": { /* Leave as-is or blank */ },
-  "azure_openai": { /* Leave as-is or blank */ },
-  "openai": { /* Leave as-is or blank */ },
-  "azure_aifoundry": { /* Leave as-is or blank */ },
-  "openrouter": { /* Leave as-is or blank */ }
-}
+### 3. Data Persistence (`data-service`)
+1. **Order Storage**: When it receives the `POST /orders` call from the `order-service`, the `data-service` adds the new order to its list and saves the entire list to a JSON file (`orders.json`).
+2. **Inventory Management**: When it receives the inventory-related calls (`/reserve`, `/fulfill`, etc.) from the `inventory-service`, the `data-service` updates its inventory records. Each of these operations concludes by saving the updated inventory state to another JSON file (`inventory.json`), ensuring data persistence.
+
+### 4. Final Status Update (`order-service`)
+1. **Status Consumption**: The `order-service` is also subscribed to RabbitMQ, listening for messages with the routing key `order.status.*`.
+2. **Order Update**: When it receives a status update message (e.g., 'fulfilled') from the `inventory-service`, it finds the corresponding order and updates its status locally. This completes the lifecycle, and the order is now marked as fulfilled in the `order-service` as well.
 ```
 
-After saving, restart Sutrakit to apply changes. For other sections (e.g., logging level or embedding model), edit values directly—refer to the file for details.
+This result was generated by SutraCLI's Roadmap Agent, which iteratively used semantic search to pinpoint relevant code—starting with the order creation endpoint, then tracing event handling, and finally verifying endpoints. The process took mere seconds, navigating the cross-indexed graph to connect the dots across repos without missing critical inter-service links like RabbitMQ exchanges or API calls.
 
-### Common Maximum Output Token Limits
+## The Demo Video
 
-Here are typical `max_tokens` values for popular models (as of early 2025):
+To watch it unfold, check the attached demo video: From indexing and cross-linking to querying and the polished roadmap output.
 
-- **GPT-5**: 128,000 tokens
-- **GPT-4.1**: 32,000 tokens
-- **Claude Sonnet 4**: 64,000 tokens  
-- **Gemini 2.5 Pro**: 64,000 tokens
+## Wrapping Up: More Than Just Speed
 
-**Note**: The `max_tokens` parameter controls the maximum number of tokens in the model's output response, not the input context window. Always check your model's documentation for the exact output token limit, as these values may change with model updates.
+SutraCLI doesn't just accelerate—it's a team enabler. New folks can query flows on day one, shrinking onboarding ramps. For everyday tasks: Pinpoint bugs across boundaries, refactor with confidence, or brainstorm integrations using AI suggestions. Unlike single-repo-focused tools like Cursor, SutraCLI's cross-indexing ensures you see the full picture, reducing errors and manual rework by understanding how services interconnect.
 
-## 🛠️ Development Setup
+If tangled microservices are your nemesis, SutraCLI's worth a look—swing by the SutraGraph website for more. What's your biggest tracing headache? Hit the comments!
 
-If you want to contribute to the project or modify the BAML configurations, follow these steps:
-
-### Prerequisites
-
-- Python 3.11+
-- Git
-- pip
-
-### Quick Setup
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/sutragraph/sutracli.git
-   cd sutracli
-   ```
-
-2. **Run the development setup script:**
-   ```bash
-   ./scripts/setup-dev.sh
-   ```
-
-This script will:
-
-- Install development dependencies (including pre-commit)
-- Set up pre-commit hooks
-- Test BAML client generation
-- Run initial code quality checks
-
-### Manual Setup
-
-If you prefer to set up manually:
-
-1. **Install development dependencies:**
-
-   ```bash
-   pip install -e ".[dev]"
-   ```
-
-2. **Install pre-commit hooks:**
-
-   ```bash
-   pre-commit install
-   ```
-
-3. **Generate BAML client (if needed):**
-   ```bash
-   ./scripts/generate-baml.sh
-   ```
-
-4. **Run Setup:**
-
-   ```bash
-   sutrakit-setup
-   ```
-
-### Pre-commit Hooks
-
-The project uses pre-commit hooks to ensure code quality and keep BAML client files up-to-date:
-
-- **BAML Generation**: Automatically regenerates BAML client files when `baml_src/` files change
-- **Code Formatting**: Runs Black and isort on Python files
-- **Code Quality**: Checks for trailing whitespace, large files, merge conflicts, etc.
-- **File Validation**: Validates YAML, JSON, and TOML files
-
-### Working with BAML
-
-When you modify files in `baml_src/`, the pre-commit hooks will automatically:
-
-1. Regenerate the BAML client files in `baml_client/`
-2. Add the updated client files to your commit
-3. Ensure code formatting and quality standards
-
-You can also manually regenerate BAML client files:
-
-```bash
-./scripts/generate-baml.sh
-```
-
-### Running Tests
-
-```bash
-# Run all pre-commit hooks
-pre-commit run --all-files
-
-# Run specific hook
-pre-commit run baml-generate
-```
-
-## ⭐️ Project assistance
-
-If you want to say **thank you** or/and support active development of
-`Sutra Knowledge CLI`:
-
-- Add a [GitHub Star][repo_url] to the project.
-- Write interesting articles about project on [Dev.to][dev_to_url], or
-  personal blog.
-
-## 🏆 A win-win cooperation
-
-And now, I invite you to participate in this project! Let's work **together** to
-create the **most useful** tool for developers on the web today.
-
-- [Issues][repo_issues_url]: ask questions and submit your features.
-- [Pull requests][repo_pull_request_url]: send your improvements to the current.
-
-Together, we can make this project **better** every day! 😘
-
-<!-- Python -->
-
-[python_download_url]: https://www.python.org/downloads/
-[python_install_url]: https://pip.pypa.io/en/stable/installation/
-[python_version_img]: https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python
-[python_report_img]: https://img.shields.io/badge/Python_report-A%2B-success?style=for-the-badge&logo=none
-[python_report_url]: https://github.com/sutragraph/sutracli
-[python_code_coverage_img]: https://img.shields.io/badge/code_coverage-90%25-success?style=for-the-badge&logo=none
-
-<!-- Repository -->
-
-[repo_url]: https://github.com/sutragraph/sutracli
-
-[repo_logo_url]: [url_placeholder]
-[repo_logo_img]: https://www.svgrepo.com/download/421259/ai-brain-data.svg
-[repo_license_url]: https://github.com/sutragraph/sutracli/blob/main/LICENSE
-[repo_license_img]: https://img.shields.io/badge/license-GPL-red?style=for-the-badge&logo=none
-[repo_cc_url]: https://creativecommons.org/licenses/by-sa/4.0/
-[repo_issues_url]: https://github.com/sutragraph/sutracli/issues
-[repo_pull_request_url]: https://github.com/sutragraph/sutracli/pulls
-[repo_discussions_url]: https://github.com/sutragraph/sutracli/discussions
-[repo_releases_url]: https://github.com/sutragraph/sutracli/releases
-[repo_wiki_url]: https://github.com/sutragraph/sutracli/wiki
-[repo_wiki_img]: https://img.shields.io/badge/docs-wiki_page-blue?style=for-the-badge&logo=none
-[repo_wiki_faq_url]: https://github.com/sutragraph/sutracli/wiki/FAQ
-
-<!-- Project -->
-
-[sutrakit_product-hunt_url]: [url_placeholder]
-
-<!-- Author -->
-
-[author]: https://github.com/sutragraph
-
-<!-- Readme links -->
-
-[dev_to_url]: https://dev.to
-[sqlite_url]: https://sqlite.org
-[faiss_url]: https://github.com/facebookresearch/faiss
-[anthropic_url]: https://anthropic.com
-[openai_url]: https://openai.com
-[gcp_url]: https://cloud.google.com/vertex-ai
-[brew_url]: https://brew.sh
-
-[boosty_url]: [url_placeholder]
-[python_dev_url]: https://www.python.org/
+Cheers,  
+[Your Name]  
+September 23, 2025
