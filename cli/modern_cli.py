@@ -36,6 +36,49 @@ class UserCancelledError(Exception):
 
 
 class ModernSutraKit:
+    def _prompt_api_key(self, prompt_text, is_password=True, error_message=None):
+        """Utility to prompt for API key or secret with validation."""
+        while True:
+            key = prompt(prompt_text, is_password=is_password)
+            if key.strip():
+                return key
+            console.error(
+                error_message or f"{prompt_text} is required and cannot be empty."
+            )
+
+    def _prompt_input(self, prompt_text, default=None, error_message=None):
+        """Generic utility to prompt for any required input with validation and optional default."""
+        while True:
+            if default is not None:
+                value = Prompt.ask(prompt_text, default=default)
+            else:
+                value = Prompt.ask(prompt_text)
+            if value.strip():
+                return value
+            console.error(
+                error_message or f"{prompt_text} is required and cannot be empty."
+            )
+
+    def _prompt_max_tokens(self, info_message=None, dim_message=None, default=None):
+        """Utility to prompt for max tokens with validation and optional info/dim messages."""
+        if info_message:
+            console.info(info_message)
+        if dim_message:
+            console.dim(dim_message)
+        while True:
+            if default is not None:
+                max_tokens = Prompt.ask("Max tokens", default=str(default))
+            else:
+                max_tokens = Prompt.ask("Max tokens")
+            if max_tokens.strip():
+                try:
+                    int(max_tokens.strip())
+                    return max_tokens
+                except ValueError:
+                    console.error("Max tokens must be a valid number.")
+            else:
+                console.error("Max tokens is required and cannot be empty.")
+
     """Modern interactive CLI for SutraGraph."""
 
     def __init__(self, log_level: str = "INFO"):
@@ -209,18 +252,25 @@ class ModernSutraKit:
     def _get_aws_config(self) -> Dict[str, Any]:
         """Get AWS Bedrock configuration."""
         console.info("AWS Bedrock Configuration")
-        access_key = Prompt.ask("AWS Access Key ID", password=False)
-        secret_key = prompt("AWS Secret Access Key: ", is_password=True)
-        region = Prompt.ask("AWS Region", default="us-east-2")
-        model_id = Prompt.ask(
-            "Model ID", default="us.anthropic.claude-sonnet-4-20250514-v1:0"
+        access_key = self._prompt_api_key(
+            "AWS Access Key ID",
+            is_password=False,
+            error_message="AWS Access Key ID is required and cannot be empty.",
         )
-
+        secret_key = self._prompt_api_key(
+            "AWS Secret Access Key: ",
+            is_password=True,
+            error_message="AWS Secret Access Key is required and cannot be empty.",
+        )
+        region = Prompt.ask("AWS Region", default="us-east-2")
+        model_id = self._prompt_input(
+            prompt_text="Model ID", default="us.anthropic.claude-sonnet-4-20250514-v1:0"
+        )
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim("Common values: Claude Sonnet 4: 64000, Claude Haiku: 64000")
-        max_tokens = Prompt.ask("Max tokens")
-
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: Claude Sonnet 4: 64000, Claude Haiku: 64000",
+        )
         return {
             "access_key_id": access_key,
             "secret_access_key": secret_key,
@@ -232,30 +282,39 @@ class ModernSutraKit:
     def _get_anthropic_config(self) -> Dict[str, Any]:
         """Get Anthropic configuration."""
         console.info("Anthropic Configuration")
-        api_key = prompt("Anthropic API Key: ", is_password=True)
-        model_id = Prompt.ask("Model ID", default="claude-4-sonnet-20250514")
-
+        api_key = self._prompt_api_key(
+            "Anthropic API Key: ",
+            is_password=True,
+            error_message="Anthropic API Key is required and cannot be empty.",
+        )
+        model_id = self._prompt_input(
+            prompt_text="Model ID", default="claude-4-sonnet-20250514"
+        )
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim("Common values: Claude Sonnet 4: 64000, Claude Haiku: 64000")
-        max_tokens = Prompt.ask("Max tokens")
-
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: Claude Sonnet 4: 64000, Claude Haiku: 64000",
+        )
         return {"api_key": api_key, "model_id": model_id, "max_tokens": max_tokens}
 
     def _get_gemini_config(self) -> Dict[str, Any]:
         """Get Google Gemini configuration."""
         console.info("Google Gemini Configuration")
-        api_key = prompt("Gemini API Key: ", is_password=True)
-        model_id = Prompt.ask("Model ID", default="gemini-2.5-pro")
-        base_url = Prompt.ask(
-            "Base URL", default="https://generativelanguage.googleapis.com/v1beta"
+        api_key = self._prompt_api_key(
+            "Gemini API Key: ",
+            is_password=True,
+            error_message="Gemini API Key is required and cannot be empty.",
         )
-
+        model_id = self._prompt_input(prompt_text="Model ID", default="gemini-2.5-pro")
+        base_url = self._prompt_input(
+            prompt_text="Base URL",
+            default="https://generativelanguage.googleapis.com/v1beta",
+        )
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim("Common values: Gemini 2.5 Pro: 64000, Gemini 1.5 Flash: 64000")
-        max_tokens = Prompt.ask("Max tokens")
-
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: Gemini 2.5 Pro: 64000, Gemini 1.5 Flash: 64000",
+        )
         return {
             "api_key": api_key,
             "model_id": model_id,
@@ -289,19 +348,17 @@ class ModernSutraKit:
 
         # Get basic configuration
         location = Prompt.ask("Location (region)", default="global")
-        model_id = Prompt.ask("Model ID", default="gemini-2.5-pro")
-
+        model_id = self._prompt_input(prompt_text="Model ID", default="gemini-2.5-pro")
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim("Common values: Gemini 2.5 Pro: 64000, Gemini 2.5 Flash: 64000")
-        max_tokens = Prompt.ask("Max tokens")
-
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: Gemini 2.5 Pro: 64000, Gemini 2.5 Flash: 64000",
+        )
         return {"location": location, "model_id": model_id, "max_tokens": max_tokens}
 
     def _setup_gcp_auth(self):
         """Guide user through GCP authentication setup with retry option."""
         import subprocess
-        import sys
 
         console.info("Setting up Google Cloud authentication...")
 
@@ -328,7 +385,13 @@ class ModernSutraKit:
         # Retry loop for authentication
         while True:
             # Get project ID
-            project_id = Prompt.ask("Enter your Google Cloud Project ID")
+            while True:
+                project_id = Prompt.ask("Enter your Google Cloud Project ID")
+                if project_id.strip():
+                    break
+                console.error(
+                    "Google Cloud Project ID is required and cannot be empty."
+                )
 
             # Run authentication command
             console.info(
@@ -383,21 +446,27 @@ class ModernSutraKit:
     def _get_openai_config(self) -> Dict[str, Any]:
         """Get OpenAI configuration."""
         console.info("OpenAI Configuration")
-        api_key = prompt("OpenAI API Key: ", is_password=True)
-        model_id = Prompt.ask("Model ID", default="gpt-4.1")
-
+        api_key = self._prompt_api_key(
+            "OpenAI API Key: ",
+            is_password=True,
+            error_message="OpenAI API Key is required and cannot be empty.",
+        )
+        model_id = self._prompt_input(prompt_text="Model ID", default="gpt-4.1")
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim("Common values: GPT-4.1: 32768, GPT-5: 128000, GPT-4o: 64000")
-        max_tokens = Prompt.ask("Max tokens")
-
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: GPT-4.1: 32768, GPT-5: 128000, GPT-4o: 64000",
+        )
         return {"api_key": api_key, "model_id": model_id, "max_tokens": max_tokens}
 
     def _get_azure_config(self) -> Dict[str, Any]:
         """Get Azure OpenAI configuration."""
         console.info("Azure OpenAI Configuration")
-        api_key = prompt("Azure OpenAI API Key: ", is_password=True)
-
+        api_key = self._prompt_api_key(
+            "Azure OpenAI API Key: ",
+            is_password=True,
+            error_message="Azure OpenAI API Key is required and cannot be empty.",
+        )
         console.print()
         console.info(
             "Base URL Example: https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-id"
@@ -406,15 +475,15 @@ class ModernSutraKit:
             "Replace 'your-resource-name' with your Azure resource name and 'your-deployment-id' with your deployment ID"
         )
         console.print()
-
-        base_url = Prompt.ask("Base URL")
-        api_version = Prompt.ask("API Version", default="2025-01-01-preview")
-
+        base_url = self._prompt_input(prompt_text="Base URL")
+        api_version = self._prompt_input(
+            prompt_text="API Version", default="2025-01-01-preview"
+        )
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim("Common values: GPT-4.1: 32768, GPT-5: 128000, GPT-4o: 64000")
-        max_tokens = Prompt.ask("Max tokens")
-
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: GPT-4.1: 32768, GPT-5: 128000, GPT-4o: 64000",
+        )
         return {
             "api_key": api_key,
             "base_url": base_url,
@@ -425,8 +494,11 @@ class ModernSutraKit:
     def _get_azure_aifoundry_config(self) -> Dict[str, Any]:
         """Get Azure AI Foundry configuration."""
         console.info("Azure AI Foundry Configuration")
-        api_key = prompt("Azure AI Foundry API Key: ", is_password=True)
-
+        api_key = self._prompt_api_key(
+            "Azure AI Foundry API Key: ",
+            is_password=True,
+            error_message="Azure AI Foundry API Key is required and cannot be empty.",
+        )
         console.print()
         console.info(
             "Base URL Example: https://RESOURCE_NAME.REGION.models.ai.azure.com"
@@ -435,16 +507,12 @@ class ModernSutraKit:
             "Replace 'RESOURCE_NAME' with your Azure resource name and 'REGION' with your region"
         )
         console.print()
-
-        base_url = Prompt.ask("Base URL")
-
+        base_url = self._prompt_input(prompt_text="Base URL")
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim(
-            "Common values: GPT-4.1: 32768, GPT-5: 128000, Claude Sonnet 4: 64000 check model specs"
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: GPT-4.1: 32768, GPT-5: 128000, Claude Sonnet 4: 64000 check model specs",
         )
-        max_tokens = Prompt.ask("Max tokens")
-
         return {
             "api_key": api_key,
             "base_url": base_url,
@@ -454,33 +522,33 @@ class ModernSutraKit:
     def _get_openrouter_config(self) -> Dict[str, Any]:
         """Get OpenRouter configuration."""
         console.info("OpenRouter Configuration")
-        api_key = prompt("OpenRouter API Key: ", is_password=True)
-        model_id = Prompt.ask("Model ID", default="openai/gpt-3.5-turbo")
-
+        api_key = self._prompt_api_key(
+            "OpenRouter API Key: ",
+            is_password=True,
+            error_message="OpenRouter API Key is required and cannot be empty.",
+        )
+        model_id = self._prompt_input(
+            prompt_text="Model ID", default="openai/gpt-3.5-turbo"
+        )
         console.print()
         console.info("Optional headers (press Enter to skip):")
         http_referer = Prompt.ask("HTTP-Referer (your site URL)", default="")
         x_title = Prompt.ask("X-Title (your app title)", default="")
-
         console.print()
-        console.info("Maximum output tokens per response for your model")
-        console.dim(
-            "Common values: GPT-4.1: 32768, GPT-5: 128000, Claude Sonnet 4: 64000, Gemini 2.5 Pro: 64000 check model specs"
+        max_tokens = self._prompt_max_tokens(
+            info_message="Maximum output tokens per response for your model",
+            dim_message="Common values: GPT-4.1: 32768, GPT-5: 128000, Claude Sonnet 4: 64000, Gemini 2.5 Pro: 64000 check model specs",
         )
-        max_tokens = Prompt.ask("Max tokens")
-
         config = {
             "api_key": api_key,
             "model_id": model_id,
             "max_tokens": max_tokens,
         }
-
         # Only add optional headers if they have values
         if http_referer:
             config["http_referer"] = http_referer
         if x_title:
             config["x_title"] = x_title
-
         return config
 
     def _update_provider_config(self, provider: str, provider_config: Dict[str, Any]):
