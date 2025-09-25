@@ -13,7 +13,7 @@ Search for keywords or patterns in the codebase using ripgrep. Supports single/m
 - case_sensitive: OPTIONAL - Enable sensitivity (default: false) (type: bool?).
 - regex: OPTIONAL - Treat as regex (default: false) (type: bool?).
 - fetch_next_chunk: OPTIONAL - For more results (default: false) (type: bool?).
-- file_paths: OPTIONAL - Comma-separated absolute paths for targeted search (type: string?).
+- file_paths: OPTIONAL - Comma-separated 'absolute' paths from the root of the file system for targeted search (type: string?).
 - project_name: OPTIONAL - For full-project search (type: string?).
 
 ### Usage
