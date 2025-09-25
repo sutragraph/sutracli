@@ -25,7 +25,7 @@ List files and directories in a specified path or project. Set recursive for ful
 
 ### Guidelines
 Think step-by-step: 'Goal: Explore structure? Tool: list_files. Why: File discovery.'
-Provide path or project_name; if both, path takes precedence.
+Provide 'absolute' path from the root of the file system OR project_name; Don't use both.
 Fetch next chunk only when indicated.
 
 ### Examples
@@ -39,12 +39,5 @@ Fetch next chunk only when indicated.
 {
   "project_name": "my-awesome-project",
   "recursive": true
-}
-
-3. Both (path first):
-{
-  "path": "src/components",
-  "project_name": "my-awesome-project",
-  "recursive": false
 }
 "#
