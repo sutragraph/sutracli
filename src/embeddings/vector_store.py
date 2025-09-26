@@ -3,10 +3,16 @@ Unified vector store that combines embedding generation and vector storage.
 Merges the functionality of simple_processor.py and vector_db.py into a clean interface.
 """
 
-import sqlite3
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+# This block is only read by type checkers, not at runtime
+if TYPE_CHECKING:
+    import sqlite3
+# This block is only executed at runtime, not by type checkers
+else:
+    import pysqlite3 as sqlite3
 
 import numpy as np
 import onnxruntime as ort

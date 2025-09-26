@@ -3,12 +3,12 @@ Manager for external agent providers.
 """
 
 import concurrent.futures
-import threading
 from typing import Any, Dict, List, Optional
 
+from src.utils.console import console
 from tools.tool_terminal_commands.action import TerminalSessionManager
 
-from .config import AgentProviderConfig, get_provider_config_manager
+from .config import get_provider_config_manager
 from .gemini import GeminiProvider
 from .rovodev import RovodevProvider
 
@@ -169,16 +169,32 @@ class AgentProviderManager:
         """Prompt user to select a provider (for CLI usage)."""
         available_providers = self.get_available_providers()
 
+        # Check for missing recommended providers and console.print install instructions
+        missing_msgs = []
+        if "gemini" not in available_providers:
+            missing_msgs.append(
+                "- To use Gemini, install gemini CLI and Node.js >= 20."
+            )
+        if "rovodev" not in available_providers:
+            missing_msgs.append("- To use Rovodev, install acli rovodev.")
+        if missing_msgs:
+            console.print("\nSome providers are not available:")
+            for msg in missing_msgs:
+                console.print(msg)
+
         if not available_providers:
-            print("No external agent providers are available.")
+            console.print("No external agent providers are available.")
             return None
 
-        print("\nAvailable external agent providers:")
+        console.print("\n🤖 External Agent Provider Setup Required")
+        console.print("=" * 50)
+        console.print("Available external agent providers:")
+
         provider_list = list(available_providers.keys())
 
         for i, name in enumerate(provider_list, 1):
             provider = available_providers[name]
-            print(f"{i}. {name} - {provider.config.description}")
+            console.print(f"{i}. {name} - {provider.config.description}")
 
         while True:
             try:
@@ -190,16 +206,16 @@ class AgentProviderManager:
 
                     # Set as selected provider
                     if self.set_selected_provider(selected_provider):
-                        print(f"Selected provider: {selected_provider}")
+                        console.print(f"Selected provider: {selected_provider}")
                         return selected_provider
                     else:
-                        print("Failed to save provider selection.")
+                        console.print("Failed to save provider selection.")
                         return None
                 else:
-                    print("Invalid selection. Please try again.")
+                    console.print("Invalid selection. Please try again.")
 
             except (ValueError, KeyboardInterrupt):
-                print("\nProvider selection cancelled.")
+                console.print("\nProvider selection cancelled.")
                 return None
 
     def ensure_provider_selected(self) -> bool:
@@ -210,7 +226,7 @@ class AgentProviderManager:
             return True
 
         # No provider selected or selected provider not available
-        print("No external agent provider is configured.")
+        console.print("No external agent provider is configured.")
         selected = self.prompt_user_for_provider_selection()
 
         return selected is not None

@@ -489,12 +489,6 @@ class RoadmapAgentHandler:
         selected_provider = self.provider_manager.config_manager.get_selected_provider()
 
         if not selected_provider:
-            print("\n🤖 External Agent Provider Setup Required")
-            print("=" * 50)
-            print(
-                "To process the roadmap results, please select an external agent provider:"
-            )
-
             selected_provider = (
                 self.provider_manager.prompt_user_for_provider_selection()
             )

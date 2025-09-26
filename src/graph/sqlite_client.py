@@ -4,10 +4,16 @@ Stores files, code blocks, and relationships from code parsing.
 """
 
 import json
-import sqlite3
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
+# This block is only read by type checkers, not at runtime
+if TYPE_CHECKING:
+    import sqlite3
+# This block is only executed at runtime, not by type checkers
+else:
+    import pysqlite3 as sqlite3
 
 from loguru import logger
 
