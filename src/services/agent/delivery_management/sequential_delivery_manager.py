@@ -220,21 +220,11 @@ class DeliveryManager:
 
         # If queue is complete, check if we should reset it for reuse
         if is_complete:
-            consecutive_count = self._consecutive_completions.get(query_signature, 0)
-            if (
-                consecutive_count >= 3
-            ):  # Prevent infinite loops after 3 consecutive completions
-                logger.debug(
-                    f"Queue completed {consecutive_count} times consecutively, stopping to prevent infinite loop"
-                )
-                return None
-
             logger.debug(
                 f"📦 Queue was complete, resetting for reuse - position: {current_pos}, queue_length: {len(queue)}"
             )
             self._queue_positions[query_signature] = 0
             self._completed_deliveries[query_signature] = False
-            self._consecutive_completions[query_signature] = consecutive_count + 1
             current_pos = 0
 
         if current_pos >= len(queue):
