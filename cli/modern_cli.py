@@ -661,9 +661,9 @@ class ModernSutraKit:
 
             for i, provider in enumerate(providers):
                 if i == current_index:
-                    lines.append(("class:selected", f'▶ {provider["name"]}\n'))
+                    lines.append(("class:selected", f"▶ {provider['name']}\n"))
                 else:
-                    lines.append(("", f'  {provider["name"]}\n'))
+                    lines.append(("", f"  {provider['name']}\n"))
 
             return lines
 
@@ -816,6 +816,9 @@ class ModernSutraKit:
             if agent_config.requires_indexing:
                 self._run_indexing(current_dir)
 
+            if agent_config.requires_incremental_indexing:
+                self._run_incremental_indexing()
+
             # Check if cross-indexing is required
             if agent_config.requires_cross_indexing:
                 self._run_cross_indexing(current_dir)
@@ -833,6 +836,7 @@ class ModernSutraKit:
 
     def _run_indexing(self, project_dir: Path):
         """Run normal indexing for the project."""
+        console.print()
         console.info(f"Starting indexing for: {project_dir}")
         console.dim("   • Analyzing code structure and relationships")
         console.dim("   • Generating embeddings for semantic search")
@@ -858,6 +862,44 @@ class ModernSutraKit:
         except Exception as e:
             console.error(f"Indexing failed: {e}")
             raise
+
+    def _run_incremental_indexing(self):
+        """Run incremental indexing for all projects in database."""
+        console.print()
+        console.info("Starting incremental indexing for all projects")
+        console.dim("   • Checking for changes in all projects")
+        console.dim("   • Processing only modified files")
+
+        try:
+            from src.agent_management.prerequisites.indexing_handler import (
+                IndexingPrerequisitesHandler,
+            )
+
+            # Initialize the indexing handler
+            indexing_handler = IndexingPrerequisitesHandler()
+
+            # Execute incremental indexing for all projects
+            result = indexing_handler.handle_multiple_project_indexing()
+
+            # Handle results
+            if result["status"] == "completed":
+                console.success(f"{result['message']}")
+            elif result["status"] == "partial":
+                console.warning(f"{result['message']}")
+                console.print(
+                    f"   Successfully processed: {result['indexed_projects']}"
+                )
+                console.print(f"   Failed: {result['failed_projects']}")
+                console.print(f"   Skipped: {result['skipped_projects']}")
+            elif result["status"] == "skipped":
+                console.info(f"{result['message']}")
+            else:
+                console.error(f"{result['message']}")
+                if result.get("error"):
+                    console.print(f"   Error: {result['error']}")
+        except Exception as e:
+            console.error(f"Error during incremental indexing: {e}")
+            console.error(f"Unexpected error: {e}")
 
     def _run_cross_indexing(self, project_dir: Path):
         """Run cross-indexing for the project."""

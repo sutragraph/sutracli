@@ -19,6 +19,7 @@ class AgentConfig:
     name: str
     description: str
     requires_indexing: bool = False
+    requires_incremental_indexing: bool = False
     requires_cross_indexing: bool = False
     config_file: Optional[str] = None
 
@@ -40,6 +41,7 @@ class AgentRegistry:
                 name="Roadmap Agent",
                 description="Analyzes codebase structure and creates comprehensive development roadmaps",
                 requires_indexing=True,
+                requires_incremental_indexing=True,
                 requires_cross_indexing=True,
             )
         )

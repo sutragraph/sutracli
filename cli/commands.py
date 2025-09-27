@@ -49,7 +49,7 @@ def handle_list_command(args) -> None:
 [key]Description:[/key] {project.description}
 [key]Created:[/key] {project.created_at}
 [key]Updated:[/key] {project.updated_at}
-[key]Cross-Indexed:[/key] {'✅ Yes' if project.cross_indexing_done else '❌ No'}"""
+[key]Cross-Indexed:[/key] {"✅ Yes" if project.cross_indexing_done else "❌ No"}"""
 
         panel = Panel(
             content,
