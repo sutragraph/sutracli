@@ -73,18 +73,18 @@ def filter_ignored_paths(files_list: list, directory_path: str) -> list:
     Filter out ignored files and directories from the list using file_utils.
 
     Args:
-        files_list: List of file/directory paths
+        files_list: List of file/directory paths (now absolute paths)
         directory_path: Base directory path
 
     Returns:
         Filtered list with ignored paths removed
     """
     filtered_list = []
-    base_path = Path(directory_path)
+    base_path = Path(directory_path).resolve()
 
     for item in files_list:
         is_directory = item.endswith("/")
-        item_path = base_path / item.rstrip("/")
+        item_path = Path(item.rstrip("/"))
 
         # Skip if the item should be ignored
         if is_directory:
@@ -95,16 +95,15 @@ def filter_ignored_paths(files_list: list, directory_path: str) -> list:
                 continue
 
         # Check if any parent directory in the path should be ignored
-        path_parts = item.rstrip("/").split(os.sep)
         should_skip = False
+        current_path = item_path.parent if not is_directory else item_path
 
-        for i in range(
-            len(path_parts) - 1
-        ):  # Don't check the file itself, only parents
-            partial_path = base_path / os.sep.join(path_parts[: i + 1])
-            if should_ignore_directory(partial_path):
+        # Walk up the directory tree checking each parent
+        while current_path != current_path.parent and current_path != base_path:
+            if should_ignore_directory(current_path):
                 should_skip = True
                 break
+            current_path = current_path.parent
 
         if not should_skip:
             filtered_list.append(item)
@@ -161,11 +160,11 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                     check=True,
                 )
 
-                # Get relative paths for normal files
+                # Get absolute paths for normal files
                 for file_path in result.stdout.strip().split("\n"):
                     if file_path:  # Skip empty lines
-                        rel_path = os.path.relpath(file_path, directory_path)
-                        files_list.append(rel_path)
+                        abs_path = os.path.abspath(file_path)
+                        files_list.append(abs_path)
 
                 # Now get .env* files specifically
                 env_result = subprocess.run(
@@ -178,9 +177,9 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 # Add .env* files to the list
                 for file_path in env_result.stdout.strip().split("\n"):
                     if file_path:  # Skip empty lines
-                        rel_path = os.path.relpath(file_path, directory_path)
-                        if rel_path not in files_list:  # Avoid duplicates
-                            files_list.append(rel_path)
+                        abs_path = os.path.abspath(file_path)
+                        if abs_path not in files_list:  # Avoid duplicates
+                            files_list.append(abs_path)
 
                 # Extract unique directories from all file paths
                 dirs_set = set()
@@ -189,11 +188,15 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 ) + env_result.stdout.strip().split("\n")
                 for file_path in all_files:
                     if file_path:
-                        rel_path = os.path.relpath(file_path, directory_path)
-                        dir_parts = rel_path.split(os.sep)[:-1]  # Remove filename
-                        for i in range(len(dir_parts)):
-                            dir_path = os.sep.join(dir_parts[: i + 1]) + "/"
-                            dirs_set.add(dir_path)
+                        abs_file_path = os.path.abspath(file_path)
+                        dir_path = os.path.dirname(abs_file_path)
+                        # Add all parent directories
+                        while dir_path != os.path.dirname(
+                            dir_path
+                        ) and dir_path.startswith(os.path.abspath(directory_path)):
+                            if dir_path != os.path.abspath(directory_path):
+                                dirs_set.add(dir_path + "/")
+                            dir_path = os.path.dirname(dir_path)
 
                 files_list.extend(sorted(dirs_set))
 
@@ -201,16 +204,11 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 # Fallback to os.walk if rg fails
                 for root, dirs, files in os.walk(directory_path):
                     for file in files:
-                        rel_path = os.path.relpath(
-                            os.path.join(root, file), directory_path
-                        )
-                        files_list.append(rel_path)
+                        abs_path = os.path.abspath(os.path.join(root, file))
+                        files_list.append(abs_path)
                     for dir in dirs:
-                        rel_path = (
-                            os.path.relpath(os.path.join(root, dir), directory_path)
-                            + "/"
-                        )
-                        files_list.append(rel_path)
+                        abs_path = os.path.abspath(os.path.join(root, dir)) + "/"
+                        files_list.append(abs_path)
         else:
             # Top-level only - use rg with max-depth
             try:
@@ -222,13 +220,13 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                     check=True,
                 )
 
-                # Get just the filenames for top-level files
+                # Get absolute paths for top-level files
                 for file_path in result.stdout.strip().split("\n"):
                     if file_path:  # Skip empty lines
-                        rel_path = os.path.relpath(file_path, directory_path)
+                        abs_path = os.path.abspath(file_path)
                         # Only include files that are directly in the directory (no subdirectories)
-                        if os.sep not in rel_path:
-                            files_list.append(rel_path)
+                        if os.path.dirname(abs_path) == os.path.abspath(directory_path):
+                            files_list.append(abs_path)
 
                 # Now get .env* files specifically at top level
                 env_result = subprocess.run(
@@ -249,23 +247,26 @@ def execute_list_files_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
                 # Add .env* files to the list
                 for file_path in env_result.stdout.strip().split("\n"):
                     if file_path:  # Skip empty lines
-                        rel_path = os.path.relpath(file_path, directory_path)
+                        abs_path = os.path.abspath(file_path)
                         # Only include files that are directly in the directory (no subdirectories)
-                        if os.sep not in rel_path and rel_path not in files_list:
-                            files_list.append(rel_path)
+                        if (
+                            os.path.dirname(abs_path) == os.path.abspath(directory_path)
+                            and abs_path not in files_list
+                        ):
+                            files_list.append(abs_path)
 
                 # Add directories manually for top-level
                 for item in path.iterdir():
                     if item.is_dir():
-                        files_list.append(item.name + "/")
+                        files_list.append(str(item.absolute()) + "/")
 
             except subprocess.CalledProcessError:
                 # Fallback to pathlib if rg fails
                 for item in path.iterdir():
                     if item.is_file():
-                        files_list.append(item.name)
+                        files_list.append(str(item.absolute()))
                     elif item.is_dir():
-                        files_list.append(item.name + "/")
+                        files_list.append(str(item.absolute()) + "/")
 
         files_list.sort()
 
