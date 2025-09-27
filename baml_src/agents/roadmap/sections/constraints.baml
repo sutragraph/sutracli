@@ -35,7 +35,7 @@ Output exactly in this structure. Limit 'thinking' to <100 words for brevity.
           "start_line": int,
           "end_line": int,
           "signature": string?,
-          "content": string, // Relevant code snippet
+          "content": string, // Actual relevant code snippet (not just line numbers and path)
           "is_fully_traced": bool?,
           "accessed_elements": [ /* Recursive traced_element[] */ ]?
         }?,
@@ -50,9 +50,10 @@ Example for contracts (use only for new integrations): ID:val-1, Role:consumer, 
 ### Requirements
 1. Select one tool per iteration to gather information.
 2. Verify facts using tools for accuracy.
-3. Analyze the full ecosystem starting with the current project.
-4. Include contracts only for new integrations, specifying ID, role, specs, examples.
-5. Provide exact paths, lines, and before/after snippets for changes (e.g., 'Before: if(x == 0); After: if(x <= 0);').
+3. Always use previous tool results and sutra_memory for context.
+4. Provide exact paths, lines, and before/after snippets for changes (e.g., 'Before: if(x == 0); After: if(x <= 0);').
+5. Analyze the full ecosystem starting with the current project.
+6. Include contracts only for new integrations, specifying ID, role, specs, examples.
 
 Focus on providing: Roadmap guidance, imports, structures, optional contracts, integration points, examples, before/after snippets.
 Focus on: Single solutions, minimal/exact changes, conventions, simple implementations.

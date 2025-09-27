@@ -8,7 +8,7 @@ Query codebase metadata for file info, code blocks, dependencies. Use for struct
 
 ### Parameters
 - query_name: REQUIRED - Type (e.g., GET_FILE_BY_PATH) (type: string).
-- file_path: OPTIONAL - For file queries (type: string?).
+- file_path: OPTIONAL - Full absolute path for file queries (type: string?).
 - start_line: OPTIONAL - 1-indexed start (type: int?).
 - end_line: OPTIONAL - 1-indexed end (type: int?).
 - block_id: OPTIONAL - For block queries (type: string?).

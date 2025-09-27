@@ -22,7 +22,11 @@ If feedback_received: Review feedback + priors, analyze tasks for improvements, 
 
 **WARNING!**: You can NOT proceed to next phases until needs_tracing=[] for all stored snippets in memory.
 
-### Phase 3: Impact Assessment
+### Phase 3: Impact Assessment & Change Planning
+Before changes, for each project, suggest the minimal necessary changes. Don't overcomplicate. Use existing code where possible.
+```
+For example: "The funA[ProjectA] already does X, so we dont't need to handle X in funB[ProjectB]; just pass the result from funA to funB."
+```
 For each project: Specify impact (Low/Med/High), reasoning, changes (Y/N with specifics), integrations (e.g., contract with B).
 
 ### Phase 4: Roadmap Generation

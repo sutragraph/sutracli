@@ -13,8 +13,8 @@ Search for keywords or patterns in the codebase using ripgrep. Supports single/m
 - case_sensitive: OPTIONAL - Enable sensitivity (default: false) (type: bool?).
 - regex: OPTIONAL - Treat as regex (default: false) (type: bool?).
 - fetch_next_chunk: OPTIONAL - For more results (default: false) (type: bool?).
-- file_paths: OPTIONAL - Comma-separated 'absolute' paths from the root of the file system for targeted search (type: string?).
-- project_name: OPTIONAL - For full-project search (type: string?).
+- file_paths: OPTIONAL - Comma-separated relative file_paths (type: string?).
+- project_name: - For full-project search (type: string?).
 
 ### Usage
 {
@@ -33,7 +33,7 @@ Search for keywords or patterns in the codebase using ripgrep. Supports single/m
 
 ### Guidelines
 Think step-by-step: 'Goal: Find exact terms? Tool: search_keyword. Why: Precise locations.'
-Select one scope: Use file_paths for specific files/dirs or project_name for entire project.
+Use file_paths for specific files/dirs or project_name for entire project.
 Prioritize 3-5 targeted patterns to focus results; use \b for boundaries in regex.
 Fetch next chunk only when indicated.
 Use for codebase only; for files/dirs, prefer list_files.
@@ -43,8 +43,9 @@ When using `regex: false`, never use pipe `|` or special regex characters in the
 1. Function in files:
 {
   "keyword": "getUserById",
-  "file_paths": "/abs/path/src/services/user-service.ts,/abs/path/src/controllers/user-controller.ts",
-  "before_lines": 5,
+  "project_name": "my-awesome-project",
+  "file_paths": "/src/services/user-service.ts, /src/controllers/user-controller.ts",
+  "before_lines": 0,
   "after_lines": 5
 }
 
@@ -52,7 +53,8 @@ When using `regex: false`, never use pipe `|` or special regex characters in the
 {
   "keyword": "function\s+getUserById\s*\(",
   "regex": true,
-  "file_paths": "/abs/path/src/utils/helpers.ts",
+  "project_name": "my-awesome-project",
+  "file_paths": "/src/utils/helpers.ts",
   "before_lines": 0,
   "after_lines": 5
 }
@@ -69,7 +71,7 @@ When using `regex: false`, never use pipe `|` or special regex characters in the
 {
   "keyword": "import.*redis",
   "regex": true,
-  "file_paths": "/abs/path/src/services/cache-service.ts,/abs/path/src/config/database.ts",
+  "file_paths": "/src/services/cache-service.ts, /src/config/database.ts",
   "before_lines": 0,
   "after_lines": 5
 }

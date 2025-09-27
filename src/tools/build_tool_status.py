@@ -47,6 +47,11 @@ def _build_database_status(
     if error:
         status_parts.append(f"[error]Error:[/error]")
         status_parts.append(f"{error}")
+    elif count is not None:
+        if count > 0:
+            status_parts.append(f"[success]{count} results found[/success]")
+        else:
+            status_parts.append(f"[warning]No results found[/warning]")
 
     console.print(f"🗄️  [bold]Database Tool[/bold] → {' → '.join(status_parts)}")
 

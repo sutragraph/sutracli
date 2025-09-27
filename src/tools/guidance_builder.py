@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 from models.agent import AgentAction
+from tools.tool_database.exceptions import DatabaseErrorType
 from tools.utils.constants import (
     DATABASE_ERROR_GUIDANCE,
     GUIDANCE_MESSAGES,
@@ -536,9 +537,12 @@ class DatabaseSearchGuidance(BaseToolGuidance):
         return isinstance(event, dict) and event.get("tool_name") == "database"
 
     def _has_no_results(self, event: Dict[str, Any]) -> bool:
-        """Check if the database query returned no results."""
-        result = event.get("result", "")
-        return isinstance(result, str) and result.endswith(": 0")
+        """Check if the database query returned no results or has an error."""
+        # Check for explicit error
+        if event.get("error"):
+            return True
+        # Check for no results based on total_nodes count
+        return event.get("total_nodes", 0) == 0
 
     def _should_add_batch_guidance(self, event: Dict[str, Any]) -> bool:
         """Check if we should add batch guidance for database results."""
@@ -603,55 +607,57 @@ class DatabaseSearchGuidance(BaseToolGuidance):
         self, event: Dict[str, Any], action: AgentAction
     ) -> Dict[str, Any]:
         """Handle no results case with comprehensive error guidance."""
-        # Build error guidance
-        query_name = action.parameters.get("query_name", "unknown")
-        query_params = self._extract_query_params(action.parameters)
+        error_msg = event.get("error")
+        error_type = event.get("error_type")
+        combined_guidance = ""
 
         no_results_msg = GuidanceFormatter.format_no_results_message("database")
-        error_guidance = self._generate_error_guidance(query_name, query_params)
 
-        # Combine messages
-        combined_guidance = f"{no_results_msg}\n\n{error_guidance}"
+        if error_msg:
+            # Start with the specific error message
+            combined_guidance += f"Database query failed: {error_msg}"
+
+        combined_guidance += f"\n\n{no_results_msg}"
+
+        if error_type:
+            error_type_enum = DatabaseErrorType(error_type)
+            suggestion = self._get_error_guidance(error_type_enum, action)
+
+            combined_guidance += f"\n\nSUGGESTION: {suggestion}"
+
         return GuidanceFormatter.add_prefix_to_data(event, combined_guidance)
 
-    def _extract_query_params(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract relevant query parameters excluding internal ones."""
-        excluded_keys = {"query_name", "code_snippet", "fetch_next_chunk"}
-        return {k: v for k, v in parameters.items() if k not in excluded_keys}
+    def _get_error_guidance(
+        self, error_type: DatabaseErrorType, action: AgentAction
+    ) -> str:
+        """
+        Get appropriate suggestion based on error type.
 
-    def _generate_error_guidance(self, query_name: str, params: Dict[str, Any]) -> str:
-        """Build comprehensive error guidance for failed queries."""
-        guidance_parts = []
+        Args:
+            error_type: The DatabaseErrorType enum value
+            action: The AgentAction for context
 
-        # Parameter-specific guidance
-        if "file_path" in params:
-            guidance_parts.append(
-                f"Ensure file_path '{params['file_path']}' is case-sensitive and complete. "
-                "If unsure, use semantic_search to find the correct path."
+        Returns:
+            Appropriate suggestion string
+        """
+        if error_type == DatabaseErrorType.FILE_NOT_FOUND:
+            return "Verify the file path is correct, or use search_keyword to find the correct path."
+        elif error_type == DatabaseErrorType.MISSING_PARAMETER:
+            return "Ensure all required parameters are provided for the query."
+        elif error_type == DatabaseErrorType.RESOURCE_NOT_FOUND:
+            return "The specified identifier may not exist."
+        elif error_type == DatabaseErrorType.UNKNOWN_QUERY:
+            return "Check the query name spelling and ensure it's supported. Valid queries: GET_FILE_BY_PATH, GET_FILE_BLOCK_SUMMARY, GET_DEPENDENCY_CHAIN, GET_BLOCK_DETAILS."
+        elif error_type == DatabaseErrorType.INVALID_PARAMETER:
+            return (
+                "Check the parameter format and ensure it matches the expected format."
             )
-
-        if "function_name" in params:
-            guidance_parts.append(
-                f"Ensure function_name '{params['function_name']}' is spelled correctly. "
-                "Try semantic_search for similar function names."
-            )
-
-        if "name" in params:
-            guidance_parts.append(
-                f"Ensure name '{params['name']}' exists in the codebase. "
-                "Try semantic_search for partial matches."
-            )
-
-        # Query-specific guidance from constants
-        if query_name in DATABASE_ERROR_GUIDANCE:
-            guidance_parts.append(DATABASE_ERROR_GUIDANCE[query_name])
-
-        # General guidance
-        guidance_parts.append(
-            "Do not reuse these exact parameters. Try different search methods or terms."
-        )
-
-        return " ".join(guidance_parts)
+        elif error_type == DatabaseErrorType.DATABASE_CONNECTION:
+            return "Something went wrong. Could not retrieve data from database."
+        elif error_type == DatabaseErrorType.NO_DATA_AVAILABLE:
+            return "Check if the specified resource exists or try different query parameters."
+        else:
+            return "Check the error message and try again with corrected parameters."
 
 
 class ListFilesGuidance(BaseToolGuidance):
