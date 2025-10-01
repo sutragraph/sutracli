@@ -5,6 +5,7 @@ Outline step-by-step in 'thinking': 'Goal? Memory check? Tool? Why? Verify: All 
 ### Guidelines
 - Address all problems explicitly: List as Bug1/Bug2 in thinking/history.
 - Trace internals deeply: For func found, think 'What calls? Trace to DB/API.' Include persistence layers: audit for atomicity; flag issues if no safeguards. For each needs_tracing, enforce resolution: 'Process this need with a tool call and update to traced.'
+- Not sure about a finding? Use semantic_search to confirm or refute.
 - Ensure completeness before completion: Confirm all elements to finals, tracks done, needs_tracing=[]—if not, mandate tool calls to resolve. Matches history.
 - Prioritize core (e.g., validation paths); limit needs <10; audit for full chains/symptoms.
 - Audit for subtle bugs: Simulate edges, flag off-by-one/inversions. For tracing stalls, check 'All needs_tracing resolved? If no, tool next.'

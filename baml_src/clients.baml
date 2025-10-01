@@ -66,6 +66,8 @@ client<llm> GCPVertexAI {
     generationConfig {
       maxOutputTokens env.GEMINI_MAX_TOKENS
       temperature 0.1
+      topP 1
+      topK 1
     }
   }
 }

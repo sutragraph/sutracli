@@ -55,7 +55,7 @@ Example: 'Found func → Trace internals first. If needs remain, do not complete
 {
   "tool_name": "attempt_completion",
   "parameters": {
-    "projects": [ /* Array of project objects */ ],
+    "projects": [ /* Array of project objects */ ], Important: Omit including projects with no changes or impact.
     "summary": "executive summary"
   }
 }
@@ -70,7 +70,6 @@ or
 }
 
 ### Guidelines
-Think step-by-step: 'All traces complete in memory? Projects relevant? Use attempt_completion. Why: Finalize roadmaps.'
 Focus on relevant projects with verified impacts; provide atomic, detailed instructions for changes.
 Limit contracts to essential integrations; use role to define provider/consumer. If role is both list contract twice with different roles.
 Use placeholders for flexible values (e.g., {API_PREFIX}).
