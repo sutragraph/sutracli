@@ -8,6 +8,14 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
+# IMPORTANT: Setup logging FIRST before any imports that use loguru
+# This prevents debug logs from appearing when log level is INFO
+from src.utils.logging import setup_logging
+
+# Set up basic INFO logging early to prevent debug logs during imports
+# This will be reconfigured later in __init__ if a different level is requested
+setup_logging("INFO")
+
 # Prompt toolkit imports for arrow key navigation
 from prompt_toolkit import Application, prompt
 from prompt_toolkit.key_binding import KeyBindings
@@ -22,10 +30,12 @@ from rich.table import Table
 from rich.text import Text
 
 from src.agent_management.prerequisites.agent_config import get_agent_registry
+from src.agent_management.prerequisites.indexing_handler import (
+    IndexingPrerequisitesHandler,
+)
 from src.agents_new import Agent
 from src.config.settings import reload_config
 from src.utils.console import console
-from src.utils.logging import setup_logging
 from src.utils.version_checker import show_update_notification
 
 
@@ -36,59 +46,19 @@ class UserCancelledError(Exception):
 
 
 class ModernSutraKit:
-    def _prompt_api_key(self, prompt_text, is_password=True, error_message=None):
-        """Utility to prompt for API key or secret with validation."""
-        while True:
-            key = prompt(prompt_text, is_password=is_password)
-            if key.strip():
-                return key
-            console.error(
-                error_message or f"{prompt_text} is required and cannot be empty."
-            )
-
-    def _prompt_input(self, prompt_text, default=None, error_message=None):
-        """Generic utility to prompt for any required input with validation and optional default."""
-        while True:
-            if default is not None:
-                value = Prompt.ask(prompt_text, default=default)
-            else:
-                value = Prompt.ask(prompt_text)
-            if value.strip():
-                return value
-            console.error(
-                error_message or f"{prompt_text} is required and cannot be empty."
-            )
-
-    def _prompt_max_tokens(self, info_message=None, dim_message=None, default=None):
-        """Utility to prompt for max tokens with validation and optional info/dim messages."""
-        if info_message:
-            console.info(info_message)
-        if dim_message:
-            console.dim(dim_message)
-        while True:
-            if default is not None:
-                max_tokens = Prompt.ask("Max tokens", default=str(default))
-            else:
-                max_tokens = Prompt.ask("Max tokens")
-            if max_tokens.strip():
-                try:
-                    int(max_tokens.strip())
-                    return max_tokens
-                except ValueError:
-                    console.error("Max tokens must be a valid number.")
-            else:
-                console.error("Max tokens is required and cannot be empty.")
-
     """Modern interactive CLI for SutraGraph."""
 
     def __init__(self, log_level: str = "INFO"):
         """Initialize the modern CLI."""
         self.config_path = Path.home() / ".sutra" / "config" / "system.json"
-        self.agent_registry = get_agent_registry()
         self.log_level = log_level
 
-        # Setup logging with the specified level (default: INFO)
-        setup_logging(log_level)
+        # Reconfigure logging with the requested level (if different from initial INFO setup)
+        if log_level != "INFO":
+            setup_logging(log_level)
+
+        self.agent_registry = get_agent_registry()
+        self.indexing_handler = IndexingPrerequisitesHandler()
 
     def print_banner(self):
         """Print the welcome banner."""
@@ -189,6 +159,49 @@ class ModernSutraKit:
 
         except Exception:
             return False
+
+    def _prompt_api_key(self, prompt_text, is_password=True, error_message=None):
+        """Utility to prompt for API key or secret with validation."""
+        while True:
+            key = prompt(prompt_text, is_password=is_password)
+            if key.strip():
+                return key
+            console.error(
+                error_message or f"{prompt_text} is required and cannot be empty."
+            )
+
+    def _prompt_input(self, prompt_text, default=None, error_message=None):
+        """Generic utility to prompt for any required input with validation and optional default."""
+        while True:
+            if default is not None:
+                value = Prompt.ask(prompt_text, default=default)
+            else:
+                value = Prompt.ask(prompt_text)
+            if value.strip():
+                return value
+            console.error(
+                error_message or f"{prompt_text} is required and cannot be empty."
+            )
+
+    def _prompt_max_tokens(self, info_message=None, dim_message=None, default=None):
+        """Utility to prompt for max tokens with validation and optional info/dim messages."""
+        if info_message:
+            console.info(info_message)
+        if dim_message:
+            console.dim(dim_message)
+        while True:
+            if default is not None:
+                max_tokens = Prompt.ask("Max tokens", default=str(default))
+            else:
+                max_tokens = Prompt.ask("Max tokens")
+            if max_tokens.strip():
+                try:
+                    int(max_tokens.strip())
+                    return max_tokens
+                except ValueError:
+                    console.error("Max tokens must be a valid number.")
+            else:
+                console.error("Max tokens is required and cannot be empty.")
 
     def setup_llm_provider(self):
         """Interactive LLM provider setup with arrow keys."""
@@ -817,7 +830,32 @@ class ModernSutraKit:
                 self._run_indexing(current_dir)
 
             if agent_config.requires_incremental_indexing:
-                self._run_incremental_indexing()
+                # Run incremental indexing and get the changes
+                changes_by_project = self._run_incremental_indexing_and_get_changes()
+
+                if (
+                    agent_config.requires_incremental_cross_indexing
+                    and changes_by_project
+                ):
+                    # Create checkpoint from actual incremental indexing changes
+                    self.indexing_handler.create_checkpoint_from_incremental_changes(
+                        changes_by_project
+                    )
+
+                    # Check if there are changes for incremental cross-indexing
+                    if self.indexing_handler.has_incremental_cross_indexing_changes():
+                        # Prompt for incremental cross-indexing after incremental indexing
+                        if Confirm.ask(
+                            f"Do you want to run incremental cross-indexing before running {agent_enum.value}?",
+                            default=False,
+                        ):
+                            self.indexing_handler.run_incremental_cross_indexing()
+                    else:
+                        # No changes detected, skip silently
+                        console.info(
+                            "No changes detected for incremental cross-indexing"
+                        )
+                        console.dim("   • Skipping incremental cross-indexing")
 
             # Check if cross-indexing is required
             if agent_config.requires_cross_indexing:
@@ -863,43 +901,48 @@ class ModernSutraKit:
             console.error(f"Indexing failed: {e}")
             raise
 
-    def _run_incremental_indexing(self):
-        """Run incremental indexing for all projects in database."""
+    def _run_incremental_indexing_and_get_changes(self):
+        """Run incremental indexing and return the changes found by project."""
         console.print()
-        console.info("Starting incremental indexing for all projects")
-        console.dim("   • Checking for changes in all projects")
-        console.dim("   • Processing only modified files")
+        console.info("Starting incremental indexing")
 
         try:
-            from src.agent_management.prerequisites.indexing_handler import (
-                IndexingPrerequisitesHandler,
+            # Execute incremental indexing for all projects and capture changes with old content
+            result = (
+                self.indexing_handler.handle_multiple_project_indexing_with_old_content()
             )
 
-            # Initialize the indexing handler
-            indexing_handler = IndexingPrerequisitesHandler()
+            # Extract changes by project from the result
+            changes_by_project = {}
 
-            # Execute incremental indexing for all projects
-            result = indexing_handler.handle_multiple_project_indexing()
+            if result["status"] in ["completed", "partial"]:
+                console.success(f"Incremental indexing completed successfully")
 
-            # Handle results
-            if result["status"] == "completed":
-                console.success(f"{result['message']}")
-            elif result["status"] == "partial":
-                console.warning(f"{result['message']}")
-                console.print(
-                    f"   Successfully processed: {result['indexed_projects']}"
-                )
-                console.print(f"   Failed: {result['failed_projects']}")
-                console.print(f"   Skipped: {result['skipped_projects']}")
+                # Get the actual changes from each project that was processed
+                if "results" in result:
+                    for project_info in result["results"]:
+                        if (
+                            isinstance(project_info, dict)
+                            and project_info.get("status") == "success"
+                        ):
+                            if "changes" in project_info:
+                                project_id = project_info.get("project_id", "unknown")
+                                changes_by_project[project_id] = project_info["changes"]
+
             elif result["status"] == "skipped":
-                console.info(f"{result['message']}")
+                console.info("No changes detected for incremental indexing")
+                return {}
             else:
-                console.error(f"{result['message']}")
+                console.error(f"Incremental indexing failed: {result['message']}")
                 if result.get("error"):
                     console.print(f"   Error: {result['error']}")
+                return {}
+
+            return changes_by_project
+
         except Exception as e:
             console.error(f"Error during incremental indexing: {e}")
-            console.error(f"Unexpected error: {e}")
+            return {}
 
     def _run_cross_indexing(self, project_dir: Path):
         """Run cross-indexing for the project."""
@@ -943,6 +986,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             title_align="left",
         )
 
+        console.print()
         console.print(warning_panel)
         console.print()
 

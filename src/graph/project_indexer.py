@@ -1,27 +1,29 @@
 """Incremental indexing for efficient database updates when code changes."""
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from loguru import logger
 
-from config.settings import config
-from embeddings import get_embedding_engine
-from graph.converter import ASTToSqliteConverter
-from graph.graph_operations import GraphOperations
-from graph.sqlite_client import SQLiteConnection
-from indexer.ast_parser import ASTParser
-from models.schema import ExtractionData, FileData
-from utils.file_utils import (
+from src.embeddings import get_embedding_engine
+from src.graph.converter import ASTToSqliteConverter
+from src.graph.graph_operations import GraphOperations
+from src.graph.sqlite_client import SQLiteConnection
+from src.indexer.ast_parser import ASTParser
+from src.models.schema import ExtractionData, FileData
+from src.utils.console import console
+from src.utils.file_utils import (
     get_extraction_file_path,
     get_last_extraction_file_path,
-    should_ignore_file,
+    read_file_content,
 )
 
 # Import indexer functions for file processing
-from utils.hash_utils import compute_directory_hashes
-from utils.helpers import load_json_file
+from src.utils.hash_utils import compute_directory_hashes
+from src.utils.helpers import load_json_file
+from src.utils.json_serializer import make_json_serializable
 
 
 class ProjectIndexer:
@@ -63,28 +65,30 @@ class ProjectIndexer:
             project_path: Path to the project directory
         """
         try:
-            print(f"⚠️  Project '{project_name}' not found in database")
-            print("🔄 Starting automatic indexing...")
-            print(
+            console.print(f"⚠️  Project '{project_name}' not found in database")
+            console.print("🔄 Starting automatic indexing...")
+            console.print(
                 "   This will analyze the codebase and generate embeddings for better responses."
             )
-            print("   Please wait while the project is being indexed...\n")
+            console.print("   Please wait while the project is being indexed...\n")
 
             parser_output_path = self._parse_repository(project_name, project_path)
 
             self._store_to_database(parser_output_path, project_name, project_path)
 
             # Step 2: Generate embeddings for the stored data
-            print("   Step 2: Generating embeddings for semantic search...")
+            console.print("   Step 2: Generating embeddings for semantic search...")
             self._generate_embeddings_for_project(parser_output_path, project_name)
 
-            print("\n✅ Project indexing completed successfully!")
-            print("   The agent is now ready to provide intelligent assistance.\n")
+            console.print("\n✅ Project indexing completed successfully!")
+            console.print(
+                "   The agent is now ready to provide intelligent assistance.\n"
+            )
 
         except Exception as e:
             logger.error(f"Error during full indexing: {e}")
-            print(f"❌ Full indexing failed: {e}")
-            print("   Continuing with limited functionality.")
+            console.print(f"❌ Full indexing failed: {e}")
+            console.print("   Continuing with limited functionality.")
             raise
 
     def incremental_index_project(self, project_name: str) -> Dict[str, Any]:
@@ -161,6 +165,11 @@ class ProjectIndexer:
                         "codes_removed": 0,
                         "files_processed": 0,
                     },
+                    "changes": {
+                        "changed_files": set(),
+                        "new_files": set(),
+                        "deleted_files": set(),
+                    },
                 }
 
             # Step 4: Parse changed files and update extraction results
@@ -196,6 +205,7 @@ class ProjectIndexer:
                 "nodes_added": stats["nodes_added"],
                 "relationships_added": stats["relationships_added"],
                 "memory_updates": memory_updates,
+                "changes": changes,  # Include actual file changes for checkpoint creation
             }
 
         except Exception as e:
@@ -268,6 +278,48 @@ class ProjectIndexer:
             "deleted_files": deleted_files,
         }
 
+    def detect_project_changes(self, project_path: Path, project_name: str):
+        """
+        Detect changes in a project without running full incremental indexing.
+
+        Args:
+            project_path: Path to the project directory
+            project_name: Name of the project
+
+        Returns:
+            Dictionary with sets of changed_files, new_files, and deleted_files
+        """
+        try:
+            # Get current file hashes for the project
+            current_hashes = self._compute_current_file_hashes(project_path)
+
+            # Get project from database
+            project = self.connection.get_project(project_name)
+            if not project:
+                logger.warning(f"Project {project_name} not found in database")
+                return {
+                    "changed_files": set(),
+                    "new_files": set(),
+                    "deleted_files": set(),
+                }
+
+            # Get database hashes for the project
+            db_hashes = self._get_db_file_hashes(project.id)
+
+            # Compare and identify changes
+            changes = self._identify_file_changes(current_hashes, db_hashes)
+
+            return changes
+
+        except Exception as e:
+            logger.error(f"Error detecting changes for project {project_name}: {e}")
+            # Return empty changes on error
+            return {
+                "changed_files": set(),
+                "new_files": set(),
+                "deleted_files": set(),
+            }
+
     def _parse_and_update_extraction_results(
         self, changes: Dict[str, Set[Path]], project_name: str
     ) -> Path:
@@ -326,7 +378,7 @@ class ProjectIndexer:
                 if deleted_file_str in updated_files:
                     del updated_files[deleted_file_str]
                     logger.debug(
-                        f"🗑️ Removed deleted file from results: {deleted_file}"
+                        f"🗑️  Removed deleted file from results: {deleted_file}"
                     )
 
             # Get all changed and new files that need parsing
@@ -370,6 +422,21 @@ class ProjectIndexer:
                     # Process relationships only for the changed files
                     parser.process_relationships(parsed_results, id_to_path)
 
+                # Helper function to serialize CodeBlock objects with proper enum handling
+                def serialize_block(block):
+                    """Convert CodeBlock to dict with proper enum serialization."""
+                    if hasattr(block, "model_dump"):
+                        # Use model_dump with mode='json' to properly serialize enums
+                        return block.model_dump(mode="json")
+                    elif hasattr(block, "dict"):
+                        block_dict = block.dict()
+                        # Manually convert enum to string if needed
+                        if hasattr(block_dict.get("type"), "value"):
+                            block_dict["type"] = block_dict["type"].value
+                        return block_dict
+                    else:
+                        return block
+
                 # Convert parsed results to FileData objects and update the files dict
                 for file_path_str, result in parsed_results.items():
                     file_data = FileData(
@@ -378,7 +445,7 @@ class ProjectIndexer:
                         language=result["language"],
                         content=result["content"],
                         content_hash=result["content_hash"],
-                        blocks=result["blocks"],
+                        blocks=[serialize_block(block) for block in result["blocks"]],
                         relationships=result.get("relationships", []),
                         unsupported=result.get("unsupported", False),
                     )
@@ -698,7 +765,7 @@ class ProjectIndexer:
         self, parser_output_path: Path, project_name: str
     ):
         """Generate embeddings for all files in the project."""
-        # Get project ID from database
+        # Get project from database
         project = self.connection.get_project(project_name)
         if not project:
             raise Exception(
@@ -726,7 +793,371 @@ class ProjectIndexer:
         print(f"      Total chunks: {embedding_stats['total_chunks']}")
         print(f"      Blocks embedded: {embedding_stats['blocks_processed']}")
 
-    # Backward compatibility
-    def reindex_database(self, project_name: str) -> Dict[str, Any]:
-        """Backward compatibility method for incremental indexing."""
-        return self.incremental_index_project(project_name)
+    # Incremental Cross-Indexing
+
+    def _load_cross_indexing_checkpoint(self):
+        """Load the checkpoint from incremental cross-indexing."""
+        checkpoint_file = self._get_checkpoint_file_path()
+
+        try:
+            if not checkpoint_file.exists():
+                return None
+
+            # Use existing JSON loading pattern
+            checkpoint_data = load_json_file(checkpoint_file)
+
+            # Validate checkpoint structure for changes-only format
+            required_fields = ["timestamp", "changes", "version"]
+            if not all(field in checkpoint_data for field in required_fields):
+                console.warning("   • Checkpoint file is corrupted, starting fresh")
+                return None
+
+            return checkpoint_data
+
+        except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
+            console.warning(f"   • Error loading checkpoint: {e}")
+            console.dim("   • Starting with fresh checkpoint")
+            return None
+        except Exception as e:
+            console.error(f"   • Unexpected error loading checkpoint: {e}")
+            return None
+
+    def _create_diff_from_checkpoint(self, checkpoint=None):
+        """Create diff from checkpoint changes that only tracks actual file changes."""
+
+        try:
+            if checkpoint is None:
+                console.dim("   • No checkpoint found, no accumulated changes")
+                return {
+                    "added": {},
+                    "modified": {},
+                    "deleted": {},
+                    "accumulated_changes": {},
+                }
+
+            # Get tracked changes from checkpoint
+            checkpoint_changes = checkpoint.get("changes", {})
+
+            # Separate changes by type for the expected format
+            added = {}
+            modified = {}
+            deleted = {}
+
+            for file_key, change_data in checkpoint_changes.items():
+                change_type = change_data.get("change_type")
+                if change_type == "added":
+                    added[file_key] = {
+                        "change_type": "added",
+                        "current_content": change_data.get("new_code", ""),
+                    }
+                elif change_type == "modified":
+                    modified[file_key] = {
+                        "change_type": "modified",
+                        "baseline_content": change_data.get("old_code", ""),
+                        "current_content": change_data.get("new_code", ""),
+                    }
+                elif change_type == "deleted":
+                    deleted[file_key] = {
+                        "change_type": "deleted",
+                        "baseline_content": change_data.get("old_code", ""),
+                    }
+
+            return {
+                "added": added,
+                "modified": modified,
+                "deleted": deleted,
+                "accumulated_changes": checkpoint_changes,
+            }
+
+        except Exception as e:
+            console.error(f"   • Error creating diff: {e}")
+            return {
+                "added": {},
+                "modified": {},
+                "deleted": {},
+                "accumulated_changes": {},
+            }
+
+    def _get_current_project_hashes_and_content(self):
+        """Get current hashes and content for all projects using same logic as incremental indexing."""
+        current_hashes = {}
+        current_content = {}
+
+        try:
+            # Use same project discovery as incremental indexing
+            projects = self.connection.list_all_projects()
+
+            console.dim(f"   • Scanning {len(projects)} projects for current state")
+
+            for project in projects:
+                project_path = Path(project.path)
+                project_name = project.name
+
+                if not project_path.exists():
+                    console.dim(f"   • Skipping missing project: {project_name}")
+                    continue
+
+                # Use existing method to compute hashes
+                project_hashes = self._compute_current_file_hashes(project_path)
+                console.dim(
+                    f"   • Project '{project_name}': {len(project_hashes)} files"
+                )
+
+                # Convert to relative paths and also read content
+                for abs_path, file_hash in project_hashes.items():
+                    try:
+                        relative_path = str(abs_path.relative_to(project_path))
+                        file_key = f"{project_name}:{relative_path}"
+                        current_hashes[file_key] = file_hash
+
+                        # Read content using existing utility
+                        content = read_file_content(abs_path)
+                        current_content[file_key] = content or ""
+                    except (ValueError, Exception):
+                        continue
+
+            console.dim(f"   • Total files discovered: {len(current_hashes)}")
+            return current_hashes, current_content
+
+        except Exception as e:
+            console.error(f"   • Error getting project hashes: {e}")
+            return {}, {}
+
+    def _process_incremental_cross_indexing(self, diff):
+        """Process incremental cross-indexing with accumulated changes."""
+        console.info("📊 Processing accumulated changes for incremental cross-indexing:")
+
+        accumulated_changes = diff.get("accumulated_changes", {})
+
+        # TODO: Implement actual incremental cross-indexing logic here
+        # This should process the accumulated changes and update cross-references:
+        # 1. Parse NET changes for functions, classes, imports, etc.
+        # 2. Update existing cross-indexing data for modified files
+        # 3. Add new cross-references for added files
+        # 4. Clean up cross-references for deleted files
+        # 5. Handle dependency changes efficiently
+        # 6. Maintain data consistency across all changes
+
+        added_count = sum(
+            1
+            for change in accumulated_changes.values()
+            if change["change_type"] == "added"
+        )
+        modified_count = sum(
+            1
+            for change in accumulated_changes.values()
+            if change["change_type"] == "modified"
+        )
+        deleted_count = sum(
+            1
+            for change in accumulated_changes.values()
+            if change["change_type"] == "deleted"
+        )
+
+        if added_count > 0:
+            console.print(f"   🆕 Processing {added_count} added files:")
+            for file_key, change_data in accumulated_changes.items():
+                if change_data["change_type"] == "added":
+                    console.dim(f"     • {file_key} (new file)")
+
+        if modified_count > 0:
+            console.print(f"   📝 Processing {modified_count} modified files:")
+            for file_key, change_data in accumulated_changes.items():
+                if change_data["change_type"] == "modified":
+                    net_diff = change_data.get("net_diff", {})
+                    added_lines = len(net_diff.get("lines_added", []))
+                    removed_lines = len(net_diff.get("lines_removed", []))
+                    console.dim(
+                        f"     • {file_key} (+{added_lines}/-{removed_lines} lines)"
+                    )
+
+        if deleted_count > 0:
+            console.print(f"   🗑️  Processing {deleted_count} deleted files:")
+            for file_key, change_data in accumulated_changes.items():
+                if change_data["change_type"] == "deleted":
+                    console.dim(f"     • {file_key} (cleanup cross-references)")
+
+        console.dim("   • Accumulated changes processed with NET differences")
+        console.dim("   • Ready for cross-indexing logic implementation")
+
+        return True
+
+    def _save_cross_indexing_checkpoint_reset_baseline(self):
+        """Clear checkpoint after successful incremental cross-indexing processing."""
+
+        try:
+            checkpoint_file = self._get_checkpoint_file_path()
+
+            # Delete the checkpoint file since processing is complete
+            if checkpoint_file.exists():
+                checkpoint_file.unlink()
+
+            return True
+
+        except Exception as e:
+            console.error(f"   • Error clearing checkpoint: {e}")
+            return False
+
+    def create_checkpoint_from_incremental_indexing(
+        self, incremental_changes, project_id
+    ):
+        """Create or update checkpoint from actual incremental indexing changes."""
+
+        try:
+            # Load existing checkpoint
+            checkpoint = self._load_cross_indexing_checkpoint()
+            existing_changes = checkpoint.get("changes", {}) if checkpoint else {}
+
+            # Get pre-fetched old content
+            old_content = incremental_changes.get("old_content", {})
+
+            # Process incremental indexing changes
+            updated_changes = dict(existing_changes)  # Copy existing changes
+
+            # Handle changed files (modified)
+            for file_path in incremental_changes.get("changed_files", set()):
+                file_key = f"{project_id}:{file_path}"
+
+                # Read current content
+                current_content = ""
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        current_content = f.read()
+                except Exception:
+                    current_content = ""
+
+                if file_key in existing_changes:
+                    # File was already changed, just update new_code, keep original old_code
+                    updated_changes[file_key] = {
+                        "change_type": "modified",
+                        "old_code": existing_changes[file_key].get("old_code", ""),
+                        "new_code": current_content,
+                    }
+                else:
+                    # First time this file is changed, use pre-fetched old content
+                    old_code = old_content.get(str(file_path), "")
+                    updated_changes[file_key] = {
+                        "change_type": "modified",
+                        "old_code": old_code,
+                        "new_code": current_content,
+                    }
+
+            # Handle new files (added)
+            for file_path in incremental_changes.get("new_files", set()):
+                file_key = f"{project_id}:{file_path}"
+
+                # Read new file content
+                new_content = ""
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        new_content = f.read()
+                except Exception:
+                    new_content = ""
+
+                if file_key in existing_changes:
+                    # Previously deleted file is now re-added, convert to modified
+                    old_code = existing_changes[file_key].get("old_code", "")
+                    updated_changes[file_key] = {
+                        "change_type": "modified",
+                        "old_code": old_code,
+                        "new_code": new_content,
+                    }
+                else:
+                    # Truly new file
+                    updated_changes[file_key] = {
+                        "change_type": "added",
+                        "new_code": new_content,
+                    }
+
+            # Handle deleted files
+            for file_path in incremental_changes.get("deleted_files", set()):
+                file_key = f"{project_id}:{file_path}"
+
+                if file_key in existing_changes:
+                    # File was previously changed and now deleted
+                    updated_changes[file_key] = {
+                        "change_type": "deleted",
+                        "old_code": existing_changes[file_key].get("old_code", ""),
+                    }
+                else:
+                    # File was not in checkpoint, use pre-fetched old content
+                    old_code = old_content.get(str(file_path), "")
+                    updated_changes[file_key] = {
+                        "change_type": "deleted",
+                        "old_code": old_code,
+                    }
+
+            # Save updated checkpoint
+            return self._save_checkpoint_with_changes(updated_changes)
+
+        except Exception as e:
+            console.error(
+                f"   • Error creating checkpoint from incremental indexing: {e}"
+            )
+            return False
+
+    def _save_checkpoint_with_changes(self, changes):
+        """Save checkpoint with tracked file changes."""
+
+        try:
+            checkpoint_file = self._get_checkpoint_file_path()
+            checkpoint_file.parent.mkdir(parents=True, exist_ok=True)
+
+            # Create checkpoint data with changes
+            checkpoint_data = {
+                "version": "1.0",
+                "timestamp": datetime.now().isoformat(),
+                "changes": changes,
+                "metadata": {
+                    "total_changes": len(changes),
+                    "created_by": "sutra_cli_incremental_cross_indexing",
+                    "last_updated": datetime.now().isoformat(),
+                },
+            }
+
+            # Use existing JSON utilities
+            serializable_data = make_json_serializable(checkpoint_data)
+
+            # Save using same pattern as extraction files
+            with open(checkpoint_file, "w", encoding="utf-8") as f:
+                json.dump(serializable_data, f, indent=2, ensure_ascii=False)
+
+            return True
+
+        except Exception as e:
+            console.error(f"   • Error saving checkpoint: {e}")
+            return False
+
+    def _get_checkpoint_file_path(self) -> Path:
+        """Get the path to the single checkpoint file."""
+        from config import config
+
+        base_path = Path(config.storage.data_dir) / "checkpoints"
+        return base_path / "incremental_cross_indexing_checkpoint.json"
+
+    def _get_file_content_before_changes(self, file_path, project_name):
+        """Get file content from before changes (from database)."""
+        try:
+            # Get project from database
+            project = self.connection.get_project(project_name)
+            if not project:
+                return ""
+
+            # Query database for file content directly
+            query = """
+                SELECT content FROM files
+                WHERE project_id = ? AND file_path = ?
+                ORDER BY id DESC
+                LIMIT 1
+            """
+
+            results = self.connection.execute_query(query, (project.id, str(file_path)))
+
+            if results and len(results) > 0:
+                return results[0].get("content", "")
+
+            return ""
+
+        except Exception as e:
+            logger.debug(f"Could not get previous content for {file_path}: {e}")
+            return ""

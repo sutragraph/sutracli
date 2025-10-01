@@ -12,10 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from utils.file_utils import (
     get_extraction_file_path,
-    get_language_from_extension,
     get_last_extraction_file_path,
-    is_text_file,
-    should_ignore_directory,
     should_ignore_file,
 )
 from utils.hash_utils import compute_directory_hashes, compute_file_hash
