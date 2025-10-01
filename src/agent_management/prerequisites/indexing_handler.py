@@ -3,12 +3,21 @@ Prerequisites indexing handler for roadmap agent.
 Handles incremental indexing of all projects before roadmap agent execution.
 """
 
+import difflib
+import json
 import time
 from pathlib import Path
 from typing import Any, Dict, List
 
 from loguru import logger
+from rich.console import Group
+from rich.panel import Panel
+from rich.rule import Rule
+from rich.syntax import Syntax
+from rich.table import Table
+from rich.text import Text
 
+from src.graph.graph_operations import GraphOperations
 from src.graph.project_indexer import ProjectIndexer
 from src.graph.sqlite_client import SQLiteConnection
 from src.models.schema import Project
@@ -16,13 +25,382 @@ from src.utils.console import console
 
 
 class IndexingPrerequisitesHandler:
-    """Handles incremental indexing of all projects as prerequisite for roadmap agent."""
-
     def __init__(self):
         """Initialize the indexing prerequisites handler."""
         self.connection = SQLiteConnection()
+        self.graph_ops = GraphOperations()
         self.indexer = ProjectIndexer()
         logger.debug("🔧 IndexingPrerequisitesHandler initialized")
+
+    def run_incremental_cross_indexing(self):
+        """Run incremental cross-indexing with simplified checkpointing functionality."""
+        console.print()
+        console.info("Starting incremental cross-indexing")
+
+        try:
+            # 1. Load last checkpoint from incremental cross-indexing
+            checkpoint = self.indexer._load_cross_indexing_checkpoint()
+
+            # 2. Calculate diff between checkpoint and current state
+            diff = self.indexer._create_diff_from_checkpoint(checkpoint)
+
+            # 3. Process only the changed cross-references
+            if diff["added"] or diff["modified"] or diff["deleted"]:
+                total_to_process = len(diff["added"]) + len(diff["modified"])
+                console.info(f"Processing {total_to_process} accumulated changes")
+                console.dim(
+                    "   • This includes all NET changes since last successful processing"
+                )
+                console.dim(
+                    "   • Files changed multiple times between runs are processed once"
+                )
+
+                # Display detailed git-style diff
+                self._display_detailed_diff(diff)
+
+                # Display comprehensive summary
+                self._display_diff_summary(diff)
+
+                success = self.indexer._process_incremental_cross_indexing(diff)
+
+                if success:
+                    # 4. Reset checkpoint baseline to current state (clears the diff)
+                    self.indexer._save_cross_indexing_checkpoint_reset_baseline()
+                    console.success("Incremental cross-indexing completed successfully")
+                    console.dim(
+                        "   • Checkpoint baseline reset - next diff will start fresh"
+                    )
+                else:
+                    console.error("Incremental cross-indexing failed during processing")
+            else:
+                console.info(
+                    "No changes detected - skipping incremental cross-indexing"
+                )
+
+        except Exception as e:
+            console.error(f"Error during incremental cross-indexing: {e}")
+
+    def create_checkpoint_from_incremental_changes(self, changes_by_project):
+        """Create checkpoint from actual incremental indexing changes."""
+        try:
+            total_changes = 0
+            for project_id, changes in changes_by_project.items():
+                if (
+                    changes["changed_files"]
+                    or changes["new_files"]
+                    or changes["deleted_files"]
+                ):
+                    success = self.indexer.create_checkpoint_from_incremental_indexing(
+                        changes, project_id
+                    )
+                    if success:
+                        change_count = (
+                            len(changes["changed_files"])
+                            + len(changes["new_files"])
+                            + len(changes["deleted_files"])
+                        )
+                        total_changes += change_count
+
+            if total_changes > 0:
+                console.success(f"Checkpoint created with {total_changes} changes")
+                return True
+            else:
+                return True
+
+        except Exception as e:
+            console.error(f"Error creating checkpoint from changes: {e}")
+            return False
+
+    def _display_detailed_diff(self, diff):
+        """Display detailed git-style diff information with line numbers."""
+        console.print()
+        console.print("[bold underline]📋 Detailed Changes[/bold underline]")
+        console.print()
+
+        # Display added files
+        if diff["added"]:
+            console.print(f"[success]➕ Added Files ({len(diff['added'])})[/success]")
+            for file_key, file_data in diff["added"].items():
+                panel = Panel(
+                    self._build_added_summary(file_data),
+                    title=f"📄 {file_key}",
+                    title_align="left",
+                    border_style="success",
+                )
+                console.print(panel)
+                console.print()
+
+        # Display modified files with detailed diffs
+        if diff["modified"]:
+            console.print(
+                f"[warning]📝 Modified Files ({len(diff['modified'])})[/warning]"
+            )
+            for file_key, file_data in diff["modified"].items():
+                baseline_content = file_data.get("baseline_content", "")
+                current_content = file_data.get("current_content", "")
+
+                if baseline_content and current_content:
+                    baseline_lines = baseline_content.splitlines()
+                    current_lines = current_content.splitlines()
+
+                    # Generate unified diff
+                    diff_lines = list(
+                        difflib.unified_diff(
+                            baseline_lines,
+                            current_lines,
+                            fromfile=f"a/{file_key}",
+                            tofile=f"b/{file_key}",
+                            lineterm="",
+                            n=3,  # 3 lines of context
+                        )
+                    )
+
+                    rendered_diff = self._render_diff_panel(file_key, diff_lines)
+                    console.print(rendered_diff)
+                else:
+                    console.print(
+                        Panel(
+                            Text(
+                                "Content changed (no baseline or current content available)",
+                                style="dim",
+                            ),
+                            title=f"📄 {file_key}",
+                            title_align="left",
+                            border_style="warning",
+                        )
+                    )
+                console.print()
+
+        # Display deleted files
+        if diff["deleted"]:
+            console.print(f"[error]🗑️  Deleted Files ({len(diff['deleted'])})[/error]")
+            for file_key, file_data in diff["deleted"].items():
+                baseline_content = file_data.get("baseline_content", "")
+                if baseline_content:
+                    summary = self._build_deleted_summary(baseline_content)
+                    console.print(
+                        Panel(
+                            summary,
+                            title=f"📄 {file_key}",
+                            title_align="left",
+                            border_style="error",
+                        )
+                    )
+                else:
+                    console.print(
+                        Panel(
+                            Text("File deleted", style="error"),
+                            title=f"🗑️  {file_key}",
+                            title_align="left",
+                            border_style="error",
+                        )
+                    )
+                console.print()
+
+        console.print(Rule(style="dim"))
+        console.print()
+
+    def _build_added_summary(self, file_data: Dict[str, Any]) -> Text:
+        """Summarize newly added file without dumping the entire content."""
+        current_content = file_data.get("current_content", "")
+        lines = current_content.splitlines()
+        text = Text()
+        text.append("File added", style="success")
+        if lines:
+            text.append(f" • {len(lines)} lines", style="dim")
+        if file_data.get("sha"):
+            text.append(f" • sha {file_data['sha'][:7]}", style="dim")
+        return text if text.plain else Text("File added", style="success")
+
+    @staticmethod
+    def _build_diff_stats(diff_lines: List[str]) -> Table | None:
+        """Construct a Rich table with diff statistics."""
+        added_lines = sum(
+            1
+            for line in diff_lines
+            if line.startswith("+") and not line.startswith("+++")
+        )
+        removed_lines = sum(
+            1
+            for line in diff_lines
+            if line.startswith("-") and not line.startswith("---")
+        )
+
+        if added_lines == 0 and removed_lines == 0:
+            return None
+
+        table = Table.grid(padding=(0, 1))
+        table.add_column(justify="left")
+        if added_lines:
+            table.add_row(f"[success]＋ {added_lines} lines[/success]")
+        if removed_lines:
+            table.add_row(f"[error]－ {removed_lines} lines[/error]")
+        return table
+
+    @staticmethod
+    def _build_deleted_summary(content: str) -> Text:
+        """Summarize deleted file."""
+        lines = content.splitlines()
+        text = Text("File deleted", style="error")
+        if lines:
+            text.append(f" • {len(lines)} lines removed", style="dim")
+        return text
+
+    def _render_diff_panel(self, file_key: str, diff_lines: List[str]) -> Panel:
+        diff_text = "\n".join(diff_lines)
+        syntax = Syntax(
+            diff_text,
+            "diff",
+            theme="github-dark",
+            line_numbers=False,
+            word_wrap=True,
+        )
+        stats = self._build_diff_stats(diff_text)
+        renderable = Group(stats, syntax) if stats else syntax
+
+        return Panel(
+            renderable,
+            title=f"📄 {file_key}",
+            title_align="left",
+            border_style="warning",
+        )
+
+    def _display_diff_summary(self, diff):
+        """Display comprehensive summary of changes with statistics."""
+        console.print("📊 Change Summary")
+        console.print()
+
+        total_files = len(diff["added"]) + len(diff["modified"]) + len(diff["deleted"])
+        added_count = len(diff["added"])
+        modified_count = len(diff["modified"])
+        deleted_count = len(diff["deleted"])
+
+        # Calculate line statistics
+        total_lines_added = 0
+        total_lines_removed = 0
+        total_lines_modified = 0
+
+        # Count lines in added files
+        for file_data in diff["added"].values():
+            content = file_data.get("current_content", "")
+            if content:
+                total_lines_added += len(content.splitlines())
+
+        # Count lines in deleted files
+        for file_data in diff["deleted"].values():
+            content = file_data.get("baseline_content", "")
+            if content:
+                total_lines_removed += len(content.splitlines())
+
+        # Count changed lines in modified files
+        for file_data in diff["modified"].values():
+            baseline_content = file_data.get("baseline_content", "")
+            current_content = file_data.get("current_content", "")
+
+            if baseline_content and current_content:
+                baseline_lines = baseline_content.splitlines()
+                current_lines = current_content.splitlines()
+
+                diff_lines = list(
+                    difflib.unified_diff(
+                        baseline_lines,
+                        current_lines,
+                        lineterm="",
+                        n=0,  # No context lines for counting
+                    )
+                )
+
+                added_in_file = sum(
+                    1
+                    for line in diff_lines
+                    if line.startswith("+") and not line.startswith("+++")
+                )
+                removed_in_file = sum(
+                    1
+                    for line in diff_lines
+                    if line.startswith("-") and not line.startswith("---")
+                )
+
+                total_lines_added += added_in_file
+                total_lines_removed += removed_in_file
+                total_lines_modified += added_in_file + removed_in_file
+
+        # Display file statistics
+        console.print(f"   📁 Total files affected: {total_files}")
+        if added_count > 0:
+            console.print(f"   ➕ Files added: {added_count}")
+        if modified_count > 0:
+            console.print(f"   📝 Files modified: {modified_count}")
+        if deleted_count > 0:
+            console.print(f"   🗑️  Files deleted: {deleted_count}")
+
+        console.print()
+
+        # Display line statistics
+        console.print("   📈 Line Changes:")
+        if total_lines_added > 0:
+            console.print(f"      +{total_lines_added} lines added")
+        if total_lines_removed > 0:
+            console.print(f"      -{total_lines_removed} lines removed")
+        console.print()
+
+        # Display change types summary
+        if diff["added"] or diff["modified"] or diff["deleted"]:
+            console.print("   🔄 Change Types:")
+
+            if diff["added"]:
+                sample_added = list(diff["added"].keys())[:3]
+                if len(sample_added) == len(diff["added"]):
+                    console.print(f"      ➕ New files: {', '.join(sample_added)}")
+                else:
+                    console.print(
+                        f"      ➕ New files: {', '.join(sample_added)} "
+                        f"and {len(diff['added']) - len(sample_added)} more"
+                    )
+
+            if diff["modified"]:
+                sample_modified = list(diff["modified"].keys())[:3]
+                if len(sample_modified) == len(diff["modified"]):
+                    console.print(
+                        f"      📝 Updated files: {', '.join(sample_modified)}"
+                    )
+                else:
+                    console.print(
+                        f"      📝 Updated files: {', '.join(sample_modified)} "
+                        f"and {len(diff['modified']) - len(sample_modified)} more"
+                    )
+
+            if diff["deleted"]:
+                sample_deleted = list(diff["deleted"].keys())[:3]
+                if len(sample_deleted) == len(diff["deleted"]):
+                    console.print(
+                        f"      🗑️  Removed files: {', '.join(sample_deleted)}"
+                    )
+                else:
+                    console.print(
+                        f"      🗑️  Removed files: {', '.join(sample_deleted)} "
+                        f"and {len(diff['deleted']) - len(sample_deleted)} more"
+                    )
+
+        console.print()
+        console.print("═" * 60)
+        console.print()
+
+    def has_incremental_cross_indexing_changes(self) -> bool:
+        """Check if there are changes for incremental cross-indexing without processing them."""
+        try:
+            # Load last checkpoint from incremental cross-indexing
+            checkpoint = self.indexer._load_cross_indexing_checkpoint()
+
+            # Calculate diff between checkpoint and current state
+            diff = self.indexer._create_diff_from_checkpoint(checkpoint)
+
+            # Check if there are any changes
+            return bool(diff["added"] or diff["modified"] or diff["deleted"])
+
+        except Exception as e:
+            logger.debug(f"Error checking incremental cross-indexing changes: {e}")
+            return True  # If we can't check, assume there are changes to be safe
 
     def execute_prerequisites(self) -> Dict[str, Any]:
         """
@@ -80,7 +458,7 @@ class IndexingPrerequisitesHandler:
                         skipped_count += 1
                         results.append(
                             {
-                                "project_name": project.name,
+                                "project_id": project.id,
                                 "project_path": project.path,
                                 "status": "skipped",
                                 "reason": "Project directory not found",
@@ -102,7 +480,7 @@ class IndexingPrerequisitesHandler:
                         )
                         results.append(
                             {
-                                "project_name": project.name,
+                                "project_id": project.id,
                                 "project_path": project.path,
                                 "status": "success",
                                 "duration": duration,
@@ -121,7 +499,7 @@ class IndexingPrerequisitesHandler:
                         console.error(f"Failed to index {project.name}: {error_msg}")
                         results.append(
                             {
-                                "project_name": project.name,
+                                "project_id": project.id,
                                 "project_path": project.path,
                                 "status": "failed",
                                 "error": error_msg,
@@ -133,7 +511,7 @@ class IndexingPrerequisitesHandler:
                     console.error(f"Exception while indexing {project.name}: {e}")
                     results.append(
                         {
-                            "project_name": project.name,
+                            "project_id": project.id,
                             "project_path": project.path,
                             "status": "failed",
                             "error": str(e),
@@ -184,36 +562,30 @@ class IndexingPrerequisitesHandler:
                 "message": f"Critical error during indexing prerequisites: {e}",
             }
 
-    def handle_multiple_project_indexing(self, force: bool = False) -> Dict[str, Any]:
+    def handle_multiple_project_indexing_with_old_content(self) -> Dict[str, Any]:
         """
-        Handle incremental indexing for all projects in database.
+        Handle incremental indexing with old content fetching for checkpoint creation.
 
-        This method performs incremental indexing (only changed files) for all projects
-        stored in the database. It checks for file changes and only processes what's new/modified.
-
-        Args:
-            force: Whether to force re-indexing (currently not used for incremental indexing)
-
-        Returns:
-            Dictionary with indexing results and statistics
+        This method:
+        1. Identifies changes for each project
+        2. Fetches old content from database before incremental indexing
+        3. Runs incremental indexing
+        4. Returns results with old/new content for checkpoint creation
         """
         try:
             # Get all projects from database
             projects = self.connection.list_all_projects()
 
             if not projects:
-                logger.warning("⚠️  No projects found in database")
                 return {
                     "status": "completed",
                     "total_projects": 0,
-                    "indexed_projects": 0,
-                    "failed_projects": 0,
-                    "skipped_projects": 0,
+                    "indexed_count": 0,
+                    "failed_count": 0,
+                    "skipped_count": 0,
                     "results": [],
                     "message": "No projects found to index",
                 }
-
-            logger.debug(f"📊 Found {len(projects)} projects for incremental indexing")
 
             # Track results
             results = []
@@ -222,23 +594,15 @@ class IndexingPrerequisitesHandler:
             skipped_count = 0
 
             # Process each project
-            for i, project in enumerate(projects, 1):
-                console.print()
-                console.print(
-                    f"📁 Processing project {i}/{len(projects)}: {project.name}"
-                )
-
+            for project in projects:
                 try:
                     # Check if project directory exists
                     project_path = Path(project.path)
-                    if not project_path.exists():
-                        console.print(
-                            f"⚠️  Project directory not found: {project.path} - skipping"
-                        )
+                    if not project_path.exists() or not project_path.is_dir():
                         skipped_count += 1
                         results.append(
                             {
-                                "project_name": project.name,
+                                "project_id": project.id,
                                 "project_path": project.path,
                                 "status": "skipped",
                                 "reason": "Project directory not found",
@@ -246,137 +610,135 @@ class IndexingPrerequisitesHandler:
                         )
                         continue
 
-                    if not project_path.is_dir():
-                        console.print(
-                            f"⚠️  Project path is not a directory: {project.path} - skipping"
-                        )
-                        skipped_count += 1
-                        results.append(
-                            {
-                                "project_name": project.name,
-                                "project_path": project.path,
-                                "status": "skipped",
-                                "reason": "Project path is not a directory",
-                            }
-                        )
-                        continue
-
-                    # Perform incremental indexing
-                    start_time = time.time()
-                    logger.debug(
-                        f"🔄 Incremental indexing project '{project.name}' at: {project.path}"
-                    )
-
+                    # Step 1: Run incremental indexing (which detects changes internally)
                     indexing_result = self.indexer.incremental_index_project(
                         project.name
                     )
-                    duration = time.time() - start_time
 
                     if indexing_result.get("status") == "success":
-                        # Count all successful projects as indexed, regardless of changes
                         indexed_count += 1
+                        changes = indexing_result.get(
+                            "changes",
+                            {
+                                "changed_files": set(),
+                                "new_files": set(),
+                                "deleted_files": set(),
+                            },
+                        )
 
-                        # Check if there were actual changes for reporting
-                        files_changed = indexing_result.get("files_changed", 0)
-                        files_added = indexing_result.get("files_added", 0)
-                        files_deleted = indexing_result.get("files_deleted", 0)
+                        if not any(changes.values()):
+                            # No changes detected
+                            results.append(
+                                {
+                                    "project_id": project.id,
+                                    "project_path": project.path,
+                                    "status": "success",
+                                    "changes": changes,
+                                }
+                            )
+                            continue
 
-                        if files_changed + files_added + files_deleted > 0:
-                            console.print(
-                                f"✅ Changes detected and indexed: "
-                                f"{files_changed} changed, {files_added} added, {files_deleted} deleted "
-                                f"(completed in {duration:.2f}s)"
-                            )
-                        else:
-                            console.print(
-                                f"✅ No changes detected - project up to date "
-                                f"(completed in {duration:.2f}s)"
-                            )
+                        # Step 2: Fetch old content for changed/deleted files after indexing
+                        old_content = self._fetch_old_content_for_changes(
+                            changes, project.name
+                        )
+
+                        # Add old content to the changes
+                        enhanced_changes = dict(changes)
+                        enhanced_changes["old_content"] = old_content
 
                         results.append(
                             {
-                                "project_name": project.name,
+                                "project_id": project.id,
                                 "project_path": project.path,
                                 "status": "success",
-                                "duration": duration,
-                                "files_changed": files_changed,
-                                "files_added": files_added,
-                                "files_deleted": files_deleted,
-                                "nodes_added": indexing_result.get("nodes_added", 0),
-                                "nodes_deleted": indexing_result.get(
-                                    "nodes_deleted", 0
-                                ),
+                                "changes": enhanced_changes,
                             }
                         )
                     else:
                         failed_count += 1
-                        error_msg = indexing_result.get("error", "Unknown error")
-                        console.print(
-                            f"❌ Failed to incrementally index project '{project.name}': {error_msg}"
-                        )
                         results.append(
                             {
-                                "project_name": project.name,
+                                "project_id": project.id,
                                 "project_path": project.path,
                                 "status": "failed",
-                                "error": error_msg,
+                                "error": indexing_result.get("error", "Unknown error"),
                             }
                         )
 
                 except Exception as e:
                     failed_count += 1
-                    console.error(f"Exception while indexing {project.name}: {e}")
                     results.append(
                         {
-                            "project_name": project.name,
+                            "project_id": project.id,
                             "project_path": project.path,
                             "status": "failed",
                             "error": str(e),
                         }
                     )
 
-            # Log summary
-            total_projects = len(projects)
-            console.print(f"\n📊 Incremental indexing completed:")
-            console.print(f"   Total projects: {total_projects}")
-            console.print(f"   Successfully processed: {indexed_count}")
-            console.print(f"   Failed: {failed_count}")
-            console.print(f"   Skipped: {skipped_count}")
-            console.print()
-
             # Determine overall status
             if failed_count == 0 and skipped_count == 0:
                 status = "completed"
-                message = f"All {indexed_count} projects processed successfully\n"
             elif indexed_count > 0:
                 status = "partial"
-                message = f"Processed {indexed_count}/{total_projects} projects successfully\n"
             else:
                 status = "failed" if failed_count > 0 else "skipped"
-                message = "No projects were processed successfully\n"
 
             return {
                 "status": status,
-                "total_projects": total_projects,
-                "indexed_projects": indexed_count,
-                "failed_projects": failed_count,
-                "skipped_projects": skipped_count,
+                "total_projects": len(projects),
+                "indexed_count": indexed_count,
+                "failed_count": failed_count,
+                "skipped_count": skipped_count,
                 "results": results,
-                "message": message,
+                "message": f"Processed {indexed_count}/{len(projects)} projects",
             }
 
         except Exception as e:
-            console.error(f"Critical error during incremental indexing: {e}")
             return {
                 "status": "error",
-                "total_projects": 0,
-                "indexed_projects": 0,
-                "failed_projects": 0,
-                "skipped_projects": 0,
+                "indexed_count": 0,
+                "failed_count": 0,
+                "skipped_count": 0,
                 "results": [],
                 "error": str(e),
-                "message": f"Critical error during incremental indexing: {e}",
+                "message": f"Critical error: {e}",
             }
+
+    def _fetch_old_content_for_changes(self, changes, project_name):
+        """Fetch old content from database for changed and deleted files."""
+        old_content = {}
+
+        try:
+            project = self.graph_ops.get_project_id_by_name(project_name)
+            if not project:
+                return old_content
+
+            # Get old content for changed files
+            for file_path in changes["changed_files"]:
+                try:
+                    content = self.indexer._get_file_content_before_changes(
+                        str(file_path), project_name
+                    )
+                    old_content[str(file_path)] = content
+                except Exception:
+                    old_content[str(file_path)] = ""
+
+            # Get old content for deleted files
+            for file_path in changes["deleted_files"]:
+                try:
+                    content = self.indexer._get_file_content_before_changes(
+                        str(file_path), project_name
+                    )
+                    old_content[str(file_path)] = content
+                except Exception:
+                    old_content[str(file_path)] = ""
+
+        except Exception as e:
+            logger.debug(f"Error fetching old content: {e}")
+
+        return old_content
 
     def handle_single_project_indexing(
         self, project_path: str, project_name: str = None, force: bool = False
@@ -464,7 +826,7 @@ class IndexingPrerequisitesHandler:
 
             if result["success"]:
                 success_msg = f"{result['message']} (completed in {duration:.2f}s)"
-                console.print(f"✅ {success_msg}")
+                console.success(f"{success_msg}")
                 return {
                     "status": "success",
                     "project_name": project_name,
@@ -474,7 +836,7 @@ class IndexingPrerequisitesHandler:
                 }
             else:
                 error_msg = result.get("error", "Unknown error")
-                console.print(f"❌ Failed to index project: {error_msg}")
+                console.error(f"Failed to index project: {error_msg}")
                 return {
                     "status": "failed",
                     "project_name": project_name,

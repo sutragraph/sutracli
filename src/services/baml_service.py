@@ -16,6 +16,7 @@ from config.settings import (
     get_config,
     is_provider_supported,
 )
+from src.utils.console import console
 
 # Global token usage tracking across all calls
 _global_token_usage = {
@@ -367,7 +368,8 @@ class BAMLService:
                 )
 
                 # Log token usage for this call with call counter
-                print(
+                console.print()
+                console.print(
                     f"🔢 Token Usage #{call_number} - "
                     f"Input: {actual_input_tokens}, Output: {actual_output_tokens}, "
                     f"Cached: {cached_input_tokens}, "
@@ -379,7 +381,7 @@ class BAMLService:
                     _global_token_usage["total_input_tokens"]
                     + _global_token_usage["total_output_tokens"]
                 )
-                print(
+                console.print(
                     f"📊 Cumulative Token Usage (Total {call_number} calls) - "
                     f"Input: {_global_token_usage['total_input_tokens']}, "
                     f"Output: {_global_token_usage['total_output_tokens']}, "
@@ -395,8 +397,8 @@ class BAMLService:
                 logger.debug(error_msg)
 
                 if attempt < max_retries:
-                    print(
-                        f"⚠️  Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries + 1})"
+                    console.warnning(
+                        f"Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries + 1})"
                     )
                     time.sleep(retry_delay)
                     continue
@@ -404,7 +406,7 @@ class BAMLService:
                     # All retries exhausted
                     final_error_msg = f"BAML {full_function_name} failed after {max_retries + 1} attempts"
                     logger.error(final_error_msg)
-                    print(f"❌ {final_error_msg}")
+                    console.error(f"{final_error_msg}")
                     raise Exception(f"{final_error_msg}. Last error: {str(e)}") from e
 
         # This should never be reached, but just in case
@@ -443,7 +445,7 @@ class BAMLService:
         prefixed_functions = [f for f in all_functions if f.startswith(prefix)]
 
         # Remove the prefix to get base function names
-        base_functions = [f[len(prefix):] for f in prefixed_functions]
+        base_functions = [f[len(prefix) :] for f in prefixed_functions]
 
         return base_functions
 
