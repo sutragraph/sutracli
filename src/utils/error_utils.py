@@ -6,14 +6,14 @@ in a clean, reusable way across the application.
 """
 
 from enum import Enum
-from typing import Type, Union
+from typing import NoReturn, Type, Union
 
 
 def raiseError(
     error_type: Union[Enum, str],
     message: str,
     exception_class: Type[Exception] = ValueError,
-) -> None:
+) -> NoReturn:
     """
     Create and raise an exception with an associated error type.
 

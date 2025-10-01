@@ -286,7 +286,7 @@ def execute_structured_database_query(
                             )
 
                 # Get connection mappings for the file/line range if we have results
-                if results and file_id is not None:
+                if results:
                     connection_mappings = (
                         graph_ops._get_connection_mappings_for_display(
                             file_id, start_line, end_line
@@ -325,16 +325,6 @@ def execute_structured_database_query(
                         FileNotFoundError,
                     )
 
-                # Ensure file_id is not None before passing to function
-                if file_id is None:
-                    raiseError(
-                        DatabaseErrorType.FILE_NOT_FOUND,
-                        f"File ID is None for file: {file_path}",
-                    )
-
-                assert (
-                    file_id is not None
-                ), "file_id should not be None after validation"
                 summary = graph_ops.get_file_block_summary(file_id)
                 if not summary:
                     raiseError(
@@ -364,16 +354,6 @@ def execute_structured_database_query(
                         FileNotFoundError,
                     )
 
-                # Ensure file_id is not None before passing to function
-                if file_id is None:
-                    raiseError(
-                        DatabaseErrorType.FILE_NOT_FOUND,
-                        f"File ID is None for file: {file_path}",
-                    )
-
-                assert (
-                    file_id is not None
-                ), "file_id should not be None after validation"
                 scope = graph_ops.get_search_scope_by_import_graph(
                     file_id, "both", depth
                 )
@@ -394,24 +374,14 @@ def execute_structured_database_query(
                     )
 
                 # Convert block_id to int and validate
-                block_id_int = None
                 try:
-                    if block_id is not None:
-                        block_id_int = int(block_id)
-                    if block_id_int is None:
-                        raiseError(
-                            DatabaseErrorType.MISSING_PARAMETER,
-                            "Block ID cannot be None",
-                        )
+                    block_id_int = int(block_id)
                 except (ValueError, TypeError):
                     raiseError(
                         DatabaseErrorType.MISSING_PARAMETER,
                         f"Invalid block_id value: {block_id}",
                     )
 
-                assert (
-                    block_id_int is not None
-                ), "block_id_int should not be None after validation"
                 block_details = graph_ops.get_block_details(block_id_int)
                 if not block_details:
                     raiseError(
