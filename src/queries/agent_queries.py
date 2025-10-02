@@ -145,7 +145,7 @@ LIMIT 25
 
 GET_INCOMING_CONNECTIONS = """
 SELECT
-    ic.id, ic.description, ic.snippet_lines, ic.technology_name,
+    ic.id, ic.description, ic.start_line, ic.end_line, ic.technology_name,
     ic.code_snippet, ic.created_at,
     f.file_path as target_file_path, f.language as target_language,
     p.name as target_project_name, p.id as target_project_id,
@@ -167,7 +167,7 @@ ORDER BY ic.created_at DESC, cm.match_confidence DESC
 
 GET_OUTGOING_CONNECTIONS = """
 SELECT
-    oc.id, oc.description, oc.snippet_lines, oc.technology_name,
+    oc.id, oc.description, oc.start_line, oc.end_line, oc.technology_name,
     oc.code_snippet, oc.created_at,
     f.file_path as source_file_path, f.language as source_language,
     p.name as source_project_name, p.id as source_project_id,
@@ -215,8 +215,10 @@ SELECT
     COALESCE(ic2.technology_name, oc2.technology_name) as technology,
     COALESCE(ic.code_snippet, oc.code_snippet) as anchor_code_snippet,
     COALESCE(ic2.code_snippet, oc2.code_snippet) as other_code_snippet,
-    COALESCE(ic.snippet_lines, oc.snippet_lines) as anchor_snippet_lines,
-    COALESCE(ic2.snippet_lines, oc2.snippet_lines) as other_snippet_lines
+    COALESCE(ic.start_line, oc.start_line) as anchor_start_line,
+    COALESCE(ic.end_line, oc.end_line) as anchor_end_line,
+    COALESCE(ic2.start_line, oc2.start_line) as other_start_line,
+    COALESCE(ic2.end_line, oc2.end_line) as other_end_line
 FROM connection_mappings cm
 LEFT JOIN incoming_connections ic ON cm.receiver_id = ic.id
 LEFT JOIN outgoing_connections oc ON cm.sender_id = oc.id

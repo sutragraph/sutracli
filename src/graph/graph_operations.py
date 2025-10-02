@@ -7,7 +7,6 @@ It handles insertion of extraction data from JSON exports and provides various
 query methods for retrieving code structure, relationships, and connections.
 """
 
-import json
 import os
 import time
 from pathlib import Path
@@ -371,19 +370,6 @@ class GraphOperations:
                 return []
 
             results = self.connection.execute_query(query, (file_id,))
-
-            # Parse snippet_lines JSON
-            for result in results:
-                if result.get("snippet_lines"):
-                    try:
-                        result["snippet_lines_parsed"] = json.loads(
-                            result["snippet_lines"]
-                        )
-                    except BaseException:
-                        result["snippet_lines_parsed"] = []
-                else:
-                    result["snippet_lines_parsed"] = []
-
             return results
 
         except Exception as e:
@@ -406,17 +392,19 @@ class GraphOperations:
         """
         try:
             filtered_connections = []
-
             for conn in connections:
-                snippet_lines = conn.get("snippet_lines_parsed", [])
+                conn_start = conn.get("start_line")
+                conn_end = conn.get("end_line")
 
-                if not snippet_lines:
+                if conn_start is None or conn_end is None:
                     # If no line info in connection, include it
                     filtered_connections.append(conn)
                     continue
 
                 # Check if connection lines overlap with fetched code lines
-                if self._lines_overlap(snippet_lines, start_line, end_line):
+                if self._lines_overlap_range(
+                    conn_start, conn_end, start_line, end_line
+                ):
                     filtered_connections.append(conn)
 
             return filtered_connections
@@ -425,14 +413,15 @@ class GraphOperations:
             logger.error(f"Error filtering connections by lines: {e}")
             return connections
 
-    def _lines_overlap(
-        self, snippet_lines: List[int], start_line: int, end_line: int
+    def _lines_overlap_range(
+        self, conn_start: int, conn_end: int, start_line: int, end_line: int
     ) -> bool:
         """
-        Check if snippet lines overlap with the given line range.
+        Check if connection line range overlaps with the given line range.
 
         Args:
-            snippet_lines: List of line numbers from connection
+            conn_start: Start line of connection
+            conn_end: End line of connection
             start_line: Start line of fetched code
             end_line: End line of fetched code
 
@@ -440,17 +429,11 @@ class GraphOperations:
             True if there's overlap, False otherwise
         """
         try:
-            if not snippet_lines:
-                return False
-
-            snippet_start = min(snippet_lines)
-            snippet_end = max(snippet_lines)
-
             # Check for overlap: ranges overlap if start1 <= end2 and start2 <= end1
-            return snippet_start <= end_line and start_line <= snippet_end
+            return conn_start <= end_line and start_line <= conn_end
 
         except Exception as e:
-            logger.debug(f"Error checking line overlap: {e}")
+            logger.error(f"Error checking line overlap: {e}")
             return False
 
     def _add_mapped_connections(
@@ -571,7 +554,8 @@ class GraphOperations:
                     oc.description as sender_description,
                     oc.code_snippet as sender_code_snippet,
                     oc.technology_name as sender_technology,
-                    oc.snippet_lines as sender_snippet_lines,
+                    oc.start_line as sender_start_line,
+                    oc.end_line as sender_end_line,
                     sender_file.file_path as sender_file_path,
                     sender_file.language as sender_language,
                     sender_project.name as sender_project,
@@ -581,7 +565,8 @@ class GraphOperations:
                     ic.description as receiver_description,
                     ic.code_snippet as receiver_code_snippet,
                     ic.technology_name as receiver_technology,
-                    ic.snippet_lines as receiver_snippet_lines,
+                    ic.start_line as receiver_start_line,
+                    ic.end_line as receiver_end_line,
                     receiver_file.file_path as receiver_file_path,
                     receiver_file.language as receiver_language,
                     receiver_project.name as receiver_project
@@ -605,24 +590,23 @@ class GraphOperations:
                 filtered_results = []
                 for result in results:
                     # Check if either sender or receiver overlaps with the line range
-                    sender_lines = self._parse_snippet_lines(
-                        result.get("sender_snippet_lines") or ""
-                    )
-                    receiver_lines = self._parse_snippet_lines(
-                        result.get("receiver_snippet_lines") or ""
-                    )
+                    sender_start = result.get("sender_start_line")
+                    sender_end = result.get("sender_end_line")
+                    receiver_start = result.get("receiver_start_line")
+                    receiver_end = result.get("receiver_end_line")
 
                     # Include if either sender or receiver overlaps with the requested range
-                    sender_overlaps = (
-                        result.get("sender_file_path")
-                        and sender_lines
-                        and self._lines_overlap(sender_lines, start_line, end_line)
-                    )
-                    receiver_overlaps = (
-                        result.get("receiver_file_path")
-                        and receiver_lines
-                        and self._lines_overlap(receiver_lines, start_line, end_line)
-                    )
+                    sender_overlaps = False
+                    if sender_start is not None and sender_end is not None:
+                        sender_overlaps = self._lines_overlap_range(
+                            sender_start, sender_end, start_line, end_line
+                        )
+
+                    receiver_overlaps = False
+                    if receiver_start is not None and receiver_end is not None:
+                        receiver_overlaps = self._lines_overlap_range(
+                            receiver_start, receiver_end, start_line, end_line
+                        )
 
                     if sender_overlaps or receiver_overlaps:
                         filtered_results.append(result)
@@ -633,17 +617,6 @@ class GraphOperations:
 
         except Exception as e:
             logger.error(f"Error getting connection mappings for display: {e}")
-            return []
-
-    def _parse_snippet_lines(self, snippet_lines_json: Optional[str]) -> List[int]:
-        """Parse snippet_lines JSON string into list of integers."""
-        try:
-            if snippet_lines_json:
-                import json
-
-                return json.loads(snippet_lines_json)
-            return []
-        except BaseException:
             return []
 
     def get_enriched_block_context(self, block_id: int) -> Optional[Dict[str, Any]]:
@@ -1220,8 +1193,10 @@ class GraphOperations:
                     "technology": result["technology"],
                     "anchor_code_snippet": result.get("anchor_code_snippet"),
                     "other_code_snippet": result.get("other_code_snippet"),
-                    "anchor_snippet_lines": result.get("anchor_snippet_lines"),
-                    "other_snippet_lines": result.get("other_snippet_lines"),
+                    "anchor_start_line": result.get("anchor_start_line"),
+                    "anchor_end_line": result.get("anchor_end_line"),
+                    "other_start_line": result.get("other_start_line"),
+                    "other_end_line": result.get("other_end_line"),
                 }
                 for result in results
             ]
@@ -1445,12 +1420,21 @@ class GraphOperations:
             ID of the inserted connection
         """
         try:
+            # Convert snippet_lines list to start_line and end_line
+            if snippet_lines and len(snippet_lines) > 0:
+                start_line = min(snippet_lines)
+                end_line = max(snippet_lines)
+            else:
+                start_line = None
+                end_line = None
+
             cursor = self.connection.connection.execute(
                 INSERT_INCOMING_CONNECTION,
                 (
                     description,
                     file_id,
-                    json.dumps(snippet_lines),
+                    start_line,
+                    end_line,
                     technology_name,
                     code_snippet,
                 ),
@@ -1460,7 +1444,7 @@ class GraphOperations:
             logger.debug(
                 f"Inserted incoming connection {connection_id} for file {file_id}"
             )
-            return connection_id
+            return connection_id if connection_id is not None else 0
 
         except Exception as e:
             logger.error(f"Error inserting incoming connection: {e}")
@@ -1488,12 +1472,21 @@ class GraphOperations:
             ID of the inserted connection
         """
         try:
+            # Convert snippet_lines list to start_line and end_line
+            if snippet_lines and len(snippet_lines) > 0:
+                start_line = min(snippet_lines)
+                end_line = max(snippet_lines)
+            else:
+                start_line = None
+                end_line = None
+
             cursor = self.connection.connection.execute(
                 INSERT_OUTGOING_CONNECTION,
                 (
                     description,
                     file_id,
-                    json.dumps(snippet_lines),
+                    start_line,
+                    end_line,
                     technology_name,
                     code_snippet,
                 ),
@@ -1503,7 +1496,7 @@ class GraphOperations:
             logger.debug(
                 f"Inserted outgoing connection {connection_id} for file {file_id}"
             )
-            return connection_id
+            return connection_id if connection_id is not None else 0
 
         except Exception as e:
             logger.error(f"Error inserting outgoing connection: {e}")
@@ -1541,7 +1534,7 @@ class GraphOperations:
 
             mapping_id = cursor.lastrowid
             logger.debug(f"Inserted connection mapping {mapping_id}")
-            return mapping_id
+            return mapping_id if mapping_id is not None else 0
 
         except Exception as e:
             logger.error(f"Error inserting connection mapping: {e}")
@@ -1698,8 +1691,8 @@ class GraphOperations:
 
             for match in matches:
                 mapping_id = self.insert_connection_mapping(
-                    match.get("sender_id"),
-                    match.get("receiver_id"),
+                    match.get("sender_id", ""),
+                    match.get("receiver_id", ""),
                     match.get("description", "Auto-detected connection"),
                     match.get("match_confidence", 0.0),
                 )
@@ -1765,19 +1758,19 @@ class GraphOperations:
                 process_code_with_line_filtering,
             )
 
-            # Use existing beautify function to process code with line filtering
             result = process_code_with_line_filtering(
                 code_snippet=file_data["content"],
                 file_start_line=1,  # File content starts at line 1
                 start_line=start_line,
                 end_line=end_line,
+                without_lines=True,
             )
 
             if result and result.get("code"):
                 logger.debug(
                     f"Fetched and beautified code snippet from {file_path} lines {start_line}-{end_line}: {result['total_lines']} lines"
                 )
-                return result["code"]
+                return str(result["code"])
             else:
                 logger.warning(
                     f"No code returned for {file_path} lines {start_line}-{end_line}"

@@ -69,7 +69,7 @@ def add_line_numbers_to_code(code_snippet, start_line=None):
 
 
 def process_code_with_line_filtering(
-    code_snippet, file_start_line=1, start_line=None, end_line=None
+    code_snippet, file_start_line=1, start_line=None, end_line=None, without_lines=False
 ):
     """
     Process full code content and filter by line ranges if specified.
@@ -79,6 +79,7 @@ def process_code_with_line_filtering(
         file_start_line: The starting line number of the code snippet in the file
         start_line: Optional start line for filtering (absolute line number)
         end_line: Optional end line for filtering (absolute line number)
+        without_lines: If True, return code without line numbers (default: False)
 
     Returns:
         Dictionary with filtered code and metadata
@@ -95,11 +96,14 @@ def process_code_with_line_filtering(
     lines = code_snippet.split("\n")
     total_lines = len(lines)
 
-    # If no filtering requested, return full code with line numbers
+    # If no filtering requested, return full code with or without line numbers
     if start_line is None and end_line is None:
-        numbered_code = add_line_numbers_to_code(code_snippet, file_start_line)
+        if without_lines:
+            processed_code = code_snippet
+        else:
+            processed_code = add_line_numbers_to_code(code_snippet, file_start_line)
         return {
-            "code": numbered_code,
+            "code": processed_code,
             "filtered": False,
             "actual_start_line": file_start_line,
             "actual_end_line": file_start_line + total_lines - 1,
@@ -121,11 +125,14 @@ def process_code_with_line_filtering(
     filtered_lines = lines[start_idx:end_idx]
     filtered_code = "\n".join(filtered_lines)
 
-    # Add line numbers to the filtered code
-    numbered_code = add_line_numbers_to_code(filtered_code, actual_start_line)
+    # Add line numbers to the filtered code if requested
+    if without_lines:
+        processed_code = filtered_code
+    else:
+        processed_code = add_line_numbers_to_code(filtered_code, actual_start_line)
 
     return {
-        "code": numbered_code,
+        "code": processed_code,
         "filtered": True,
         "actual_start_line": actual_start_line,
         "actual_end_line": actual_end_line,
@@ -204,6 +211,7 @@ def chunk_large_code_clean(code_snippet, max_lines, chunk_threshold, file_start_
 
         chunks = []
         start_idx = 0
+        end_idx = 0
 
         for chunk_num in range(1, estimated_chunks):  # One less chunk
             # Distribute extra lines among first chunks
