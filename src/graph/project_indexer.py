@@ -702,7 +702,7 @@ class ProjectIndexer:
     def _parse_repository(self, project_name: str, project_path: Path) -> Path:
         """Parse the entire repository and return path to extraction file."""
         try:
-            print(f"🔄 Parsing directory: {project_path}")
+            console.print(f"🔄 Parsing directory: {project_path}")
 
             from config import config
 
@@ -726,7 +726,7 @@ class ProjectIndexer:
             if not success:
                 raise Exception(f"Failed to parse repository: {project_name}")
 
-            print(f"✅ Repository parsed successfully")
+            console.print(f"✅ Repository parsed successfully")
             logger.debug(f"   Generated analysis for project: {project_name}")
             logger.debug(f"   Output file: {parser_output_path}")
 
@@ -734,7 +734,7 @@ class ProjectIndexer:
 
         except Exception as e:
             logger.error(f"Parser error: {e}")
-            print(f"❌ Failed to parse repository: {e}")
+            console.print(f"❌ Failed to parse repository: {e}")
             raise
 
     def _store_to_database(
@@ -782,10 +782,10 @@ class ProjectIndexer:
             file_data_list, project_id
         )
 
-        print(f"   ✅ Embeddings generated successfully!")
-        print(f"      Files processed: {embedding_stats['files_processed']}")
-        print(f"      Total chunks: {embedding_stats['total_chunks']}")
-        print(f"      Blocks embedded: {embedding_stats['blocks_processed']}")
+        console.print(f"   ✅ Embeddings generated successfully!")
+        console.print(f"      Files processed: {embedding_stats['files_processed']}")
+        console.print(f"      Total chunks: {embedding_stats['total_chunks']}")
+        console.print(f"      Blocks embedded: {embedding_stats['blocks_processed']}")
 
     def _get_current_project_hashes_and_content(self):
         """Get current hashes and content for all projects using same logic as incremental indexing."""

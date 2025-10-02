@@ -11,6 +11,7 @@ from services.agent.memory_management.models import TaskStatus
 from services.agent.session_management import SessionManager
 from src.graph.graph_operations import GraphOperations
 from src.tools.tool_executor import execute_tool
+from src.utils.console import console
 from src.utils.debug_utils import get_user_confirmation_for_llm_call
 from src.utils.json_serializer import make_json_serializable
 
@@ -1029,11 +1030,11 @@ Tool Results:
                     "error": f"Connection storage failed: {storage_result.get('error')}",
                 }
 
-            print("✅ Connections and summary stored in database successfully")
+            console.print("✅ Connections and summary stored in database successfully")
 
             # Run comprehensive connection matching for all technology types
             # The method handles fetching and processing all connections internally
-            print(
+            console.print(
                 "🔍 Starting comprehensive connection matching for all technology types"
             )
 
@@ -1065,10 +1066,12 @@ Tool Results:
                     mapping_result = self.graph_ops.create_connection_mappings(
                         db_matches
                     )
-                    print(f"✅ Stored {len(db_matches)} connection mappings in database")
+                    console.print(
+                        f"✅ Stored {len(db_matches)} connection mappings in database"
+                    )
                 else:
                     mapping_result = {"success": True, "mapping_ids": []}
-                    print("ℹ️  No connection matches found")
+                    console.print("ℹ️  No connection matches found")
 
                 # Mark cross-indexing as complete
                 self.graph_ops.mark_cross_indexing_done_by_id(project_id)

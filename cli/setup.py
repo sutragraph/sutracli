@@ -405,8 +405,8 @@ def cleanup():
 
 def main():
     """Main setup function"""
-    print("🚀 Sutra Knowledge CLI - Post-Install Setup")
-    print("=" * 50)
+    console.print("🚀 Sutra Knowledge CLI - Post-Install Setup")
+    console.print("=" * 50)
 
     try:
         # Check if already installed
@@ -430,24 +430,26 @@ def main():
         setup_environment()
 
         # Summary
-        print("\n" + "=" * 50)
+        console.print("\n" + "=" * 50)
         console.success("🎉 Sutra Knowledge CLI setup completed!")
-        print(f"\n📁 Installation directory: {INSTALL_DIR}")
-        print(f"🔧 Configuration: {INSTALL_DIR / 'config' / 'system.json'}")
+        console.print(f"\n📁 Installation directory: {INSTALL_DIR}")
+        console.print(f"🔧 Configuration: {INSTALL_DIR / 'config' / 'system.json'}")
 
         if models_success:
-            print(f"📦 Models: {INSTALL_DIR / 'models'}")
+            console.print(f"📦 Models: {INSTALL_DIR / 'models'}")
         else:
             console.warning(
                 "Models setup failed - you may need to install them manually"
             )
 
-        print("\n🚀 Usage:")
-        print("  sutrakit --help                    # Show help")
-        print("  sutrakit                          # Analyze current directory")
-        print("  sutrakit --directory /path/to/repo # Analyze specific directory")
-        print("\n💡 Restart your shell or run: source ~/.bashrc")
-        print("💡 Configure your API keys in ~/.sutra/config/system.json")
+        console.print("\n🚀 Usage:")
+        console.print("  sutrakit --help                    # Show help")
+        console.print("  sutrakit                          # Analyze current directory")
+        console.print(
+            "  sutrakit --directory /path/to/repo # Analyze specific directory"
+        )
+        console.print("\n💡 Restart your shell or run: source ~/.bashrc")
+        console.print("💡 Configure your API keys in ~/.sutra/config/system.json")
 
     except KeyboardInterrupt:
         console.info("Installation cancelled by user")

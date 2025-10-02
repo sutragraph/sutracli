@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from src.utils.console import console
+
 # BAML provider mapping for dynamic client creation
 BAML_PROVIDER_MAPPING = {
     "aws_bedrock": {
@@ -427,7 +429,7 @@ class Config:
         try:
             Path(self.storage.parser_results_dir).mkdir(parents=True, exist_ok=True)
         except PermissionError:
-            print(
+            console.warning(
                 f"Warning: Cannot create {self.storage.parser_results_dir} - permission denied"
             )
 

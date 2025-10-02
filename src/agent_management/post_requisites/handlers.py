@@ -502,11 +502,13 @@ class RoadmapAgentHandler:
         # Verify the selected provider is available
         provider = self.provider_manager.get_provider(selected_provider)
         if not provider or not provider.is_available():
-            print(f"\n❌ Selected provider '{selected_provider}' is not available.")
-            print("Please ensure the CLI tool is installed and accessible.")
+            console.print(
+                f"\n❌ Selected provider '{selected_provider}' is not available."
+            )
+            console.print("Please ensure the CLI tool is installed and accessible.")
 
             # Prompt for new selection
-            print("\nPlease select an available provider:")
+            console.print("\nPlease select an available provider:")
             new_provider = self.provider_manager.prompt_user_for_provider_selection()
             if not new_provider:
                 return {
@@ -517,8 +519,10 @@ class RoadmapAgentHandler:
             selected_provider = new_provider
 
         # Process each project prompt in parallel
-        print(f"\n🚀 Spawning {len(project_prompts)} external agents in parallel...")
-        print("⚡ All terminals will be created simultaneously")
+        console.print(
+            f"\n🚀 Spawning {len(project_prompts)} external agents in parallel..."
+        )
+        console.print("⚡ All terminals will be created simultaneously")
 
         # Execute all prompts in parallel
         spawn_results = self.provider_manager.execute_multiple_prompts_parallel(

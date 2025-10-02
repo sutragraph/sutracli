@@ -46,6 +46,7 @@ from queries.graph_queries import (
     INSERT_OUTGOING_CONNECTION,
     UPDATE_PROJECT_DESCRIPTION,
 )
+from src.utils.console import console
 
 from .sqlite_client import SQLiteConnection
 
@@ -73,7 +74,7 @@ class GraphOperations:
         logger.debug(f"🏗️ Inserting extraction data for project ID: {project_id}")
 
         files_data = extraction_data.files
-        print(f"📁 Processing {len(files_data)} files...")
+        console.print(f"📁 Processing {len(files_data)} files...")
 
         for file_path, file_data in files_data.items():
             # Create File object for database
@@ -1386,14 +1387,10 @@ class GraphOperations:
             description: New description for the project
         """
         try:
-            print(f"Updating project {project_id} description: {description[:100]}...")
-
             self.connection.connection.execute(
                 UPDATE_PROJECT_DESCRIPTION,
                 (description, project_id),
             )
-            print(f"Project description updated successfully for project {project_id}")
-
         except Exception as e:
             logger.error(f"Error updating project description: {e}")
             raise
@@ -1649,8 +1646,8 @@ class GraphOperations:
 
             # Commit all changes
             self.connection.connection.commit()
-
-            print(
+            console.print()
+            console.print(
                 f"Stored {len(stored_incoming)} incoming and {len(stored_outgoing)} outgoing connections"
             )
 
