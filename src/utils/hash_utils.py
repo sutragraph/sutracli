@@ -9,6 +9,7 @@ import hashlib
 from pathlib import Path
 from typing import Dict, Optional, Union
 
+from src.utils.console import console
 from utils.file_utils import is_text_file, should_ignore_directory, should_ignore_file
 
 
@@ -50,7 +51,7 @@ def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
     file_hashes = {}
 
     if not dir_path.exists() or not dir_path.is_dir():
-        print(f"Directory not found: {dir_path}")
+        console.print(f"Directory not found: {dir_path}")
         return file_hashes
 
     try:
@@ -80,11 +81,11 @@ def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
                     absolute_path = file_path.resolve()
                     file_hashes[absolute_path] = file_hash
 
-        print(
+        console.print(
             f"📊 Computed hashes for {len(file_hashes)} files in directory: {dir_path}"
         )
         return file_hashes
 
     except Exception as e:
-        print(f"Error computing directory hashes: {e}")
+        console.print(f"Error computing directory hashes: {e}")
         return {}

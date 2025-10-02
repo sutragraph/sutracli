@@ -11,6 +11,7 @@ from loguru import logger
 from services.agent.memory_management.sutra_memory_manager import SutraMemoryManager
 from services.agent.session_management import SessionManager
 from src.graph.graph_operations import GraphOperations
+from src.utils.console import console
 
 from .cross_index_phase import CrossIndexing
 from .cross_index_service import CrossIndexService
@@ -44,13 +45,17 @@ class CrossIndexSystem:
         # Check if cross-indexing is already completed for this project
         if self.project_name:
             if self.graph_ops.is_cross_indexing_done(self.project_name):
-                print(
+                console.print(
                     f"✅ Cross-indexing already completed for project '{self.project_name}'"
                 )
-                print("📊 Skipping cross-indexing analysis - project already analyzed")
+                console.print(
+                    "📊 Skipping cross-indexing analysis - project already analyzed"
+                )
                 self._skip_cross_indexing = True
             else:
-                print(f"🔄 Starting cross-indexing for project '{self.project_name}'")
+                console.print(
+                    f"🔄 Starting cross-indexing for project '{self.project_name}'"
+                )
                 self._skip_cross_indexing = False
         else:
             logger.debug(

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from src.config.settings import get_config, reload_config
+from src.utils.console import console
 
 
 @dataclass
@@ -91,7 +92,7 @@ class AgentProviderConfigManager:
             return True
 
         except Exception as e:
-            print(f"Error setting selected provider: {e}")
+            console.error(f"Error setting selected provider: {e}")
             return False
 
     def get_selected_provider(self) -> Optional[str]:

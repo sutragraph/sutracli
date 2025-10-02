@@ -18,6 +18,7 @@ from services.cross_indexing.utils import (
     validate_and_process_baml_results,
 )
 from src.graph.graph_operations import GraphOperations
+from src.utils.console import console
 from src.utils.system_utils import get_home_and_current_directories
 
 from .technology_validator import TechnologyValidator
@@ -228,20 +229,24 @@ class CrossIndexing:
             # Only fetch unknown connections if they exist
             unknown_connections = {"incoming": [], "outgoing": []}
             if has_unknown:
-                print("🔄 Fetching Unknown connections...")
+                console.print("🔄 Fetching Unknown connections...")
                 unknown_connections = self.graph_ops.fetch_connections_by_technology(
                     "Unknown"
                 )
-                print(
+                console.print(
                     f"   Found {len(unknown_connections['incoming'])} incoming and {len(unknown_connections['outgoing'])} outgoing Unknown connections"
                 )
             else:
-                print("ℹ️  No Unknown connections found, skipping Unknown fetch")
+                console.print(
+                    "ℹ️  No Unknown connections found, skipping Unknown fetch"
+                )
 
             # Get all distinct technology types (excluding Unknown)
             all_tech_types = self.graph_ops.get_available_technology_types()
 
-            print(f"📊 Found technology types: {', '.join(sorted(all_tech_types))}")
+            console.print(
+                f"📊 Found technology types: {', '.join(sorted(all_tech_types))}"
+            )
 
             # Collect all matches from each technology type
             all_matches = []
@@ -250,7 +255,7 @@ class CrossIndexing:
 
             # Process each technology type one by one
             for tech_type in sorted(all_tech_types):
-                print(f"🔄 Processing {tech_type} connections...")
+                console.print(f"🔄 Processing {tech_type} connections...")
 
                 # Fetch specific technology type connections
                 tech_connections = self.graph_ops.fetch_connections_by_technology(
@@ -265,10 +270,10 @@ class CrossIndexing:
                     + unknown_connections["outgoing"],
                 }
 
-                print(
+                console.print(
                     f"   Combined {len(tech_connections['incoming'])} + {len(unknown_connections['incoming'])} = {len(connections['incoming'])} incoming connections"
                 )
-                print(
+                console.print(
                     f"   Combined {len(tech_connections['outgoing'])} + {len(unknown_connections['outgoing'])} = {len(connections['outgoing'])} outgoing connections"
                 )
 
@@ -284,12 +289,12 @@ class CrossIndexing:
 
                 # Skip if only incoming OR only outgoing connections (need both for matching)
                 if not incoming_connections or not outgoing_connections:
-                    print(
-                        f"   ⏭️ Skipping {tech_type}: {len(incoming_connections)} incoming, {len(outgoing_connections)} outgoing (need both for matching)"
+                    console.print(
+                        f"   ⏭️  Skipping {tech_type}: {len(incoming_connections)} incoming, {len(outgoing_connections)} outgoing (need both for matching)"
                     )
                     continue
 
-                print(
+                console.print(
                     f"   Matching {len(incoming_connections)} incoming with {len(outgoing_connections)} outgoing connections for {tech_type}"
                 )
 
@@ -317,7 +322,9 @@ class CrossIndexing:
                     if is_valid:
                         matches = tech_results.get("matches", [])
                         all_matches.extend(matches)
-                        print(f"   ✅ Found {len(matches)} matches for {tech_type}")
+                        console.print(
+                            f"   ✅ Found {len(matches)} matches for {tech_type}"
+                        )
                         total_incoming_processed += len(incoming_connections)
                         total_outgoing_processed += len(outgoing_connections)
                     else:

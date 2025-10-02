@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterator, List, Optional
 from loguru import logger
 
 from models.agent import AgentAction
+from src.utils.console import console
 
 
 class DesktopEnvironment:
@@ -295,7 +296,7 @@ class MacOSTerminalHandler:
 
             if result.returncode == 0:
                 window_id = result.stdout.strip()
-                print(
+                console.print(
                     f"Spawned macOS Terminal window {window_id} for session {session_id}"
                 )
                 return window_id
@@ -460,7 +461,7 @@ class LinuxTerminalHandler:
                     )
                     # Give the terminal time to start and attach to tmux
                     time.sleep(1.5)
-                    print(
+                    console.print(
                         f"Spawned {terminal} terminal with tmux session {tmux_session}"
                     )
                     return process
@@ -591,7 +592,7 @@ class TerminalSession:
                 success = self.terminal_process is not None
 
             if success:
-                print(f"Started foreground terminal session {self.session_id}")
+                console.print(f"Started foreground terminal session {self.session_id}")
                 return True
             else:
                 logger.error(
@@ -627,7 +628,7 @@ class TerminalSession:
 
             if is_long_running:
                 self.has_running_task = True
-                print(
+                console.print(
                     f"Detected long-running command in session {self.session_id}: {command[:50]}..."
                 )
             else:
@@ -897,7 +898,7 @@ class TerminalSession:
 
             # If we got startup output, consider the process as started
             if startup_output.strip():
-                print(
+                console.print(
                     f"Long-running process appears to have started successfully in session {self.session_id}"
                 )
                 return True, output_lines
@@ -951,7 +952,7 @@ class TerminalSessionManager:
             logger.debug(f"Added session {session_id} to session manager")
 
         if session.start():
-            print(f"Created foreground terminal session {session_id}")
+            console.print(f"Created foreground terminal session {session_id}")
             # Give the terminal and tmux session time to fully initialize
             time.sleep(2.0)
             return session_id
@@ -986,13 +987,17 @@ class TerminalSessionManager:
         with cls._lock:
             for session_id, session in cls._sessions.items():
                 if session.is_compatible_for_reuse(cwd):
-                    print(f"Reusing existing session {session_id} for cwd {cwd}")
+                    console.print(
+                        f"Reusing existing session {session_id} for cwd {cwd}"
+                    )
                     session.last_used = time.time()
                     session.description = description or session.description
                     return session_id
 
         # No compatible session found, create new one
-        print(f"No compatible session found for cwd {cwd}, creating new session")
+        console.print(
+            f"No compatible session found for cwd {cwd}, creating new session"
+        )
         return cls.create_session(cwd, description)
 
     @classmethod
@@ -1019,7 +1024,7 @@ class TerminalSessionManager:
             session = cls._sessions.pop(session_id, None)
             if session:
                 success = session.close()
-                print(f"Closed terminal session {session_id}")
+                console.print(f"Closed terminal session {session_id}")
                 return success
             return False
 
@@ -1052,7 +1057,7 @@ class TerminalSessionManager:
                 except Exception as e:
                     logger.error(f"Error closing session {session.session_id}: {e}")
             cls._sessions.clear()
-            print("Closed all terminal sessions")
+            console.print("Closed all terminal sessions")
 
     @classmethod
     def get_session_output(
