@@ -79,7 +79,7 @@ class CrossIndexService:
 
                 # Get BAML response for current phase
                 baml_response = self._get_baml_response(
-                    analysis_query, current_iteration, last_tool_result, project_path
+                    analysis_query, last_tool_result
                 )
 
                 # Handle user cancellation
@@ -286,9 +286,7 @@ class CrossIndexService:
     def _get_baml_response(
         self,
         analysis_query: str,
-        current_iteration: int,
         last_tool_result: Optional[Dict[str, Any]],
-        project_path: str,
     ) -> Dict[str, Any]:
         """Get BAML response for current phase."""
         try:
@@ -321,7 +319,7 @@ class CrossIndexService:
 
             if response.get("success"):
                 baml_results = response.get("results")
-                return baml_results
+                return baml_results if baml_results is not None else {}
             else:
                 # Handle BAML error
                 error_msg = response.get("error", "BAML execution failed")

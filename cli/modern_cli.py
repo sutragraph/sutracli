@@ -35,6 +35,7 @@ from src.agent_management.prerequisites.indexing_handler import (
 )
 from src.agents_new import Agent
 from src.config.settings import reload_config
+from src.graph.cross_project_indexer import CrossProjectIndexer
 from src.utils.console import console
 from src.utils.version_checker import show_update_notification
 
@@ -59,6 +60,7 @@ class ModernSutraKit:
 
         self.agent_registry = get_agent_registry()
         self.indexing_handler = IndexingPrerequisitesHandler()
+        self.cross_project_indexer = CrossProjectIndexer()
 
     def print_banner(self):
         """Print the welcome banner."""
@@ -838,18 +840,20 @@ class ModernSutraKit:
                     and changes_by_project
                 ):
                     # Create checkpoint from actual incremental indexing changes
-                    self.indexing_handler.create_checkpoint_from_incremental_changes(
+                    self.cross_project_indexer.create_checkpoint_from_incremental_changes(
                         changes_by_project
                     )
 
                     # Check if there are changes for incremental cross-indexing
-                    if self.indexing_handler.has_incremental_cross_indexing_changes():
+                    if (
+                        self.cross_project_indexer.has_incremental_cross_indexing_changes()
+                    ):
                         # Prompt for incremental cross-indexing after incremental indexing
                         if Confirm.ask(
                             f"Do you want to run incremental cross-indexing before running {agent_enum.value}?",
                             default=False,
                         ):
-                            self.indexing_handler.run_incremental_cross_indexing()
+                            self.cross_project_indexer.run_incremental_cross_indexing()
                     else:
                         # No changes detected, skip silently
                         console.info(
@@ -1005,7 +1009,6 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             # Raise a custom exception to stop the workflow
             raise UserCancelledError("User declined cross-indexing analysis")
 
-        # Use a simpler approach that doesn't conflict with the command's own output
         console.process("Starting cross-indexing analysis...")
 
         try:
