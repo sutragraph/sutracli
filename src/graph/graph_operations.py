@@ -1861,7 +1861,7 @@ class GraphOperations:
             # Fetch incoming connections
             incoming_query = f"""
             SELECT ic.id, ic.description, COALESCE(ic.technology_name, 'Unknown') as technology,
-                   ic.code_snippet, ic.snippet_lines, files.file_path, files.language
+                   ic.code_snippet, ic.start_line, ic.end_line, files.file_path, files.language
             FROM incoming_connections ic
             LEFT JOIN files ON ic.file_id = files.id
             {where_clause}
@@ -1871,7 +1871,7 @@ class GraphOperations:
             # Fetch outgoing connections
             outgoing_query = f"""
             SELECT oc.id, oc.description, COALESCE(oc.technology_name, 'Unknown') as technology,
-                   oc.code_snippet, oc.snippet_lines, files.file_path, files.language
+                   oc.code_snippet, oc.start_line, oc.end_line, files.file_path, files.language
             FROM outgoing_connections oc
             LEFT JOIN files ON oc.file_id = files.id
             {where_clause}

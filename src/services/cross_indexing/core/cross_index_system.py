@@ -52,17 +52,6 @@ class CrossIndexSystem:
             else:
                 print(f"🔄 Starting cross-indexing for project '{self.project_name}'")
                 self._skip_cross_indexing = False
-
-                try:
-                    self.project_manager.perform_incremental_indexing(self.project_name)
-                    print(
-                        f"✅ Incremental indexing completed for project '{self.project_name}'"
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Error during initialization incremental indexing: {e}"
-                    )
-                    # Continue with initialization even if incremental indexing fails
         else:
             logger.debug(
                 "No project name provided, skipping incremental indexing during initialization"
