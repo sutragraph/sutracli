@@ -33,7 +33,7 @@ from src.utils.console import console
 
 # Configuration
 REPO_URL = "https://github.com/sutragraph/models"
-RELEASE_TAG = "v0.2"
+RELEASE_TAG = "v0.3"
 INSTALL_DIR = Path.home() / ".sutra"
 TEMP_DIR = Path(tempfile.mkdtemp())
 
@@ -146,19 +146,19 @@ def setup_models() -> bool:
     """Download and setup ML models"""
     console.info("Setting up ML models from remote repository...")
 
-    models_url = f"{REPO_URL}/releases/download/{RELEASE_TAG}/all-MiniLM-L12-v2.tar.gz"
+    models_url = f"{REPO_URL}/releases/download/{RELEASE_TAG}/all-MiniLM-L6-v2.tar.gz"
     models_dir = INSTALL_DIR / "models"
 
     # Download models
-    archive_path = TEMP_DIR / "all-MiniLM-L12-v2.tar.gz"
+    archive_path = TEMP_DIR / "all-MiniLM-L6-v2.tar.gz"
     if not download_file(models_url, archive_path):
         console.warning("Failed to download models, continuing without them")
         return False
 
     # Extract models
     if extract_tar_gz(archive_path, TEMP_DIR):
-        model_src = TEMP_DIR / "all-MiniLM-L12-v2"
-        model_dest = models_dir / "all-MiniLM-L12-v2"
+        model_src = TEMP_DIR / "all-MiniLM-L6-v2"
+        model_dest = models_dir / "all-MiniLM-L6-v2"
 
         if model_src.exists():
             if model_dest.exists():
@@ -196,7 +196,7 @@ def setup_configuration():
             "models_dir": f"{INSTALL_DIR}/models",
         },
         "embedding": {
-            "model_path": f"{INSTALL_DIR}/models/all-MiniLM-L12-v2",
+            "model_path": f"{INSTALL_DIR}/models/all-MiniLM-L6-v2",
             "tokenizer_max_length": 256,
             "max_tokens": 240,
             "overlap_tokens": 30,
