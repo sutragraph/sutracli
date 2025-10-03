@@ -40,6 +40,4 @@ jobs:
           cd my-project
           echo "print('hello world')" > main.py
           yes | sutrakit   # auto-confirm indexing prompt
-
-      # - name: Run tests
-      #   run: pytest
+      
