@@ -3,10 +3,10 @@ name: Doctor
 on:
   push:
     branches:
-      - docker-command
+      - doctor-command
   pull_request:
     branches:
-      - docker-command
+      - doctor-command
 
 jobs:
   test:
