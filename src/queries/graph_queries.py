@@ -73,6 +73,10 @@ UPDATE_PROJECT_DESCRIPTION = """
 UPDATE projects SET description = ? WHERE id = ?
 """
 
+GET_PROJECT_DESCRIPTION = """
+SELECT description FROM projects WHERE id = ?
+"""
+
 # ============================================================================
 # CHECKPOINT QUERIES
 # ============================================================================
@@ -112,4 +116,42 @@ DELETE FROM checkpoints
 
 DELETE_CHECKPOINTS_BY_IDS = """
 DELETE FROM checkpoints WHERE id IN ({placeholders})
+"""
+
+# ============================================================================
+# CONNECTION MANAGEMENT QUERIES (for incremental cross-indexing)
+# ============================================================================
+
+GET_CONNECTIONS_BY_FILE_ID = """
+SELECT c.id, c.description, c.start_line, c.end_line, c.technology_name, c.code_snippet, c.created_at,
+       f.file_path
+FROM {table_name} c
+LEFT JOIN files f ON c.file_id = f.id
+WHERE c.file_id = ?
+ORDER BY c.start_line
+"""
+
+GET_FILE_ID_BY_PATH = """
+SELECT id FROM files WHERE file_path = ? AND project_id = ?
+"""
+
+DELETE_CONNECTIONS_BY_FILE_ID = """
+DELETE FROM {table_name} WHERE file_id = ?
+"""
+
+DELETE_CONNECTIONS_BY_LINE_RANGE = """
+DELETE FROM {table_name}
+WHERE file_id = ? AND start_line >= ? AND end_line <= ?
+"""
+
+UPDATE_CONNECTION_LINES = """
+UPDATE {table_name}
+SET start_line = ?, end_line = ?
+WHERE id = ?
+"""
+
+UPDATE_CONNECTION_CODE_AND_LINES = """
+UPDATE {table_name}
+SET code_snippet = ?, start_line = ?, end_line = ?
+WHERE id = ?
 """

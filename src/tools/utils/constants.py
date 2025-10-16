@@ -57,3 +57,8 @@ GUIDANCE_MESSAGES = {
     "NO_RESULTS_FOUND": "No results found for {search_type} search. Try different search terms or methods. Verify parameters and query",
     "NODE_MISSING_CODE": "Node found but code content is not available.",
 }
+
+# Cross-indexing configuration
+CROSS_INDEXING_CONFIG = {
+    "phase4_max_lines_per_batch": 2000,  # Maximum lines per Phase 4 call
+}

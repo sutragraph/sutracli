@@ -35,7 +35,6 @@ from src.agent_management.prerequisites.indexing_handler import (
 )
 from src.agents_new import Agent
 from src.config.settings import reload_config
-from src.graph.cross_project_indexer import CrossProjectIndexer
 from src.utils.console import console
 from src.utils.version_checker import show_update_notification
 
@@ -60,7 +59,6 @@ class ModernSutraKit:
 
         self.agent_registry = get_agent_registry()
         self.indexing_handler = IndexingPrerequisitesHandler()
-        self.cross_project_indexer = CrossProjectIndexer()
 
     def print_banner(self):
         """Print the welcome banner."""
@@ -839,27 +837,9 @@ class ModernSutraKit:
                     agent_config.requires_incremental_cross_indexing
                     and changes_by_project
                 ):
-                    # Create checkpoint from actual incremental indexing changes
-                    self.cross_project_indexer.create_checkpoint_from_incremental_changes(
+                    self.indexing_handler.run_incremental_cross_indexing(
                         changes_by_project
                     )
-
-                    # Check if there are changes for incremental cross-indexing
-                    if (
-                        self.cross_project_indexer.has_incremental_cross_indexing_changes()
-                    ):
-                        # Prompt for incremental cross-indexing after incremental indexing
-                        if Confirm.ask(
-                            f"Do you want to run incremental cross-indexing before running {agent_enum.value}?",
-                            default=False,
-                        ):
-                            self.cross_project_indexer.run_incremental_cross_indexing()
-                    else:
-                        # No changes detected, skip silently
-                        console.info(
-                            "No changes detected for incremental cross-indexing"
-                        )
-                        console.dim("   • Skipping incremental cross-indexing")
 
             # Check if cross-indexing is required
             if agent_config.requires_cross_indexing:
@@ -905,7 +885,7 @@ class ModernSutraKit:
             console.error(f"Indexing failed: {e}")
             raise
 
-    def _run_incremental_indexing_and_get_changes(self):
+    def _run_incremental_indexing_and_get_changes(self) -> Dict[str, Any]:
         """Run incremental indexing and return the changes found by project."""
         console.print()
         console.info("Starting incremental indexing")

@@ -259,9 +259,9 @@ class SQLiteConnection:
                 ),
             )
             self.connection.commit()
-            logger.debug(
-                f"Inserted code block '{block.name}' with ID: {block.id}, file_id: {block.file_id}, parent_id: {block.parent_block_id}"
-            )
+            # logger.debug(
+            #     f"Inserted code block '{block.name}' with ID: {block.id}, file_id: {block.file_id}, parent_id: {block.parent_block_id}"
+            # )
             return block.id
 
         except Exception as e:
@@ -288,7 +288,7 @@ class SQLiteConnection:
             )
             self.connection.commit()
             relationship_id = cursor.lastrowid
-            logger.debug(f"Inserted relationship with ID: {relationship_id}")
+            # logger.debug(f"Inserted relationship with ID: {relationship_id}")
 
             if not relationship_id:
                 logger.error("Failed to retrieve relationship ID after insertion")
@@ -438,9 +438,9 @@ class SQLiteConnection:
 
             self.connection.commit()
 
-            logger.debug(
-                f"Deleted {block_count} code blocks for project '{project_name}'"
-            )
+            # logger.debug(
+            #     f"Deleted {block_count} code blocks for project '{project_name}'"
+            # )
             return block_count
 
         except Exception as e:
