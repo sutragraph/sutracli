@@ -240,6 +240,9 @@ class StorageConfig:
     # Model storage
     models_dir: str
 
+    # LSP servers storage
+    lsp_servers_dir: str
+
 
 @dataclass
 class EmbeddingConfig:
@@ -414,6 +417,7 @@ class Config:
             self.storage.file_changes_dir,
             self.storage.file_edits_dir,
             self.storage.models_dir,
+            self.storage.lsp_servers_dir,
         ]
 
         for directory in directories:

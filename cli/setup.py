@@ -52,6 +52,7 @@ def setup_directories():
         INSTALL_DIR / "data" / "edits",
         INSTALL_DIR / "parser_results",
         INSTALL_DIR / "logs",
+        INSTALL_DIR / "lsp_servers",
     ]
 
     for directory in directories:
@@ -194,6 +195,7 @@ def setup_configuration():
             "file_edits_dir": f"{INSTALL_DIR}/data/edits",
             "parser_results_dir": f"{INSTALL_DIR}/parser_results",
             "models_dir": f"{INSTALL_DIR}/models",
+            "lsp_servers_dir": f"{INSTALL_DIR}/lsp_servers",
         },
         "embedding": {
             "model_path": f"{INSTALL_DIR}/models/all-MiniLM-L6-v2",
