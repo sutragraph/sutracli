@@ -398,7 +398,7 @@ class ProjectIndexer:
                             # Use string representation for results dict (consistent with existing format)
                             file_path_str = str(file_path)
                             parsed_results[file_path_str] = result
-                            logger.debug(f"✅ Parsed file: {file_path}")
+                            # logger.debug(f"✅ Parsed file: {file_path}")
                     except Exception as e:
                         logger.error(f"Error parsing file {file_path}: {e}")
                         continue
@@ -447,7 +447,7 @@ class ProjectIndexer:
                         unsupported=result.get("unsupported", False),
                     )
                     updated_files[file_path_str] = file_data
-                    logger.debug(f"✅ Updated FileData for: {file_path_str}")
+                    # logger.debug(f"✅ Updated FileData for: {file_path_str}")
 
             # Create updated extraction data
             updated_extraction_data = ExtractionData(
@@ -510,12 +510,18 @@ class ProjectIndexer:
 
         # Process changed and deleted files (delete their nodes and relationships)
         files_to_delete = changes["changed_files"].union(changes["deleted_files"])
+        preserved_connections_list = []
+
         for file_path in files_to_delete:
             # Convert Path to string for database operations
             file_path_str = str(file_path)
             deleted = self._delete_files_and_embeddings(file_path_str, project_id)
             nodes_deleted += deleted["nodes"]
             relationships_deleted += deleted["relationships"]
+
+            # Collect preserved connections for later restoration
+            if "preserved_connections" in deleted:
+                preserved_connections_list.append(deleted["preserved_connections"])
 
         # Process changed and new files (add their nodes and relationships)
         files_to_add = changes["changed_files"].union(changes["new_files"])
@@ -553,6 +559,14 @@ class ProjectIndexer:
                 self._generate_embeddings_for_changed_files(
                     list(filtered_files.values()), project_id, project_name
                 )
+
+                # Restore preserved connections after files are recreated
+                self._restore_preserved_connections(preserved_connections_list)
+        else:
+            # Even if no files are being added, we might need to restore connections for deleted files
+            if preserved_connections_list:
+                logger.debug("Restoring preserved connections for deleted files")
+                self._restore_preserved_connections(preserved_connections_list)
 
         logger.debug(
             f"📊 Processed changes: {nodes_deleted} nodes deleted, {relationships_deleted} relationships deleted"
@@ -612,16 +626,46 @@ class ProjectIndexer:
             )
             relationships_count = rel_count[0]["count"] if rel_count else 0
 
-            # Delete the file (will cascade delete code blocks and relationships)
+            # Preserve connections before deleting the file
+            # Get all connections for this file
+            incoming_connections = self.connection.execute_query(
+                "SELECT * FROM incoming_connections WHERE file_id = ?",
+                (raw_file_id,),
+            )
+            outgoing_connections = self.connection.execute_query(
+                "SELECT * FROM outgoing_connections WHERE file_id = ?",
+                (raw_file_id,),
+            )
+
+            incoming_count = len(incoming_connections) if incoming_connections else 0
+            outgoing_count = len(outgoing_connections) if outgoing_connections else 0
+
+            if incoming_count > 0 or outgoing_count > 0:
+                logger.info(
+                    f"🔄 Preserving {incoming_count} incoming and {outgoing_count} outgoing connections "
+                    f"for file {file_path} during incremental indexing"
+                )
+
+            # Delete the file (CASCADE DELETE will clean up code_blocks and relationships)
             self.connection.execute_query(
                 "DELETE FROM files WHERE id = ?",
                 (raw_file_id,),
             )
 
-            # Return deletion counts
+            # Store preserved connections for later restoration after file recreation
+            # We'll return this data so it can be restored after the file is recreated
+            preserved_connections = {
+                "incoming": incoming_connections or [],
+                "outgoing": outgoing_connections or [],
+                "file_id": raw_file_id,
+                "file_path": file_path,
+            }
+
+            # Return deletion counts and preserved connections
             return {
                 "nodes": len(prefixed_node_ids),  # File + code blocks
                 "relationships": relationships_count,
+                "preserved_connections": preserved_connections,
             }
 
         except Exception as e:
@@ -631,6 +675,77 @@ class ProjectIndexer:
     def _delete_embeddings(self, node_ids: List[str], project_id: int) -> None:
         """Delete embeddings for specified nodes. Node IDs should already include prefixes (file_ or block_)."""
         self.embedding_engine.delete_embeddings(node_ids, project_id)
+
+    def _restore_preserved_connections(
+        self, preserved_connections_list: List[Dict]
+    ) -> None:
+        """Restore preserved connections after files are recreated.
+
+        Args:
+            preserved_connections_list: List of preserved connection data from deleted files
+        """
+        try:
+            total_restored = 0
+
+            for preserved_data in preserved_connections_list:
+                file_id = preserved_data["file_id"]
+                file_path = preserved_data["file_path"]
+                incoming_connections = preserved_data["incoming"]
+                outgoing_connections = preserved_data["outgoing"]
+
+                incoming_count = len(incoming_connections)
+                outgoing_count = len(outgoing_connections)
+
+                if incoming_count > 0 or outgoing_count > 0:
+                    logger.info(
+                        f"🔄 Restoring {incoming_count} incoming and {outgoing_count} outgoing connections "
+                        f"for file {file_path} (file_id: {file_id})"
+                    )
+
+                # Restore incoming connections
+                for conn in incoming_connections:
+                    self.connection.execute_query(
+                        """INSERT INTO incoming_connections
+                           (description, file_id, start_line, end_line, technology_name, code_snippet, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            conn["description"],
+                            file_id,
+                            conn["start_line"],
+                            conn["end_line"],
+                            conn["technology_name"],
+                            conn["code_snippet"],
+                            conn["created_at"],
+                        ),
+                    )
+                    total_restored += 1
+
+                # Restore outgoing connections
+                for conn in outgoing_connections:
+                    self.connection.execute_query(
+                        """INSERT INTO outgoing_connections
+                           (description, file_id, start_line, end_line, technology_name, code_snippet, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            conn["description"],
+                            file_id,
+                            conn["start_line"],
+                            conn["end_line"],
+                            conn["technology_name"],
+                            conn["code_snippet"],
+                            conn["created_at"],
+                        ),
+                    )
+                    total_restored += 1
+
+            if total_restored > 0:
+                logger.info(
+                    f"✅ Successfully restored {total_restored} connections after file recreation"
+                )
+
+        except Exception as e:
+            logger.error(f"Error restoring preserved connections: {e}")
+            # Don't raise the exception as this shouldn't fail the entire indexing process
 
     def _update_sutra_memory_for_changes(
         self, changes: Dict[str, Set[Path]], project_id: int

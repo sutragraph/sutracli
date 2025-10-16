@@ -62,6 +62,8 @@ You MUST classify each connection using ONLY one of these exact technology type 
   - IMPORTANT: This is a last resort. Only use when absolutely no other type fits.
   - Do NOT use for unclear code - make your best assessment based on context.
 
+NOTE: Database, Cache, and Storage connections are NOT to be included in this analysis. It is not related to data transmission between services.
+
 ## CONNECTION CLASSIFICATION
 ### INCOMING CONNECTIONS
 Connections where OTHER services connect TO this service:

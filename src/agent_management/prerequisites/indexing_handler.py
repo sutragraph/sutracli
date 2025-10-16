@@ -8,7 +8,10 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from loguru import logger
+from rich.panel import Panel
+from rich.prompt import Confirm
 
+from src.graph.cross_project_indexer import CrossProjectIndexer
 from src.graph.graph_operations import GraphOperations
 from src.graph.project_indexer import ProjectIndexer
 from src.graph.sqlite_client import SQLiteConnection
@@ -22,6 +25,7 @@ class IndexingPrerequisitesHandler:
         self.connection = SQLiteConnection()
         self.graph_ops = GraphOperations()
         self.indexer = ProjectIndexer()
+        self.cross_project_indexer = CrossProjectIndexer()
         logger.debug("🔧 IndexingPrerequisitesHandler initialized")
 
     def _get_file_content_before_changes(self, file_path, project_name):
@@ -392,3 +396,52 @@ class IndexingPrerequisitesHandler:
             "invalid_projects": invalid_projects,
             "total_projects": len(projects),
         }
+
+    def run_incremental_cross_indexing(self, changes_by_project: Dict[str, Any]):
+        # Create checkpoint from actual incremental indexing changes
+        self.cross_project_indexer.create_checkpoint_from_incremental_changes(
+            changes_by_project
+        )
+
+        # Check if there are changes for incremental cross-indexing
+        if self.cross_project_indexer.has_incremental_cross_indexing_changes():
+            # Show informative panel about detected changes
+            console.print()
+            change_info = """
+[bold]Incremental Cross-Indexing:[/bold] Analyzes relationships between your
+modified code components and updates service connection mappings.
+
+⚠️  [bold]Will consume LLM tokens[/bold]
+
+✅ [bold]Run if:[/bold] You're confident with your changes and want agents to understand them
+❌ [dim]Skip if:[/dim] Still making changes or want to save tokens for later
+            """
+
+            info_panel = Panel(
+                change_info.strip(),
+                title=f"🔍 [bold]Code Changes Detected![bold]",
+                border_style="blue",
+                title_align="left",
+            )
+            console.print(info_panel)
+            console.print()
+
+            # Prompt for incremental cross-indexing after incremental indexing
+            if Confirm.ask(
+                "⚡ Run incremental cross-indexing before running the agent?",
+                default=False,
+            ):
+                console.print()
+                console.process("Starting incremental cross-indexing analysis...")
+                self.cross_project_indexer.run_incremental_cross_indexing()
+            else:
+                console.print()
+                console.info("⏭️  Skipping incremental cross-indexing")
+                console.dim("   • You can run this later when you're ready")
+                console.dim(
+                    "   • Your changes are saved and will be analyzed next time"
+                )
+        else:
+            # No changes detected, skip silently
+            console.info("No changes detected for incremental cross-indexing")
+            console.dim("   • Skipping incremental cross-indexing")

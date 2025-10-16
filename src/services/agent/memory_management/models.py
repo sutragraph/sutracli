@@ -39,7 +39,7 @@ class CodeSnippet:
     file_path: str
     start_line: int
     end_line: int
-    description: str
+    description: str = ""
     content: str = ""  # Actual code content (main snippet only)
     is_traced: bool = False  # Whether trace chains have been fully analyzed
     root_elements: List[TracedElement] = field(

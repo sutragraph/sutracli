@@ -40,7 +40,7 @@ dependencies = [
     "setuptools==80.9.0",
     "prompt_toolkit==3.0.48",
     "rich==14.1.0",
-    "baml-py==0.207.0",
+    "baml-py==0.210.0",
 ]
 
 [project.urls]

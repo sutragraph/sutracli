@@ -41,6 +41,7 @@ from queries.graph_queries import (
     GET_CONNECTIONS_BY_IDS,
     GET_EXISTING_INCOMING_CONNECTIONS,
     GET_EXISTING_OUTGOING_CONNECTIONS,
+    GET_PROJECT_DESCRIPTION,
     INSERT_CONNECTION_MAPPING,
     INSERT_INCOMING_CONNECTION,
     INSERT_OUTGOING_CONNECTION,
@@ -1394,6 +1395,29 @@ class GraphOperations:
         except Exception as e:
             logger.error(f"Error updating project description: {e}")
             raise
+
+    def get_project_description(self, project_id: int) -> Optional[str]:
+        """
+        Get project description by project ID.
+
+        Args:
+            project_id: ID of the project
+
+        Returns:
+            Project description or None if not found
+        """
+        try:
+            cursor = self.connection.connection.execute(
+                GET_PROJECT_DESCRIPTION,
+                (project_id,),
+            )
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else None
+        except Exception as e:
+            logger.error(
+                f"Error getting project description for project {project_id}: {e}"
+            )
+            return None
 
     def insert_incoming_connection(
         self,

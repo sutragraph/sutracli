@@ -81,9 +81,6 @@ def compute_directory_hashes(dir_path: Union[str, Path]) -> Dict[Path, str]:
                     absolute_path = file_path.resolve()
                     file_hashes[absolute_path] = file_hash
 
-        console.print(
-            f"📊 Computed hashes for {len(file_hashes)} files in directory: {dir_path}"
-        )
         return file_hashes
 
     except Exception as e:

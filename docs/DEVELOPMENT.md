@@ -87,7 +87,7 @@ baml-cli generate
 
 ### Version Compatibility Notes
 
-- The project uses `baml-py==0.207.0` for runtime
+- The project uses `baml-py==0.210.0` for runtime
 - Older `baml-cli` versions may be incompatible due to API changes
 - The pre-commit hook handles this gracefully and provides guidance
 - Pre-generated client files are included in the package distribution
