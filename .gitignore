@@ -137,7 +137,7 @@ build/
 certs/
 
 # models
-models/all-MiniLM-L12-v2
+models
 
 # Config
 configs/dev.json

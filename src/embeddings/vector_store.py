@@ -26,7 +26,7 @@ from config import config
 class EmbeddingModel:
     """Handles embedding model loading and inference."""
 
-    def __init__(self, model_path: str = "models/all-MiniLM-L12-v2"):
+    def __init__(self, model_path: str = "models/all-MiniLM-L6-v2"):
         self.model_path = Path(model_path)
         self.session: Optional[ort.InferenceSession] = None
         self.tokenizer: Optional[Tokenizer] = None
@@ -476,7 +476,7 @@ class VectorStore:
                 config_obj = get_config()
                 model_path = os.path.expanduser(config_obj.embedding.model_path)
             except Exception:
-                model_path = "models/all-MiniLM-L12-v2"
+                model_path = "models/all-MiniLM-L6-v2"
 
         self.embedding_model = EmbeddingModel(model_path)
         self.text_chunker = TextChunker(self.embedding_model)

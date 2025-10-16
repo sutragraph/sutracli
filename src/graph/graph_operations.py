@@ -683,10 +683,11 @@ class GraphOperations:
                 connections = {}
                 if connection_mappings:
                     connections["mappings"] = connection_mappings
-                if filtered_connections.get("incoming"):
-                    connections["incoming"] = filtered_connections["incoming"]
-                if filtered_connections.get("outgoing"):
-                    connections["outgoing"] = filtered_connections["outgoing"]
+                # TEMPORARY: Skip unmapped connections for now
+                # if filtered_connections.get("incoming"):
+                #     connections["incoming"] = filtered_connections["incoming"]
+                # if filtered_connections.get("outgoing"):
+                #     connections["outgoing"] = filtered_connections["outgoing"]
 
                 # Get parent info with error handling
                 parent_info = None

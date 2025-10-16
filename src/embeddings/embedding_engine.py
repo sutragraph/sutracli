@@ -618,7 +618,7 @@ class EmbeddingEngine:
 
             # Create placeholders for the SQL query
             placeholders = ",".join(["?" for _ in node_ids])
-            params = tuple(node_ids + [str(project_id)])
+            params = tuple(node_ids + [project_id])
 
             # Execute deletion
             vector_store.connection.execute(
