@@ -1,18 +1,37 @@
 import difflib
 import json
+import json
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
+from rich.console import Group
+from rich.panel import Panel
+from rich.rule import Rule
+from rich.syntax import Syntax
+from rich.table import Table
+from rich.text import Text
 
 from src.graph.graph_operations import GraphOperations
 from src.graph.sqlite_client import SQLiteConnection
 from src.queries.graph_queries import (
     DELETE_ALL_CHECKPOINTS,
     DELETE_CHECKPOINTS_BY_IDS,
+    DELETE_CONNECTIONS_BY_FILE_ID,
     GET_ALL_CHECKPOINTS,
     GET_CONNECTIONS_BY_FILE_ID,
+    GET_FILE_ID_BY_PATH,
     INSERT_CHECKPOINT,
+    UPDATE_CONNECTION_CODE_AND_LINES,
+    UPDATE_CONNECTION_LINES,
+)
+from src.services.agent.session_management import SessionManager
+from src.services.cross_indexing.core.cross_index_phase import CrossIndexing
+from src.services.cross_indexing.core.cross_indexing_task_manager import (
+    CrossIndexingTaskManager,
+)
+from src.tools.utils.constants import CROSS_INDEXING_CONFIG
     UPDATE_CONNECTION_CODE_AND_LINES,
     UPDATE_CONNECTION_LINES,
 )
@@ -47,7 +66,11 @@ class CrossProjectIndexer:
             self._task_manager.set_current_phase(4)
 
     def _load_cross_indexing_checkpoint(self):
-        """Load the checkpoint from incremental cross-indexing database."""
+        """Load the checkpoint from incremental cross-indexing database.
+
+        Returns tuple of (checkpoint_data, checkpoint_ids) where checkpoint_ids
+        is the list of database IDs for the loaded checkpoints, used for selective deletion.
+        """
 
         try:
             # Get all checkpoint changes from database
@@ -151,6 +174,51 @@ class CrossProjectIndexer:
                 if added_files:
                     console.print(
                         f"   ➕ Collecting {len(added_files)} new files info..."
+        console.print(
+            "📊 Processing accumulated changes for incremental cross-indexing:"
+        )
+
+        try:
+            # Initialize cross-indexing components once
+            self._initialize_cross_indexing_components()
+
+            # Group files by project_id
+            files_by_project = self._group_files_by_project(diff)
+
+            if not files_by_project:
+                console.warning("No files to process in diff")
+                return False
+
+            console.print(
+                f"   • Processing changes across {len(files_by_project)} project(s)"
+            )
+
+            # Process each project separately
+            for project_id, project_diff in files_by_project.items():
+                console.print(f"\n📦 Processing Project ID: {project_id}")
+
+                # Process deleted files
+                deleted_files = project_diff.get("deleted", {})
+                if deleted_files:
+                    console.print(f"   🗑️  {len(deleted_files)} file(s) deleted")
+
+                # Process modified files and collect snippet info (don't add to task_manager yet)
+                modified_files = project_diff.get("modified", {})
+                modified_snippet_infos = []
+                if modified_files:
+                    console.print(
+                        f"   📝 Processing {len(modified_files)} modified files..."
+                    )
+                    modified_snippet_infos = self._process_modified_files(
+                        modified_files
+                    )
+
+                # Process new files and collect file info
+                added_files = project_diff.get("added", {})
+                new_file_infos = []
+                if added_files:
+                    console.print(
+                        f"   ➕ Collecting {len(added_files)} new files info..."
                     )
                     new_file_infos = self._collect_new_files_info(added_files)
 
@@ -167,6 +235,7 @@ class CrossProjectIndexer:
 
             # Run Phase 5 once at the end for all projects
             if files_by_project:
+                console.print(f"\n🔗 Running Connection Matching for all projects...")
                 self._cross_indexing.run_connection_matching()
             return True
 
@@ -178,6 +247,13 @@ class CrossProjectIndexer:
     def _group_files_by_project(self, diff) -> Dict[int, Dict[str, Dict]]:
         """
         Group files by project_id from diff.
+
+        Args:
+            diff: Dictionary with 'deleted', 'modified', 'added' categories
+
+        Returns:
+            Dictionary mapping project_id to project-specific diff
+            Format: {project_id: {'deleted': {}, 'modified': {}, 'added': {}}}
         """
         try:
             files_by_project = {}
@@ -218,7 +294,12 @@ class CrossProjectIndexer:
             return {}
 
     def _save_cross_indexing_checkpoint_reset_baseline(self, checkpoint_ids=None):
-        """Clear checkpoint after successful incremental cross-indexing processing."""
+        """Clear checkpoint after successful incremental cross-indexing processing.
+
+        Args:
+            checkpoint_ids: Optional list of specific checkpoint IDs to delete.
+                          If None, deletes all checkpoints.
+        """
         try:
             if checkpoint_ids:
                 # Delete only the specific checkpoints that were used for indexing
@@ -592,11 +673,53 @@ class CrossProjectIndexer:
     # Incremental Cross-Indexing Helper Methods
     # ========================================================================
 
+    def _get_file_id_from_path(self, file_key: str) -> Optional[Tuple[int, int]]:
+        """
+        Get file_id and project_id from file_key.
+
+        Args:
+            file_key: Format "project_id:file_path"
+
+        Returns:
+            Tuple of (file_id, project_id) or None if not found
+        """
+        try:
+            parts = file_key.split(":", 1)
+            if len(parts) != 2:
+                logger.warning(f"Invalid file_key format: {file_key}")
+                return None
+
+            project_id = int(parts[0])
+            file_path = parts[1]
+
+            result = self.connection.execute_query(
+                GET_FILE_ID_BY_PATH, (file_path, project_id)
+            )
+
+            if result and len(result) > 0:
+                return result[0]["id"], project_id
+
+            logger.warning(
+                f"File not found in database: {file_path} (project: {project_id})"
+            )
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting file_id from path {file_key}: {e}")
+            return None
+
     def _get_connections_for_file(
         self, file_id: int, connection_type: str = "both"
     ) -> List[Dict[str, Any]]:
         """
         Get connections for a file.
+
+        Args:
+            file_id: File ID to query
+            connection_type: "incoming", "outgoing", or "both"
+
+        Returns:
+            List of connection dictionaries
         """
         try:
             connections = []
@@ -625,9 +748,52 @@ class CrossProjectIndexer:
             logger.error(f"Error getting connections for file {file_id}: {e}")
             return []
 
+    def _delete_connections_for_file(self, file_id: int) -> int:
+        """
+        Delete all incoming and outgoing connections for a file.
+
+        Args:
+            file_id: File ID
+
+        Returns:
+            Number of connections deleted
+        """
+        try:
+            deleted_count = 0
+
+            # Delete incoming connections
+            query_incoming = DELETE_CONNECTIONS_BY_FILE_ID.format(
+                table_name="incoming_connections"
+            )
+            cursor = self.connection.connection.execute(query_incoming, (file_id,))
+            deleted_count += cursor.rowcount
+
+            # Delete outgoing connections
+            query_outgoing = DELETE_CONNECTIONS_BY_FILE_ID.format(
+                table_name="outgoing_connections"
+            )
+            cursor = self.connection.connection.execute(query_outgoing, (file_id,))
+            deleted_count += cursor.rowcount
+
+            self.connection.connection.commit()
+
+            return deleted_count
+
+        except Exception as e:
+            logger.error(f"Error deleting connections for file {file_id}: {e}")
+            self.connection.connection.rollback()
+            return 0
+
     def _parse_diff_lines(self, old_content: str, new_content: str) -> Dict[str, Any]:
         """
         Parse diff between old and new content and create line mapping.
+
+        Args:
+            old_content: Original content
+            new_content: New content
+
+        Returns:
+            Dictionary with line mapping and change information
         """
         try:
             old_lines = old_content.splitlines() if old_content else []
@@ -668,22 +834,13 @@ class CrossProjectIndexer:
                         )
 
                 elif tag == "replace":
-                    # Lines completely replaced - track BOTH old and new ranges
-                    old_replaced_start = i1 + 1  # Convert to 1-based
-                    old_replaced_end = i2  # Convert to 1-based
-                    new_replaced_start = j1 + 1  # Convert to 1-based
-                    new_replaced_end = j2  # Convert to 1-based
-                    replaced_ranges.append(
-                        (
-                            old_replaced_start,
-                            old_replaced_end,
-                            new_replaced_start,
-                            new_replaced_end,
-                        )
-                    )
+                    # Lines completely replaced - track the replaced range
+                    replaced_start = i1 + 1  # Convert to 1-based
+                    replaced_end = i2  # Convert to 1-based
+                    replaced_ranges.append((replaced_start, replaced_end))
 
                     logger.debug(
-                        f"Content replaced in range {old_replaced_start}-{old_replaced_end}"
+                        f"Content replaced in range {replaced_start}-{replaced_end}"
                     )
 
                     # Old lines in replaced range map to None (will be deleted)
@@ -694,12 +851,12 @@ class CrossProjectIndexer:
                             f"Replaced (removed) line {line_num}: {old_lines[line_num - 1].strip()}"
                         )
 
-                    # Log new lines in replacement (handled by resplitting, NOT added to added_lines)
+                    # New lines in replacement are recorded for phase 4
                     for line_num in range(j1 + 1, j2 + 1):  # Convert to 1-based
+                        added_lines.append(line_num)
                         logger.debug(
                             f"Replaced (added) line {line_num}: {new_lines[line_num - 1].strip()}"
                         )
-                    # NOTE: Replacement lines are NOT added to added_lines - they're handled by resplitting logic only
 
             logger.debug(
                 f"Diff analysis: {len(removed_lines)} removed lines, {len(added_lines)} added lines, {len(replaced_ranges)} replaced ranges"
@@ -730,6 +887,11 @@ class CrossProjectIndexer:
     ):
         """
         Update code snippets for connections that need code updates.
+
+        Args:
+            connections: List of connections to update
+            file_content: Updated file content
+            file_path: File path for fetching code
         """
         for connection in connections:
             if connection.get("needs_code_update") and not connection.get("is_deleted"):
@@ -750,15 +912,12 @@ class CrossProjectIndexer:
         diff_data: Dict[str, Any],
         updated_file_content: str,
         file_path: str,
-    ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+    ) -> List[Dict]:
         """
         Update connection records after file modifications using line mapping.
-
-        Returns:
-            Tuple of (updated_connections, connections_for_resplitting, deleted_connections)
         """
         if not connections:
-            return connections, [], []
+            return connections
 
         line_mapping = diff_data.get("line_mapping", {})
         replaced_ranges = diff_data.get("replaced_ranges", [])
@@ -785,112 +944,40 @@ class CrossProjectIndexer:
             should_delete = False
             needs_splitting_range = None
 
-            # First, collect all overlapping OR adjacent replacements to merge them
-            # Adjacent replacements are likely part of the same logical change
-            ADJACENCY_THRESHOLD = 3  # Lines within this distance are considered related
-            overlapping_replacements = []
+            for replaced_start, replaced_end in replaced_ranges:
+                # Check if there's any overlap with this replaced range
+                if start_line <= replaced_end and end_line >= replaced_start:
+                    # There's overlap - now determine the action based on boundaries
 
-            for (
-                old_replaced_start,
-                old_replaced_end,
-                new_replaced_start,
-                new_replaced_end,
-            ) in replaced_ranges:
-                # Check if there's any overlap OR adjacency with this replaced range (using OLD line numbers)
-                # This catches both direct overlaps and nearby replacements that are part of the same change
-                if (
-                    start_line <= old_replaced_end + ADJACENCY_THRESHOLD
-                    and end_line >= old_replaced_start - ADJACENCY_THRESHOLD
-                ):
-                    overlapping_replacements.append(
-                        (
-                            old_replaced_start,
-                            old_replaced_end,
-                            new_replaced_start,
-                            new_replaced_end,
+                    if replaced_start <= start_line and replaced_end >= end_line:
+                        # Case 1: Replacement completely covers connection (e.g., conn 5-10, replace 2-11)
+                        # Action: Delete connection + send replacement range for splitting
+                        should_delete = True
+                        needs_splitting_range = (replaced_start, replaced_end)
+                        logger.debug(
+                            f"  Connection {conn.get('id', 'unknown')} completely covered by replacement {replaced_start}-{replaced_end}"
                         )
-                    )
+                        break
 
-            # If there are overlapping replacements, merge them and determine action
-            if overlapping_replacements:
-                # Find the min/max of all overlapping replacements (in NEW file coordinates)
-                min_new_start = min(r[2] for r in overlapping_replacements)
-                max_new_end = max(r[3] for r in overlapping_replacements)
+                    elif replaced_start < start_line or replaced_end > end_line:
+                        # Case 2: Replacement extends beyond connection boundaries (e.g., conn 5-10, replace 3-7 or 8-12)
+                        # Action: Delete connection + send extended range for splitting
+                        should_delete = True
+                        extended_start = min(replaced_start, start_line)
+                        extended_end = max(replaced_end, end_line)
+                        needs_splitting_range = (extended_start, extended_end)
+                        logger.debug(
+                            f"  Connection {conn.get('id', 'unknown')} extends beyond replacement {replaced_start}-{replaced_end}, extended range: {extended_start}-{extended_end}"
+                        )
+                        break
 
-                # Check old coordinates to determine overlap type
-                min_old_start = min(r[0] for r in overlapping_replacements)
-                max_old_end = max(r[1] for r in overlapping_replacements)
-
-                if min_old_start <= start_line and max_old_end >= end_line:
-                    # Case 1: Replacements completely cover connection
-                    should_delete = True
-                    needs_splitting_range = (
-                        min_new_start,
-                        max_new_end,
-                        conn.get("description", ""),
-                    )
-                    logger.debug(
-                        f"  Connection {conn.get('id', 'unknown')} completely covered by replacement(s) {min_old_start}-{max_old_end}"
-                    )
-
-                elif min_old_start < start_line or max_old_end > end_line:
-                    # Case 2: Replacements extend beyond connection boundaries
-                    # Map connection boundaries to new positions
-                    should_delete = True
-
-                    mapped_start = line_mapping.get(start_line)
-                    mapped_end = line_mapping.get(end_line)
-
-                    # Calculate extended range using NEW line numbers
-                    if mapped_start is not None and mapped_end is not None:
-                        extended_start = min(min_new_start, mapped_start)
-                        extended_end = max(max_new_end, mapped_end)
-                    elif mapped_start is not None:
-                        extended_start = min(min_new_start, mapped_start)
-                        extended_end = max_new_end
-                    elif mapped_end is not None:
-                        extended_start = min_new_start
-                        extended_end = max(max_new_end, mapped_end)
                     else:
-                        # Connection boundaries completely deleted, use merged replacement range
-                        extended_start = min_new_start
-                        extended_end = max_new_end
-
-                    # Also check for adjacent added lines that should be included
-                    # These are often part of the same logical change (e.g., new error handling)
-                    added_lines_data = diff_data.get("added", [])
-                    for added_line in added_lines_data:
-                        # Check if added line is before the extended range (within threshold)
-                        if (
-                            extended_start - ADJACENCY_THRESHOLD
-                            <= added_line
-                            < extended_start
-                        ):
-                            extended_start = min(extended_start, added_line)
-                        # If added line is within or immediately after the extended range, include it
-                        elif (
-                            extended_start
-                            <= added_line
-                            <= extended_end + ADJACENCY_THRESHOLD
-                        ):
-                            extended_end = max(extended_end, added_line)
-
-                    needs_splitting_range = (
-                        extended_start,
-                        extended_end,
-                        conn.get("description", ""),
-                    )
-                    logger.debug(
-                        f"  Connection {conn.get('id', 'unknown')} extends beyond replacement(s) {min_old_start}-{max_old_end}, extended range: {extended_start}-{extended_end}"
-                    )
-
-                else:
-                    # Case 3: Replacements are completely within connection
-                    conn["needs_resplitting"] = True
-                    conn["old_description"] = conn.get("description", "")
-                    logger.debug(
-                        f"  Connection {conn.get('id', 'unknown')} contains replacement(s) {min_old_start}-{max_old_end} - marking for resplitting due to code change"
-                    )
+                        # Case 3: Replacement is completely within connection (e.g., conn 5-10, replace 6-7)
+                        # Action: Keep connection and update via line mapping
+                        logger.debug(
+                            f"  Connection {conn.get('id', 'unknown')} contains replacement {replaced_start}-{replaced_end} - keeping with line mapping"
+                        )
+                        # Continue to normal line mapping below
 
             if should_delete:
                 conn["is_deleted"] = True
@@ -935,13 +1022,10 @@ class CrossProjectIndexer:
             else:
                 # Update line numbers if they changed
                 if new_start != start_line or new_end != end_line:
-                    # Store old code snippet before updating
-                    conn["old_code_snippet"] = conn.get("code_snippet", "")
                     conn["start_line"] = new_start
                     conn["end_line"] = new_end
                     conn["needs_db_update"] = True
                     conn["needs_code_update"] = True
-                    # Don't mark for resplitting yet - will check after code update
                     logger.debug(
                         f"  Updated connection {conn.get('id', 'unknown')}: {start_line}-{end_line} -> {new_start}-{new_end}"
                     )
@@ -949,157 +1033,65 @@ class CrossProjectIndexer:
         # Update code snippets for affected connections
         self._update_code_snippets(connections, updated_file_content, file_path)
 
-        # Check if code actually changed for connections that were line-shifted
-        # Only mark for resplitting if code content changed, not just line numbers
+        # Collect splitting ranges from deleted connections that need splitting
+        splitting_ranges = []
         for conn in connections:
-            if conn.get("old_code_snippet") is not None and conn.get(
-                "needs_code_update"
-            ):
-                old_code = conn.get("old_code_snippet", "").strip()
-                new_code = conn.get("code_snippet", "").strip()
-
-                if old_code != new_code:
-                    # Code content actually changed - needs resplitting
-                    conn["needs_resplitting"] = True
-                    conn["old_description"] = conn.get("description", "")
-                    logger.debug(
-                        f"  Connection {conn.get('id', 'unknown')} code changed - marking for resplitting"
-                    )
-                else:
-                    # Only line numbers changed, code is identical - just update DB
-                    logger.debug(
-                        f"  Connection {conn.get('id', 'unknown')} only line numbers changed - no resplitting needed"
-                    )
-
-                # Clean up temporary field
-                del conn["old_code_snippet"]
-
-        # Collect all connections that need resplitting (both overlapping and updated)
-        connections_for_resplitting = []
-
-        for conn in connections:
-            # Case 1: Overlapping ranges - marked as deleted with splitting range
             if conn.get("is_deleted", False) and conn.get("needs_splitting", False):
                 splitting_range = conn.get("splitting_range")
                 if splitting_range:
-                    start_line, end_line, old_description = splitting_range
-                    connections_for_resplitting.append(
-                        {
-                            "id": conn.get("id"),
-                            "direction": conn.get("direction"),
-                            "start_line": start_line,
-                            "end_line": end_line,
-                            "old_description": old_description,
-                        }
-                    )
+                    splitting_ranges.append(splitting_range)
                     logger.debug(
-                        f"  Connection {conn.get('id', 'unknown')} marked for resplitting (overlapping): lines {start_line}-{end_line}"
+                        f"  Collected splitting range {splitting_range[0]}-{splitting_range[1]} from connection {conn.get('id', 'unknown')}"
                     )
 
-            # Case 2: Internal changes - marked for resplitting with updated range
-            elif conn.get("needs_resplitting", False):
-                connections_for_resplitting.append(
-                    {
-                        "id": conn.get("id"),
-                        "direction": conn.get("direction"),
-                        "start_line": conn.get("start_line"),
-                        "end_line": conn.get("end_line"),
-                        "old_description": conn.get("old_description", ""),
-                    }
-                )
-                logger.debug(
-                    f"  Connection {conn.get('id', 'unknown')} marked for resplitting (internal change): lines {conn.get('start_line')}-{conn.get('end_line')}"
-                )
+        # Filter out deleted connections
+        connections = [c for c in connections if not c.get("is_deleted", False)]
 
-        # Collect deleted connections before filtering
-        deleted_connections = [c for c in connections if c.get("is_deleted", False)]
-
-        # Filter out deleted connections and those marked for resplitting
-        connections = [
-            c
-            for c in connections
-            if not c.get("is_deleted", False) and not c.get("needs_resplitting", False)
-        ]
-
-        return connections, connections_for_resplitting, deleted_connections
-
-    def _delete_connections_from_db(self, connections_to_delete: List[Dict]) -> None:
-        """
-        Delete connections from database.
-        Note: Does NOT commit - caller should commit the transaction.
-        """
-        if not connections_to_delete:
-            return
-
-        for conn in connections_to_delete:
-            table_name = (
-                "incoming_connections"
-                if conn["direction"] == "incoming"
-                else "outgoing_connections"
-            )
-            query = f"DELETE FROM {table_name} WHERE id = ?"
-            self.connection.connection.execute(query, (conn["id"],))
-            logger.debug(f"  Deleted connection {conn['id']} from {table_name}")
-
-        logger.debug(
-            f"  Prepared deletion of {len(connections_to_delete)} connections (commit pending)"
-        )
-
-    def _prepare_connections_for_phase4(
-        self,
-        connections_for_resplitting: List[Dict],
-        file_key: str,
-        updated_connections: List[Dict],
-    ) -> List[Dict[str, Any]]:
-        """
-        Prepare connections for Phase 4 re-splitting.
-        """
-        snippet_infos = []
-
-        for conn_info in connections_for_resplitting:
-            start_line = conn_info["start_line"]
-            end_line = conn_info["end_line"]
-            old_description = conn_info["old_description"]
-
-            # Create line range for phase 4 processing
-            range_lines = list(range(start_line, end_line + 1))
-
-            file_snippet_infos = self._handle_added_lines_collect(
-                file_key,
-                range_lines,
-                updated_connections,
-                old_description=old_description,
-            )
-            snippet_infos.extend(file_snippet_infos)
-
-            logger.debug(
-                f"  Prepared lines {start_line}-{end_line} for Phase 4 with old description"
-            )
-
-        return snippet_infos
+        return connections, splitting_ranges
 
     def _process_modified_files(
         self, modified_files: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
         Process modified files using comprehensive database line number updating logic.
+
+        This is the main entry point for processing file modifications. It replaces
+        the previous simple line number updating approach with a comprehensive
+        algorithm that handles all edge cases and maintains database consistency.
+
+        ## Processing Steps:
+        1. **No Connections**: If file has no existing connections, treat all changes as new
+        2. **With Connections**: Apply comprehensive update algorithm
+        3. **Database Updates**: Update connections with line/code changes transactionally
+        4. **New Code Detection**: Identify added lines not within existing connections
+        5. **Phase 4 Collection**: Collect snippet info for truly new code sections
+
+        ## Database Operations:
+        - **Code + Lines**: UPDATE with new code_snippet, start_line, end_line
+        - **Lines Only**: UPDATE with new start_line, end_line
+        - **Deletions**: DELETE completely removed connections
+        - **Commits**: All changes committed transactionally
+
+        ## Phase 4 Integration:
+        - Only new code sections (not within existing connections) go to Phase 4
+        - Existing connections are updated in-place without re-processing
+        - Preserves existing connection relationships and metadata
+
+        Args:
+            modified_files: Dictionary of modified files from diff
+
+        Returns:
+            List of snippet info dictionaries for Phase 4 batching (new code only)
         """
         try:
             snippet_infos = []
 
             for file_key, file_data in modified_files.items():
-                parts = file_key.split(":", 1)
-                if len(parts) != 2:
-                    logger.warning(f"Invalid file_key format: {file_key}")
+                result = self._get_file_id_from_path(file_key)
+                if not result:
                     continue
 
-                project_id = int(parts[0])
-                file_path = parts[1]
-                file_id = self._graph_ops._get_file_id_by_path(file_path)
-                if not file_id:
-                    console.warning(f"File ID not found for path: {file_path}")
-                    continue
-
+                file_id, project_id = result
                 old_content = file_data.get("baseline_content", "")
                 new_content = file_data.get("current_content", "")
 
@@ -1116,18 +1108,25 @@ class CrossProjectIndexer:
 
                     if added_lines:
                         file_snippet_infos = self._handle_added_lines_collect(
+                            file_id,
+                            project_id,
                             file_key,
                             added_lines,
+                            new_content,
                             [],  # No existing connections
                         )
                         snippet_infos.extend(file_snippet_infos)
 
+                    console.dim(
+                        f"      • No existing connections in {file_key}, collected {len(added_lines)} new lines"
+                    )
                     continue
 
                 # Parse diff to get line mapping and change info
                 diff_data = self._parse_diff_lines(old_content, new_content)
 
                 if not diff_data.get("line_mapping") and not diff_data.get("added"):
+                    console.dim(f"      • No changes detected in {file_key}")
                     continue
 
                 logger.debug(
@@ -1141,8 +1140,7 @@ class CrossProjectIndexer:
                 # Apply line mapping based connection updates
                 (
                     updated_connections,
-                    connections_for_resplitting,
-                    deleted_connections,
+                    splitting_ranges,
                 ) = self._update_connections_after_file_changes(
                     connections, diff_data, new_content, file_path
                 )
@@ -1172,7 +1170,7 @@ class CrossProjectIndexer:
                     for c in connections_needing_update
                     if not c.get("needs_code_update")
                 ]
-                # deleted_connections now comes from the return value above
+                deleted_connections = [c for c in connections if c.get("is_deleted")]
 
                 # Update connections with code + line changes
                 if connections_needing_code_update:
@@ -1195,6 +1193,10 @@ class CrossProjectIndexer:
                             ),
                         )
 
+                    console.dim(
+                        f"      • Updated {len(connections_needing_code_update)} connections (code + lines)"
+                    )
+
                 # Update connections with line-only changes
                 if connections_needing_lines_only:
                     for conn in connections_needing_lines_only:
@@ -1208,60 +1210,41 @@ class CrossProjectIndexer:
                             query, (conn["start_line"], conn["end_line"], conn["id"])
                         )
 
-                # Delete connections that were completely removed (no resplitting needed)
-                if deleted_connections:
-                    self._delete_connections_from_db(deleted_connections)
-
-                # Delete connections that need resplitting and prepare for Phase 4
-                if connections_for_resplitting:
-                    # Delete old connections from database
-                    self._delete_connections_from_db(connections_for_resplitting)
-
-                    # Prepare for Phase 4 processing with old descriptions
-                    resplit_snippet_infos = self._prepare_connections_for_phase4(
-                        connections_for_resplitting,
-                        file_key,
-                        updated_connections,
+                    console.dim(
+                        f"      • Updated {len(connections_needing_lines_only)} connections (lines only)"
                     )
-                    snippet_infos.extend(resplit_snippet_infos)
 
-                # Commit all database changes atomically (updates + deletions)
+                # Delete connections that were completely removed
+                if deleted_connections:
+                    for conn in deleted_connections:
+                        table_name = (
+                            "incoming_connections"
+                            if conn["direction"] == "incoming"
+                            else "outgoing_connections"
+                        )
+                        query = f"DELETE FROM {table_name} WHERE id = ?"
+                        self.connection.connection.execute(query, (conn["id"],))
+
+                    console.dim(
+                        f"      • Deleted {len(deleted_connections)} connections (completely removed)"
+                    )
+
+                # Commit database changes
                 self.connection.connection.commit()
 
                 # Identify new lines that need phase 4 processing
                 # These are lines that were added but are not within any existing connection range
-                # OR within connections marked for resplitting (to avoid duplicates)
                 added_lines = diff_data.get("added", [])
 
                 if added_lines:
                     # Filter out added lines that fall within updated connection ranges
-                    # or within resplitting connection ranges
                     new_lines_for_phase4 = []
                     for line_num in added_lines:
                         is_within_existing = False
-
-                        # Check against updated connections
                         for conn in updated_connections:
                             if not conn.get("is_deleted", False):
                                 if conn["start_line"] <= line_num <= conn["end_line"]:
                                     is_within_existing = True
-                                    logger.debug(
-                                        f"  Skipping line {line_num} - within updated connection {conn['start_line']}-{conn['end_line']}"
-                                    )
-                                    break
-
-                        # Also check against resplitting connections to avoid duplicates
-                        if not is_within_existing:
-                            for resplit_conn in connections_for_resplitting:
-                                if (
-                                    resplit_conn["start_line"]
-                                    <= line_num
-                                    <= resplit_conn["end_line"]
-                                ):
-                                    is_within_existing = True
-                                    logger.debug(
-                                        f"  Skipping line {line_num} - within resplitting connection {resplit_conn['start_line']}-{resplit_conn['end_line']}"
-                                    )
                                     break
 
                         if not is_within_existing:
@@ -1270,11 +1253,39 @@ class CrossProjectIndexer:
                     # Collect snippet info for new lines
                     if new_lines_for_phase4:
                         file_snippet_infos = self._handle_added_lines_collect(
+                            file_id,
+                            project_id,
                             file_key,
                             new_lines_for_phase4,
+                            new_content,
                             updated_connections,
                         )
                         snippet_infos.extend(file_snippet_infos)
+
+                        console.dim(
+                            f"      • Collected {len(new_lines_for_phase4)} new lines for phase 4 processing"
+                        )
+
+                # Add splitting ranges to phase 4 processing
+                if splitting_ranges:
+                    for start_line, end_line in splitting_ranges:
+                        # Add all lines in the splitting range for phase 4 processing
+                        range_lines = list(range(start_line, end_line + 1))
+                        file_snippet_infos = self._handle_added_lines_collect(
+                            file_id,
+                            project_id,
+                            file_key,
+                            range_lines,
+                            new_content,
+                            updated_connections,
+                        )
+                        snippet_infos.extend(file_snippet_infos)
+
+                        console.dim(
+                            f"      • Collected {len(range_lines)} lines from splitting range {start_line}-{end_line} for phase 4 processing"
+                        )
+
+                console.dim(f"      • Processed comprehensive updates for {file_key}")
 
             return snippet_infos
 
@@ -1283,24 +1294,183 @@ class CrossProjectIndexer:
             self.connection.connection.rollback()
             raise
 
+    def _handle_removed_lines(
+        self,
+        file_id: int,
+        connections: List[Dict],
+        removed_lines: List[int],
+        old_content: str,
+        new_content: str,
+    ):
+        """Handle connections affected by removed lines."""
+        try:
+            if not removed_lines:
+                return
+
+            min_removed = min(removed_lines)
+            max_removed = max(removed_lines)
+            num_removed = len(removed_lines)
+
+            connections_to_delete = []
+            connections_to_update_lines = []
+            connections_to_update_code = []
+
+            for conn in connections:
+                start_line = conn.get("start_line")
+                end_line = conn.get("end_line")
+
+                if start_line is None or end_line is None:
+                    continue
+
+                # Check if removed lines are FROM the connection code (overlap)
+                if start_line <= max_removed and end_line >= min_removed:
+                    # Check if connection range is completely within removed range
+                    if start_line >= min_removed and end_line <= max_removed:
+                        # Entire connection is deleted - remove it
+                        connections_to_delete.append(conn)
+                    else:
+                        # Partial overlap - removed lines are FROM connection code
+                        # Update connection code and line numbers
+                        new_start = start_line
+                        new_end = end_line - num_removed
+
+                        # Adjust if start is within removed range
+                        if start_line >= min_removed and start_line <= max_removed:
+                            new_start = min_removed
+
+                        # Ensure valid range
+                        if new_end >= new_start:
+                            connections_to_update_code.append(
+                                {
+                                    "id": conn["id"],
+                                    "direction": conn["direction"],
+                                    "file_path": conn.get("file_path", ""),
+                                    "new_start": new_start,
+                                    "new_end": new_end,
+                                }
+                            )
+                        else:
+                            # Invalid range after removal - delete connection
+                            connections_to_delete.append(conn)
+                elif start_line > max_removed:
+                    # Connection is after removed lines - update line numbers only
+                    line_delta = -num_removed
+                    connections_to_update_lines.append(
+                        {
+                            "id": conn["id"],
+                            "direction": conn["direction"],
+                            "new_start": start_line + line_delta,
+                            "new_end": end_line + line_delta,
+                        }
+                    )
+
+            # Delete connections completely in removed ranges
+            for conn in connections_to_delete:
+                table_name = (
+                    "incoming_connections"
+                    if conn["direction"] == "incoming"
+                    else "outgoing_connections"
+                )
+                query = f"DELETE FROM {table_name} WHERE id = ?"
+                self.connection.connection.execute(query, (conn["id"],))
+
+            # Update connections with code changes (removed lines were FROM connection code)
+            for update in connections_to_update_code:
+                # Fetch updated code from file
+                new_code = self._fetch_code_from_file(
+                    update["file_path"], update["new_start"], update["new_end"]
+                )
+
+                if new_code:
+                    table_name = (
+                        "incoming_connections"
+                        if update["direction"] == "incoming"
+                        else "outgoing_connections"
+                    )
+                    query = UPDATE_CONNECTION_CODE_AND_LINES.format(
+                        table_name=table_name
+                    )
+                    self.connection.connection.execute(
+                        query,
+                        (
+                            new_code,
+                            update["new_start"],
+                            update["new_end"],
+                            update["id"],
+                        ),
+                    )
+
+            # Update line numbers for connections after removed lines
+            for update in connections_to_update_lines:
+                table_name = (
+                    "incoming_connections"
+                    if update["direction"] == "incoming"
+                    else "outgoing_connections"
+                )
+                query = UPDATE_CONNECTION_LINES.format(table_name=table_name)
+                self.connection.connection.execute(
+                    query, (update["new_start"], update["new_end"], update["id"])
+                )
+
+            self.connection.connection.commit()
+
+            if connections_to_delete:
+                console.dim(
+                    f"      • Deleted {len(connections_to_delete)} connections completely in removed ranges"
+                )
+            if connections_to_update_code:
+                console.dim(
+                    f"      • Updated {len(connections_to_update_code)} connections (code + lines) with removed lines FROM connection"
+                )
+            if connections_to_update_lines:
+                console.dim(
+                    f"      • Updated {len(connections_to_update_lines)} connections (lines only) after removed section"
+                )
+
+        except Exception as e:
+            logger.error(f"Error handling removed lines: {e}")
+            self.connection.connection.rollback()
+            raise
+
     def _handle_added_lines_collect(
         self,
+        file_id: int,
+        project_id: int,
         file_key: str,
         added_lines: List[int],
+        new_content: str,
         connections: List[Dict],
-        old_description: str = "",
     ) -> List[Dict[str, Any]]:
         """
         Handle added lines by collecting snippet info for later batching.
+
+        Args:
+            file_id: File ID
+            project_id: Project ID
+            file_key: File key (format: "project_id:file_path")
+            added_lines: List of added line numbers
+            new_content: New file content
+            connections: Existing connections for the file
+
+        Returns:
+            List of snippet info dictionaries for batching
         """
         try:
             if not added_lines:
                 return []
 
+            min_added = min(added_lines)
+            max_added = max(added_lines)
+            num_added = len(added_lines)
+
             # Extract file path from file_key (format: "project_id:file_path")
             file_path = file_key.split(":", 1)[1] if ":" in file_key else file_key
 
-            added_lines_for_phase4 = []
+            connections_inside_existing = []  # Added lines INSIDE connection code
+            connections_after_added = []  # Connections after added lines
+            added_lines_for_phase4 = []  # Added lines NOT inside any connection
+            # Note: Connections have already been updated with correct line numbers via line mapping
+            # We only need to collect new lines that are not within existing connections for phase 4
 
             # Filter added lines to find those NOT within any existing connection
             for line_num in added_lines:
@@ -1321,6 +1491,11 @@ class CrossProjectIndexer:
             if added_lines_for_phase4:
                 line_ranges = self._group_consecutive_lines(added_lines_for_phase4)
 
+                console.dim(
+                    f"         • Collected {len(added_lines_for_phase4)} new lines in {len(line_ranges)} ranges"
+                )
+
+                # Collect snippet info (don't add to task_manager yet)
                 for start_line, end_line in line_ranges:
                     line_count = end_line - start_line + 1
                     snippet_infos.append(
@@ -1329,7 +1504,7 @@ class CrossProjectIndexer:
                             "start_line": start_line,
                             "end_line": end_line,
                             "line_count": line_count,
-                            "description": old_description,
+                            "description": "",
                         }
                     )
 
@@ -1340,11 +1515,187 @@ class CrossProjectIndexer:
             self.connection.connection.rollback()
             raise
 
+    def _handle_added_lines(
+        self,
+        file_id: int,
+        project_id: int,
+        file_key: str,
+        added_lines: List[int],
+        new_content: str,
+        run_cross_indexing: bool = True,
+    ) -> int:
+        """
+        Handle added lines by updating existing connections or collecting snippets.
+
+        Args:
+            file_id: File ID
+            project_id: Project ID
+            file_key: File key (format: "project_id:file_path")
+            added_lines: List of added line numbers
+            new_content: New file content
+            run_cross_indexing: If False, only collect snippets, don't run Phase 4
+
+        Returns:
+            Number of snippets collected for Phase 4
+        """
+        try:
+            if not added_lines:
+                return 0
+
+            min_added = min(added_lines)
+            max_added = max(added_lines)
+            num_added = len(added_lines)
+
+            # Extract file path from file_key (format: "project_id:file_path")
+            file_path = file_key.split(":", 1)[1] if ":" in file_key else file_key
+
+            # Get existing connections for this file
+            connections = self._get_connections_for_file(file_id)
+
+            connections_inside_existing = []  # Added lines INSIDE connection code
+            connections_after_added = (
+                []
+            )  # Connections after added lines (line number updates only)
+            added_lines_for_phase4 = []  # Added lines NOT inside any connection
+
+            # Categorize connections and added lines
+            if connections:
+                for conn in connections:
+                    start_line = conn.get("start_line")
+                    end_line = conn.get("end_line")
+
+                    if start_line is None or end_line is None:
+                        continue
+
+                    # Check if added lines are INSIDE this connection range
+                    if (
+                        start_line <= min_added <= end_line
+                        or start_line <= max_added <= end_line
+                    ):
+                        # Added lines are inside connection code - update code and lines
+                        connections_inside_existing.append(
+                            {
+                                "id": conn["id"],
+                                "direction": conn["direction"],
+                                "file_path": file_path,
+                                "old_start": start_line,
+                                "old_end": end_line,
+                                "new_start": start_line,
+                                "new_end": end_line + num_added,
+                            }
+                        )
+                    elif start_line > max_added:
+                        # Connection is after added lines - update line numbers only
+                        connections_after_added.append(
+                            {
+                                "id": conn["id"],
+                                "direction": conn["direction"],
+                                "new_start": start_line + num_added,
+                                "new_end": end_line + num_added,
+                            }
+                        )
+
+            # If added lines are NOT inside any connection, they go to phase 4
+            if not connections_inside_existing:
+                added_lines_for_phase4 = added_lines
+
+            # Update connections where added lines are INSIDE connection code
+            if connections_inside_existing:
+                for update in connections_inside_existing:
+                    # Fetch updated code from file with expanded range
+                    new_code = self._fetch_code_from_file(
+                        update["file_path"], update["new_start"], update["new_end"]
+                    )
+
+                    if new_code:
+                        table_name = (
+                            "incoming_connections"
+                            if update["direction"] == "incoming"
+                            else "outgoing_connections"
+                        )
+                        query = UPDATE_CONNECTION_CODE_AND_LINES.format(
+                            table_name=table_name
+                        )
+                        self.connection.connection.execute(
+                            query,
+                            (
+                                new_code,
+                                update["new_start"],
+                                update["new_end"],
+                                update["id"],
+                            ),
+                        )
+
+                self.connection.connection.commit()
+                console.dim(
+                    f"      • Updated {len(connections_inside_existing)} connections (code + lines) with added lines inside"
+                )
+
+            # Update connections that are after added lines (line numbers only)
+            if connections_after_added:
+                for update in connections_after_added:
+                    table_name = (
+                        "incoming_connections"
+                        if update["direction"] == "incoming"
+                        else "outgoing_connections"
+                    )
+                    query = UPDATE_CONNECTION_LINES.format(table_name=table_name)
+                    self.connection.connection.execute(
+                        query, (update["new_start"], update["new_end"], update["id"])
+                    )
+
+                self.connection.connection.commit()
+                console.dim(
+                    f"      • Updated {len(connections_after_added)} connections (lines only) after added section"
+                )
+
+            # Collect snippets for added lines NOT inside any connection
+            snippets_added = 0
+            if added_lines_for_phase4:
+                line_ranges = self._group_consecutive_lines(added_lines_for_phase4)
+
+                console.dim(
+                    f"      • Detected {len(added_lines_for_phase4)} new lines in {len(line_ranges)} ranges (not inside existing connections)"
+                )
+
+                # Add code snippets for each added line range
+                for start_line, end_line in line_ranges:
+                    snippet_id = self._task_manager.add_code_snippet(
+                        code_id="dummy_id",
+                        file_path=file_path,
+                        start_line=start_line,
+                        end_line=end_line,
+                        description="",  # Empty as per requirement
+                    )
+                    if snippet_id:
+                        snippets_added += 1
+
+                if snippets_added > 0:
+                    console.dim(
+                        f"      • Collected {snippets_added} code snippets for Phase 4"
+                    )
+
+            return snippets_added
+
+        except Exception as e:
+            logger.error(f"Error handling added lines: {e}")
+            self.connection.connection.rollback()
+            raise
+
     def _collect_new_files_info(
         self, added_files: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
         Collect info about new files for batching.
+
+        For files > 2000 lines: Split into 2000-line chunks
+        For files <= 2000 lines: Add as-is (will be batched together)
+
+        Args:
+            added_files: Dictionary of added files from diff
+
+        Returns:
+            List of file info dictionaries for batching
         """
         try:
             file_infos = []
@@ -1355,6 +1706,7 @@ class CrossProjectIndexer:
                 current_content = file_data.get("current_content", "")
 
                 if not current_content:
+                    console.dim(f"      • Skipping empty file: {file_key}")
                     continue
 
                 # Get line count
@@ -1371,11 +1723,17 @@ class CrossProjectIndexer:
                             "description": "",
                         }
                     )
+                    console.dim(
+                        f"      • Collected file {file_key} ({line_count} lines)"
+                    )
                 else:
                     # File is too large, split into chunks
                     num_chunks = (
                         line_count + max_lines - 1
                     ) // max_lines  # Ceiling division
+                    console.dim(
+                        f"      • Splitting large file {file_key} ({line_count} lines) into {num_chunks} chunks"
+                    )
 
                     for chunk_idx in range(num_chunks):
                         start_line = chunk_idx * max_lines + 1
@@ -1390,6 +1748,9 @@ class CrossProjectIndexer:
                                 "line_count": chunk_line_count,
                                 "description": "",
                             }
+                        )
+                        console.dim(
+                            f"         • Chunk {chunk_idx + 1}/{num_chunks}: lines {start_line}-{end_line} ({chunk_line_count} lines)"
                         )
 
             return file_infos
@@ -1406,6 +1767,11 @@ class CrossProjectIndexer:
     ):
         """
         Run Phase 4 in batches respecting the line limit.
+
+        Args:
+            project_id: Project ID
+            modified_snippet_infos: List of snippet info from modified files
+            new_file_infos: List of file info from new files
         """
         try:
             max_lines = CROSS_INDEXING_CONFIG["phase4_max_lines_per_batch"]
@@ -1420,51 +1786,35 @@ class CrossProjectIndexer:
             batches = []
             current_batch = []
             current_batch_lines = 0
-            current_batch_ranges = {}  # Track {file_path: [(start, end), ...]}
 
             for info in all_infos:
                 line_count = info["line_count"]
-                file_path = info["file_path"]
-                start_line = info["start_line"]
-                end_line = info["end_line"]
-
-                # Calculate how many unique lines this snippet adds
-                unique_lines_to_add = line_count
-
-                if file_path in current_batch_ranges:
-                    # Check for overlaps with existing snippets in this file
-                    for existing_start, existing_end in current_batch_ranges[file_path]:
-                        # Check if there's an overlap
-                        if start_line <= existing_end and existing_start <= end_line:
-                            # Calculate the overlap
-                            overlap_start = max(start_line, existing_start)
-                            overlap_end = min(end_line, existing_end)
-                            overlap_lines = overlap_end - overlap_start + 1
-                            # Subtract overlapping lines from what we're adding
-                            unique_lines_to_add -= overlap_lines
 
                 # If adding this would exceed limit, start new batch
-                if current_batch and (
-                    current_batch_lines + unique_lines_to_add > max_lines
-                ):
+                if current_batch and (current_batch_lines + line_count > max_lines):
                     batches.append(current_batch)
                     current_batch = []
                     current_batch_lines = 0
-                    current_batch_ranges = {}
 
                 current_batch.append(info)
-                current_batch_lines += unique_lines_to_add
-
-                # Track this snippet's range
-                if file_path not in current_batch_ranges:
-                    current_batch_ranges[file_path] = []
-                current_batch_ranges[file_path].append((start_line, end_line))
+                current_batch_lines += line_count
 
             # Add the last batch if not empty
             if current_batch:
                 batches.append(current_batch)
 
+            # Process each batch
+            total_batches = len(batches)
+            console.print(
+                f"      • Created {total_batches} batch(es) with {max_lines} lines limit per batch"
+            )
+
             for batch_idx, batch in enumerate(batches, 1):
+                batch_line_count = sum(info["line_count"] for info in batch)
+                console.print(
+                    f"      • Processing batch {batch_idx}/{total_batches} ({len(batch)} items, {batch_line_count} lines)..."
+                )
+
                 # Add batch items to task_manager
                 for info in batch:
                     self._task_manager.add_code_snippet(
@@ -1478,6 +1828,8 @@ class CrossProjectIndexer:
                 # Run Phase 4 for this batch
                 self._run_phase_4_with_incremental(project_id)
 
+            console.dim(f"      • Completed Phase 4 for all {total_batches} batch(es)")
+
         except Exception as e:
             logger.error(f"Error running Phase 4 in batches: {e}")
             raise
@@ -1487,6 +1839,12 @@ class CrossProjectIndexer:
     ) -> List[Tuple[int, int]]:
         """
         Group consecutive line numbers into ranges.
+
+        Args:
+            line_numbers: List of line numbers
+
+        Returns:
+            List of (start_line, end_line) tuples
         """
         if not line_numbers:
             return []
@@ -1514,18 +1872,22 @@ class CrossProjectIndexer:
     def _run_phase_4_with_incremental(self, project_id: int):
         """
         Run Phase 4 (Data Splitting) and store connections.
+
+        Args:
+            project_id: Project ID for storing connections
         """
         try:
             # Get code snippets context
             code_snippets_context = self._get_code_snippets_only_context()
 
             if not code_snippets_context or code_snippets_context.strip() == "":
+                console.dim("      • No code snippets to process")
                 return
 
             # For incremental cross-indexing, include project description in context
             project_description = self._graph_ops.get_project_description(project_id)
             if project_description and project_description.strip():
-                code_snippets_context = f"EXISTING PROJECT SUMMARY:\n{project_description}\n\nIMPORTANT NOTE: You are in incremental indexing mode. You need to update the summary and provide a new connection list if available. The above project summary is the current summary. After analyzing the new connection data below, determine if the current changes warrant an update to the project summary. If the changes add significant new functionality, architecture patterns, or integrations that aren't reflected in the current summary, provide an updated summary in the 'summary' field. If no significant updates are needed, you may leave the 'summary' field blank without any text.\n\nNOTE FOR CHANGED CONNECTIONS: Some code snippets below may include an 'Old Description' field. This is the previous description of the connection before the code was modified. When you see an 'Old Description', use it as reference context to understand what changed and provide an updated description that reflects the current state of the code. Analyze the differences between the old description and the new code to create an accurate, updated description.\n\nCODE SNIPPETS:\n{code_snippets_context}"
+                code_snippets_context = f"EXISTING PROJECT SUMMARY:\n{project_description}\n\nIMPORTANT NOTE: You are in incremental indexing mode. You need to update the summary and provide a new connection list if available. The above project summary is the current summary. After analyzing the new connection data below, determine if the current changes warrant an update to the project summary. If the changes add significant new functionality, architecture patterns, or integrations that aren't reflected in the current summary, provide an updated summary in the 'summary' field. If no significant updates are needed, you may leave the 'summary' field blank without any text.\n\nCODE SNIPPETS:\n{code_snippets_context}"
 
             # Run connection splitting
             splitting_result = self._cross_indexing.run_connection_splitting(
@@ -1565,6 +1927,7 @@ class CrossProjectIndexer:
 
             # Clear code snippets from memory after successful Phase 4
             self._task_manager.clear_code_snippets()
+            console.dim("      • Connections stored and snippets cleared")
 
         except Exception as e:
             logger.error(f"Error running Phase 4: {e}")
@@ -1583,17 +1946,11 @@ class CrossProjectIndexer:
 
             formatted_snippets = []
             for snippet in code_snippets.values():
-                snippet_text = (
+                formatted_snippets.append(
                     f"File: {snippet.file_path}\n"
                     f"Lines: {snippet.start_line}-{snippet.end_line}\n"
+                    f"Code:\n{snippet.content}\n"
                 )
-
-                # Include old description if present
-                if hasattr(snippet, "description") and snippet.description:
-                    snippet_text += f"Old Description: {snippet.description}\n"
-
-                snippet_text += f"Code:\n{snippet.content}\n"
-                formatted_snippets.append(snippet_text)
 
             return "\n".join(formatted_snippets)
 
@@ -1601,30 +1958,51 @@ class CrossProjectIndexer:
             logger.error(f"Error getting code snippets context: {e}")
             return ""
 
-    def _read_file_content_from_db(self, file_path: str) -> str:
+    def _fetch_code_from_file(
+        self, file_path: str, start_line: int, end_line: int
+    ) -> Optional[str]:
         """
-        Read file content from database.
+        Fetch code from a file for a given line range.
+
+        Args:
+            file_path: Path to the file
+            start_line: Starting line number (1-based)
+            end_line: Ending line number (1-based, inclusive)
+
+        Returns:
+            Code content as string, or None if unable to fetch
         """
         try:
-            # Ensure graph_ops is initialized
-            if self._graph_ops is None:
-                self._initialize_cross_indexing_components()
+            # Handle absolute and relative paths
+            path = Path(file_path)
+            if not path.is_absolute():
+                # Try to resolve relative path from workspace
+                path = Path.cwd() / file_path
 
-            # Get file_id first using graph_operations
-            file_id = self._graph_ops._get_file_id_by_path(str(file_path))
-            if not file_id:
-                logger.warning(f"File not found in database: {file_path}")
-                return ""
+            if not path.exists():
+                logger.warning(f"File not found: {file_path}")
+                return None
 
-            # Use graph_operations to get file content
-            file_data = self._graph_ops.resolve_file(file_id)
-            if not file_data:
-                logger.warning(f"No file data found for file_id: {file_id}")
-                return ""
+            with open(path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
 
-            # Extract and return code content
-            return file_data.get("content", "")
+            # Convert to 0-based index
+            start_idx = start_line - 1
+            end_idx = end_line  # end_line is inclusive, so no -1
+
+            # Validate line range
+            if start_idx < 0 or end_idx > len(lines):
+                logger.warning(
+                    f"Invalid line range {start_line}-{end_line} for file with {len(lines)} lines: {file_path}"
+                )
+                return None
+
+            # Extract and join lines
+            code_lines = lines[start_idx:end_idx]
+            return "".join(code_lines)
 
         except Exception as e:
-            logger.warning(f"Error reading file from database: {file_path}, {e}")
-            return ""
+            logger.error(
+                f"Error fetching code from {file_path} lines {start_line}-{end_line}: {e}"
+            )
+            return None
