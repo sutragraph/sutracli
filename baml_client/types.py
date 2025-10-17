@@ -115,7 +115,7 @@ class ToolName(str, Enum):
     Completion = "Completion"
 
 # #########################################################################
-# Generated classes (50)
+# Generated classes (55)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -238,6 +238,25 @@ class DatabaseParams(BaseModel):
 class DatabaseToolCall(BaseModel):
     tool_name: typing_extensions.Literal['database']
     parameters: "DatabaseParams"
+
+class DeveloperAgentParams(BaseModel):
+    context: str
+    prompt_params: "DeveloperPromptParams"
+
+class DeveloperCompletionParams(BaseModel):
+    summary: str
+
+class DeveloperCompletionToolCall(BaseModel):
+    tool_name: typing_extensions.Literal['attempt_completion']
+    parameters: "DeveloperCompletionParams"
+
+class DeveloperPromptParams(BaseModel):
+    base_params: "BasePromptParams"
+
+class DeveloperResponse(BaseModel):
+    thinking: typing.Optional[str] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "DeveloperCompletionToolCall"]] = None
+    sutra_memory: "SutraMemoryParams"
 
 class FileChange(BaseModel):
     file_path: str
@@ -362,14 +381,12 @@ class TaskFilterResponse(BaseModel):
 class TaskOperation(BaseModel):
     action: TaskOperationAction
     id: str
-    from_status: typing.Optional[TaskStatus] = None
     to_status: typing.Optional[TaskStatus] = None
     description: typing.Optional[str] = None
 
 class TaskOperation_CrossIndexing(BaseModel):
     action: TaskOperationAction_CrossIndexing
     id: str
-    from_status: typing.Optional[Status_CrossIndexing] = None
     to_status: typing.Optional[Status_CrossIndexing] = None
     description: typing.Optional[str] = None
 
@@ -399,8 +416,11 @@ class UntracedElement(BaseModel):
     accessed_from: typing.Optional[str] = None
 
 # #########################################################################
-# Generated type aliases (2)
+# Generated type aliases (3)
 # #########################################################################
+
+
+DeveloperToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "DeveloperCompletionToolCall"]
 
 
 RoadmapToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]

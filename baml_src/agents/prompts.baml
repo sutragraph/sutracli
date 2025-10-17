@@ -21,5 +21,9 @@ template_string BaseSystemPrompt(agent_name: Agent, tools: ToolName[], params:Ba
 template_string AgentSystemPromptBase(agent_name: Agent) #"
 {% if agent_name == Agent.ROADMAP %}
 {{ RoadmapSystemPromptBase() }}
+
+{% elif agent_name == Agent.DEVELOPER %}
+{{ DeveloperSystemPromptBase() }}
+
 {% endif %}
 "#

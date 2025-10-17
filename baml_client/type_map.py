@@ -76,6 +76,21 @@ type_map = {
     "types.DatabaseToolCall": types.DatabaseToolCall,
     "stream_types.DatabaseToolCall": stream_types.DatabaseToolCall,
 
+    "types.DeveloperAgentParams": types.DeveloperAgentParams,
+    "stream_types.DeveloperAgentParams": stream_types.DeveloperAgentParams,
+
+    "types.DeveloperCompletionParams": types.DeveloperCompletionParams,
+    "stream_types.DeveloperCompletionParams": stream_types.DeveloperCompletionParams,
+
+    "types.DeveloperCompletionToolCall": types.DeveloperCompletionToolCall,
+    "stream_types.DeveloperCompletionToolCall": stream_types.DeveloperCompletionToolCall,
+
+    "types.DeveloperPromptParams": types.DeveloperPromptParams,
+    "stream_types.DeveloperPromptParams": stream_types.DeveloperPromptParams,
+
+    "types.DeveloperResponse": types.DeveloperResponse,
+    "stream_types.DeveloperResponse": stream_types.DeveloperResponse,
+
     "types.FileChange": types.FileChange,
     "stream_types.FileChange": stream_types.FileChange,
 

@@ -40,6 +40,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def AnthropicClaudeDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def AnthropicClaudeImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -99,6 +105,12 @@ class LlmResponseParser:
     ) -> types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
+
+    def AwsBedrockDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
 
     def AwsBedrockImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -160,6 +172,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def AzureAIFoundryDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def AzureAIFoundryImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -219,6 +237,12 @@ class LlmResponseParser:
     ) -> types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
+
+    def AzureOpenAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
 
     def AzureOpenAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -280,6 +304,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def GCPVertexAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def GCPVertexAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -339,6 +369,12 @@ class LlmResponseParser:
     ) -> types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
+
+    def GoogleGeminiDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
 
     def GoogleGeminiImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -400,6 +436,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def OpenAIChatGPTDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def OpenAIChatGPTImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -459,6 +501,12 @@ class LlmResponseParser:
     ) -> types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
+
+    def OpenRouterDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
 
     def OpenRouterImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -528,6 +576,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def AnthropicClaudeDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def AnthropicClaudeImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -587,6 +641,12 @@ class LlmStreamParser:
     ) -> stream_types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
+
+    def AwsBedrockDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
 
     def AwsBedrockImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -648,6 +708,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def AzureAIFoundryDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def AzureAIFoundryImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -707,6 +773,12 @@ class LlmStreamParser:
     ) -> stream_types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
+
+    def AzureOpenAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
 
     def AzureOpenAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -768,6 +840,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def GCPVertexAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def GCPVertexAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -827,6 +905,12 @@ class LlmStreamParser:
     ) -> stream_types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
+
+    def GoogleGeminiDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
 
     def GoogleGeminiImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -888,6 +972,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def OpenAIChatGPTDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def OpenAIChatGPTImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -947,6 +1037,12 @@ class LlmStreamParser:
     ) -> stream_types.ConnectionSplittingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
+
+    def OpenRouterDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
 
     def OpenRouterImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},

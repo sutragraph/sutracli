@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AddTask","BaseCompletionParams","BasePromptParams","ChangeInstruction","CodeConnection","CodeManagerResponse","CodeStorage","CodeStorage_CrossIndexing","CompletionResponse_CrossIndexing","CompletionToolCall","CompletionToolCall_CrossIndexing","ConnectionDetail","ConnectionMatch","ConnectionMatchingResponse","ConnectionSplittingResponse","Contract","ContractField","CrossIndexingResponse","DatabaseParams","DatabaseToolCall","FileChange","ListFilesParams","ListFilesParamsWithoutProjectName","ListFilesToolCall","ListFilesToolCallWithoutProjectName","Project","ProjectContext","ProjectRoadmap","RoadmapAgentParams","RoadmapCompletionParams","RoadmapCompletionToolCall","RoadmapPromptParams","RoadmapResponse","SearchKeywordParams","SearchKeywordParamsWithoutProjectName","SearchKeywordToolCall","SearchKeywordToolCallWithoutProjectName","SemanticSearchParams","SemanticSearchToolCall","SutraMemoryParams","SutraMemoryParams_CrossIndexing","SystemInfoParams","SystemInfo_CrossIndexing","TaskFilterResponse","TaskOperation","TaskOperation_CrossIndexing","TechnologyCorrection","TechnologyCorrectionResponse","TracedElement","UntracedElement",]
+          ["AddTask","BaseCompletionParams","BasePromptParams","ChangeInstruction","CodeConnection","CodeManagerResponse","CodeStorage","CodeStorage_CrossIndexing","CompletionResponse_CrossIndexing","CompletionToolCall","CompletionToolCall_CrossIndexing","ConnectionDetail","ConnectionMatch","ConnectionMatchingResponse","ConnectionSplittingResponse","Contract","ContractField","CrossIndexingResponse","DatabaseParams","DatabaseToolCall","DeveloperAgentParams","DeveloperCompletionParams","DeveloperCompletionToolCall","DeveloperPromptParams","DeveloperResponse","FileChange","ListFilesParams","ListFilesParamsWithoutProjectName","ListFilesToolCall","ListFilesToolCallWithoutProjectName","Project","ProjectContext","ProjectRoadmap","RoadmapAgentParams","RoadmapCompletionParams","RoadmapCompletionToolCall","RoadmapPromptParams","RoadmapResponse","SearchKeywordParams","SearchKeywordParamsWithoutProjectName","SearchKeywordToolCall","SearchKeywordToolCallWithoutProjectName","SemanticSearchParams","SemanticSearchToolCall","SutraMemoryParams","SutraMemoryParams_CrossIndexing","SystemInfoParams","SystemInfo_CrossIndexing","TaskFilterResponse","TaskOperation","TaskOperation_CrossIndexing","TechnologyCorrection","TechnologyCorrectionResponse","TracedElement","UntracedElement",]
         ), enums=set(
           ["Agent","CodeStorageAction","CodeStorageAction_CrossIndexing","ContractRole","ElementType","FileOperation","ImpactLevel","Status_CrossIndexing","TaskOperationAction","TaskOperationAction_CrossIndexing","TaskStatus","TechnologyType","ToolName",]
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -83,7 +83,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 50
+    # Generated classes 55
     # #########################################################################
 
     @property
@@ -165,6 +165,26 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def DatabaseToolCall(self) -> "DatabaseToolCallViewer":
         return DatabaseToolCallViewer(self)
+
+    @property
+    def DeveloperAgentParams(self) -> "DeveloperAgentParamsViewer":
+        return DeveloperAgentParamsViewer(self)
+
+    @property
+    def DeveloperCompletionParams(self) -> "DeveloperCompletionParamsViewer":
+        return DeveloperCompletionParamsViewer(self)
+
+    @property
+    def DeveloperCompletionToolCall(self) -> "DeveloperCompletionToolCallViewer":
+        return DeveloperCompletionToolCallViewer(self)
+
+    @property
+    def DeveloperPromptParams(self) -> "DeveloperPromptParamsViewer":
+        return DeveloperPromptParamsViewer(self)
+
+    @property
+    def DeveloperResponse(self) -> "DeveloperResponseViewer":
+        return DeveloperResponseViewer(self)
 
     @property
     def FileChange(self) -> "FileChangeViewer":
@@ -938,7 +958,7 @@ class ToolNameValues:
 
 
 # #########################################################################
-# Generated classes 50
+# Generated classes 55
 # #########################################################################
 
 class AddTaskAst:
@@ -1961,6 +1981,217 @@ class DatabaseToolCallProperties:
     @property
     def parameters(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("parameters"))
+    
+    
+
+
+class DeveloperAgentParamsAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("DeveloperAgentParams")
+        self._properties: typing.Set[str] = set([  "context",  "prompt_params",  ])
+        self._props = DeveloperAgentParamsProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "DeveloperAgentParamsProperties":
+        return self._props
+
+
+class DeveloperAgentParamsViewer(DeveloperAgentParamsAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class DeveloperAgentParamsProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def context(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("context"))
+    
+    @property
+    def prompt_params(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("prompt_params"))
+    
+    
+
+
+class DeveloperCompletionParamsAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("DeveloperCompletionParams")
+        self._properties: typing.Set[str] = set([  "summary",  ])
+        self._props = DeveloperCompletionParamsProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "DeveloperCompletionParamsProperties":
+        return self._props
+
+
+class DeveloperCompletionParamsViewer(DeveloperCompletionParamsAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class DeveloperCompletionParamsProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def summary(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("summary"))
+    
+    
+
+
+class DeveloperCompletionToolCallAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("DeveloperCompletionToolCall")
+        self._properties: typing.Set[str] = set([  "tool_name",  "parameters",  ])
+        self._props = DeveloperCompletionToolCallProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "DeveloperCompletionToolCallProperties":
+        return self._props
+
+
+class DeveloperCompletionToolCallViewer(DeveloperCompletionToolCallAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class DeveloperCompletionToolCallProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def tool_name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_name"))
+    
+    @property
+    def parameters(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("parameters"))
+    
+    
+
+
+class DeveloperPromptParamsAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("DeveloperPromptParams")
+        self._properties: typing.Set[str] = set([  "base_params",  ])
+        self._props = DeveloperPromptParamsProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "DeveloperPromptParamsProperties":
+        return self._props
+
+
+class DeveloperPromptParamsViewer(DeveloperPromptParamsAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class DeveloperPromptParamsProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def base_params(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("base_params"))
+    
+    
+
+
+class DeveloperResponseAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("DeveloperResponse")
+        self._properties: typing.Set[str] = set([  "thinking",  "tool_call",  "sutra_memory",  ])
+        self._props = DeveloperResponseProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "DeveloperResponseProperties":
+        return self._props
+
+
+class DeveloperResponseViewer(DeveloperResponseAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class DeveloperResponseProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def thinking(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("thinking"))
+    
+    @property
+    def tool_call(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_call"))
+    
+    @property
+    def sutra_memory(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("sutra_memory"))
     
     
 
@@ -3097,7 +3328,7 @@ class TaskOperationAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("TaskOperation")
-        self._properties: typing.Set[str] = set([  "action",  "id",  "from_status",  "to_status",  "description",  ])
+        self._properties: typing.Set[str] = set([  "action",  "id",  "to_status",  "description",  ])
         self._props = TaskOperationProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -3134,10 +3365,6 @@ class TaskOperationProperties:
         return type_builder.ClassPropertyViewer(self.__bldr.property("id"))
     
     @property
-    def from_status(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("from_status"))
-    
-    @property
     def to_status(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("to_status"))
     
@@ -3152,7 +3379,7 @@ class TaskOperation_CrossIndexingAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("TaskOperation_CrossIndexing")
-        self._properties: typing.Set[str] = set([  "action",  "id",  "from_status",  "to_status",  "description",  ])
+        self._properties: typing.Set[str] = set([  "action",  "id",  "to_status",  "description",  ])
         self._props = TaskOperation_CrossIndexingProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -3187,10 +3414,6 @@ class TaskOperation_CrossIndexingProperties:
     @property
     def id(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("id"))
-    
-    @property
-    def from_status(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("from_status"))
     
     @property
     def to_status(self) -> type_builder.ClassPropertyViewer:

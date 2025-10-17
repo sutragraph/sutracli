@@ -121,6 +121,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AnthropicClaudeDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AnthropicClaudeDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -271,6 +286,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AwsBedrockDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -421,6 +451,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureAIFoundryDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureAIFoundryDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -571,6 +616,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.AzureOpenAIDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="AzureOpenAIDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -721,6 +781,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.GCPVertexAIDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GCPVertexAIDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -871,6 +946,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.GoogleGeminiDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="GoogleGeminiDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -1021,6 +1111,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenAIChatGPTDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenAIChatGPTDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -1171,6 +1276,21 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
+    async def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            stream = self.stream.OpenRouterDeveloperAgent(params=params,
+                baml_options=baml_options)
+            return await stream.get_final_response()
+        else:
+            # Original non-streaming code
+            result = await self.__options.merge_options(baml_options).call_function_async(function_name="OpenRouterDeveloperAgent", args={
+                "params": params,
+            })
+            return typing.cast(types.DeveloperResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -1321,6 +1441,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
@@ -1439,6 +1571,18 @@ class BamlStreamClient:
           result,
           lambda x: typing.cast(stream_types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -1561,6 +1705,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
@@ -1679,6 +1835,18 @@ class BamlStreamClient:
           result,
           lambda x: typing.cast(stream_types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -1801,6 +1969,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
@@ -1919,6 +2099,18 @@ class BamlStreamClient:
           result,
           lambda x: typing.cast(stream_types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
+    def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -2041,6 +2233,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
@@ -2161,6 +2365,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
+    def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
+        ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterDeveloperAgent", args={
+            "params": params,
+        })
+        return baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse](
+          result,
+          lambda x: typing.cast(stream_types.DeveloperResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.DeveloperResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
+          ctx,
+        )
     def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.CrossIndexingResponse, types.CrossIndexingResponse]:
@@ -2274,6 +2490,13 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
+    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeDeveloperAgent", args={
+            "params": params,
+        }, mode="request")
+        return result
     async def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2342,6 +2565,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="request")
+        return result
+    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockDeveloperAgent", args={
+            "params": params,
         }, mode="request")
         return result
     async def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -2414,6 +2644,13 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
+    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryDeveloperAgent", args={
+            "params": params,
+        }, mode="request")
+        return result
     async def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2482,6 +2719,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="request")
+        return result
+    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIDeveloperAgent", args={
+            "params": params,
         }, mode="request")
         return result
     async def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -2554,6 +2798,13 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
+    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIDeveloperAgent", args={
+            "params": params,
+        }, mode="request")
+        return result
     async def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2622,6 +2873,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="request")
+        return result
+    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiDeveloperAgent", args={
+            "params": params,
         }, mode="request")
         return result
     async def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -2694,6 +2952,13 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
+    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTDeveloperAgent", args={
+            "params": params,
+        }, mode="request")
+        return result
     async def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2762,6 +3027,13 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="request")
+        return result
+    async def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterDeveloperAgent", args={
+            "params": params,
         }, mode="request")
         return result
     async def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -2842,6 +3114,13 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
+    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeDeveloperAgent", args={
+            "params": params,
+        }, mode="stream")
+        return result
     async def AnthropicClaudeImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -2910,6 +3189,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="stream")
+        return result
+    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockDeveloperAgent", args={
+            "params": params,
         }, mode="stream")
         return result
     async def AwsBedrockImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -2982,6 +3268,13 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
+    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryDeveloperAgent", args={
+            "params": params,
+        }, mode="stream")
+        return result
     async def AzureAIFoundryImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -3050,6 +3343,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="stream")
+        return result
+    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIDeveloperAgent", args={
+            "params": params,
         }, mode="stream")
         return result
     async def AzureOpenAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -3122,6 +3422,13 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
+    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIDeveloperAgent", args={
+            "params": params,
+        }, mode="stream")
+        return result
     async def GCPVertexAIImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -3190,6 +3497,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="stream")
+        return result
+    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiDeveloperAgent", args={
+            "params": params,
         }, mode="stream")
         return result
     async def GoogleGeminiImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
@@ -3262,6 +3576,13 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
+    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTDeveloperAgent", args={
+            "params": params,
+        }, mode="stream")
+        return result
     async def OpenAIChatGPTImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -3330,6 +3651,13 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterConnectionSplitting", args={
             "memory_context": memory_context,
+        }, mode="stream")
+        return result
+    async def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterDeveloperAgent", args={
+            "params": params,
         }, mode="stream")
         return result
     async def OpenRouterImplementationDiscovery(self, analysis_query: str,memory_context: str,system_info: types.SystemInfo_CrossIndexing,

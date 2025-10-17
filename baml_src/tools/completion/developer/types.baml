@@ -1,0 +1,4 @@
+
+class DeveloperCompletionParams {
+  summary string
+}

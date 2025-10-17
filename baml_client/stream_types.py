@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (50)
+# Generated classes (55)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -146,6 +146,25 @@ class DatabaseParams(BaseModel):
 class DatabaseToolCall(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["DatabaseParams"] = None
+
+class DeveloperAgentParams(BaseModel):
+    context: typing.Optional[str] = None
+    prompt_params: typing.Optional["DeveloperPromptParams"] = None
+
+class DeveloperCompletionParams(BaseModel):
+    summary: typing.Optional[str] = None
+
+class DeveloperCompletionToolCall(BaseModel):
+    tool_name: typing.Optional[str] = None
+    parameters: typing.Optional["DeveloperCompletionParams"] = None
+
+class DeveloperPromptParams(BaseModel):
+    base_params: typing.Optional["BasePromptParams"] = None
+
+class DeveloperResponse(BaseModel):
+    thinking: typing.Optional[str] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "DeveloperCompletionToolCall"]] = None
+    sutra_memory: typing.Optional["SutraMemoryParams"] = None
 
 class FileChange(BaseModel):
     file_path: typing.Optional[str] = None
@@ -270,14 +289,12 @@ class TaskFilterResponse(BaseModel):
 class TaskOperation(BaseModel):
     action: typing.Optional[types.TaskOperationAction] = None
     id: typing.Optional[str] = None
-    from_status: typing.Optional[types.TaskStatus] = None
     to_status: typing.Optional[types.TaskStatus] = None
     description: typing.Optional[str] = None
 
 class TaskOperation_CrossIndexing(BaseModel):
     action: typing.Optional[types.TaskOperationAction_CrossIndexing] = None
     id: typing.Optional[str] = None
-    from_status: typing.Optional[types.Status_CrossIndexing] = None
     to_status: typing.Optional[types.Status_CrossIndexing] = None
     description: typing.Optional[str] = None
 
@@ -307,8 +324,11 @@ class UntracedElement(BaseModel):
     accessed_from: typing.Optional[str] = None
 
 # #########################################################################
-# Generated type aliases (2)
+# Generated type aliases (3)
 # #########################################################################
+
+
+DeveloperToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "DeveloperCompletionToolCall"]]
 
 
 RoadmapToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]]
