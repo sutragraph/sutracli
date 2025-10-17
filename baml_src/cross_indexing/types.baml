@@ -36,7 +36,6 @@ enum Status_CrossIndexing {
 class TaskOperation_CrossIndexing {
   action TaskOperationAction_CrossIndexing // "add" | "move" | "remove"
   id string
-  from_status Status_CrossIndexing? // for "move" operations: "pending" | "current" | "completed"
   to_status Status_CrossIndexing? // for "add" and "move" operations: "pending" | "current" | "completed"
   description string?
 }

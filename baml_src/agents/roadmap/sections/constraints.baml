@@ -13,7 +13,7 @@ Output exactly in this structure. Limit 'thinking' to <100 words for brevity.
   "sutra_memory": {
     "add_history": "REQUIRED: summary of only new progress and findings (e.g., - New Progress: Traced main_func. - New Finding: Bug1 at line 45. - Unresolved: helperFunc)—avoid repetition from prior history. Limit to 3-5 findings.",
     "tasks": [  // OPTIONAL: Array of TaskOperation objects
-      { "action": "add|move", "id": string, "to_status": "pending|current|completed", "description": string?, "from_status": "pending|current"? }
+      { "action": "add|move", "id": string, "to_status": "pending|current|completed", "description": string? }
     ],
     "code": [  // OPTIONAL: Array of CodeStorage objects for tracing invisible/external elements
       {

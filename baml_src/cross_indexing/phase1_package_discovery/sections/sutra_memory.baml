@@ -28,13 +28,11 @@ Usage Format
       {
         "action": "move",
         "id": "task_id",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
         "action": "move",
         "id": "task_id",
-        "from_status": "pending",
         "to_status": "current",
       }
     ],
@@ -96,7 +94,6 @@ Example 4: Task completion scenario with project summary (only mark as completed
       {
         "action": "move",
         "id": "1",
-        "from_status": "current",
         "to_status": "completed",
       }
     ],

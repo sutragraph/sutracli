@@ -22,13 +22,11 @@ Usage Format
       {
         "action": "move",
         "id": "task_id",
-        "from_status": "pending",
         "to_status": "current",
       },
       {
         "action": "move",
         "id": "task_id",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -63,7 +61,6 @@ Example 2: Task completion after successful retry
       {
         "action": "move",
         "id": "2",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -92,13 +89,11 @@ Example 3: Task completion after exhaustive search attempts
       {
         "action": "move",
         "id": "3",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
         "action": "move",
         "id": "4",
-        "from_status": "pending",
         "to_status": "current",
       }
     ],
@@ -138,7 +133,6 @@ Example 5: Task completion with new task creation based on findings
       {
         "action": "move",
         "id": "5",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -167,7 +161,6 @@ Example 6: Task completion scenario
       {
         "action": "move",
         "id": "3",
-        "from_status": "current",
         "to_status": "completed",
       }
     ],

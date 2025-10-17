@@ -20,13 +20,11 @@ Usage Format
       {
         "action": "move",
         "id": "task_id",
-        "from_status": "pending",
         "to_status": "current",
       },
       {
         "action": "move",
         "id": "task_id",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -49,13 +47,11 @@ Example 1: Wrapper function analysis
       {
         "action": "move",
         "id": "13",
-        "from_status": "pending",
         "to_status": "current",
       },
       {
         "action": "move",
         "id": "13",
-        "from_status": "current",
         "to_status": "completed",
       }
     ],
@@ -70,7 +66,6 @@ Example 2: Wrapper function discovery with task creation
       {
         "action": "move",
         "id": "3",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -91,7 +86,6 @@ Example 3: Custom API client pattern discovery with task creation
       {
         "action": "move",
         "id": "3",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -112,7 +106,6 @@ Example 4: Wrapper function analysis with dynamic parameters
       {
         "action": "move",
         "id": "15",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -133,7 +126,6 @@ Example 5: Wrapper function usage discovery
       {
         "action": "move",
         "id": "23",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -154,7 +146,6 @@ Example 6: Environment variable analysis with config file discovery
       {
         "action": "move",
         "id": "25",
-        "from_status": "current",
         "to_status": "completed",
       },
       {
@@ -175,7 +166,6 @@ Example 7: Task completion scenario
       {
         "action": "move",
         "id": "3",
-        "from_status": "current",
         "to_status": "completed",
       }
     ],

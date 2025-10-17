@@ -152,7 +152,6 @@ RULES
         {
           "action": "move|add|remove",
           "id": "task_id_string",
-          "from_status": "pending|current|completed",
           "to_status": "pending|current|completed",
           "description": "task description"
         }
@@ -178,8 +177,7 @@ RULES
   - The `tool_call` field contains the tool to execute with proper parameters
   - The `sutra_memory` field MUST use nested structure as shown above
   - Task operations MUST include all required fields: `action`, `id`, `description`
-  - For move operations: MUST include both `from_status` and `to_status`
-  - For add operations: MUST include `to_status` (pending/current/completed)
+  - For add or move operations: MUST include `to_status` (pending/current/completed)
   - The `add_history` field is MANDATORY in every sutra_memory response
   - Task IDs MUST be strings, not integers
   - All enum values MUST use lowercase aliases: "add", "move", "remove", "pending", "current", "completed"

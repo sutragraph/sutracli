@@ -3,7 +3,7 @@ template_string RoadmapSystemPromptBase() #"
 {{ RoadmapConstraints() }}
 {{ RoadmapWorkflow() }}
 {{ RoadmapStrategy() }}
-{{ SutraMemoryPrompt() }}
+{{ RoadmapSutraMemoryPrompt() }}
 "#
 
 template_string RoadmapUserPrompt(context: string) #"

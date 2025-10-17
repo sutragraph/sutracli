@@ -1,4 +1,4 @@
-template_string SutraMemoryPrompt() #"
+template_string RoadmapSutraMemoryPrompt() #"
 ## SUTRA MEMORY SYSTEM
 Use this persistent memory to store info for future iterations, including call chain tracing to finals. Prioritize useful data like task progress, code locations, findings, trace chains to operations (DB, file, net, mem, sys, logic). Store relevant search findings (e.g., code snippets, project connections) incrementally upon discovery to build context before analysis/tracing.
 
@@ -9,9 +9,9 @@ Use 'tasks' for operations (one current only; move before new current):
 - Add pending: { "action": "add", "id": "1", "to_status": "pending", "description": "Analyze auth architecture" }
 - Add current: { "action": "add", "id": "2", "to_status": "current", "description": "Review user model" }
 - Add completed: { "action": "add", "id": "3", "to_status": "completed", "description": "Project exploration done" }
-- Move to complete: { "action": "move", "id": "1", "from_status": "current", "to_status": "completed" }
-- Start pending: { "action": "move", "id": "2", "from_status": "pending", "to_status": "current" }
-- Pause current: { "action": "move", "id": "1", "from_status": "current", "to_status": "pending" }; then add new current.
+- Move to complete: { "action": "move", "id": "1", "to_status": "completed" }
+- Start pending: { "action": "move", "id": "2", "to_status": "current" }
+- Pause current: { "action": "move", "id": "1", "to_status": "pending" }; then add new current.
 
 Use 'code' for tracing: Incremental actions like add mains, move to traced, add needs. Limit needs <20; trace to finals (e.g., database: cursor.execute(), logic: if/calc). Example from search: { "action": "add", "id": "search_hit_1", "file": "auth.py", "description": "Relevant auth snippet", "needs_tracing": [...] }
 

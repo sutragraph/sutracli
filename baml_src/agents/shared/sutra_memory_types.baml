@@ -63,7 +63,6 @@ class UntracedElement {
 class TaskOperation {
   action TaskOperationAction
   id string
-  from_status TaskStatus?
   to_status TaskStatus?
   description string?
 }
