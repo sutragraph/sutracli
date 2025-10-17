@@ -402,9 +402,9 @@ class TextChunker:
 
         try:
             # Generate embeddings in batch for much better performance
-            logger.debug(f"Generating batch embeddings for {len(chunk_texts)} chunks")
+            # logger.debug(f"Generating batch embeddings for {len(chunk_texts)} chunks")
             embeddings = self.embedding_model.get_embeddings_batch(chunk_texts)
-            logger.debug(f"Successfully generated {len(embeddings)} batch embeddings")
+            # logger.debug(f"Successfully generated {len(embeddings)} batch embeddings")
 
             # Combine embeddings with metadata
             embeddings_with_metadata = []
@@ -561,9 +561,9 @@ class VectorStore:
 
         try:
             # Generate embeddings in batch for much better performance
-            logger.debug(f"Generating batch embeddings for {len(chunk_texts)} chunks")
+            # logger.debug(f"Generating batch embeddings for {len(chunk_texts)} chunks")
             embeddings = self.embedding_model.get_embeddings_batch(chunk_texts)
-            logger.debug(f"Successfully generated {len(embeddings)} batch embeddings")
+            # logger.debug(f"Successfully generated {len(embeddings)} batch embeddings")
 
             # Combine embeddings with metadata
             embeddings_with_metadata = []
@@ -697,9 +697,9 @@ class VectorStore:
 
             # Commit all inserts at once
             cursor.execute("COMMIT")
-            logger.debug(
-                f"Batch stored {len(embedding_ids)} embeddings in single transaction"
-            )
+            # logger.debug(
+            #     f"Batch stored {len(embedding_ids)} embeddings in single transaction"
+            # )
 
             return embedding_ids
 

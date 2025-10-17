@@ -9,6 +9,8 @@ from typing import Dict, List, Tuple
 
 from loguru import logger
 
+from src.utils.console import console
+
 
 class TechnologyValidator:
     """
@@ -187,7 +189,7 @@ class TechnologyValidator:
                         new_outgoing[new_tech_name] = files_data
                     corrected_data["outgoing_connections"] = new_outgoing
 
-            print(f"Applied {len(corrections)} technology name corrections")
+            console.print(f"Applied {len(corrections)} technology name corrections")
             return corrected_data
 
         except Exception as e:

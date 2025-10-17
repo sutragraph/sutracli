@@ -122,7 +122,7 @@ class EmbeddingEngine:
         if not blocks:
             return {"total_embeddings": 0}
 
-        logger.debug(f"Batch processing {len(blocks)} blocks for {file_data.file_path}")
+        # logger.debug(f"Batch processing {len(blocks)} blocks for {file_data.file_path}")
 
         # Collect all text chunks from all blocks (without generating embeddings yet)
         all_chunk_texts = []
@@ -163,12 +163,12 @@ class EmbeddingEngine:
 
         # Generate ALL embeddings in one batch - this is the key performance improvement!
         if not all_chunk_texts:
-            logger.debug("No chunk texts to embed")
+            # logger.debug("No chunk texts to embed")
             return {"total_embeddings": 0, "blocks_processed": 0}
 
-        logger.debug(
-            f"Generating embeddings for {len(all_chunk_texts)} chunks in one batch"
-        )
+        # logger.debug(
+        #     f"Generating embeddings for {len(all_chunk_texts)} chunks in one batch"
+        # )
         all_embeddings = self.vector_store.embedding_model.get_embeddings_batch(
             all_chunk_texts
         )
@@ -200,19 +200,11 @@ class EmbeddingEngine:
         # Store ALL embeddings in a single database transaction - MASSIVE speedup!
         embedding_ids = self.vector_store.store_embeddings_batch(batch_embedding_data)
 
-        # Log batch results
-        for i, embedding_id in enumerate(embedding_ids):
-            data = batch_embedding_data[i]
-            logger.debug(
-                f"Stored embedding {embedding_id} for block {data['node_id']} chunk {data['chunk_index']} "
-                f"(lines {data['chunk_start_line']}-{data['chunk_end_line']})"
-            )
-
         total_embeddings = len(embedding_ids)
 
-        logger.debug(
-            f"Batch processed {len(blocks)} blocks, generated {total_embeddings} embeddings"
-        )
+        # logger.debug(
+        #     f"Batch processed {len(blocks)} blocks, generated {total_embeddings} embeddings"
+        # )
         return {"total_embeddings": total_embeddings}
 
     def _get_block_hierarchy_path(
@@ -270,7 +262,7 @@ class EmbeddingEngine:
             List of embedding IDs that were stored
         """
         if not content.strip():
-            logger.debug(f"No content to embed for entity {entity_id}")
+            # logger.debug(f"No content to embed for entity {entity_id}")
             return []
 
         # Add prefix to distinguish file vs block IDs during retrieval
@@ -343,9 +335,9 @@ class EmbeddingEngine:
 
                     if embedding_id:
                         embedding_ids.append(embedding_id)
-                        logger.debug(
-                            f"Stored embedding {embedding_id} for {prefixed_entity_id} chunk {chunk_index} (lines {chunk_start_line}-{chunk_end_line})"
-                        )
+                        # logger.debug(
+                        #     f"Stored embedding {embedding_id} for {prefixed_entity_id} chunk {chunk_index} (lines {chunk_start_line}-{chunk_end_line})"
+                        # )
 
                 except Exception as e:
                     logger.error(
@@ -381,7 +373,7 @@ class EmbeddingEngine:
             List of embedding IDs that were stored
         """
         if not embedding_text.strip():
-            logger.debug(f"No content to embed for entity {entity_id}")
+            # logger.debug(f"No content to embed for entity {entity_id}")
             return []
 
         # Add prefix to distinguish file vs block IDs during retrieval
@@ -439,10 +431,10 @@ class EmbeddingEngine:
                     )
 
                     embedding_ids.append(embedding_id)
-                    logger.debug(
-                        f"Stored embedding {embedding_id} for {prefix} {entity_id} "
-                        f"chunk {chunk_index} (lines {chunk_start_line}-{chunk_end_line})"
-                    )
+                    # logger.debug(
+                    #     f"Stored embedding {embedding_id} for {prefix} {entity_id} "
+                    #     f"chunk {chunk_index} (lines {chunk_start_line}-{chunk_end_line})"
+                    # )
 
                 except Exception as e:
                     logger.error(
@@ -501,21 +493,21 @@ class EmbeddingEngine:
         try:
             # Collect blocks to embed first
             blocks_to_embed = self._collect_blocks_to_embed(file_data.blocks)
-            logger.debug(
-                f"Found {len(blocks_to_embed)} blocks to embed in {file_data.file_path}"
-            )
+            # logger.debug(
+            #     f"Found {len(blocks_to_embed)} blocks to embed in {file_data.file_path}"
+            # )
 
-            if blocks_to_embed:
-                # If we have extracted blocks, embed them with hierarchical context
-                # Skip file-level chunking to avoid redundancy
-                logger.debug(
-                    f"Embedding {len(blocks_to_embed)} hierarchical blocks for {file_data.file_path}"
-                )
-            elif getattr(file_data, "unsupported", False):
+            # if blocks_to_embed:
+            # If we have extracted blocks, embed them with hierarchical context
+            # Skip file-level chunking to avoid redundancy
+            # logger.debug(
+            #     f"Embedding {len(blocks_to_embed)} hierarchical blocks for {file_data.file_path}"
+            # )
+            if getattr(file_data, "unsupported", False):
                 # Only embed entire file for unsupported file types
-                logger.debug(
-                    f"Unsupported file type, embedding entire file: {file_data.file_path}"
-                )
+                # logger.debug(
+                #     f"Unsupported file type, embedding entire file: {file_data.file_path}"
+                # )
                 file_content = self._generate_file_embedding_text(file_data)
                 file_metadata = self._generate_file_metadata(file_data)
                 file_embedding_ids = self._store_embeddings_with_metadata(
@@ -527,11 +519,11 @@ class EmbeddingEngine:
                 )
                 stats["file_embeddings"] = len(file_embedding_ids)
                 stats["total_chunks"] += len(file_embedding_ids)
-            else:
-                # Supported file type but no blocks extracted - skip embedding
-                logger.debug(
-                    f"Supported file with no extractable blocks, skipping: {file_data.file_path}"
-                )
+            # else:
+            # Supported file type but no blocks extracted - skip embedding
+            # logger.debug(
+            #     f"Supported file with no extractable blocks, skipping: {file_data.file_path}"
+            # )
 
             # Process all blocks in a single batch for massive performance improvement
             if blocks_to_embed:
@@ -612,7 +604,7 @@ class EmbeddingEngine:
         """
         try:
             if not node_ids:
-                logger.debug("No node IDs provided for deletion")
+                # logger.debug("No node IDs provided for deletion")
                 return
 
             # Get vector store to access embeddings database
@@ -637,9 +629,9 @@ class EmbeddingEngine:
             )
             vector_store.connection.commit()
 
-            logger.debug(
-                f"Deleted {len(node_ids)} embeddings from database (file: 1, blocks: {len(node_ids)-1})"
-            )
+            # logger.debug(
+            #     f"Deleted {len(node_ids)} embeddings from database (file: 1, blocks: {len(node_ids)-1})"
+            # )
 
         except Exception as e:
             logger.error(f"Error deleting node embeddings: {e}")

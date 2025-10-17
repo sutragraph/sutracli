@@ -137,15 +137,17 @@ class AgentService:
         Returns:
             The result of the problem solving process
         """
-        print("🚀 Welcome to Sutra Agent!")
-        print("   I'm here to help you with coding, debugging, and knowledge sharing.")
-        print("\n💬 How can I help you? Type your questions or requests below.")
+        console.print("🚀 Welcome to Sutra Agent!")
+        console.print(
+            "   I'm here to help you with coding, debugging, and knowledge sharing."
+        )
+        console.print("\n💬 How can I help you? Type your questions or requests below.")
 
         # Get user input
         while True:
             try:
                 user_input = input("\n👤 You: ").strip()
-                print("-" * 40)
+                console.print("-" * 40)
 
                 if not user_input:
                     continue
@@ -153,14 +155,14 @@ class AgentService:
                 # Got valid input, break out of input loop
                 break
             except KeyboardInterrupt:
-                print("\n\n👋 Goodbye! Session ended.")
+                console.print("\n\n👋 Goodbye! Session ended.")
                 return None
             except EOFError:
-                print("\n\n👋 Goodbye! Session ended.")
+                console.print("\n\n👋 Goodbye! Session ended.")
                 return None
 
         # Run agent session with the input
-        print("🚀 Starting agent session...")
+        console.print("🚀 Starting agent session...")
         return self.solve_problem(problem_query=user_input)
 
     def solve_problem(self, problem_query: str) -> Optional[AllToolParams]:

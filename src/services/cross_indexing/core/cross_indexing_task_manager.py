@@ -99,6 +99,16 @@ class CrossIndexingTaskManager(SutraMemoryManager):
             self.memory_ops.code_snippets.clear()
             self.memory_ops.code_id_counter = 0
 
+    def clear_code_snippets(self):
+        """Clear all code snippets from memory (used after Phase 4 batches)."""
+        if hasattr(self, "memory_ops"):
+            code_count = len(self.memory_ops.code_snippets)
+
+            logger.debug(f"Clearing {code_count} code snippets from memory")
+
+            self.memory_ops.code_snippets.clear()
+            self.memory_ops.code_id_counter = 0
+
     def get_tasks_for_phase(self, phase: int) -> Dict[str, List]:
         """Get tasks for a specific phase."""
         pending_tasks = self.get_tasks_by_status(TaskStatus.PENDING)
@@ -278,13 +288,12 @@ class CrossIndexingTaskManager(SutraMemoryManager):
                 content.append(
                     f"File: {snippet.file_path} (lines {snippet.start_line}-{snippet.end_line})"
                 )
-                content.append(f"Description: {snippet.description}")
+                if snippet.description:
+                    content.append(f"Description: {snippet.description}")
                 if snippet.content:
                     for line in snippet.content.split("\n"):
                         content.append(f"  {line}")
-                    content.append("")
-                else:
-                    content.append("")
+                content.append("")
 
         # Get tasks for current phase
         phase_tasks = self.get_tasks_for_phase(self.current_phase)
@@ -296,11 +305,10 @@ class CrossIndexingTaskManager(SutraMemoryManager):
             task = current_tasks[0]  # Should only be one current task
             content.append(f"ID: {task.id}")
             content.append(f"Description: {task.description}")
-            content.append("")
         else:
             content.append("CURRENT TASK:")
             content.append("NOTE: No current task")
-            content.append("")
+        content.append("")
 
         # Add pending tasks for current phase
         pending_tasks = phase_tasks.get("pending", [])

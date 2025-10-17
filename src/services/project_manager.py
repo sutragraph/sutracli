@@ -1,6 +1,5 @@
 """Project Manager - Centralized project management functionality."""
 
-import os
 import re
 import time
 from pathlib import Path
@@ -12,6 +11,7 @@ from graph.graph_operations import GraphOperations
 from graph.project_indexer import ProjectIndexer
 from graph.sqlite_client import SQLiteConnection
 from models import Project
+from src.utils.console import console
 
 
 class ProjectManager:
@@ -308,8 +308,8 @@ class ProjectManager:
 
         except Exception as e:
             logger.error(f"Error during auto-indexing: {e}")
-            print(f"❌ Auto-indexing failed: {e}")
-            print("   Continuing with limited functionality.")
+            console.print(f"❌ Auto-indexing failed: {e}")
+            console.print("   Continuing with limited functionality.")
 
     def perform_incremental_indexing(self, project_name: str) -> Dict[str, Any]:
         """Perform incremental reindexing of the database for the specified project.
@@ -373,7 +373,7 @@ class ProjectManager:
             # Clear cache for this project
             self._project_dir_cache.pop(project_name, None)
 
-            print(f"Deleted project '{project_name}'")
+            console.print(f"Deleted project '{project_name}'")
 
             return {"success": True, "project_name": project_name}
 
@@ -469,7 +469,7 @@ class ProjectManager:
             )
 
             project_id = self.db_connection.insert_project(project_data)
-            print(f"Created new project '{project_name}' with ID {project_id}")
+            console.print(f"Created new project '{project_name}' with ID {project_id}")
 
             return project_id
 

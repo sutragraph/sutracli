@@ -10,6 +10,7 @@ from loguru import logger
 
 from config import config
 from services.agent.memory_management.memory_formatter import clean_sutra_memory_content
+from src.utils.console import console
 
 
 class SessionManager:
@@ -48,9 +49,6 @@ class SessionManager:
                     "task_progress_history", []
                 )
 
-                print(f"🧠 Loaded session {self.session_id} with Sutra memory")
-            else:
-                print(f"🆕 Created new session {self.session_id}")
         except Exception as e:
             logger.warning(f"Failed to load session {self.session_id}: {e}")
             # Continue with empty session data

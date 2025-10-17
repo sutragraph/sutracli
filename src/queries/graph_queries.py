@@ -50,14 +50,14 @@ WHERE c.id IN ({placeholders})
 
 INSERT_INCOMING_CONNECTION = """
 INSERT INTO incoming_connections
-(description, file_id, snippet_lines, technology_name, code_snippet)
-VALUES (?, ?, ?, ?, ?)
+(description, file_id, start_line, end_line, technology_name, code_snippet)
+VALUES (?, ?, ?, ?, ?, ?)
 """
 
 INSERT_OUTGOING_CONNECTION = """
 INSERT INTO outgoing_connections
-(description, file_id, snippet_lines, technology_name, code_snippet)
-VALUES (?, ?, ?, ?, ?)
+(description, file_id, start_line, end_line, technology_name, code_snippet)
+VALUES (?, ?, ?, ?, ?, ?)
 """
 
 INSERT_CONNECTION_MAPPING = """
@@ -71,4 +71,54 @@ VALUES (?, ?, ?, ?)
 
 UPDATE_PROJECT_DESCRIPTION = """
 UPDATE projects SET description = ? WHERE id = ?
+"""
+
+GET_PROJECT_DESCRIPTION = """
+SELECT description FROM projects WHERE id = ?
+"""
+
+
+# ============================================================================
+# CROSS-INEDING QUERIES
+# ============================================================================
+
+GET_ALL_CHECKPOINTS = """
+SELECT id, project_id, file_path, change_type, old_code, new_code, updated_at
+FROM checkpoints
+ORDER BY updated_at DESC
+"""
+
+INSERT_CHECKPOINT = """
+INSERT OR REPLACE INTO checkpoints
+(project_id, file_path, change_type, old_code, new_code, updated_at)
+VALUES (?, ?, ?, ?, ?, ?)
+"""
+
+DELETE_ALL_CHECKPOINTS = """
+DELETE FROM checkpoints
+"""
+
+DELETE_CHECKPOINTS_BY_IDS = """
+DELETE FROM checkpoints WHERE id IN ({placeholders})
+"""
+
+GET_CONNECTIONS_BY_FILE_ID = """
+SELECT c.id, c.description, c.start_line, c.end_line, c.technology_name, c.code_snippet, c.created_at,
+       f.file_path
+FROM {table_name} c
+LEFT JOIN files f ON c.file_id = f.id
+WHERE c.file_id = ?
+ORDER BY c.start_line
+"""
+
+UPDATE_CONNECTION_LINES = """
+UPDATE {table_name}
+SET start_line = ?, end_line = ?
+WHERE id = ?
+"""
+
+UPDATE_CONNECTION_CODE_AND_LINES = """
+UPDATE {table_name}
+SET code_snippet = ?, start_line = ?, end_line = ?
+WHERE id = ?
 """

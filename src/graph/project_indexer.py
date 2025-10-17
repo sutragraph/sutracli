@@ -6,22 +6,21 @@ from typing import Any, Dict, List, Optional, Set
 
 from loguru import logger
 
-from config.settings import config
-from embeddings import get_embedding_engine
-from graph.converter import ASTToSqliteConverter
-from graph.graph_operations import GraphOperations
-from graph.sqlite_client import SQLiteConnection
-from indexer.ast_parser import ASTParser
-from models.schema import ExtractionData, FileData
-from utils.file_utils import (
+from src.embeddings import get_embedding_engine
+from src.graph.converter import ASTToSqliteConverter
+from src.graph.graph_operations import GraphOperations
+from src.graph.sqlite_client import SQLiteConnection
+from src.indexer.ast_parser import ASTParser
+from src.models.schema import ExtractionData, FileData
+from src.utils.console import console
+from src.utils.file_utils import (
     get_extraction_file_path,
     get_last_extraction_file_path,
-    should_ignore_file,
+    read_file_content,
 )
-
-# Import indexer functions for file processing
-from utils.hash_utils import compute_directory_hashes
-from utils.helpers import load_json_file
+from src.utils.hash_utils import compute_directory_hashes
+from src.utils.helpers import load_json_file
+from utils.json_serializer import make_json_serializable
 
 
 class ProjectIndexer:
@@ -63,28 +62,30 @@ class ProjectIndexer:
             project_path: Path to the project directory
         """
         try:
-            print(f"⚠️  Project '{project_name}' not found in database")
-            print("🔄 Starting automatic indexing...")
-            print(
+            console.print(f"⚠️  Project '{project_name}' not found in database")
+            console.print("🔄 Starting automatic indexing...")
+            console.print(
                 "   This will analyze the codebase and generate embeddings for better responses."
             )
-            print("   Please wait while the project is being indexed...\n")
+            console.print("   Please wait while the project is being indexed...\n")
 
             parser_output_path = self._parse_repository(project_name, project_path)
 
             self._store_to_database(parser_output_path, project_name, project_path)
 
             # Step 2: Generate embeddings for the stored data
-            print("   Step 2: Generating embeddings for semantic search...")
+            console.print("   Step 2: Generating embeddings for semantic search...")
             self._generate_embeddings_for_project(parser_output_path, project_name)
 
-            print("\n✅ Project indexing completed successfully!")
-            print("   The agent is now ready to provide intelligent assistance.\n")
+            console.print("\n✅ Project indexing completed successfully!")
+            console.print(
+                "   The agent is now ready to provide intelligent assistance.\n"
+            )
 
         except Exception as e:
             logger.error(f"Error during full indexing: {e}")
-            print(f"❌ Full indexing failed: {e}")
-            print("   Continuing with limited functionality.")
+            console.print(f"❌ Full indexing failed: {e}")
+            console.print("   Continuing with limited functionality.")
             raise
 
     def incremental_index_project(self, project_name: str) -> Dict[str, Any]:
@@ -161,6 +162,11 @@ class ProjectIndexer:
                         "codes_removed": 0,
                         "files_processed": 0,
                     },
+                    "changes": {
+                        "changed_files": set(),
+                        "new_files": set(),
+                        "deleted_files": set(),
+                    },
                 }
 
             # Step 4: Parse changed files and update extraction results
@@ -196,6 +202,7 @@ class ProjectIndexer:
                 "nodes_added": stats["nodes_added"],
                 "relationships_added": stats["relationships_added"],
                 "memory_updates": memory_updates,
+                "changes": changes,  # Include actual file changes for checkpoint creation
             }
 
         except Exception as e:
@@ -268,6 +275,48 @@ class ProjectIndexer:
             "deleted_files": deleted_files,
         }
 
+    def detect_project_changes(self, project_path: Path, project_name: str):
+        """
+        Detect changes in a project without running full incremental indexing.
+
+        Args:
+            project_path: Path to the project directory
+            project_name: Name of the project
+
+        Returns:
+            Dictionary with sets of changed_files, new_files, and deleted_files
+        """
+        try:
+            # Get current file hashes for the project
+            current_hashes = self._compute_current_file_hashes(project_path)
+
+            # Get project from database
+            project = self.connection.get_project(project_name)
+            if not project:
+                logger.warning(f"Project {project_name} not found in database")
+                return {
+                    "changed_files": set(),
+                    "new_files": set(),
+                    "deleted_files": set(),
+                }
+
+            # Get database hashes for the project
+            db_hashes = self._get_db_file_hashes(project.id)
+
+            # Compare and identify changes
+            changes = self._identify_file_changes(current_hashes, db_hashes)
+
+            return changes
+
+        except Exception as e:
+            logger.error(f"Error detecting changes for project {project_name}: {e}")
+            # Return empty changes on error
+            return {
+                "changed_files": set(),
+                "new_files": set(),
+                "deleted_files": set(),
+            }
+
     def _parse_and_update_extraction_results(
         self, changes: Dict[str, Set[Path]], project_name: str
     ) -> Path:
@@ -326,7 +375,7 @@ class ProjectIndexer:
                 if deleted_file_str in updated_files:
                     del updated_files[deleted_file_str]
                     logger.debug(
-                        f"🗑️ Removed deleted file from results: {deleted_file}"
+                        f"🗑️  Removed deleted file from results: {deleted_file}"
                     )
 
             # Get all changed and new files that need parsing
@@ -349,7 +398,7 @@ class ProjectIndexer:
                             # Use string representation for results dict (consistent with existing format)
                             file_path_str = str(file_path)
                             parsed_results[file_path_str] = result
-                            logger.debug(f"✅ Parsed file: {file_path}")
+                            # logger.debug(f"✅ Parsed file: {file_path}")
                     except Exception as e:
                         logger.error(f"Error parsing file {file_path}: {e}")
                         continue
@@ -370,6 +419,21 @@ class ProjectIndexer:
                     # Process relationships only for the changed files
                     parser.process_relationships(parsed_results, id_to_path)
 
+                # Helper function to serialize CodeBlock objects with proper enum handling
+                def serialize_block(block):
+                    """Convert CodeBlock to dict with proper enum serialization."""
+                    if hasattr(block, "model_dump"):
+                        # Use model_dump with mode='json' to properly serialize enums
+                        return block.model_dump(mode="json")
+                    elif hasattr(block, "dict"):
+                        block_dict = block.dict()
+                        # Manually convert enum to string if needed
+                        if hasattr(block_dict.get("type"), "value"):
+                            block_dict["type"] = block_dict["type"].value
+                        return block_dict
+                    else:
+                        return block
+
                 # Convert parsed results to FileData objects and update the files dict
                 for file_path_str, result in parsed_results.items():
                     file_data = FileData(
@@ -378,12 +442,12 @@ class ProjectIndexer:
                         language=result["language"],
                         content=result["content"],
                         content_hash=result["content_hash"],
-                        blocks=result["blocks"],
+                        blocks=[serialize_block(block) for block in result["blocks"]],
                         relationships=result.get("relationships", []),
                         unsupported=result.get("unsupported", False),
                     )
                     updated_files[file_path_str] = file_data
-                    logger.debug(f"✅ Updated FileData for: {file_path_str}")
+                    # logger.debug(f"✅ Updated FileData for: {file_path_str}")
 
             # Create updated extraction data
             updated_extraction_data = ExtractionData(
@@ -398,9 +462,6 @@ class ProjectIndexer:
             # Save the complete updated results to a new file
             output_file = get_extraction_file_path(project_name)
             logger.debug(f"💾 Saving updated extraction results to: {output_file}")
-
-            # Convert to JSON-serializable format and save
-            from utils.json_serializer import make_json_serializable
 
             serializable_data = make_json_serializable(updated_extraction_data.dict())
 
@@ -449,12 +510,18 @@ class ProjectIndexer:
 
         # Process changed and deleted files (delete their nodes and relationships)
         files_to_delete = changes["changed_files"].union(changes["deleted_files"])
+        preserved_connections_list = []
+
         for file_path in files_to_delete:
             # Convert Path to string for database operations
             file_path_str = str(file_path)
             deleted = self._delete_files_and_embeddings(file_path_str, project_id)
             nodes_deleted += deleted["nodes"]
             relationships_deleted += deleted["relationships"]
+
+            # Collect preserved connections for later restoration
+            if "preserved_connections" in deleted:
+                preserved_connections_list.append(deleted["preserved_connections"])
 
         # Process changed and new files (add their nodes and relationships)
         files_to_add = changes["changed_files"].union(changes["new_files"])
@@ -492,6 +559,14 @@ class ProjectIndexer:
                 self._generate_embeddings_for_changed_files(
                     list(filtered_files.values()), project_id, project_name
                 )
+
+                # Restore preserved connections after files are recreated
+                self._restore_preserved_connections(preserved_connections_list)
+        else:
+            # Even if no files are being added, we might need to restore connections for deleted files
+            if preserved_connections_list:
+                logger.debug("Restoring preserved connections for deleted files")
+                self._restore_preserved_connections(preserved_connections_list)
 
         logger.debug(
             f"📊 Processed changes: {nodes_deleted} nodes deleted, {relationships_deleted} relationships deleted"
@@ -551,16 +626,46 @@ class ProjectIndexer:
             )
             relationships_count = rel_count[0]["count"] if rel_count else 0
 
-            # Delete the file (will cascade delete code blocks and relationships)
+            # Preserve connections before deleting the file
+            # Get all connections for this file
+            incoming_connections = self.connection.execute_query(
+                "SELECT * FROM incoming_connections WHERE file_id = ?",
+                (raw_file_id,),
+            )
+            outgoing_connections = self.connection.execute_query(
+                "SELECT * FROM outgoing_connections WHERE file_id = ?",
+                (raw_file_id,),
+            )
+
+            incoming_count = len(incoming_connections) if incoming_connections else 0
+            outgoing_count = len(outgoing_connections) if outgoing_connections else 0
+
+            if incoming_count > 0 or outgoing_count > 0:
+                logger.info(
+                    f"🔄 Preserving {incoming_count} incoming and {outgoing_count} outgoing connections "
+                    f"for file {file_path} during incremental indexing"
+                )
+
+            # Delete the file (CASCADE DELETE will clean up code_blocks and relationships)
             self.connection.execute_query(
                 "DELETE FROM files WHERE id = ?",
                 (raw_file_id,),
             )
 
-            # Return deletion counts
+            # Store preserved connections for later restoration after file recreation
+            # We'll return this data so it can be restored after the file is recreated
+            preserved_connections = {
+                "incoming": incoming_connections or [],
+                "outgoing": outgoing_connections or [],
+                "file_id": raw_file_id,
+                "file_path": file_path,
+            }
+
+            # Return deletion counts and preserved connections
             return {
                 "nodes": len(prefixed_node_ids),  # File + code blocks
                 "relationships": relationships_count,
+                "preserved_connections": preserved_connections,
             }
 
         except Exception as e:
@@ -570,6 +675,77 @@ class ProjectIndexer:
     def _delete_embeddings(self, node_ids: List[str], project_id: int) -> None:
         """Delete embeddings for specified nodes. Node IDs should already include prefixes (file_ or block_)."""
         self.embedding_engine.delete_embeddings(node_ids, project_id)
+
+    def _restore_preserved_connections(
+        self, preserved_connections_list: List[Dict]
+    ) -> None:
+        """Restore preserved connections after files are recreated.
+
+        Args:
+            preserved_connections_list: List of preserved connection data from deleted files
+        """
+        try:
+            total_restored = 0
+
+            for preserved_data in preserved_connections_list:
+                file_id = preserved_data["file_id"]
+                file_path = preserved_data["file_path"]
+                incoming_connections = preserved_data["incoming"]
+                outgoing_connections = preserved_data["outgoing"]
+
+                incoming_count = len(incoming_connections)
+                outgoing_count = len(outgoing_connections)
+
+                if incoming_count > 0 or outgoing_count > 0:
+                    logger.info(
+                        f"🔄 Restoring {incoming_count} incoming and {outgoing_count} outgoing connections "
+                        f"for file {file_path} (file_id: {file_id})"
+                    )
+
+                # Restore incoming connections
+                for conn in incoming_connections:
+                    self.connection.execute_query(
+                        """INSERT INTO incoming_connections
+                           (description, file_id, start_line, end_line, technology_name, code_snippet, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            conn["description"],
+                            file_id,
+                            conn["start_line"],
+                            conn["end_line"],
+                            conn["technology_name"],
+                            conn["code_snippet"],
+                            conn["created_at"],
+                        ),
+                    )
+                    total_restored += 1
+
+                # Restore outgoing connections
+                for conn in outgoing_connections:
+                    self.connection.execute_query(
+                        """INSERT INTO outgoing_connections
+                           (description, file_id, start_line, end_line, technology_name, code_snippet, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            conn["description"],
+                            file_id,
+                            conn["start_line"],
+                            conn["end_line"],
+                            conn["technology_name"],
+                            conn["code_snippet"],
+                            conn["created_at"],
+                        ),
+                    )
+                    total_restored += 1
+
+            if total_restored > 0:
+                logger.info(
+                    f"✅ Successfully restored {total_restored} connections after file recreation"
+                )
+
+        except Exception as e:
+            logger.error(f"Error restoring preserved connections: {e}")
+            # Don't raise the exception as this shouldn't fail the entire indexing process
 
     def _update_sutra_memory_for_changes(
         self, changes: Dict[str, Set[Path]], project_id: int
@@ -641,7 +817,7 @@ class ProjectIndexer:
     def _parse_repository(self, project_name: str, project_path: Path) -> Path:
         """Parse the entire repository and return path to extraction file."""
         try:
-            print(f"🔄 Parsing directory: {project_path}")
+            console.print(f"🔄 Parsing directory: {project_path}")
 
             from config import config
 
@@ -665,7 +841,7 @@ class ProjectIndexer:
             if not success:
                 raise Exception(f"Failed to parse repository: {project_name}")
 
-            print(f"✅ Repository parsed successfully")
+            console.print(f"✅ Repository parsed successfully")
             logger.debug(f"   Generated analysis for project: {project_name}")
             logger.debug(f"   Output file: {parser_output_path}")
 
@@ -673,7 +849,7 @@ class ProjectIndexer:
 
         except Exception as e:
             logger.error(f"Parser error: {e}")
-            print(f"❌ Failed to parse repository: {e}")
+            console.print(f"❌ Failed to parse repository: {e}")
             raise
 
     def _store_to_database(
@@ -698,7 +874,7 @@ class ProjectIndexer:
         self, parser_output_path: Path, project_name: str
     ):
         """Generate embeddings for all files in the project."""
-        # Get project ID from database
+        # Get project from database
         project = self.connection.get_project(project_name)
         if not project:
             raise Exception(
@@ -721,12 +897,52 @@ class ProjectIndexer:
             file_data_list, project_id
         )
 
-        print(f"   ✅ Embeddings generated successfully!")
-        print(f"      Files processed: {embedding_stats['files_processed']}")
-        print(f"      Total chunks: {embedding_stats['total_chunks']}")
-        print(f"      Blocks embedded: {embedding_stats['blocks_processed']}")
+        console.print(f"   ✅ Embeddings generated successfully!")
+        console.print(f"      Files processed: {embedding_stats['files_processed']}")
+        console.print(f"      Total chunks: {embedding_stats['total_chunks']}")
+        console.print(f"      Blocks embedded: {embedding_stats['blocks_processed']}")
 
-    # Backward compatibility
-    def reindex_database(self, project_name: str) -> Dict[str, Any]:
-        """Backward compatibility method for incremental indexing."""
-        return self.incremental_index_project(project_name)
+    def _get_current_project_hashes_and_content(self):
+        """Get current hashes and content for all projects using same logic as incremental indexing."""
+        current_hashes = {}
+        current_content = {}
+
+        try:
+            # Use same project discovery as incremental indexing
+            projects = self.connection.list_all_projects()
+
+            console.dim(f"   • Scanning {len(projects)} projects for current state")
+
+            for project in projects:
+                project_path = Path(project.path)
+                project_name = project.name
+
+                if not project_path.exists():
+                    console.dim(f"   • Skipping missing project: {project_name}")
+                    continue
+
+                # Use existing method to compute hashes
+                project_hashes = self._compute_current_file_hashes(project_path)
+                console.dim(
+                    f"   • Project '{project_name}': {len(project_hashes)} files"
+                )
+
+                # Convert to relative paths and also read content
+                for abs_path, file_hash in project_hashes.items():
+                    try:
+                        relative_path = str(abs_path.relative_to(project_path))
+                        file_key = f"{project_name}:{relative_path}"
+                        current_hashes[file_key] = file_hash
+
+                        # Read content using existing utility
+                        content = read_file_content(abs_path)
+                        current_content[file_key] = content or ""
+                    except (ValueError, Exception):
+                        continue
+
+            console.dim(f"   • Total files discovered: {len(current_hashes)}")
+            return current_hashes, current_content
+
+        except Exception as e:
+            console.error(f"   • Error getting project hashes: {e}")
+            return {}, {}

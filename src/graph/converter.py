@@ -10,6 +10,7 @@ from loguru import logger
 from graph.graph_operations import GraphOperations
 from graph.sqlite_client import SQLiteConnection
 from models.schema import ExtractionData, Project
+from src.utils.console import console
 from utils import load_json_file
 
 
@@ -50,10 +51,10 @@ class ASTToSqliteConverter:
             # Auto-derive project name if not provided
             if project_name is None:
                 project_name = Path(json_file_path).stem
-                print(f"📁 Project name: {project_name}")
+                console.print(f"📁 Project name: {project_name}")
 
             # Load and parse JSON data
-            print("📦 Loading JSON data...")
+            console.print("📦 Loading JSON data...")
             json_data = load_json_file(json_file_path)
 
             # Convert to ExtractionData model
@@ -61,7 +62,7 @@ class ASTToSqliteConverter:
 
             # Clear database if requested
             if clear_existing:
-                print("🧹 Clearing existing database...")
+                console.print("🧹 Clearing existing database...")
                 self.connection.clear_database()
 
             # Create project with all required fields
@@ -91,8 +92,8 @@ class ASTToSqliteConverter:
             # Get final statistics
             stats = self.graph_ops.get_extraction_stats()
 
-            print("✅ Conversion completed successfully!")
-            print(f"📊 Final statistics: {stats}")
+            console.print("✅ Conversion completed successfully!")
+            console.print(f"📊 Final statistics: {stats}")
 
             # Count total items processed
             total_files = len(extraction_data.files)

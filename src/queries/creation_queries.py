@@ -67,7 +67,8 @@ CREATE TABLE IF NOT EXISTS incoming_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     description TEXT NOT NULL,
     file_id INTEGER NOT NULL,
-    snippet_lines TEXT,
+    start_line INTEGER,
+    end_line INTEGER,
     technology_name TEXT CHECK (technology_name IN ('HTTP/HTTPS','WebSockets','gRPC','GraphQL','MessageQueue','Unknown')),
     code_snippet TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -80,7 +81,8 @@ CREATE TABLE IF NOT EXISTS outgoing_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     description TEXT NOT NULL,
     file_id INTEGER NOT NULL,
-    snippet_lines TEXT,
+    start_line INTEGER,
+    end_line INTEGER,
     technology_name TEXT CHECK (technology_name IN ('HTTP/HTTPS','WebSockets','gRPC','GraphQL','MessageQueue','Unknown')),
     code_snippet TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -102,6 +104,21 @@ CREATE TABLE IF NOT EXISTS connection_mappings (
 )
 """
 
+CREATE_CHECKPOINTS_TABLE = """
+CREATE TABLE IF NOT EXISTS checkpoints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    file_path TEXT NOT NULL,
+    change_type TEXT NOT NULL CHECK (change_type IN ('added', 'modified', 'deleted')),
+    old_code TEXT,
+    new_code TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    UNIQUE(project_id, file_path)
+)
+"""
+
 CREATE_TABLES = [
     CREATE_PROJECTS_TABLE,
     CREATE_FILES_TABLE,
@@ -110,6 +127,7 @@ CREATE_TABLES = [
     CREATE_INCOMING_CONNECTIONS_TABLE,
     CREATE_OUTGOING_CONNECTIONS_TABLE,
     CREATE_CONNECTION_MAPPINGS_TABLE,
+    CREATE_CHECKPOINTS_TABLE,
 ]
 
 # ============================================================================
@@ -143,4 +161,8 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_connection_mappings_sender ON connection_mappings(sender_id)",
     "CREATE INDEX IF NOT EXISTS idx_connection_mappings_receiver ON connection_mappings(receiver_id)",
     "CREATE INDEX IF NOT EXISTS idx_connection_mappings_confidence ON connection_mappings(match_confidence)",
+    # Checkpoint indexes
+    "CREATE INDEX IF NOT EXISTS idx_checkpoints_project_file ON checkpoints(project_id, file_path)",
+    "CREATE INDEX IF NOT EXISTS idx_checkpoints_change_type ON checkpoints(change_type)",
+    "CREATE INDEX IF NOT EXISTS idx_checkpoints_updated_at ON checkpoints(updated_at)",
 ]

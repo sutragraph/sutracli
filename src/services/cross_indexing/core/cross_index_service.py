@@ -1,14 +1,19 @@
 import json
-from typing import Any, Dict, Iterator, Optional
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional
 
 from loguru import logger
 
 from baml_client.types import Agent
+from config import config
 from services.agent.memory_management.models import TaskStatus
 from services.agent.session_management import SessionManager
 from src.graph.graph_operations import GraphOperations
 from src.tools.tool_executor import execute_tool
+from src.utils.console import console
 from src.utils.debug_utils import get_user_confirmation_for_llm_call
+from src.utils.json_serializer import make_json_serializable
 
 from .cross_index_phase import CrossIndexing
 from .cross_indexing_task_manager import CrossIndexingTaskManager
@@ -38,6 +43,7 @@ class CrossIndexService:
         self.session_manager = session_manager
         self.graph_ops = graph_ops
         self._memory_needs_update = False
+        self.project_id = None
 
     def analyze_project_connections(
         self, project_path: str, project_id: int
@@ -49,6 +55,7 @@ class CrossIndexService:
             logger.debug(
                 f"Starting cross-indexing analysis for project {project_id} at {project_path}"
             )
+            self.project_id = project_id
             # Initialize and reset to Phase 1
             self.cross_indexing.reset_to_phase(1)
             self.task_manager.set_current_phase(1)
@@ -73,7 +80,7 @@ class CrossIndexService:
 
                 # Get BAML response for current phase
                 baml_response = self._get_baml_response(
-                    analysis_query, current_iteration, last_tool_result, project_path
+                    analysis_query, last_tool_result
                 )
 
                 # Handle user cancellation
@@ -280,9 +287,7 @@ class CrossIndexService:
     def _get_baml_response(
         self,
         analysis_query: str,
-        current_iteration: int,
         last_tool_result: Optional[Dict[str, Any]],
-        project_path: str,
     ) -> Dict[str, Any]:
         """Get BAML response for current phase."""
         try:
@@ -315,7 +320,7 @@ class CrossIndexService:
 
             if response.get("success"):
                 baml_results = response.get("results")
-                return baml_results
+                return baml_results if baml_results is not None else {}
             else:
                 # Handle BAML error
                 error_msg = response.get("error", "BAML execution failed")
@@ -626,6 +631,7 @@ Tool Results:
             # Get tasks created for the next phase
             next_phase = phase + 1
             tasks_to_filter = []
+            filtered_tasks_result = []
 
             # Get all pending tasks that were created in this phase for next phase
             # ONLY include PENDING tasks - completed tasks should stay in their completion phase
@@ -686,6 +692,8 @@ Tool Results:
                     f"Task filtering result: {len(tasks_to_filter)} → {len(filtered_tasks)} tasks"
                 )
 
+                filtered_tasks_result = filtered_tasks
+
                 # Clear all tasks and reset counter
                 self.task_manager.clear_all_tasks_for_filtering()
 
@@ -713,6 +721,10 @@ Tool Results:
                 logger.debug(f"No tasks to filter from Phase {phase}")
                 # Still clear tasks and reset for clean transition
                 self.task_manager.clear_all_tasks_for_filtering()
+                filtered_tasks_result = []
+
+            if phase == 1:
+                self._persist_filtered_tasks(filtered_tasks_result)
 
             # Clear memory for phase transition (history and code snippets)
             logger.debug(
@@ -725,6 +737,102 @@ Tool Results:
         except Exception as e:
             logger.error(f"Error handling Phase {phase} completion: {e}")
             return False
+
+    def _persist_filtered_tasks(
+        self,
+        tasks: List[Any],
+    ) -> None:
+        """Persist filtered Phase 1 tasks to disk for later inspection."""
+
+        if self.project_id is None:
+            logger.debug("No project ID available; skipping filtered task persistence")
+            return
+
+        try:
+            base_path = Path(config.storage.data_dir) / "cross-indexing-tasks"
+            base_path.mkdir(parents=True, exist_ok=True)
+
+            file_path = base_path / "phase1_filtered_tasks.json"
+            existing_data: Dict[str, Any] = {}
+
+            if file_path.exists():
+                try:
+                    with open(file_path, "r", encoding="utf-8") as read_handle:
+                        existing_data = json.load(read_handle)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        f"Existing filtered task snapshot at {file_path} is not valid JSON; overwriting"
+                    )
+                    existing_data = {}
+
+            serialized_tasks = self._serialize_filtered_tasks_for_storage(tasks)
+
+            snapshot = {
+                "saved_at": datetime.now().isoformat(),
+                "tasks": serialized_tasks,
+            }
+
+            project_key = str(self.project_id)
+            existing_data[project_key] = snapshot
+
+            with open(file_path, "w", encoding="utf-8") as write_handle:
+                json.dump(
+                    make_json_serializable(existing_data),
+                    write_handle,
+                    indent=2,
+                    ensure_ascii=False,
+                )
+
+            logger.debug(
+                f"Persisted {len(serialized_tasks)} filtered tasks for project {project_key} to {file_path}"
+            )
+        except Exception as error:
+            logger.error(
+                f"Failed to persist filtered tasks for project {self.project_id}: {error}"
+            )
+
+    def _serialize_filtered_tasks_for_storage(
+        self,
+        tasks: List[Any],
+    ) -> List[Dict[str, Any]]:
+        """Normalize filtered task objects into a JSON-friendly format."""
+
+        serialized: List[Dict[str, Any]] = []
+
+        if not tasks:
+            return serialized
+
+        for index, task in enumerate(tasks):
+            if hasattr(task, "model_dump"):
+                raw_task = task.model_dump()
+            elif isinstance(task, dict):
+                raw_task = dict(task)
+            else:
+                raw_task = make_json_serializable(task)
+                if not isinstance(raw_task, dict):
+                    raw_task = {"value": raw_task}
+
+            task_id = raw_task.get("id")
+            if task_id is None and hasattr(task, "id"):
+                task_id = getattr(task, "id")
+            if task_id is None:
+                task_id = index + 1
+
+            description = raw_task.get("description")
+            if description is None and hasattr(task, "description"):
+                description = getattr(task, "description")
+            if description is None:
+                description = raw_task.get("value", "")
+            description = str(description) if description is not None else ""
+
+            serialized.append(
+                {
+                    "id": str(task_id),
+                    "description": description,
+                }
+            )
+
+        return serialized
 
     def _execute_phase_baml(
         self, phase: int, analysis_query: str, memory_context: str
@@ -922,11 +1030,11 @@ Tool Results:
                     "error": f"Connection storage failed: {storage_result.get('error')}",
                 }
 
-            print("✅ Connections and summary stored in database successfully")
+            console.print("✅ Connections and summary stored in database successfully")
 
             # Run comprehensive connection matching for all technology types
             # The method handles fetching and processing all connections internally
-            print(
+            console.print(
                 "🔍 Starting comprehensive connection matching for all technology types"
             )
 
@@ -958,10 +1066,12 @@ Tool Results:
                     mapping_result = self.graph_ops.create_connection_mappings(
                         db_matches
                     )
-                    print(f"✅ Stored {len(db_matches)} connection mappings in database")
+                    console.print(
+                        f"✅ Stored {len(db_matches)} connection mappings in database"
+                    )
                 else:
                     mapping_result = {"success": True, "mapping_ids": []}
-                    print("ℹ️  No connection matches found")
+                    console.print("ℹ️  No connection matches found")
 
                 # Mark cross-indexing as complete
                 self.graph_ops.mark_cross_indexing_done_by_id(project_id)
