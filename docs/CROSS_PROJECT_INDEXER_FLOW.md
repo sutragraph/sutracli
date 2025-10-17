@@ -644,7 +644,7 @@ RESPLITTING PROCESS:
     "needs_db_update": bool,      # Flag for database update
     "needs_code_update": bool,    # Flag if code snippet changed
     "is_deleted": bool,           # Flag for deletion
-    "needs_resplitting": bool,    # Flag for Phase 4 re-analysisw
+    "needs_resplitting": bool,    # Flag for Phase 4 re-analysis
     "old_description": str        # Previous description for context
 }
 ```
