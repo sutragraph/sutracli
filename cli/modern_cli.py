@@ -900,8 +900,6 @@ class ModernSutraKit:
             changes_by_project = {}
 
             if result["status"] in ["completed", "partial"]:
-                console.success(f"Incremental indexing completed successfully")
-
                 # Get the actual changes from each project that was processed
                 if "results" in result:
                     for project_info in result["results"]:
@@ -942,10 +940,6 @@ class ModernSutraKit:
             project_name = project_manager.determine_project_name(project_dir)
 
             if graph_ops.is_cross_indexing_done(project_name):
-                console.success(
-                    f"Cross-indexing already completed for project '{project_name}'"
-                )
-                console.dim("📊 Skipping analysis - project already fully analyzed")
                 return
 
         except Exception as e:
@@ -1012,6 +1006,7 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
 
     def _execute_agent(self, project_dir: Path, agent_name: Agent, agent_config):
         """Execute the actual agent."""
+        console.print()
         console.highlight(f"Executing {agent_config.name}")
 
         try:

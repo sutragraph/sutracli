@@ -45,12 +45,6 @@ class CrossIndexSystem:
         # Check if cross-indexing is already completed for this project
         if self.project_name:
             if self.graph_ops.is_cross_indexing_done(self.project_name):
-                console.print(
-                    f"✅ Cross-indexing already completed for project '{self.project_name}'"
-                )
-                console.print(
-                    "📊 Skipping cross-indexing analysis - project already analyzed"
-                )
                 self._skip_cross_indexing = True
             else:
                 console.print(

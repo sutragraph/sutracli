@@ -5,13 +5,10 @@ Handles fetching code content from database and file operations.
 """
 
 from pathlib import Path
-from typing import Any, Optional
 
 from loguru import logger
 
 from graph.graph_operations import GraphOperations
-
-from .query_cache import get_query_cache
 
 
 class CodeFetcher:

@@ -77,8 +77,9 @@ GET_PROJECT_DESCRIPTION = """
 SELECT description FROM projects WHERE id = ?
 """
 
+
 # ============================================================================
-# CHECKPOINT QUERIES
+# CROSS-INEDING QUERIES
 # ============================================================================
 
 GET_ALL_CHECKPOINTS = """
@@ -87,27 +88,10 @@ FROM checkpoints
 ORDER BY updated_at DESC
 """
 
-GET_CHECKPOINT_BY_PROJECT_FILE = """
-SELECT id, project_id, file_path, change_type, old_code, new_code, updated_at
-FROM checkpoints
-WHERE project_id = ? AND file_path = ?
-"""
-
-GET_CHECKPOINTS_BY_PROJECT = """
-SELECT id, project_id, file_path, change_type, old_code, new_code, updated_at
-FROM checkpoints
-WHERE project_id = ?
-ORDER BY updated_at DESC
-"""
-
 INSERT_CHECKPOINT = """
 INSERT OR REPLACE INTO checkpoints
 (project_id, file_path, change_type, old_code, new_code, updated_at)
 VALUES (?, ?, ?, ?, ?, ?)
-"""
-
-DELETE_CHECKPOINT_BY_PROJECT_FILE = """
-DELETE FROM checkpoints WHERE project_id = ? AND file_path = ?
 """
 
 DELETE_ALL_CHECKPOINTS = """
@@ -118,10 +102,6 @@ DELETE_CHECKPOINTS_BY_IDS = """
 DELETE FROM checkpoints WHERE id IN ({placeholders})
 """
 
-# ============================================================================
-# CONNECTION MANAGEMENT QUERIES (for incremental cross-indexing)
-# ============================================================================
-
 GET_CONNECTIONS_BY_FILE_ID = """
 SELECT c.id, c.description, c.start_line, c.end_line, c.technology_name, c.code_snippet, c.created_at,
        f.file_path
@@ -129,19 +109,6 @@ FROM {table_name} c
 LEFT JOIN files f ON c.file_id = f.id
 WHERE c.file_id = ?
 ORDER BY c.start_line
-"""
-
-GET_FILE_ID_BY_PATH = """
-SELECT id FROM files WHERE file_path = ? AND project_id = ?
-"""
-
-DELETE_CONNECTIONS_BY_FILE_ID = """
-DELETE FROM {table_name} WHERE file_id = ?
-"""
-
-DELETE_CONNECTIONS_BY_LINE_RANGE = """
-DELETE FROM {table_name}
-WHERE file_id = ? AND start_line >= ? AND end_line <= ?
 """
 
 UPDATE_CONNECTION_LINES = """
