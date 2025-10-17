@@ -346,10 +346,6 @@ def handle_cross_indexing_command(args) -> None:
         )
 
         if graph_ops.is_cross_indexing_done(project_name):
-            console.print(
-                f"✅ Cross-indexing already completed for project '{project_name}'"
-            )
-            console.print("📊 Skipping analysis - project already fully analyzed")
             return
 
         # Initialize cross-index system with project name for incremental indexing

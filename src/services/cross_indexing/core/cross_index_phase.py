@@ -229,6 +229,7 @@ class CrossIndexing:
             # Only fetch unknown connections if they exist
             unknown_connections = {"incoming": [], "outgoing": []}
             if has_unknown:
+                console.print()
                 console.print("🔄 Fetching Unknown connections...")
                 unknown_connections = self.graph_ops.fetch_connections_by_technology(
                     "Unknown"
@@ -237,6 +238,7 @@ class CrossIndexing:
                     f"   Found {len(unknown_connections['incoming'])} incoming and {len(unknown_connections['outgoing'])} outgoing Unknown connections"
                 )
             else:
+                console.print()
                 console.print(
                     "ℹ️  No Unknown connections found, skipping Unknown fetch"
                 )
@@ -244,6 +246,7 @@ class CrossIndexing:
             # Get all distinct technology types (excluding Unknown)
             all_tech_types = self.graph_ops.get_available_technology_types()
 
+            console.print()
             console.print(
                 f"📊 Found technology types: {', '.join(sorted(all_tech_types))}"
             )
@@ -255,6 +258,7 @@ class CrossIndexing:
 
             # Process each technology type one by one
             for tech_type in sorted(all_tech_types):
+                console.print()
                 console.print(f"🔄 Processing {tech_type} connections...")
 
                 # Fetch specific technology type connections
@@ -322,6 +326,7 @@ class CrossIndexing:
                     if is_valid:
                         matches = tech_results.get("matches", [])
                         all_matches.extend(matches)
+                        console.print()
                         console.print(
                             f"   ✅ Found {len(matches)} matches for {tech_type}"
                         )

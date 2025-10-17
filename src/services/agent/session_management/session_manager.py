@@ -49,9 +49,6 @@ class SessionManager:
                     "task_progress_history", []
                 )
 
-                console.print(f"🧠 Loaded session {self.session_id} with Sutra memory")
-            else:
-                console.print(f"🆕 Created new session {self.session_id}")
         except Exception as e:
             logger.warning(f"Failed to load session {self.session_id}: {e}")
             # Continue with empty session data

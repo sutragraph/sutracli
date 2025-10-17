@@ -397,9 +397,11 @@ class BAMLService:
                 logger.debug(error_msg)
 
                 if attempt < max_retries:
+                    console.print()
                     console.warning(
                         f"Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries + 1})"
                     )
+                    console.print()
                     time.sleep(retry_delay)
                     continue
                 else:
