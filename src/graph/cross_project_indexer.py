@@ -750,12 +750,15 @@ class CrossProjectIndexer:
         diff_data: Dict[str, Any],
         updated_file_content: str,
         file_path: str,
-    ) -> Tuple[List[Dict], List[Dict]]:
+    ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
         """
         Update connection records after file modifications using line mapping.
+
+        Returns:
+            Tuple of (updated_connections, connections_for_resplitting, deleted_connections)
         """
         if not connections:
-            return connections, []
+            return connections, [], []
 
         line_mapping = diff_data.get("line_mapping", {})
         replaced_ranges = diff_data.get("replaced_ranges", [])
@@ -857,8 +860,15 @@ class CrossProjectIndexer:
                     # These are often part of the same logical change (e.g., new error handling)
                     added_lines_data = diff_data.get("added", [])
                     for added_line in added_lines_data:
-                        # If added line is within or immediately after the extended range, include it
+                        # Check if added line is before the extended range (within threshold)
                         if (
+                            extended_start - ADJACENCY_THRESHOLD
+                            <= added_line
+                            < extended_start
+                        ):
+                            extended_start = min(extended_start, added_line)
+                        # If added line is within or immediately after the extended range, include it
+                        elif (
                             extended_start
                             <= added_line
                             <= extended_end + ADJACENCY_THRESHOLD
@@ -1001,6 +1011,9 @@ class CrossProjectIndexer:
                     f"  Connection {conn.get('id', 'unknown')} marked for resplitting (internal change): lines {conn.get('start_line')}-{conn.get('end_line')}"
                 )
 
+        # Collect deleted connections before filtering
+        deleted_connections = [c for c in connections if c.get("is_deleted", False)]
+
         # Filter out deleted connections and those marked for resplitting
         connections = [
             c
@@ -1008,11 +1021,12 @@ class CrossProjectIndexer:
             if not c.get("is_deleted", False) and not c.get("needs_resplitting", False)
         ]
 
-        return connections, connections_for_resplitting
+        return connections, connections_for_resplitting, deleted_connections
 
     def _delete_connections_from_db(self, connections_to_delete: List[Dict]) -> None:
         """
         Delete connections from database.
+        Note: Does NOT commit - caller should commit the transaction.
         """
         if not connections_to_delete:
             return
@@ -1027,10 +1041,8 @@ class CrossProjectIndexer:
             self.connection.connection.execute(query, (conn["id"],))
             logger.debug(f"  Deleted connection {conn['id']} from {table_name}")
 
-        # Commit all deletions at once
-        self.connection.connection.commit()
         logger.debug(
-            f"  Committed deletion of {len(connections_to_delete)} connections"
+            f"  Prepared deletion of {len(connections_to_delete)} connections (commit pending)"
         )
 
     def _prepare_connections_for_phase4(
@@ -1130,6 +1142,7 @@ class CrossProjectIndexer:
                 (
                     updated_connections,
                     connections_for_resplitting,
+                    deleted_connections,
                 ) = self._update_connections_after_file_changes(
                     connections, diff_data, new_content, file_path
                 )
@@ -1159,7 +1172,7 @@ class CrossProjectIndexer:
                     for c in connections_needing_update
                     if not c.get("needs_code_update")
                 ]
-                deleted_connections = [c for c in connections if c.get("is_deleted")]
+                # deleted_connections now comes from the return value above
 
                 # Update connections with code + line changes
                 if connections_needing_code_update:
@@ -1212,7 +1225,7 @@ class CrossProjectIndexer:
                     )
                     snippet_infos.extend(resplit_snippet_infos)
 
-                # Commit all database changes
+                # Commit all database changes atomically (updates + deletions)
                 self.connection.connection.commit()
 
                 # Identify new lines that need phase 4 processing
@@ -1407,18 +1420,45 @@ class CrossProjectIndexer:
             batches = []
             current_batch = []
             current_batch_lines = 0
+            current_batch_ranges = {}  # Track {file_path: [(start, end), ...]}
 
             for info in all_infos:
                 line_count = info["line_count"]
+                file_path = info["file_path"]
+                start_line = info["start_line"]
+                end_line = info["end_line"]
+
+                # Calculate how many unique lines this snippet adds
+                unique_lines_to_add = line_count
+
+                if file_path in current_batch_ranges:
+                    # Check for overlaps with existing snippets in this file
+                    for existing_start, existing_end in current_batch_ranges[file_path]:
+                        # Check if there's an overlap
+                        if start_line <= existing_end and existing_start <= end_line:
+                            # Calculate the overlap
+                            overlap_start = max(start_line, existing_start)
+                            overlap_end = min(end_line, existing_end)
+                            overlap_lines = overlap_end - overlap_start + 1
+                            # Subtract overlapping lines from what we're adding
+                            unique_lines_to_add -= overlap_lines
 
                 # If adding this would exceed limit, start new batch
-                if current_batch and (current_batch_lines + line_count > max_lines):
+                if current_batch and (
+                    current_batch_lines + unique_lines_to_add > max_lines
+                ):
                     batches.append(current_batch)
                     current_batch = []
                     current_batch_lines = 0
+                    current_batch_ranges = {}
 
                 current_batch.append(info)
-                current_batch_lines += line_count
+                current_batch_lines += unique_lines_to_add
+
+                # Track this snippet's range
+                if file_path not in current_batch_ranges:
+                    current_batch_ranges[file_path] = []
+                current_batch_ranges[file_path].append((start_line, end_line))
 
             # Add the last batch if not empty
             if current_batch:
