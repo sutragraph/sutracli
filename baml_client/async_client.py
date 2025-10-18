@@ -366,7 +366,7 @@ class BamlAsyncClient:
             return typing.cast(types.RoadmapResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AwsBedrockSutraCliAssistant(self, question: str,
         baml_options: BamlCallOptions = {},
-    ) -> str:
+    ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
         if 'on_tick' in baml_options:
             # Use streaming internally when on_tick is provided
@@ -378,7 +378,7 @@ class BamlAsyncClient:
             result = await self.__options.merge_options(baml_options).call_function_async(function_name="AwsBedrockSutraCliAssistant", args={
                 "question": question,
             })
-            return typing.cast(str, result.cast_to(types, types, stream_types, False, __runtime__))
+            return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
     async def AwsBedrockTaskFilter(self, task_list: str,
         baml_options: BamlCallOptions = {},
     ) -> types.TaskFilterResponse:
@@ -1638,14 +1638,14 @@ class BamlStreamClient:
         )
     def AwsBedrockSutraCliAssistant(self, question: str,
         baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[str, str]:
+    ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockSutraCliAssistant", args={
             "question": question,
         })
-        return baml_py.BamlStream[str, str](
+        return baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse](
           result,
-          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
-          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          lambda x: typing.cast(stream_types.QAEngineerResponse, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
     def AwsBedrockTaskFilter(self, task_list: str,

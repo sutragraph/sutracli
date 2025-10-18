@@ -20,6 +20,9 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 {% elif tool == ToolName.ListFilesWithoutProjectName %}
 {{ ListFilesToolWithoutProjectNameTemplate() }}
 
+{% elif tool == ToolName.Terminal %}
+{{ TerminalToolTemplate() }}
+
 {% endif %}
 {% endfor %}
 "#

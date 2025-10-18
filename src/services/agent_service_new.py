@@ -9,7 +9,7 @@ from rich.prompt import Confirm
 from rich.text import Text
 
 from agents_new import Agent, AgentResponse, RoadmapResponse, execute_agent
-from baml_client.types import SutraMemoryParams
+from baml_client.types import RoadmapSutraMemoryParams
 from tools import AllToolParams, execute_tool
 from utils.console import console
 
@@ -455,7 +455,7 @@ class AgentService:
 
         console.print(thinking_panel)
 
-    def _parse_sutra_memory(self, sutra_memory: SutraMemoryParams) -> None:
+    def _parse_sutra_memory(self, sutra_memory: RoadmapSutraMemoryParams) -> None:
         results = self.memory_manager.process_sutra_memory_params(sutra_memory)
 
         # Update session memory if any changes were made

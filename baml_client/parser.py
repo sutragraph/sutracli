@@ -140,9 +140,9 @@ class LlmResponseParser:
 
     def AwsBedrockSutraCliAssistant(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> str:
+    ) -> types.QAEngineerResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockSutraCliAssistant", llm_response=llm_response, mode="request")
-        return typing.cast(str, result)
+        return typing.cast(types.QAEngineerResponse, result)
 
     def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -676,9 +676,9 @@ class LlmStreamParser:
 
     def AwsBedrockSutraCliAssistant(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> str:
+    ) -> stream_types.QAEngineerResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockSutraCliAssistant", llm_response=llm_response, mode="stream")
-        return typing.cast(str, result)
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},

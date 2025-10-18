@@ -37,7 +37,7 @@ def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
 def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
 # #########################################################################
-# Generated enums (13)
+# Generated enums (14)
 # #########################################################################
 
 class Agent(str, Enum):
@@ -46,10 +46,7 @@ class Agent(str, Enum):
 
 class CodeStorageAction(str, Enum):
     Add = "Add"
-    UpdateTracingStatus = "UpdateTracingStatus"
-    MoveToTraced = "MoveToTraced"
-    AddToNeedsTracing = "AddToNeedsTracing"
-    UpdateCallChainSummary = "UpdateCallChainSummary"
+    Remove = "Remove"
 
 class CodeStorageAction_CrossIndexing(str, Enum):
     Add = "Add"
@@ -77,6 +74,13 @@ class ImpactLevel(str, Enum):
     Medium = "Medium"
     Low = "Low"
     NoImpact = "NoImpact"
+
+class RoadmapCodeStorageAction(str, Enum):
+    Add = "Add"
+    UpdateTracingStatus = "UpdateTracingStatus"
+    MoveToTraced = "MoveToTraced"
+    AddToNeedsTracing = "AddToNeedsTracing"
+    UpdateCallChainSummary = "UpdateCallChainSummary"
 
 class Status_CrossIndexing(str, Enum):
     Pending = "Pending"
@@ -112,10 +116,11 @@ class ToolName(str, Enum):
     SemanticSearch = "SemanticSearch"
     ListFiles = "ListFiles"
     ListFilesWithoutProjectName = "ListFilesWithoutProjectName"
+    Terminal = "Terminal"
     Completion = "Completion"
 
 # #########################################################################
-# Generated classes (55)
+# Generated classes (65)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -155,13 +160,6 @@ class CodeStorage(BaseModel):
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
     description: typing.Optional[str] = None
-    is_traced: typing.Optional[bool] = None
-    root_element: typing.Optional["TracedElement"] = None
-    needs_tracing: typing.Optional[typing.List["UntracedElement"]] = None
-    traced_element: typing.Optional["TracedElement"] = None
-    source_element_id: typing.Optional[str] = None
-    element_path: typing.Optional[typing.List[str]] = None
-    call_chain_summary: typing.Optional[str] = None
 
 class CodeStorage_CrossIndexing(BaseModel):
     action: CodeStorageAction_CrossIndexing
@@ -299,9 +297,48 @@ class ProjectRoadmap(BaseModel):
     changes: typing.Optional[typing.List["FileChange"]] = None
     contracts: typing.Optional[typing.List["Contract"]] = None
 
+class QAEngineerAgentParams(BaseModel):
+    context: str
+    prompt_params: "QAEngineerPromptParams"
+
+class QAEngineerCompletionParams(BaseModel):
+    summary: str
+    failed_tests: typing.Optional[typing.List["QAEngineerFailedTestsParams"]] = None
+
+class QAEngineerCompletionToolCall(BaseModel):
+    tool_name: typing_extensions.Literal['attempt_completion']
+    parameters: "QAEngineerCompletionParams"
+
+class QAEngineerFailedTestsParams(BaseModel):
+    test_name: str
+    test_details: str
+
+class QAEngineerPromptParams(BaseModel):
+    base_params: "BasePromptParams"
+
+class QAEngineerResponse(BaseModel):
+    thinking: typing.Optional[str] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
+    sutra_memory: "SutraMemoryParams"
+
 class RoadmapAgentParams(BaseModel):
     context: str
     prompt_params: "RoadmapPromptParams"
+
+class RoadmapCodeStorage(BaseModel):
+    action: RoadmapCodeStorageAction
+    id: str
+    file: typing.Optional[str] = None
+    start_line: typing.Optional[int] = None
+    end_line: typing.Optional[int] = None
+    description: typing.Optional[str] = None
+    is_traced: typing.Optional[bool] = None
+    root_element: typing.Optional["TracedElement"] = None
+    needs_tracing: typing.Optional[typing.List["UntracedElement"]] = None
+    traced_element: typing.Optional["TracedElement"] = None
+    source_element_id: typing.Optional[str] = None
+    element_path: typing.Optional[typing.List[str]] = None
+    call_chain_summary: typing.Optional[str] = None
 
 class RoadmapCompletionParams(BaseModel):
     projects: typing.List["ProjectRoadmap"]
@@ -317,7 +354,12 @@ class RoadmapPromptParams(BaseModel):
 class RoadmapResponse(BaseModel):
     thinking: typing.Optional[str] = None
     tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]] = None
-    sutra_memory: "SutraMemoryParams"
+    sutra_memory: "RoadmapSutraMemoryParams"
+
+class RoadmapSutraMemoryParams(BaseModel):
+    add_history: str
+    tasks: typing.Optional[typing.List["TaskOperation"]] = None
+    code: typing.Optional[typing.List["RoadmapCodeStorage"]] = None
 
 class SearchKeywordParams(BaseModel):
     keyword: str
@@ -397,6 +439,14 @@ class TechnologyCorrection(BaseModel):
 class TechnologyCorrectionResponse(BaseModel):
     corrections: typing.Optional[typing.List["TechnologyCorrection"]] = None
 
+class TermianlParams(BaseModel):
+    command: str
+    cwd: typing.Optional[str] = None
+
+class TermianlToolCall(BaseModel):
+    tool_name: typing_extensions.Literal['terminal']
+    parameters: "TermianlParams"
+
 class TracedElement(BaseModel):
     id: typing.Optional[str] = None
     name: str
@@ -416,11 +466,14 @@ class UntracedElement(BaseModel):
     accessed_from: typing.Optional[str] = None
 
 # #########################################################################
-# Generated type aliases (3)
+# Generated type aliases (4)
 # #########################################################################
 
 
 DeveloperToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "DeveloperCompletionToolCall"]
+
+
+QAEngineerToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]
 
 
 RoadmapToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]

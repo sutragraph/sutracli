@@ -17,7 +17,7 @@ from loguru import logger
 
 from baml_client.types import (
     CodeStorageAction,
-    SutraMemoryParams,
+    RoadmapSutraMemoryParams,
     TaskOperationAction,
     TracedElement,
     UntracedElement,
@@ -147,7 +147,7 @@ class SutraMemoryManager:
 
     # Structured Object Processing Methods
     def process_sutra_memory_params(
-        self, sutra_memory: SutraMemoryParams
+        self, sutra_memory: RoadmapSutraMemoryParams
     ) -> Dict[str, Any]:
         """
         Process sutra memory changes from SutraMemoryParams object directly.

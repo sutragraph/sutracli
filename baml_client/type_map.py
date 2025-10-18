@@ -115,8 +115,29 @@ type_map = {
     "types.ProjectRoadmap": types.ProjectRoadmap,
     "stream_types.ProjectRoadmap": stream_types.ProjectRoadmap,
 
+    "types.QAEngineerAgentParams": types.QAEngineerAgentParams,
+    "stream_types.QAEngineerAgentParams": stream_types.QAEngineerAgentParams,
+
+    "types.QAEngineerCompletionParams": types.QAEngineerCompletionParams,
+    "stream_types.QAEngineerCompletionParams": stream_types.QAEngineerCompletionParams,
+
+    "types.QAEngineerCompletionToolCall": types.QAEngineerCompletionToolCall,
+    "stream_types.QAEngineerCompletionToolCall": stream_types.QAEngineerCompletionToolCall,
+
+    "types.QAEngineerFailedTestsParams": types.QAEngineerFailedTestsParams,
+    "stream_types.QAEngineerFailedTestsParams": stream_types.QAEngineerFailedTestsParams,
+
+    "types.QAEngineerPromptParams": types.QAEngineerPromptParams,
+    "stream_types.QAEngineerPromptParams": stream_types.QAEngineerPromptParams,
+
+    "types.QAEngineerResponse": types.QAEngineerResponse,
+    "stream_types.QAEngineerResponse": stream_types.QAEngineerResponse,
+
     "types.RoadmapAgentParams": types.RoadmapAgentParams,
     "stream_types.RoadmapAgentParams": stream_types.RoadmapAgentParams,
+
+    "types.RoadmapCodeStorage": types.RoadmapCodeStorage,
+    "stream_types.RoadmapCodeStorage": stream_types.RoadmapCodeStorage,
 
     "types.RoadmapCompletionParams": types.RoadmapCompletionParams,
     "stream_types.RoadmapCompletionParams": stream_types.RoadmapCompletionParams,
@@ -129,6 +150,9 @@ type_map = {
 
     "types.RoadmapResponse": types.RoadmapResponse,
     "stream_types.RoadmapResponse": stream_types.RoadmapResponse,
+
+    "types.RoadmapSutraMemoryParams": types.RoadmapSutraMemoryParams,
+    "stream_types.RoadmapSutraMemoryParams": stream_types.RoadmapSutraMemoryParams,
 
     "types.SearchKeywordParams": types.SearchKeywordParams,
     "stream_types.SearchKeywordParams": stream_types.SearchKeywordParams,
@@ -175,6 +199,12 @@ type_map = {
     "types.TechnologyCorrectionResponse": types.TechnologyCorrectionResponse,
     "stream_types.TechnologyCorrectionResponse": stream_types.TechnologyCorrectionResponse,
 
+    "types.TermianlParams": types.TermianlParams,
+    "stream_types.TermianlParams": stream_types.TermianlParams,
+
+    "types.TermianlToolCall": types.TermianlToolCall,
+    "stream_types.TermianlToolCall": stream_types.TermianlToolCall,
+
     "types.TracedElement": types.TracedElement,
     "stream_types.TracedElement": stream_types.TracedElement,
 
@@ -195,6 +225,8 @@ type_map = {
     "types.FileOperation": types.FileOperation,
 
     "types.ImpactLevel": types.ImpactLevel,
+
+    "types.RoadmapCodeStorageAction": types.RoadmapCodeStorageAction,
 
     "types.Status_CrossIndexing": types.Status_CrossIndexing,
 

@@ -5,6 +5,7 @@ enum ToolName {
   SemanticSearch
   ListFiles
   ListFilesWithoutProjectName
+  Terminal
   Completion
 }
 
@@ -36,6 +37,11 @@ class ListFilesToolCall {
 class ListFilesToolCallWithoutProjectName {
   tool_name "list_files"
   parameters ListFilesParamsWithoutProjectName
+}
+
+class TermianlToolCall {
+  tool_name "terminal"
+  parameters TermianlParams
 }
 
 class CompletionToolCall {

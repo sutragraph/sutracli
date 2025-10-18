@@ -24,11 +24,12 @@ template_string UserQuestion(question: string) #"
 QUESTION: {{question}}
 "#
 
-function AwsBedrockSutraCliAssistant(question: string) -> string {
+function AwsBedrockSutraCliAssistant(question: string) -> QAEngineerResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ SutraCliAssistant() }}
+    {{ ctx.output_format }}
     {{ UserQuestion(question) }}
   "#
 }

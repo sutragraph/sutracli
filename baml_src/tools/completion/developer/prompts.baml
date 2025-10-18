@@ -1,3 +1,3 @@
-template_string DeveloperCompletion() #"
+template_string QAEngineerCompletion() #"
 
 "#
