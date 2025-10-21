@@ -29,7 +29,7 @@ function AwsBedrockQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerR
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
 
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
 
     {{ QAEngineerUserPrompt(params.context) }}
   "#
@@ -40,7 +40,7 @@ function AnthropicClaudeQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngi
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -50,7 +50,7 @@ function OpenAIChatGPTQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngine
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -60,7 +60,7 @@ function GoogleGeminiQAEngineerAgent(params: QAEngineerAgentParams) -> QAEnginee
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -70,7 +70,7 @@ function GCPVertexAIQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineer
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -80,7 +80,7 @@ function AzureOpenAIQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineer
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -90,7 +90,7 @@ function AzureAIFoundryQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngin
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -100,7 +100,7 @@ function OpenRouterQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerR
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params.prompt_params) }}
-    {{ ctx.output_format() }}
+    {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }

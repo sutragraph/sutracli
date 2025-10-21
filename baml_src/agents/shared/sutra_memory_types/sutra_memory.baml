@@ -18,7 +18,7 @@ class TaskOperation {
 
 enum CodeStorageAction {
   Add @alias("add")
-  Remove @alias("remove")
+  // Remove @alias("remove")
 }
 
 class CodeStorage {
