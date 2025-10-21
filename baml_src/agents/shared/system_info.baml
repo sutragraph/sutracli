@@ -5,8 +5,10 @@ class SystemInfoParams {
   current_dir string
 }
 
-template_string SystemInfo(params:SystemInfoParams) #"
-## SYSTEM INFORMATION
+template_string SystemInfo(params: SystemInfoParams) #"
+====
+
+## System Information
 
 os: {{ params.os }}
 shell: {{ params.shell }}

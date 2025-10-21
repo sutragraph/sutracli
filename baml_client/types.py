@@ -37,12 +37,14 @@ def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
 def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
 # #########################################################################
-# Generated enums (14)
+# Generated enums (15)
 # #########################################################################
 
 class Agent(str, Enum):
     ROADMAP = "ROADMAP"
     CrossIndexing = "CrossIndexing"
+    Developer = "Developer"
+    QAEngineer = "QAEngineer"
 
 class CodeStorageAction(str, Enum):
     Add = "Add"
@@ -55,6 +57,10 @@ class CodeStorageAction_CrossIndexing(str, Enum):
 class ContractRole(str, Enum):
     Provider = "Provider"
     Consumer = "Consumer"
+
+class DatabaseQueryName(str, Enum):
+    GET_FILE_BY_PATH = "GET_FILE_BY_PATH"
+    GET_BLOCK_DETAILS = "GET_BLOCK_DETAILS"
 
 class ElementType(str, Enum):
     FUNCTION = "FUNCTION"
@@ -114,13 +120,14 @@ class ToolName(str, Enum):
     SearchKeyword = "SearchKeyword"
     SearchKeywordWithoutProjectName = "SearchKeywordWithoutProjectName"
     SemanticSearch = "SemanticSearch"
+    SemanticSearchWithoutProjectName = "SemanticSearchWithoutProjectName"
     ListFiles = "ListFiles"
     ListFilesWithoutProjectName = "ListFilesWithoutProjectName"
     Terminal = "Terminal"
     Completion = "Completion"
 
 # #########################################################################
-# Generated classes (65)
+# Generated classes (67)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -226,7 +233,7 @@ class CrossIndexingResponse(BaseModel):
     sutra_memory: "SutraMemoryParams_CrossIndexing"
 
 class DatabaseParams(BaseModel):
-    query_name: str
+    query_name: DatabaseQueryName
     file_path: typing.Optional[str] = None
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
@@ -242,7 +249,7 @@ class DeveloperAgentParams(BaseModel):
     prompt_params: "DeveloperPromptParams"
 
 class DeveloperCompletionParams(BaseModel):
-    summary: str
+    result: str
 
 class DeveloperCompletionToolCall(BaseModel):
     tool_name: typing_extensions.Literal['attempt_completion']
@@ -253,7 +260,7 @@ class DeveloperPromptParams(BaseModel):
 
 class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "DeveloperCompletionToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "DeveloperCompletionToolCall"]] = None
     sutra_memory: "SutraMemoryParams"
 
 class FileChange(BaseModel):
@@ -302,7 +309,7 @@ class QAEngineerAgentParams(BaseModel):
     prompt_params: "QAEngineerPromptParams"
 
 class QAEngineerCompletionParams(BaseModel):
-    summary: str
+    result: str
     failed_tests: typing.Optional[typing.List["QAEngineerFailedTestsParams"]] = None
 
 class QAEngineerCompletionToolCall(BaseModel):
@@ -314,11 +321,11 @@ class QAEngineerFailedTestsParams(BaseModel):
     test_details: str
 
 class QAEngineerPromptParams(BaseModel):
-    base_params: "BasePromptParams"
+    system_info: "SystemInfoParams"
 
 class QAEngineerResponse(BaseModel):
-    thinking: typing.Optional[str] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
+    thinking: str
+    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
     sutra_memory: "SutraMemoryParams"
 
 class RoadmapAgentParams(BaseModel):
@@ -393,9 +400,17 @@ class SemanticSearchParams(BaseModel):
     project_name: typing.Optional[str] = None
     fetch_next_chunk: typing.Optional[bool] = None
 
+class SemanticSearchParamsWithoutProjectName(BaseModel):
+    query: str
+    fetch_next_chunk: typing.Optional[bool] = None
+
 class SemanticSearchToolCall(BaseModel):
     tool_name: typing_extensions.Literal['semantic_search']
     parameters: "SemanticSearchParams"
+
+class SemanticSearchToolCallWithoutProjectName(BaseModel):
+    tool_name: typing_extensions.Literal['semantic_search']
+    parameters: "SemanticSearchParamsWithoutProjectName"
 
 class SutraMemoryParams(BaseModel):
     add_history: str
@@ -470,10 +485,10 @@ class UntracedElement(BaseModel):
 # #########################################################################
 
 
-DeveloperToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "DeveloperCompletionToolCall"]
+DeveloperToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "DeveloperCompletionToolCall"]
 
 
-QAEngineerToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]
+QAEngineerToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]
 
 
 RoadmapToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]

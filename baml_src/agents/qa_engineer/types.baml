@@ -3,10 +3,10 @@ class QAEngineerCompletionToolCall {
   parameters QAEngineerCompletionParams
 }
 
-type QAEngineerToolCall = DatabaseToolCall | SearchKeywordToolCall | SemanticSearchToolCall | ListFilesToolCall | TermianlToolCall | QAEngineerCompletionToolCall
+type QAEngineerToolCall = DatabaseToolCall | SearchKeywordToolCall | SemanticSearchToolCallWithoutProjectName | ListFilesToolCall | TermianlToolCall | QAEngineerCompletionToolCall
 
 class QAEngineerPromptParams {
-  base_params BasePromptParams
+  system_info SystemInfoParams
 }
 
 class QAEngineerAgentParams {
@@ -15,7 +15,7 @@ class QAEngineerAgentParams {
 }
 
 class QAEngineerResponse {
-  thinking string? @description("The agent's internal thought process")
-  tool_call QAEngineerToolCall? @description("The tool call to be made by the QA Engineer agent")
-  sutra_memory SutraMemoryParams @description("Sutra memory updates to be made")
+  thinking string @description("Concise user-facing progress update for the UI (one sentence).")
+  tool_call QAEngineerToolCall? @description("Next tool to invoke with parameters, if any.")
+  sutra_memory SutraMemoryParams @description("Persistent memory for code snippets, task updates, and history.")
 }

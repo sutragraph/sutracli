@@ -169,8 +169,14 @@ type_map = {
     "types.SemanticSearchParams": types.SemanticSearchParams,
     "stream_types.SemanticSearchParams": stream_types.SemanticSearchParams,
 
+    "types.SemanticSearchParamsWithoutProjectName": types.SemanticSearchParamsWithoutProjectName,
+    "stream_types.SemanticSearchParamsWithoutProjectName": stream_types.SemanticSearchParamsWithoutProjectName,
+
     "types.SemanticSearchToolCall": types.SemanticSearchToolCall,
     "stream_types.SemanticSearchToolCall": stream_types.SemanticSearchToolCall,
+
+    "types.SemanticSearchToolCallWithoutProjectName": types.SemanticSearchToolCallWithoutProjectName,
+    "stream_types.SemanticSearchToolCallWithoutProjectName": stream_types.SemanticSearchToolCallWithoutProjectName,
 
     "types.SutraMemoryParams": types.SutraMemoryParams,
     "stream_types.SutraMemoryParams": stream_types.SutraMemoryParams,
@@ -219,6 +225,8 @@ type_map = {
     "types.CodeStorageAction_CrossIndexing": types.CodeStorageAction_CrossIndexing,
 
     "types.ContractRole": types.ContractRole,
+
+    "types.DatabaseQueryName": types.DatabaseQueryName,
 
     "types.ElementType": types.ElementType,
 

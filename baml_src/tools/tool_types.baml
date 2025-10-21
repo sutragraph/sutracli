@@ -3,6 +3,7 @@ enum ToolName {
   SearchKeyword
   SearchKeywordWithoutProjectName
   SemanticSearch
+  SemanticSearchWithoutProjectName
   ListFiles
   ListFilesWithoutProjectName
   Terminal
@@ -27,6 +28,11 @@ class SearchKeywordToolCallWithoutProjectName {
 class SemanticSearchToolCall {
   tool_name "semantic_search"
   parameters SemanticSearchParams
+}
+
+class SemanticSearchToolCallWithoutProjectName {
+  tool_name "semantic_search"
+  parameters SemanticSearchParamsWithoutProjectName
 }
 
 class ListFilesToolCall {

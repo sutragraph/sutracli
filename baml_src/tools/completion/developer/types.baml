@@ -1,4 +1,4 @@
 
 class DeveloperCompletionParams {
-  summary string
+  result string
 }

@@ -1,5 +1,3 @@
-// Database Tool Prompts
-
 template_string DatabaseToolTemplate() #"
 ## database
 
@@ -12,7 +10,7 @@ Query codebase metadata for file info, code blocks, dependencies. Use for struct
 - start_line: OPTIONAL - 1-indexed start (type: int?).
 - end_line: OPTIONAL - 1-indexed end (type: int?).
 - block_id: OPTIONAL - For block queries (type: string?).
-- fetch_next_chunk: OPTIONAL - For more (type: bool?).
+- fetch_next_chunk: OPTIONAL - to fetch next code chunks (type: bool?).
 
 ### Usage
 {

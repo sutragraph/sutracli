@@ -6,3 +6,8 @@ class SemanticSearchParams {
   project_name string?
   fetch_next_chunk bool?
 }
+
+class SemanticSearchParamsWithoutProjectName {
+  query string
+  fetch_next_chunk bool?
+}

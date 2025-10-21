@@ -3,7 +3,7 @@ class DeveloperCompletionToolCall {
   parameters DeveloperCompletionParams
 }
 
-type DeveloperToolCall = DatabaseToolCall | SearchKeywordToolCall | SemanticSearchToolCall | ListFilesToolCall | DeveloperCompletionToolCall
+type DeveloperToolCall = DatabaseToolCall | SearchKeywordToolCall | SemanticSearchToolCallWithoutProjectName | ListFilesToolCall | DeveloperCompletionToolCall
 
 class DeveloperPromptParams {
   base_params BasePromptParams
