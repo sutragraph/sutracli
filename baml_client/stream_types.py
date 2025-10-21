@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (67)
+# Generated classes (71)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -140,6 +140,10 @@ class DatabaseToolCall(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["DatabaseParams"] = None
 
+class DatabaseToolCallSimple(BaseModel):
+    tool_name: typing.Optional[str] = None
+    parameters: typing.Optional["DatabaseParams"] = None
+
 class DeveloperAgentParams(BaseModel):
     context: typing.Optional[str] = None
     prompt_params: typing.Optional["DeveloperPromptParams"] = None
@@ -156,7 +160,7 @@ class DeveloperPromptParams(BaseModel):
 
 class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "DeveloperCompletionToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall"]] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
 
 class FileChange(BaseModel):
@@ -178,6 +182,10 @@ class ListFilesParamsWithoutProjectName(BaseModel):
 class ListFilesToolCall(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["ListFilesParams"] = None
+
+class ListFilesToolCallSimple(BaseModel):
+    tool_name: typing.Optional[str] = None
+    parameters: typing.Optional["ListFilesParamsWithoutProjectName"] = None
 
 class ListFilesToolCallWithoutProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
@@ -221,7 +229,7 @@ class QAEngineerPromptParams(BaseModel):
 
 class QAEngineerResponse(BaseModel):
     thinking: typing.Optional[str] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
 
 class RoadmapAgentParams(BaseModel):
@@ -287,6 +295,10 @@ class SearchKeywordToolCall(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["SearchKeywordParams"] = None
 
+class SearchKeywordToolCallSimple(BaseModel):
+    tool_name: typing.Optional[str] = None
+    parameters: typing.Optional["SearchKeywordParamsWithoutProjectName"] = None
+
 class SearchKeywordToolCallWithoutProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["SearchKeywordParamsWithoutProjectName"] = None
@@ -303,6 +315,10 @@ class SemanticSearchParamsWithoutProjectName(BaseModel):
 class SemanticSearchToolCall(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["SemanticSearchParams"] = None
+
+class SemanticSearchToolCallSimple(BaseModel):
+    tool_name: typing.Optional[str] = None
+    parameters: typing.Optional["SemanticSearchParamsWithoutProjectName"] = None
 
 class SemanticSearchToolCallWithoutProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
@@ -381,10 +397,10 @@ class UntracedElement(BaseModel):
 # #########################################################################
 
 
-DeveloperToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "DeveloperCompletionToolCall"]]
+DeveloperToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall"]]
 
 
-QAEngineerToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCall", "TermianlToolCall", "QAEngineerCompletionToolCall"]]
+QAEngineerToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]]
 
 
 RoadmapToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]]

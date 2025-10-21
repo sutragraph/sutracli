@@ -1,7 +1,7 @@
 template_string QAEngineerSystemPrompt(params: QAEngineerPromptParams) #"
 {{ QAEngineerIdentity() }}
 
-{{ ToolsPrompt(Agent.QAEngineer, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearchWithoutProjectName, ToolName.ListFiles]) }}
+{{ ToolsPrompt(Agent.QAEngineer, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.Terminal]) }}
 {{ QAEngineerToolGuidelines() }}
 
 {{ QAEngineerSutraMemory() }}

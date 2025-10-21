@@ -76,6 +76,9 @@ type_map = {
     "types.DatabaseToolCall": types.DatabaseToolCall,
     "stream_types.DatabaseToolCall": stream_types.DatabaseToolCall,
 
+    "types.DatabaseToolCallSimple": types.DatabaseToolCallSimple,
+    "stream_types.DatabaseToolCallSimple": stream_types.DatabaseToolCallSimple,
+
     "types.DeveloperAgentParams": types.DeveloperAgentParams,
     "stream_types.DeveloperAgentParams": stream_types.DeveloperAgentParams,
 
@@ -102,6 +105,9 @@ type_map = {
 
     "types.ListFilesToolCall": types.ListFilesToolCall,
     "stream_types.ListFilesToolCall": stream_types.ListFilesToolCall,
+
+    "types.ListFilesToolCallSimple": types.ListFilesToolCallSimple,
+    "stream_types.ListFilesToolCallSimple": stream_types.ListFilesToolCallSimple,
 
     "types.ListFilesToolCallWithoutProjectName": types.ListFilesToolCallWithoutProjectName,
     "stream_types.ListFilesToolCallWithoutProjectName": stream_types.ListFilesToolCallWithoutProjectName,
@@ -163,6 +169,9 @@ type_map = {
     "types.SearchKeywordToolCall": types.SearchKeywordToolCall,
     "stream_types.SearchKeywordToolCall": stream_types.SearchKeywordToolCall,
 
+    "types.SearchKeywordToolCallSimple": types.SearchKeywordToolCallSimple,
+    "stream_types.SearchKeywordToolCallSimple": stream_types.SearchKeywordToolCallSimple,
+
     "types.SearchKeywordToolCallWithoutProjectName": types.SearchKeywordToolCallWithoutProjectName,
     "stream_types.SearchKeywordToolCallWithoutProjectName": stream_types.SearchKeywordToolCallWithoutProjectName,
 
@@ -174,6 +183,9 @@ type_map = {
 
     "types.SemanticSearchToolCall": types.SemanticSearchToolCall,
     "stream_types.SemanticSearchToolCall": stream_types.SemanticSearchToolCall,
+
+    "types.SemanticSearchToolCallSimple": types.SemanticSearchToolCallSimple,
+    "stream_types.SemanticSearchToolCallSimple": stream_types.SemanticSearchToolCallSimple,
 
     "types.SemanticSearchToolCallWithoutProjectName": types.SemanticSearchToolCallWithoutProjectName,
     "stream_types.SemanticSearchToolCallWithoutProjectName": stream_types.SemanticSearchToolCallWithoutProjectName,

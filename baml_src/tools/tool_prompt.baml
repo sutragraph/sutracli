@@ -6,14 +6,22 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 {% for tool in tools %}
 {% if tool == ToolName.Database %}
 {{ DatabaseToolTemplate() }}
+{% elif tool == ToolName.DatabaseSimple %}
+{{ SimpleDatabaseToolTemplate() }}
 {% elif tool == ToolName.SearchKeyword %}
 {{ SearchKeywordToolTemplate() }}
+{% elif tool == ToolName.SearchKeywordSimple %}
+{{ SimpleSearchKeywordToolTemplate() }}
 {% elif tool == ToolName.SearchKeywordWithoutProjectName %}
 {{ SearchKeywordToolWithoutProjectNameTemplate() }}
 {% elif tool == ToolName.SemanticSearch %}
 {{ SemanticSearchToolTemplate() }}
+{% elif tool == ToolName.SemanticSearchSimple %}
+{{ SimpleSemanticSearchToolTemplate() }}
 {% elif tool == ToolName.ListFiles %}
 {{ ListFilesToolTemplate() }}
+{% elif tool == ToolName.ListFilesSimple %}
+{{ SimpleListFilesToolTemplate() }}
 {% elif tool == ToolName.ListFilesWithoutProjectName %}
 {{ ListFilesToolWithoutProjectNameTemplate() }}
 {% elif tool == ToolName.Terminal %}

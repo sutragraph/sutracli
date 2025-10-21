@@ -47,7 +47,7 @@ template_string DeveloperUserPrompt(context: string) #"
 "#
 
 template_string DeveloperSystemPrompt(params: DeveloperPromptParams) #"
-{{ BaseSystemPrompt(Agent.DEVELOPER, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearchWithoutProjectName, ToolName.ListFiles], params.base_params) }}
+{{ BaseSystemPrompt(Agent.DEVELOPER, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple], params.base_params) }}
 
 "#
 
