@@ -104,7 +104,7 @@ class AgentService:
             )
 
             if self._should_index_current_project:
-                console.print()  # Add blank line
+                console.print()
                 console.process("Starting project indexing...")
 
                 try:

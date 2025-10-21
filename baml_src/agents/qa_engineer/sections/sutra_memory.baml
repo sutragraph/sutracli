@@ -1,4 +1,4 @@
-template_string QAEngineerSutraMemoryPrompt() #"
+template_string QAEngineerSutraMemory() #"
 ====
 
 # Sutra Memory
@@ -19,10 +19,16 @@ Optional Components:
 2. `add_history` Best Practices:
   - Capture important actions, findings, and tool usages from the current iteration.
   - At minimum, add_history must be included in each iteration
-  - History is useful for your next tool call decisions to avoid repeating the same tool calls
+  - History is useful for your next tool call decisions to avoid repeating the same tool calls and errors encountered
+  - Include error details, stack traces, and failure context when applicable
   - Example: "Used search_keyword with query='get_user_info()' - found 2 matches in path/to/fileA.py#L30 and path/to/fileB.py#L45"
+  - Example: "Used terminal tool with command='python3 test/test_auth.py' - ran unit tests on module_x. Results: 4/5 tests passed. FAILED: test_user_authentication at tests/test_auth.py#L23 with AssertionError: Expected user role 'admin' but got 'user'. Root cause: authenticate_user() function at auth/utils.py#L15 returns default role instead of querying user_roles table. Action needed: Fix role assignment logic in get_user_role() method."
 
-3. `description` is only required for "add" actions do not include description for "move" actions
+3. `task` Best Practices:
+  - Task descriptions must be detailed and self-contained so agents can execute them without requiring additional context discovery
+  - Include specific function names, file paths, and line numbers when relevant to the task
+  - `description` is only required for 'add' actions do not include description for 'move' actions
+  - Example: "Create comprehensive unit tests for calculate_discount() function at pricing/utils.py#L42-90 - include test cases for valid percentage discounts (0-100%), edge cases (negative values, >100%), and validation of return type (float). Tests should be added to tests/test_pricing.py following existing test pattern."
 
 4. Keep memory clean, specific, and non-redundant. reference exact files/lines when possible.
 "#
