@@ -24,7 +24,7 @@ class DatabaseToolCall {
 
 class DatabaseToolCallSimple {
   tool_name "database"
-  parameters DatabaseParams
+  parameters DatabaseParamsGetFileByPath | DatabaseParamsGetBlockDetails
 }
 
 class SearchKeywordToolCall {

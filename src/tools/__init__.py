@@ -8,10 +8,20 @@ from baml_client.types import (
     Agent,
     BaseCompletionParams,
     DatabaseParams,
+    DatabaseParamsGetBlockDetails,
+    DatabaseParamsGetFileByPath,
+    DeveloperCompletionParams,
     ListFilesParams,
+    ListFilesParamsWithoutProjectName,
+    QAEngineerCompletionParams,
     RoadmapCompletionParams,
+    RoadmapSutraMemoryParams,
     SearchKeywordParams,
+    SearchKeywordParamsWithoutProjectName,
     SemanticSearchParams,
+    SemanticSearchParamsWithoutProjectName,
+    SutraMemoryParams,
+    TermianlParams,
     ToolName,
 )
 
@@ -21,12 +31,31 @@ from .tool_executor import execute_tool
 # Union type for all tool parameters
 AllToolParams = Union[
     DatabaseParams,
+    DatabaseParamsGetFileByPath,
+    DatabaseParamsGetBlockDetails,
     SearchKeywordParams,
+    SearchKeywordParamsWithoutProjectName,
     SemanticSearchParams,
+    SemanticSearchParamsWithoutProjectName,
     ListFilesParams,
-    RoadmapCompletionParams,
+    ListFilesParamsWithoutProjectName,
+    TermianlParams,
     BaseCompletionParams,
+    RoadmapCompletionParams,
+    DeveloperCompletionParams,
+    QAEngineerCompletionParams,
 ]
 
+AllSutraMemoryParams = Union[
+    SutraMemoryParams,
+    RoadmapSutraMemoryParams,
+]
 
-__all__ = ["Agent", "ToolName", "AllToolParams", "get_tool_action", "execute_tool"]
+__all__ = [
+    "Agent",
+    "ToolName",
+    "AllToolParams",
+    "AllSutraMemoryParams",
+    "get_tool_action",
+    "execute_tool",
+]

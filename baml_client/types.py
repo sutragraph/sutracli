@@ -133,9 +133,11 @@ class ToolName(str, Enum):
     ListFilesWithoutProjectName = "ListFilesWithoutProjectName"
     Terminal = "Terminal"
     Completion = "Completion"
+    EditFile = "EditFile"
+    Diagnostics = "Diagnostics"
 
 # #########################################################################
-# Generated classes (74)
+# Generated classes (76)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -248,13 +250,25 @@ class DatabaseParams(BaseModel):
     block_id: typing.Optional[str] = None
     fetch_next_chunk: typing.Optional[bool] = None
 
+class DatabaseParamsGetBlockDetails(BaseModel):
+    query_name: typing_extensions.Literal['GET_BLOCK_DETAILS']
+    block_id: str
+    fetch_next_chunk: typing.Optional[bool] = None
+
+class DatabaseParamsGetFileByPath(BaseModel):
+    query_name: typing_extensions.Literal['GET_FILE_BY_PATH']
+    file_path: str
+    start_line: typing.Optional[int] = None
+    end_line: typing.Optional[int] = None
+    fetch_next_chunk: typing.Optional[bool] = None
+
 class DatabaseToolCall(BaseModel):
     tool_name: typing_extensions.Literal['database']
     parameters: "DatabaseParams"
 
 class DatabaseToolCallSimple(BaseModel):
     tool_name: typing_extensions.Literal['database']
-    parameters: "DatabaseParams"
+    parameters: typing.Union["DatabaseParamsGetFileByPath", "DatabaseParamsGetBlockDetails"]
 
 class DeveloperAgentParams(BaseModel):
     context: str
@@ -355,8 +369,8 @@ class QAEngineerPromptParams(BaseModel):
 
 class QAEngineerResponse(BaseModel):
     thinking: str
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
     sutra_memory: "SutraMemoryParams"
+    tool_call: typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]
 
 class RoadmapAgentParams(BaseModel):
     context: str

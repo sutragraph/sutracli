@@ -1,6 +1,3 @@
-// List Files Tool Parameter Types
-// BAML only handles what agents need to CALL tools, not what tools RETURN
-
 class ListFilesParams {
   path string?
   project_name string?
@@ -9,7 +6,7 @@ class ListFilesParams {
 }
 
 class ListFilesParamsWithoutProjectName {
-  path string
-  recursive bool?
+  path string @description("The absolute path to the directory whose contents (files and folders) should be listed.")
+  recursive bool? @description("Whether to list files recursively. Use true for recursive listing, false or omit for top-level only.")
   fetch_next_chunk bool?
 }

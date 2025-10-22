@@ -73,6 +73,12 @@ type_map = {
     "types.DatabaseParams": types.DatabaseParams,
     "stream_types.DatabaseParams": stream_types.DatabaseParams,
 
+    "types.DatabaseParamsGetBlockDetails": types.DatabaseParamsGetBlockDetails,
+    "stream_types.DatabaseParamsGetBlockDetails": stream_types.DatabaseParamsGetBlockDetails,
+
+    "types.DatabaseParamsGetFileByPath": types.DatabaseParamsGetFileByPath,
+    "stream_types.DatabaseParamsGetFileByPath": stream_types.DatabaseParamsGetFileByPath,
+
     "types.DatabaseToolCall": types.DatabaseToolCall,
     "stream_types.DatabaseToolCall": stream_types.DatabaseToolCall,
 

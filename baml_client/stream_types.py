@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (74)
+# Generated classes (76)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -136,13 +136,25 @@ class DatabaseParams(BaseModel):
     block_id: typing.Optional[str] = None
     fetch_next_chunk: typing.Optional[bool] = None
 
+class DatabaseParamsGetBlockDetails(BaseModel):
+    query_name: typing.Optional[str] = None
+    block_id: typing.Optional[str] = None
+    fetch_next_chunk: typing.Optional[bool] = None
+
+class DatabaseParamsGetFileByPath(BaseModel):
+    query_name: typing.Optional[str] = None
+    file_path: typing.Optional[str] = None
+    start_line: typing.Optional[int] = None
+    end_line: typing.Optional[int] = None
+    fetch_next_chunk: typing.Optional[bool] = None
+
 class DatabaseToolCall(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["DatabaseParams"] = None
 
 class DatabaseToolCallSimple(BaseModel):
     tool_name: typing.Optional[str] = None
-    parameters: typing.Optional["DatabaseParams"] = None
+    parameters: typing.Optional[typing.Union["DatabaseParamsGetFileByPath", "DatabaseParamsGetBlockDetails"]] = None
 
 class DeveloperAgentParams(BaseModel):
     context: typing.Optional[str] = None
@@ -243,8 +255,8 @@ class QAEngineerPromptParams(BaseModel):
 
 class QAEngineerResponse(BaseModel):
     thinking: typing.Optional[str] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
 
 class RoadmapAgentParams(BaseModel):
     context: typing.Optional[str] = None

@@ -1,6 +1,3 @@
-// Semantic Search Tool Parameter Types
-// BAML only handles what agents need to CALL tools, not what tools RETURN
-
 class SemanticSearchParams {
   query string
   project_name string?
@@ -8,6 +5,6 @@ class SemanticSearchParams {
 }
 
 class SemanticSearchParamsWithoutProjectName {
-  query string
+  query string @description("Describe the concept in natural language.")
   fetch_next_chunk bool?
 }

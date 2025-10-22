@@ -18,9 +18,10 @@ template_string QAEngineerToolGuidelines() #"
   - Refer to the history for proper decision making and to avoid redundant tool calls
 
 ## Tool Usage Best Practices:
-  - Always use list_files tool before creating any tasks or unit tests to understand the workspace structure
-  - Use terminal tool to execute unit tests and capture results
+  - Always use the list_files tool before creating tasks or unit tests to understand the workspace structure
+  - Use the terminal tool to execute unit tests and capture results
   - Document every tool call in history with the command used and results obtained
   - When tests fail, capture complete error messages and stack traces from terminal output
-  - Store important test execution details in history for tracking purposes
+  - Store important test execution details in history for tracking and reference
+  - `search_keyword` is best for finding specific functions, classes, or keywords across multiple files; it does not search file names. Use the `list_files` tool to search for files
 "#

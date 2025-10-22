@@ -5,12 +5,7 @@ template_string QAEngineerSutraMemory() #"
 
 Use this persistent memory to store critical, iteration-specific data for future engineering tasks. Prioritize actionable, task-specific information to maintain context and avoid redundant work.
 
-Required Component:
-  - add_history: Comprehensive summary of current iteration actions, tool usage, and implementation discoveries
-
-Optional Components:
-  - task: Manage analysis tasks by executing tasks and creating additional tasks when needed
-  - code: Store code details which is important for future tasks
+Note: Sutra memory is not a tool. It is a persistent memory that you must update in every iteration to keep track of important information for future tasks.
 
 ## Sutra Memory Guidelines:
 
@@ -30,5 +25,7 @@ Optional Components:
   - `description` is only required for 'add' actions do not include description for 'move' actions
   - Example: "Create comprehensive unit tests for calculate_discount() function at pricing/utils.py#L42-90 - include test cases for valid percentage discounts (0-100%), edge cases (negative values, >100%), and validation of return type (float). Tests should be added to tests/test_pricing.py following existing test pattern."
 
-4. Keep memory clean, specific, and non-redundant. reference exact files/lines when possible.
+4. Only include code snippets in memory if they do not already exist. Avoid duplicating information to keep memory concise and efficient.
+
+5. Keep memory clean, specific, and non-redundant. reference exact files/lines when possible.
 "#

@@ -17,11 +17,11 @@ from loguru import logger
 
 from baml_client.types import (
     CodeStorageAction,
-    RoadmapSutraMemoryParams,
     TaskOperationAction,
     TracedElement,
     UntracedElement,
 )
+from tools import AllSutraMemoryParams
 
 from .memory_formatter import MemoryFormatter
 from .memory_operations import MemoryOperations
@@ -147,7 +147,7 @@ class SutraMemoryManager:
 
     # Structured Object Processing Methods
     def process_sutra_memory_params(
-        self, sutra_memory: RoadmapSutraMemoryParams
+        self, sutra_memory: AllSutraMemoryParams
     ) -> Dict[str, Any]:
         """
         Process sutra memory changes from SutraMemoryParams object directly.
