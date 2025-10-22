@@ -36,6 +36,13 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 
 {% elif tool == ToolName.Terminal %}
 {{ TerminalToolTemplate() }}
+
+{% elif tool == ToolName.EditFile %}
+{{ EditFileToolTemplate() }}
+
+{% elif tool == ToolName.Diagnostics %}
+{{ DiagnosticsToolTemplate() }}
+
 {% endif %}
 {% endfor %}
 "#

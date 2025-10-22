@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (71)
+# Generated classes (74)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -162,6 +162,20 @@ class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall"]] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
+
+class DiagnosticsParams(BaseModel):
+    path: typing.Optional[str] = None
+
+class Edit(BaseModel):
+    old_text: typing.Optional[str] = None
+    new_text: typing.Optional[str] = None
+    line_hint: typing.Optional[int] = None
+
+class EditFileParams(BaseModel):
+    path: typing.Optional[str] = None
+    mode: typing.Optional[types.EditFileMode] = None
+    content: typing.Optional[str] = None
+    edits: typing.Optional[typing.List["Edit"]] = None
 
 class FileChange(BaseModel):
     file_path: typing.Optional[str] = None

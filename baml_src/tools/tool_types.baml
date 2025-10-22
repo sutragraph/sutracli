@@ -12,6 +12,9 @@ enum ToolName {
   ListFilesWithoutProjectName
   Terminal
   Completion
+  EditFile
+  Diagnostics
+
 }
 
 class DatabaseToolCall {

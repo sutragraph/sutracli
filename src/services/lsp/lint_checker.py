@@ -23,7 +23,7 @@ class LintChecker:
     """Main class for checking lint using LSP servers."""
 
     @staticmethod
-    def check_lint(file_path: str, workspace_root: str) -> List[Dict[str, Any]]:
+    def check_lint(file_path: str, workspace_root: str) -> List[str]:
         """
         Check lint for a file using appropriate LSP server.
 
@@ -39,26 +39,14 @@ class LintChecker:
 
         Returns:
             List of lint issues/diagnostics, each containing:
-                - line: Line number (1-based)
-                - column: Column number (1-based)
-                - message: Diagnostic message
-                - severity: 1=Error, 2=Warning, 3=Info, 4=Hint
-                - source: Source of the diagnostic (e.g., "pylint")
-                - code: Error code (if available)
+            - Line and column info
+            - Diagnostic message
 
         Raises:
             FileNotFoundError: If the file doesn't exist
             ValueError: If the language is not supported by LSP
             RuntimeError: If LSP server installation or startup fails
         """
-        # Validate file exists
-        if not os.path.exists(file_path):
-            raiseError(
-                LSPErrorType.FILE_NOT_FOUND,
-                f"File not found: {file_path}",
-                FileNotFoundError,
-            )
-
         # Get language from file extension using file_utils
         language = get_language_from_extension(file_path)
         if not language:

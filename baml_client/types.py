@@ -37,7 +37,7 @@ def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
 def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
 # #########################################################################
-# Generated enums (15)
+# Generated enums (16)
 # #########################################################################
 
 class Agent(str, Enum):
@@ -48,7 +48,6 @@ class Agent(str, Enum):
 
 class CodeStorageAction(str, Enum):
     Add = "Add"
-    Remove = "Remove"
 
 class CodeStorageAction_CrossIndexing(str, Enum):
     Add = "Add"
@@ -61,6 +60,11 @@ class ContractRole(str, Enum):
 class DatabaseQueryName(str, Enum):
     GET_FILE_BY_PATH = "GET_FILE_BY_PATH"
     GET_BLOCK_DETAILS = "GET_BLOCK_DETAILS"
+
+class EditFileMode(str, Enum):
+    CREATE = "CREATE"
+    EDIT = "EDIT"
+    OVERWRITE = "OVERWRITE"
 
 class ElementType(str, Enum):
     FUNCTION = "FUNCTION"
@@ -131,7 +135,7 @@ class ToolName(str, Enum):
     Completion = "Completion"
 
 # #########################################################################
-# Generated classes (71)
+# Generated classes (74)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -270,6 +274,20 @@ class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall"]] = None
     sutra_memory: "SutraMemoryParams"
+
+class DiagnosticsParams(BaseModel):
+    path: str
+
+class Edit(BaseModel):
+    old_text: str
+    new_text: str
+    line_hint: typing.Optional[int] = None
+
+class EditFileParams(BaseModel):
+    path: str
+    mode: EditFileMode
+    content: typing.Optional[str] = None
+    edits: typing.Optional[typing.List["Edit"]] = None
 
 class FileChange(BaseModel):
     file_path: str

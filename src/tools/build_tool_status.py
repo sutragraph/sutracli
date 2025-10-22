@@ -1,3 +1,4 @@
+from os import error
 from typing import Any, Dict
 
 from loguru import logger
@@ -22,6 +23,10 @@ def build_tool_status(
             return _build_list_files_status(event, agent, tool_params)
         case "search_keyword":
             return _build_search_keyword_status(event, agent, tool_params)
+        case "edit_file":
+            return _build_edit_file_status(event, agent, tool_params)
+        case "diagnostics":
+            return _build_diagnostics_status(event, agent, tool_params)
         case "attempt_completion":
             return _build_completion_status(event, agent, tool_params)
         case _:
@@ -250,6 +255,90 @@ def _build_search_keyword_status(
         status_parts.append(
             "NOTE: Store relevant search results in sutra memory if you are not making changes in current iteration or fetching more chunks or using new query or want this code for later use, as search results will not persist to next iteration."
         )
+
+    return "\n".join(status_parts).rstrip()
+
+
+def _build_edit_file_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
+    """Build status for edit_file tool."""
+    error = event.get("error")
+    data = event.get("data", {})
+
+    status_parts = []
+
+    if error:
+        status_parts.append(f"[error]Error:[/error]")
+        status_parts.append(f"{error}")
+
+    if data:
+        original_path = data.get("original_path")
+        diff = data.get("diff")
+
+        if original_path:
+            status_parts.append(f"[value]File Edited: {original_path}[/value]")
+
+    status_parts = ["Tool: edit_file"]
+    status_parts.append(f"Parameters used:\n {tool_params}")
+
+    if data:
+        original_path = data.get("original_path")
+        new_text = data.get("new_text")
+        old_text = data.get("old_text")
+        diff = data.get("diff")
+
+        if original_path:
+            status_parts.append(f"File Edited: {original_path}")
+        if diff:
+            status_parts.append("Diff:")
+            status_parts.append(diff)
+
+    if error:
+        status_parts.append(f"ERROR: {error}")
+
+    return "\n".join(status_parts).rstrip()
+
+
+def _build_diagnostics_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
+    """Build status for diagnostics tool."""
+    error = event.get("error")
+    data = event.get("data", {})
+
+    status_parts = []
+
+    if error:
+        status_parts.append(f"[error]Error:[/error]")
+        status_parts.append(f"{error}")
+
+    if data:
+        file_path = data.get("file_path")
+        count = data.get("count", 0)
+
+        if file_path:
+            status_parts.append(f"[value]Diagnostics for: {file_path}[/value]")
+        status_parts.append(f"[value]Issues Found: {count}[/value]")
+
+    status_parts = ["Tool: diagnostics"]
+    status_parts.append(f"Parameters used:\n {tool_params}")
+
+    if data:
+        file_path = data.get("file_path")
+        diagnostics = data.get("diagnostics", [])
+        count = data.get("count", 0)
+
+        if file_path:
+            status_parts.append(f"File Analyzed: {file_path}")
+        status_parts.append(f"Issues Found: {count}")
+        if diagnostics:
+            status_parts.append("Diagnostics:")
+            for diag in diagnostics:
+                status_parts.append(f"{diag}")
+
+    if error:
+        status_parts.append(f"ERROR: {error}")
 
     return "\n".join(status_parts).rstrip()
 

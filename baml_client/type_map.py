@@ -94,6 +94,15 @@ type_map = {
     "types.DeveloperResponse": types.DeveloperResponse,
     "stream_types.DeveloperResponse": stream_types.DeveloperResponse,
 
+    "types.DiagnosticsParams": types.DiagnosticsParams,
+    "stream_types.DiagnosticsParams": stream_types.DiagnosticsParams,
+
+    "types.Edit": types.Edit,
+    "stream_types.Edit": stream_types.Edit,
+
+    "types.EditFileParams": types.EditFileParams,
+    "stream_types.EditFileParams": stream_types.EditFileParams,
+
     "types.FileChange": types.FileChange,
     "stream_types.FileChange": stream_types.FileChange,
 
@@ -239,6 +248,8 @@ type_map = {
     "types.ContractRole": types.ContractRole,
 
     "types.DatabaseQueryName": types.DatabaseQueryName,
+
+    "types.EditFileMode": types.EditFileMode,
 
     "types.ElementType": types.ElementType,
 
