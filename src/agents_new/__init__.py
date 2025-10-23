@@ -10,7 +10,6 @@ from baml_client.types import (
     Agent,
     BaseCompletionParams,
     ProjectContext,
-    RoadmapAgentParams,
     RoadmapCompletionParams,
     RoadmapResponse,
 )
@@ -27,7 +26,6 @@ __all__ = [
     "Agent",
     "AgentResponse",
     "ProjectContext",
-    "RoadmapAgentParams",
     "RoadmapResponse",
     "RoadmapCompletionParams",
     "BaseCompletionParams",
