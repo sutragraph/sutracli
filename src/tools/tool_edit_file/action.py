@@ -52,7 +52,20 @@ class EditFileToolWithMode:
             case EditFileMode.CREATE:
                 # Check if file already exists
                 if path.exists():
-                    raise ValueError("Can't create file: file already exists")
+                    try:
+                        with open(path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                        preview = content[:300]
+                        total_chars = len(content)
+                        remaining = total_chars - 300
+
+                        if remaining > 0:
+                            msg = f"Can't create file: file already exists.\nContent preview ({total_chars} chars total, {remaining} more):\n{preview}"
+                        else:
+                            msg = f"Can't create file: file already exists. Content preview ({total_chars} chars total):\n{preview}"
+                        raise ValueError(msg)
+                    except (UnicodeDecodeError, PermissionError):
+                        raise ValueError("Can't create file: file already exists.")
 
                 # Check if parent directory exists
                 if not path.parent.exists():

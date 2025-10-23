@@ -3,18 +3,11 @@ template_string DeveloperSystemPromptBase(params:DeveloperPromptParams) #"
 
 {{ ctx.output_format }}
 
-## Searching and Reading
-If you are unsure how to fulfill the user's request, gather more information with tool calls.
-
-## Tool Use
-1. Make sure to adhere to the tools schema.
-2. Provide every required argument.
-3. DO NOT use tools to access items that are already available in the context section.
-4. Avoid HTML entity escaping - use plain characters instead.
-5. After you are done with the changes in a file use the `diagnostics` tool to check for possible errors.
+{{ DeveloperGuidelines() }}
 
 {{ToolsPrompt(Agent.Developer, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.EditFile, ToolName.Diagnostics, ToolName.Terminal]) }}
 {{ DeveloperSutraMemoryPrompt() }}
+{{ SystemInfo(params.system_info)}}
 "#
 
 function AwsBedrockDeveloperAgent(params:DeveloperPromptParams) -> DeveloperResponse {
@@ -109,20 +102,20 @@ test TestName {
   args {
     params {
         context #"
-        hello world
+        can you create a new file named abc.txt with content hello world
       "#
         system_info {
           os #"
-          hello world
+          linux
         "#
           shell #"
-          hello world
+          fish
         "#
           home #"
-          hello world
+          /home
         "#
           current_dir #"
-          hello world
+          /home/fishmeister/repos/tests/test folder/
         "#
       }
     }

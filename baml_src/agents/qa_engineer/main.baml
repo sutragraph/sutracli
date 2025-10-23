@@ -110,14 +110,14 @@ test AwsBedrockQAEngineerAgent {
   args {
     params{
       context "Code changes detected in sutra memory."
-      prompt_params {
+
         system_info {
           os "Linux"
           shell "bash"
           home "/home/user"
           current_dir "/home/user/project"
         }
-      }
+
     }
   }
 }
