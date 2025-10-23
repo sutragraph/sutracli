@@ -3,13 +3,13 @@ template_string QAEngineerSutraMemory() #"
 
 # Sutra Memory
 
-Use this persistent memory to store critical, iteration-specific data for future engineering tasks. Prioritize actionable, task-specific information to maintain context and avoid redundant work.
+Use this persistent memory to store iteration-specific data for future engineering tasks. Prioritize actionable, task-specific information to maintain context and avoid redundant work.
 
 Note: Sutra memory is not a tool. It is a persistent memory that you must update in every iteration to keep track of important information for future tasks.
 
 ## Sutra Memory Guidelines:
 
-1. Store critical code snippets using file paths and line numbers that are essential for current or future engineering tasks, particularly when implementation context spans multiple files or requires understanding existing patterns
+1. Store code snippets using file paths and line numbers that are essential for current or future engineering tasks, particularly when implementation context spans multiple files or requires understanding existing patterns
 
 2. `add_history` Best Practices:
   - Capture important actions, findings, and tool usages from the current iteration.

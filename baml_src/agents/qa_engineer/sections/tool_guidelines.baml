@@ -8,7 +8,7 @@ template_string QAEngineerToolGuidelines() #"
 3. DO NOT use tools to access items that are already available in the sutra memory
 4. Use only the tools that are currently available
 5. NEVER run commands that don't terminate on their own such as web servers or file watchers
-6. Use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available. (do not use preemptively)
+6. Use `'fetch_next_chunk': true` only when user explicitly tells you there are more results available. (do not use preemptively)
 
 ## Searching and Reading:
   - If you are unsure how to fulfill the testing requirements, gather more information with tool calls.
