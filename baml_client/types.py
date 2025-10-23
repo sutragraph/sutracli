@@ -137,7 +137,7 @@ class ToolName(str, Enum):
     Diagnostics = "Diagnostics"
 
 # #########################################################################
-# Generated classes (72)
+# Generated classes (74)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -279,11 +279,15 @@ class DeveloperPromptParams(BaseModel):
 
 class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
     sutra_memory: "SutraMemoryParams"
 
 class DiagnosticsParams(BaseModel):
     path: str
+
+class DiagnosticsToolCall(BaseModel):
+    tool_name: typing_extensions.Literal['diagnostics']
+    parameters: "DiagnosticsParams"
 
 class Edit(BaseModel):
     old_text: str
@@ -295,6 +299,10 @@ class EditFileParams(BaseModel):
     mode: EditFileMode
     content: typing.Optional[str] = None
     edits: typing.Optional[typing.List["Edit"]] = None
+
+class EditFileToolCall(BaseModel):
+    tool_name: typing_extensions.Literal['edit_file']
+    parameters: "EditFileParams"
 
 class FileChange(BaseModel):
     file_path: str
@@ -525,7 +533,7 @@ class UntracedElement(BaseModel):
 # #########################################################################
 
 
-DeveloperToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall"]
+DeveloperToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]
 
 
 QAEngineerToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]

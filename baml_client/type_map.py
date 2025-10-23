@@ -97,11 +97,17 @@ type_map = {
     "types.DiagnosticsParams": types.DiagnosticsParams,
     "stream_types.DiagnosticsParams": stream_types.DiagnosticsParams,
 
+    "types.DiagnosticsToolCall": types.DiagnosticsToolCall,
+    "stream_types.DiagnosticsToolCall": stream_types.DiagnosticsToolCall,
+
     "types.Edit": types.Edit,
     "stream_types.Edit": stream_types.Edit,
 
     "types.EditFileParams": types.EditFileParams,
     "stream_types.EditFileParams": stream_types.EditFileParams,
+
+    "types.EditFileToolCall": types.EditFileToolCall,
+    "stream_types.EditFileToolCall": stream_types.EditFileToolCall,
 
     "types.FileChange": types.FileChange,
     "stream_types.FileChange": stream_types.FileChange,

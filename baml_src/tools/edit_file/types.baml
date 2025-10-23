@@ -1,7 +1,7 @@
 enum EditFileMode {
-  CREATE @alias("create") @description("Creates a new file with the specified content")
-  EDIT @alias("edit") @description("Applies specific edits to an existing file, replacing `old_text` with `new_text` at optional `line_hint` locations")
-  OVERWRITE @alias("overwrite") @description("Replaces the entire file content with the provided `content`")
+  CREATE @alias("create")
+  EDIT @alias("edit")
+  OVERWRITE @alias("overwrite")
 }
 
 class Edit {

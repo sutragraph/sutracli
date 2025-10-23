@@ -8,7 +8,13 @@ from rich.panel import Panel
 from rich.prompt import Confirm
 from rich.text import Text
 
-from agents_new import Agent, AgentResponse, RoadmapResponse, execute_agent
+from agents_new import (
+    Agent,
+    AgentResponse,
+    DeveloperResponse,
+    RoadmapResponse,
+    execute_agent,
+)
 from tools import AllSutraMemoryParams, AllToolParams, execute_tool
 from utils.console import console
 

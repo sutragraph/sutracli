@@ -1,4 +1,4 @@
 
 class DeveloperCompletionParams {
-  result string
+  result string @description("A short summary of the changes you have made to the files")
 }

@@ -72,6 +72,16 @@ class ListFilesToolCallSimple {
   parameters ListFilesParamsWithoutProjectName
 }
 
+class EditFileToolCall {
+  tool_name "edit_file"
+  parameters EditFileParams
+}
+
+class DiagnosticsToolCall {
+  tool_name "diagnostics"
+  parameters DiagnosticsParams
+}
+
 class TermianlToolCall {
   tool_name "terminal"
   parameters TermianlParams

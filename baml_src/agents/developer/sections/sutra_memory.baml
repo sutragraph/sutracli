@@ -3,12 +3,6 @@ template_string DeveloperSutraMemoryPrompt() #"
 
 Use this persistent memory to store data critical for future iterations of development tasks. Prioritize actionable, task-specific information to maintain context and avoid redundant work.
 
-### Parameters:
-
-- `add_history`: Iteration-specific data (e.g., "Added auth.py#L10-15 for login; bug in token validation", "Blocked by missing DB config").
-- `tasks`: Task status and descriptions.
-- `code`: File paths, line ranges, and descriptions for relevant code.
-
 ### Guidelines
 
 Include `add_history` in every response to log any new, relevant data for the next iteration (e.g., code changes, bug details, task outcomes, blockers, configurations). Structure as a concise, freeform string capturing deltas only, avoiding repetition.

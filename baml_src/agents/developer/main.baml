@@ -3,19 +3,19 @@ template_string DeveloperSystemPromptBase(params:DeveloperPromptParams) #"
 
 {{ ctx.output_format }}
 
+## Searching and Reading
+If you are unsure how to fulfill the user's request, gather more information with tool calls.
+
 ## Tool Use
 1. Make sure to adhere to the tools schema.
 2. Provide every required argument.
 3. DO NOT use tools to access items that are already available in the context section.
 4. Avoid HTML entity escaping - use plain characters instead.
+5. After you are done with the changes in a file use the `diagnostics` tool to check for possible errors.
 
-{{ToolsPrompt(Agent.DEVELOPER, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.EditFile, ToolName.Diagnostics]) }}
-
-## Searching and Reading
-If you are unsure how to fulfill the user's request, gather more information with tool calls.
+{{ToolsPrompt(Agent.Developer, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.EditFile, ToolName.Diagnostics, ToolName.Terminal]) }}
+{{ DeveloperSutraMemoryPrompt() }}
 "#
-
-
 
 function AwsBedrockDeveloperAgent(params:DeveloperPromptParams) -> DeveloperResponse {
   client AwsBedrock
@@ -111,49 +111,19 @@ test TestName {
         context #"
         hello world
       "#
-        prompt_params {
-          base_params {
-            system_info {
-              os #"
-              hello world
-            "#
-              shell #"
-              hello world
-            "#
-              home #"
-              hello world
-            "#
-              current_dir #"
-              hello world
-            "#
-          }
-            project_context {
-              projects [
-              {
-                  name #"
-                  hello world
-                "#
-                  path #"
-                  hello world
-                "#
-                  description #"
-                  hello world
-                "#
-              },
-              {
-                  name #"
-                  hello world
-                "#
-                  path #"
-                  hello world
-                "#
-                  description #"
-                  hello world
-                "#
-              }
-            ]
-          }
-        }
+        system_info {
+          os #"
+          hello world
+        "#
+          shell #"
+          hello world
+        "#
+          home #"
+          hello world
+        "#
+          current_dir #"
+          hello world
+        "#
       }
     }
   }

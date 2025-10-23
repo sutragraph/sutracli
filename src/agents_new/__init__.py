@@ -9,6 +9,8 @@ using the existing BAMLService infrastructure.
 from baml_client.types import (
     Agent,
     BaseCompletionParams,
+    DeveloperCompletionParams,
+    DeveloperResponse,
     ProjectContext,
     RoadmapCompletionParams,
     RoadmapResponse,
@@ -29,4 +31,6 @@ __all__ = [
     "RoadmapResponse",
     "RoadmapCompletionParams",
     "BaseCompletionParams",
+    "DeveloperCompletionParams",
+    "DeveloperResponse",
 ]
