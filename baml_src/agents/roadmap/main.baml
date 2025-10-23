@@ -1,9 +1,16 @@
-template_string RoadmapSystemPromptBase() #"
+template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
 {{ RoadmapIdentity() }}
 {{ RoadmapConstraints() }}
 {{ RoadmapWorkflow() }}
 {{ RoadmapStrategy() }}
 {{ RoadmapSutraMemoryPrompt() }}
+{{ ToolsPrompt(Agent.ROADMAP, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles]) }}
+
+{{ SystemInfo(params.system_info) }}
+
+{% if params.project_context.projects|length > 0 %}
+{{ ProjectContextTemplate(params.project_context) }}
+{% endif %}
 "#
 
 template_string RoadmapUserPrompt(context: string) #"
@@ -11,79 +18,75 @@ template_string RoadmapUserPrompt(context: string) #"
 {{ context }}
 "#
 
-template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
-{{ BaseSystemPrompt(Agent.ROADMAP, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles], params.base_params) }}
 
-"#
-
-function AwsBedrockRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function AwsBedrockRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
 
-function AnthropicClaudeRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function AnthropicClaudeRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
 
-function OpenAIChatGPTRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function OpenAIChatGPTRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
 
-function GoogleGeminiRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function GoogleGeminiRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
 
-function GCPVertexAIRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function GCPVertexAIRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
 
-function AzureOpenAIRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function AzureOpenAIRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
 
-function AzureAIFoundryRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function AzureAIFoundryRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client AzureAIFoundry
   prompt #"
     {{ _.role("system") }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
 
-function OpenRouterRoadmapAgent(params: RoadmapAgentParams) -> RoadmapResponse {
+function OpenRouterRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse {
   client OpenRouter
   prompt #"
     {{ _.role("system") }}
-    {{ RoadmapSystemPrompt(params.prompt_params) }}
+    {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }

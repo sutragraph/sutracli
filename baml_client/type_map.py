@@ -22,9 +22,6 @@ type_map = {
     "types.BaseCompletionParams": types.BaseCompletionParams,
     "stream_types.BaseCompletionParams": stream_types.BaseCompletionParams,
 
-    "types.BasePromptParams": types.BasePromptParams,
-    "stream_types.BasePromptParams": stream_types.BasePromptParams,
-
     "types.ChangeInstruction": types.ChangeInstruction,
     "stream_types.ChangeInstruction": stream_types.ChangeInstruction,
 
@@ -85,9 +82,6 @@ type_map = {
     "types.DatabaseToolCallSimple": types.DatabaseToolCallSimple,
     "stream_types.DatabaseToolCallSimple": stream_types.DatabaseToolCallSimple,
 
-    "types.DeveloperAgentParams": types.DeveloperAgentParams,
-    "stream_types.DeveloperAgentParams": stream_types.DeveloperAgentParams,
-
     "types.DeveloperCompletionParams": types.DeveloperCompletionParams,
     "stream_types.DeveloperCompletionParams": stream_types.DeveloperCompletionParams,
 
@@ -136,9 +130,6 @@ type_map = {
     "types.ProjectRoadmap": types.ProjectRoadmap,
     "stream_types.ProjectRoadmap": stream_types.ProjectRoadmap,
 
-    "types.QAEngineerAgentParams": types.QAEngineerAgentParams,
-    "stream_types.QAEngineerAgentParams": stream_types.QAEngineerAgentParams,
-
     "types.QAEngineerCompletionParams": types.QAEngineerCompletionParams,
     "stream_types.QAEngineerCompletionParams": stream_types.QAEngineerCompletionParams,
 
@@ -153,9 +144,6 @@ type_map = {
 
     "types.QAEngineerResponse": types.QAEngineerResponse,
     "stream_types.QAEngineerResponse": stream_types.QAEngineerResponse,
-
-    "types.RoadmapAgentParams": types.RoadmapAgentParams,
-    "stream_types.RoadmapAgentParams": stream_types.RoadmapAgentParams,
 
     "types.RoadmapCodeStorage": types.RoadmapCodeStorage,
     "stream_types.RoadmapCodeStorage": stream_types.RoadmapCodeStorage,

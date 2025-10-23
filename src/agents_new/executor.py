@@ -4,9 +4,7 @@ from loguru import logger
 
 from baml_client.types import (
     Agent,
-    BasePromptParams,
     ProjectContext,
-    RoadmapAgentParams,
     RoadmapPromptParams,
     RoadmapResponse,
 )
@@ -62,11 +60,11 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
 
         # Prepare parameters based on agent type
         if agent_name == Agent.ROADMAP:
-            base_params = BasePromptParams(
-                system_info=system_info, project_context=project_context
+            params = RoadmapPromptParams(
+                context=context,
+                system_info=system_info,
+                project_context=project_context,
             )
-            prompt_params = RoadmapPromptParams(base_params=base_params)
-            params = RoadmapAgentParams(context=context, prompt_params=prompt_params)
         else:
             raise ValueError(f"Agent type {agent_name} not implemented yet")
 

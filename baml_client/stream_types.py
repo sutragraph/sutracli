@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (76)
+# Generated classes (72)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -32,10 +32,6 @@ class AddTask(BaseModel):
 
 class BaseCompletionParams(BaseModel):
     result: typing.Optional[str] = None
-
-class BasePromptParams(BaseModel):
-    system_info: typing.Optional["SystemInfoParams"] = None
-    project_context: typing.Optional["ProjectContext"] = None
 
 class ChangeInstruction(BaseModel):
     description: typing.Optional[str] = None
@@ -156,10 +152,6 @@ class DatabaseToolCallSimple(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional[typing.Union["DatabaseParamsGetFileByPath", "DatabaseParamsGetBlockDetails"]] = None
 
-class DeveloperAgentParams(BaseModel):
-    context: typing.Optional[str] = None
-    prompt_params: typing.Optional["DeveloperPromptParams"] = None
-
 class DeveloperCompletionParams(BaseModel):
     result: typing.Optional[str] = None
 
@@ -168,7 +160,8 @@ class DeveloperCompletionToolCall(BaseModel):
     parameters: typing.Optional["DeveloperCompletionParams"] = None
 
 class DeveloperPromptParams(BaseModel):
-    base_params: typing.Optional["BasePromptParams"] = None
+    context: typing.Optional[str] = None
+    system_info: typing.Optional["SystemInfoParams"] = None
 
 class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
@@ -234,10 +227,6 @@ class ProjectRoadmap(BaseModel):
     changes: typing.Optional[typing.List["FileChange"]] = None
     contracts: typing.Optional[typing.List["Contract"]] = None
 
-class QAEngineerAgentParams(BaseModel):
-    context: typing.Optional[str] = None
-    prompt_params: typing.Optional["QAEngineerPromptParams"] = None
-
 class QAEngineerCompletionParams(BaseModel):
     result: typing.Optional[str] = None
     failed_tests: typing.Optional[typing.List["QAEngineerFailedTestsParams"]] = None
@@ -251,16 +240,13 @@ class QAEngineerFailedTestsParams(BaseModel):
     test_details: typing.Optional[str] = None
 
 class QAEngineerPromptParams(BaseModel):
+    context: typing.Optional[str] = None
     system_info: typing.Optional["SystemInfoParams"] = None
 
 class QAEngineerResponse(BaseModel):
     thinking: typing.Optional[str] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
-
-class RoadmapAgentParams(BaseModel):
-    context: typing.Optional[str] = None
-    prompt_params: typing.Optional["RoadmapPromptParams"] = None
 
 class RoadmapCodeStorage(BaseModel):
     action: typing.Optional[types.RoadmapCodeStorageAction] = None
@@ -286,7 +272,9 @@ class RoadmapCompletionToolCall(BaseModel):
     parameters: typing.Optional[typing.Union["RoadmapCompletionParams", "BaseCompletionParams"]] = None
 
 class RoadmapPromptParams(BaseModel):
-    base_params: typing.Optional["BasePromptParams"] = None
+    context: typing.Optional[str] = None
+    system_info: typing.Optional["SystemInfoParams"] = None
+    project_context: typing.Optional["ProjectContext"] = None
 
 class RoadmapResponse(BaseModel):
     thinking: typing.Optional[str] = None

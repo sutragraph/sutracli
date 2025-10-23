@@ -6,13 +6,10 @@ class DeveloperCompletionToolCall {
 type DeveloperToolCall = DatabaseToolCallSimple | SearchKeywordToolCallSimple | SemanticSearchToolCallSimple | ListFilesToolCallSimple | DeveloperCompletionToolCall
 
 class DeveloperPromptParams {
-  base_params BasePromptParams
+  context string
+  system_info SystemInfoParams
 }
 
-class DeveloperAgentParams {
-  context string
-  prompt_params DeveloperPromptParams
-}
 
 class DeveloperResponse {
   thinking string?

@@ -6,13 +6,10 @@ class QAEngineerCompletionToolCall {
 type QAEngineerToolCall = DatabaseToolCallSimple | SearchKeywordToolCallSimple | SemanticSearchToolCallSimple | ListFilesToolCallSimple | TermianlToolCall | QAEngineerCompletionToolCall
 
 class QAEngineerPromptParams {
+  context string
   system_info SystemInfoParams
 }
 
-class QAEngineerAgentParams {
-  context string
-  prompt_params QAEngineerPromptParams
-}
 
 class QAEngineerResponse {
   thinking string @description("Concise user-facing progress update for the UI (one sentence).")

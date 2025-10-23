@@ -6,24 +6,17 @@ class RoadmapCompletionToolCall {
 type RoadmapToolCall = DatabaseToolCall | SearchKeywordToolCall | SemanticSearchToolCall | ListFilesToolCall | RoadmapCompletionToolCall
 
 class RoadmapPromptParams {
-  base_params BasePromptParams
+  context string
+  system_info SystemInfoParams
+  project_context ProjectContext
 }
 
-class RoadmapAgentParams {
-  context string
-  prompt_params RoadmapPromptParams
-}
 
 class RoadmapResponse {
   thinking string?
   tool_call RoadmapToolCall?
   sutra_memory RoadmapSutraMemoryParams
 }
-
-
-
-
-
 
 // Code storage actions - move-only tracing actions (no removals allowed)
 enum RoadmapCodeStorageAction {

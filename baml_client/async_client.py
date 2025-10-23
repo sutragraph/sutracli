@@ -41,7 +41,6 @@ class BamlAsyncClient:
         client_registry: typing.Optional[baml_py.baml_py.ClientRegistry] = None,
         collector: typing.Optional[typing.Union[baml_py.baml_py.Collector, typing.List[baml_py.baml_py.Collector]]] = None,
         env: typing.Optional[typing.Dict[str, typing.Optional[str]]] = None,
-        tags: typing.Optional[typing.Dict[str, str]] = None,
         on_tick: typing.Optional[typing.Callable[[str, baml_py.baml_py.FunctionLog], None]] = None,
     ) -> "BamlAsyncClient":
         options: BamlCallOptions = {}
@@ -53,8 +52,6 @@ class BamlAsyncClient:
             options["collector"] = collector
         if env is not None:
             options["env"] = env
-        if tags is not None:
-            options["tags"] = tags
         if on_tick is not None:
             options["on_tick"] = on_tick
         return BamlAsyncClient(self.__options.merge_options(options))
@@ -124,7 +121,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -184,7 +181,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -199,7 +196,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -304,7 +301,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -364,7 +361,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -379,7 +376,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -484,7 +481,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -544,7 +541,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -559,7 +556,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -664,7 +661,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -724,7 +721,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -739,7 +736,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -844,7 +841,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -904,7 +901,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -919,7 +916,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -1024,7 +1021,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -1084,7 +1081,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -1099,7 +1096,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -1204,7 +1201,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -1264,7 +1261,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -1279,7 +1276,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -1384,7 +1381,7 @@ class BamlAsyncClient:
                 "memory_context": memory_context,
             })
             return typing.cast(types.ConnectionSplittingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def OpenRouterDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.DeveloperResponse:
         # Check if on_tick is provided
@@ -1444,7 +1441,7 @@ class BamlAsyncClient:
                 "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
             })
             return typing.cast(types.CrossIndexingResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def OpenRouterQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def OpenRouterQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.QAEngineerResponse:
         # Check if on_tick is provided
@@ -1459,7 +1456,7 @@ class BamlAsyncClient:
                 "params": params,
             })
             return typing.cast(types.QAEngineerResponse, result.cast_to(types, types, stream_types, False, __runtime__))
-    async def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def OpenRouterRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
         # Check if on_tick is provided
@@ -1564,7 +1561,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeDeveloperAgent", args={
@@ -1612,7 +1609,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeQAEngineerAgent", args={
@@ -1624,7 +1621,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AnthropicClaudeRoadmapAgent", args={
@@ -1708,7 +1705,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def AwsBedrockDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockDeveloperAgent", args={
@@ -1756,7 +1753,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockQAEngineerAgent", args={
@@ -1768,7 +1765,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def AwsBedrockRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AwsBedrockRoadmapAgent", args={
@@ -1852,7 +1849,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryDeveloperAgent", args={
@@ -1900,7 +1897,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryQAEngineerAgent", args={
@@ -1912,7 +1909,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureAIFoundryRoadmapAgent", args={
@@ -1996,7 +1993,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def AzureOpenAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIDeveloperAgent", args={
@@ -2044,7 +2041,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIQAEngineerAgent", args={
@@ -2056,7 +2053,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def AzureOpenAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="AzureOpenAIRoadmapAgent", args={
@@ -2140,7 +2137,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def GCPVertexAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIDeveloperAgent", args={
@@ -2188,7 +2185,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIQAEngineerAgent", args={
@@ -2200,7 +2197,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def GCPVertexAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GCPVertexAIRoadmapAgent", args={
@@ -2284,7 +2281,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def GoogleGeminiDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiDeveloperAgent", args={
@@ -2332,7 +2329,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiQAEngineerAgent", args={
@@ -2344,7 +2341,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def GoogleGeminiRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="GoogleGeminiRoadmapAgent", args={
@@ -2428,7 +2425,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTDeveloperAgent", args={
@@ -2476,7 +2473,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTQAEngineerAgent", args={
@@ -2488,7 +2485,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenAIChatGPTRoadmapAgent", args={
@@ -2572,7 +2569,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.ConnectionSplittingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+    def OpenRouterDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.DeveloperResponse, types.DeveloperResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterDeveloperAgent", args={
@@ -2620,7 +2617,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CrossIndexingResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def OpenRouterQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    def OpenRouterQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.QAEngineerResponse, types.QAEngineerResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterQAEngineerAgent", args={
@@ -2632,7 +2629,7 @@ class BamlStreamClient:
           lambda x: typing.cast(types.QAEngineerResponse, x.cast_to(types, types, stream_types, False, __runtime__)),
           ctx,
         )
-    def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+    def OpenRouterRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoadmapResponse, types.RoadmapResponse]:
         ctx, result = self.__options.merge_options(baml_options).create_async_stream(function_name="OpenRouterRoadmapAgent", args={
@@ -2709,7 +2706,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeDeveloperAgent", args={
@@ -2737,14 +2734,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeRoadmapAgent", args={
@@ -2793,7 +2790,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockDeveloperAgent", args={
@@ -2821,14 +2818,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockRoadmapAgent", args={
@@ -2877,7 +2874,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryDeveloperAgent", args={
@@ -2905,14 +2902,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryRoadmapAgent", args={
@@ -2961,7 +2958,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIDeveloperAgent", args={
@@ -2989,14 +2986,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIRoadmapAgent", args={
@@ -3045,7 +3042,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIDeveloperAgent", args={
@@ -3073,14 +3070,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIRoadmapAgent", args={
@@ -3129,7 +3126,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiDeveloperAgent", args={
@@ -3157,14 +3154,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiRoadmapAgent", args={
@@ -3213,7 +3210,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTDeveloperAgent", args={
@@ -3241,14 +3238,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTRoadmapAgent", args={
@@ -3297,7 +3294,7 @@ class BamlHttpRequestClient:
             "memory_context": memory_context,
         }, mode="request")
         return result
-    async def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def OpenRouterDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterDeveloperAgent", args={
@@ -3325,14 +3322,14 @@ class BamlHttpRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="request")
         return result
-    async def OpenRouterQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def OpenRouterQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterQAEngineerAgent", args={
             "params": params,
         }, mode="request")
         return result
-    async def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def OpenRouterRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterRoadmapAgent", args={
@@ -3389,7 +3386,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AnthropicClaudeDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeDeveloperAgent", args={
@@ -3417,14 +3414,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AnthropicClaudeQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AnthropicClaudeRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AnthropicClaudeRoadmapAgent", args={
@@ -3473,7 +3470,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AwsBedrockDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockDeveloperAgent", args={
@@ -3501,14 +3498,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AwsBedrockQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AwsBedrockRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AwsBedrockRoadmapAgent", args={
@@ -3557,7 +3554,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AzureAIFoundryDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryDeveloperAgent", args={
@@ -3585,14 +3582,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AzureAIFoundryQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureAIFoundryRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureAIFoundryRoadmapAgent", args={
@@ -3641,7 +3638,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def AzureOpenAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIDeveloperAgent", args={
@@ -3669,14 +3666,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def AzureOpenAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def AzureOpenAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="AzureOpenAIRoadmapAgent", args={
@@ -3725,7 +3722,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def GCPVertexAIDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIDeveloperAgent", args={
@@ -3753,14 +3750,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def GCPVertexAIQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GCPVertexAIRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GCPVertexAIRoadmapAgent", args={
@@ -3809,7 +3806,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def GoogleGeminiDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiDeveloperAgent", args={
@@ -3837,14 +3834,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def GoogleGeminiQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def GoogleGeminiRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GoogleGeminiRoadmapAgent", args={
@@ -3893,7 +3890,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def OpenAIChatGPTDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTDeveloperAgent", args={
@@ -3921,14 +3918,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def OpenAIChatGPTQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def OpenAIChatGPTRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenAIChatGPTRoadmapAgent", args={
@@ -3977,7 +3974,7 @@ class BamlHttpStreamRequestClient:
             "memory_context": memory_context,
         }, mode="stream")
         return result
-    async def OpenRouterDeveloperAgent(self, params: types.DeveloperAgentParams,
+    async def OpenRouterDeveloperAgent(self, params: types.DeveloperPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterDeveloperAgent", args={
@@ -4005,14 +4002,14 @@ class BamlHttpStreamRequestClient:
             "analysis_query": analysis_query,"memory_context": memory_context,"system_info": system_info,
         }, mode="stream")
         return result
-    async def OpenRouterQAEngineerAgent(self, params: types.QAEngineerAgentParams,
+    async def OpenRouterQAEngineerAgent(self, params: types.QAEngineerPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterQAEngineerAgent", args={
             "params": params,
         }, mode="stream")
         return result
-    async def OpenRouterRoadmapAgent(self, params: types.RoadmapAgentParams,
+    async def OpenRouterRoadmapAgent(self, params: types.RoadmapPromptParams,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         result = await self.__options.merge_options(baml_options).create_http_request_async(function_name="OpenRouterRoadmapAgent", args={

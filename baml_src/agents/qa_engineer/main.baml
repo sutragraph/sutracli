@@ -23,11 +23,11 @@ template_string QAEngineerUserPrompt(context: string) #"
 {{ context }}
 "#
 
-function AwsBedrockQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function AwsBedrockQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client AwsBedrock
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
 
     {{ ctx.output_format }}
 
@@ -35,71 +35,71 @@ function AwsBedrockQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerR
   "#
 }
 
-function AnthropicClaudeQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function AnthropicClaudeQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client AnthropicClaude
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
     {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
 
-function OpenAIChatGPTQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function OpenAIChatGPTQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client OpenAIChatGPT
   prompt #"
     {{ _.role("system") }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
     {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
 
-function GoogleGeminiQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function GoogleGeminiQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client GoogleGemini
   prompt #"
     {{ _.role("system") }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
     {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
 
-function GCPVertexAIQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function GCPVertexAIQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client GCPVertexAI
   prompt #"
     {{ _.role("system") }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
     {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
 
-function AzureOpenAIQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function AzureOpenAIQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client AzureOpenAI
   prompt #"
     {{ _.role("system") }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
     {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
 
-function AzureAIFoundryQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function AzureAIFoundryQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client AzureAIFoundry
   prompt #"
     {{ _.role("system") }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
     {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
 
-function OpenRouterQAEngineerAgent(params: QAEngineerAgentParams) -> QAEngineerResponse {
+function OpenRouterQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineerResponse {
   client OpenRouter
   prompt #"
     {{ _.role("system") }}
-    {{ QAEngineerSystemPrompt(params.prompt_params) }}
+    {{ QAEngineerSystemPrompt(params) }}
     {{ ctx.output_format }}
     {{ QAEngineerUserPrompt(params.context) }}
   "#

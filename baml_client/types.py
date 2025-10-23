@@ -137,7 +137,7 @@ class ToolName(str, Enum):
     Diagnostics = "Diagnostics"
 
 # #########################################################################
-# Generated classes (76)
+# Generated classes (72)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -146,10 +146,6 @@ class AddTask(BaseModel):
 
 class BaseCompletionParams(BaseModel):
     result: str
-
-class BasePromptParams(BaseModel):
-    system_info: "SystemInfoParams"
-    project_context: "ProjectContext"
 
 class ChangeInstruction(BaseModel):
     description: str
@@ -270,10 +266,6 @@ class DatabaseToolCallSimple(BaseModel):
     tool_name: typing_extensions.Literal['database']
     parameters: typing.Union["DatabaseParamsGetFileByPath", "DatabaseParamsGetBlockDetails"]
 
-class DeveloperAgentParams(BaseModel):
-    context: str
-    prompt_params: "DeveloperPromptParams"
-
 class DeveloperCompletionParams(BaseModel):
     result: str
 
@@ -282,7 +274,8 @@ class DeveloperCompletionToolCall(BaseModel):
     parameters: "DeveloperCompletionParams"
 
 class DeveloperPromptParams(BaseModel):
-    base_params: "BasePromptParams"
+    context: str
+    system_info: "SystemInfoParams"
 
 class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
@@ -348,10 +341,6 @@ class ProjectRoadmap(BaseModel):
     changes: typing.Optional[typing.List["FileChange"]] = None
     contracts: typing.Optional[typing.List["Contract"]] = None
 
-class QAEngineerAgentParams(BaseModel):
-    context: str
-    prompt_params: "QAEngineerPromptParams"
-
 class QAEngineerCompletionParams(BaseModel):
     result: str
     failed_tests: typing.Optional[typing.List["QAEngineerFailedTestsParams"]] = None
@@ -365,16 +354,13 @@ class QAEngineerFailedTestsParams(BaseModel):
     test_details: str
 
 class QAEngineerPromptParams(BaseModel):
+    context: str
     system_info: "SystemInfoParams"
 
 class QAEngineerResponse(BaseModel):
     thinking: str
     sutra_memory: "SutraMemoryParams"
     tool_call: typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]
-
-class RoadmapAgentParams(BaseModel):
-    context: str
-    prompt_params: "RoadmapPromptParams"
 
 class RoadmapCodeStorage(BaseModel):
     action: RoadmapCodeStorageAction
@@ -400,7 +386,9 @@ class RoadmapCompletionToolCall(BaseModel):
     parameters: typing.Union["RoadmapCompletionParams", "BaseCompletionParams"]
 
 class RoadmapPromptParams(BaseModel):
-    base_params: "BasePromptParams"
+    context: str
+    system_info: "SystemInfoParams"
+    project_context: "ProjectContext"
 
 class RoadmapResponse(BaseModel):
     thinking: typing.Optional[str] = None
