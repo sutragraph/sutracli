@@ -6,7 +6,7 @@ Modern CLI for SutraGraph - Interactive command-line interface with provider set
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 # IMPORTANT: Setup logging FIRST before any imports that use loguru
 # This prevents debug logs from appearing when log level is INFO
@@ -15,8 +15,6 @@ from src.utils.logging import setup_logging
 # Set up basic INFO logging early to prevent debug logs during imports
 # This will be reconfigured later in __init__ if a different level is requested
 setup_logging("INFO")
-
-# Prompt toolkit imports for arrow key navigation
 from prompt_toolkit import Application, prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout
@@ -29,9 +27,11 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
 
-from src.agent_management.prerequisites.agent_config import get_agent_registry
-from src.agent_management.prerequisites.indexing_handler import (
+from build.lib.agent_management import prerequisites
+from src.agent_management import (
+    AgentGraph,
     IndexingPrerequisitesHandler,
+    IndexingRequirement,
 )
 from src.agents_new import Agent
 from src.config.settings import reload_config
@@ -57,7 +57,6 @@ class ModernSutraKit:
         if log_level != "INFO":
             setup_logging(log_level)
 
-        self.agent_registry = get_agent_registry()
         self.indexing_handler = IndexingPrerequisitesHandler()
 
     def print_banner(self):
@@ -631,7 +630,7 @@ class ModernSutraKit:
 
     def select_agent(self) -> Agent:
         """Interactive agent selection with arrow keys."""
-        available_agents = self.agent_registry.get_available_agents()
+        available_agents = AgentGraph.get_all_agents()
 
         console.info("Agent Selection")
 
@@ -642,7 +641,7 @@ class ModernSutraKit:
             table.add_column("Description", style="white")
 
             for agent in available_agents:
-                table.add_row(agent.name, agent.description)
+                table.add_row(agent.name, AgentGraph.get_description(agent))
 
             console.print(table)
 
@@ -650,12 +649,12 @@ class ModernSutraKit:
 
         if not available_agents:
             console.error("No agents available")
-            return Agent.ROADMAP
+            sys.exit(1)
 
         # Use arrow key selection
         selected_agent = self._arrow_key_select_agents(available_agents)
         if selected_agent:
-            return selected_agent.key
+            return selected_agent
         else:
             console.error("No agent selected. Exiting.")
             sys.exit(1)
@@ -727,7 +726,7 @@ class ModernSutraKit:
         # Run the application
         return application.run()
 
-    def _arrow_key_select_agents(self, agents):
+    def _arrow_key_select_agents(self, agents: List[Agent]) -> Optional[Agent]:
         """Custom arrow key selection for agents."""
         current_index = 0
 
@@ -741,9 +740,9 @@ class ModernSutraKit:
 
             for i, agent in enumerate(agents):
                 if i == current_index:
-                    lines.append(("class:selected", f"▶ {agent.name}"))
+                    lines.append(("class:selected", f"▶ {agent.name}\n"))
                 else:
-                    lines.append(("", f"  {agent.name}"))
+                    lines.append(("", f"  {agent.name}\n"))
 
             return lines
 
@@ -794,47 +793,48 @@ class ModernSutraKit:
         # Run the application
         return application.run()
 
-    def show_agent_prerequisites(self, agent_enum: Agent):
+    def show_agent_prerequisites(self, agent: Agent):
         """Show prerequisites for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_enum)
+        agent_config = AgentGraph.get_config(agent)
+
         if not agent_config:
             return
 
-        console.success(f"Selected: {agent_config.name}")
+        console.success(f"Selected: {agent.name}")
         console.dim(agent_config.description)
 
         table = Table(show_header=False, box=None)
         table.add_column("Status", style="", width=3)
         table.add_column("Requirement", style="")
-        table.add_column("Description", style="dim")
+
+        # Add rows for each prerequisite
+        for prereq in agent_config.prerequisites:
+            status = "✓"  # or check actual status
+            req_name = prereq.name.replace("_", " ").title()
+            table.add_row(status, req_name)
 
         console.print(table)
         console.print()
 
-    def run_agent_workflow(self, agent_enum: Agent, current_dir: Path):
+    def run_agent_workflow(self, agent: Agent, current_dir: Path):
         """Run the workflow for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_enum)
+        agent_config = AgentGraph.get_config(agent)
         if not agent_config:
-            console.error(f"Agent '{agent_enum}' not found.")
-            return
-
-        # Check if agent is available (implemented)
-        available_agents = self.agent_registry.get_available_agents()
-        if agent_config not in available_agents:
-            console.warning(f"Agent '{agent_config.name}' is not yet implemented.")
+            console.error(f"Agent '{agent}' not found.")
             return
 
         try:
             # Check if indexing is required
-            if agent_config.requires_indexing:
+            prerequisites = agent_config.prerequisites
+            if IndexingRequirement.INDEXING in prerequisites:
                 self._run_indexing(current_dir)
 
-            if agent_config.requires_incremental_indexing:
+            if IndexingRequirement.INCREMENTAL_INDEXING in prerequisites:
                 # Run incremental indexing and get the changes
                 changes_by_project = self._run_incremental_indexing_and_get_changes()
 
                 if (
-                    agent_config.requires_incremental_cross_indexing
+                    IndexingRequirement.INCREMENTAL_CROSS_INDEXING in prerequisites
                     and changes_by_project
                 ):
                     self.indexing_handler.run_incremental_cross_indexing(
@@ -842,14 +842,10 @@ class ModernSutraKit:
                     )
 
             # Check if cross-indexing is required
-            if agent_config.requires_cross_indexing:
+            if IndexingRequirement.CROSS_INDEXING in prerequisites:
                 self._run_cross_indexing(current_dir)
 
-            # Run the actual agent
-            if agent_enum.value == "ROADMAP":
-                self._execute_agent(current_dir, agent_enum, agent_config)
-            else:
-                console.error(f"Agent '{agent_enum}' not implemented yet.")
+            self._execute_agent(agent, current_dir)
 
         except UserCancelledError:
             console.warning("Workflow stopped by user choice.")
@@ -1004,17 +1000,17 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
         except Exception as e:
             console.error(f"Cross-indexing failed: {e}")
 
-    def _execute_agent(self, project_dir: Path, agent_name: Agent, agent_config):
+    def _execute_agent(self, agent: Agent, project_dir: Path):
         """Execute the actual agent."""
         console.print()
-        console.highlight(f"Executing {agent_config.name}")
+        console.highlight(f"Executing {agent.name}")
 
         try:
             from cli.commands import handle_agent_command
 
             # Execute the agent - post-processing is handled internally by the agent service
             agent_result = handle_agent_command(
-                agent_name=agent_name, project_path=project_dir
+                agent_name=agent, project_path=project_dir
             )
 
             if agent_result:

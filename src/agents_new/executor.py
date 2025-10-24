@@ -38,7 +38,11 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
         Exception: If agent execution fails
     """
     # Map agent types to their BAML function names
-    agent_function_mapping = {Agent.ROADMAP: "RoadmapAgent"}
+    agent_function_mapping = {
+        Agent.ROADMAP: "RoadmapAgent",
+        Agent.Developer: "DeveloperAgent",
+        Agent.QAEngineer: "QAEngineerAgent",
+    }
 
     try:
         # Validate agent name

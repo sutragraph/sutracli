@@ -3,7 +3,14 @@ Agent Management System for SutraKit.
 Handles prerequisites, post-requisites, and external agent providers.
 """
 
-from .prerequisites.agent_config import get_agent_registry
+from .agent_graph import AgentConfig, AgentGraph, IndexingRequirement
+from .indexing_handler import IndexingPrerequisitesHandler
 from .providers.manager import AgentProviderManager
 
-__all__ = ["get_agent_registry", "PostRequisitesManager", "AgentProviderManager"]
+__all__ = [
+    "AgentGraph",
+    "AgentConfig",
+    "IndexingRequirement",
+    "AgentProviderManager",
+    "IndexingPrerequisitesHandler",
+]

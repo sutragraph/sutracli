@@ -1,14 +1,25 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from enum import Enum, auto
+from typing import Any, Dict, List, Optional, Union
 
 from baml_client.types import Agent
+
+
+class IndexingRequirement(Enum):
+    """Indexing requirements that can be used as prerequisites."""
+
+    INDEXING = auto()
+    INCREMENTAL_INDEXING = auto()
+    CROSS_INDEXING = auto()
+    INCREMENTAL_CROSS_INDEXING = auto()
 
 
 @dataclass
 class AgentConfig:
     """Configuration for an agent node in the graph"""
 
-    prerequisites: List[Agent]
+    description: str
+    prerequisites: List[IndexingRequirement]
     downstream: Optional[Agent]
     upstream: Optional[Agent]
 
@@ -18,13 +29,33 @@ class AgentGraph:
 
     GRAPH: Dict[Agent, AgentConfig] = {
         Agent.ROADMAP: AgentConfig(
-            prerequisites=[], downstream=Agent.Developer, upstream=None
+            description="",
+            prerequisites=[
+                IndexingRequirement.INDEXING,
+                IndexingRequirement.INCREMENTAL_INDEXING,
+                IndexingRequirement.CROSS_INDEXING,
+                IndexingRequirement.INCREMENTAL_CROSS_INDEXING,
+            ],
+            downstream=Agent.Developer,
+            upstream=None,
         ),
         Agent.Developer: AgentConfig(
-            prerequisites=[], downstream=Agent.QAEngineer, upstream=Agent.ROADMAP
+            description="",
+            prerequisites=[
+                IndexingRequirement.INDEXING,
+                IndexingRequirement.INCREMENTAL_INDEXING,
+            ],
+            downstream=Agent.QAEngineer,
+            upstream=Agent.ROADMAP,
         ),
         Agent.QAEngineer: AgentConfig(
-            prerequisites=[], downstream=None, upstream=Agent.Developer
+            description="",
+            prerequisites=[
+                IndexingRequirement.INDEXING,
+                IndexingRequirement.INCREMENTAL_INDEXING,
+            ],
+            downstream=None,
+            upstream=Agent.Developer,
         ),
     }
 
@@ -51,7 +82,13 @@ class AgentGraph:
         return config.upstream if config else None
 
     @classmethod
-    def get_prerequisites(cls, agent_type: Agent) -> List[Agent]:
+    def get_prerequisites(cls, agent_type: Agent) -> List[IndexingRequirement]:
         """Get list of prerequisite agents"""
         config = cls.get_config(agent_type)
         return config.prerequisites if config else []
+
+    @classmethod
+    def get_description(cls, agent_type: Agent) -> str:
+        """Get description of agent"""
+        config = cls.get_config(agent_type)
+        return config.description if config else ""
