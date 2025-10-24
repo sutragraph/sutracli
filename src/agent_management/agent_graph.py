@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from baml_client.types import Agent
 

@@ -11,12 +11,12 @@ from loguru import logger
 from rich.panel import Panel
 from rich.prompt import Confirm
 
-from graph.cross_project_indexer import CrossProjectIndexer
-from graph.graph_operations import GraphOperations
-from graph.project_indexer import ProjectIndexer
-from graph.sqlite_client import SQLiteConnection
-from models.schema import Project
-from utils.console import console
+from src.graph.cross_project_indexer import CrossProjectIndexer
+from src.graph.graph_operations import GraphOperations
+from src.graph.project_indexer import ProjectIndexer
+from src.graph.sqlite_client import SQLiteConnection
+from src.models.schema import Project
+from src.utils.console import console
 
 
 class IndexingPrerequisitesHandler:
@@ -89,71 +89,6 @@ class IndexingPrerequisitesHandler:
 
         return old_content
 
-    def _process_single_project_indexing(self, project):
-        """Process indexing for a single project with diff generation."""
-        try:
-            project_path = Path(project.path)
-            if not project_path.exists() or not project_path.is_dir():
-                return {
-                    "project_id": project.id,
-                    "project_path": project.path,
-                    "status": "skipped",
-                    "reason": "Project directory not found",
-                }
-
-            changes = self.indexer.detect_project_changes(project_path, project.name)
-
-            if not any(changes.values()):
-                return {
-                    "project_id": project.id,
-                    "project_path": project.path,
-                    "status": "success",
-                    "changes": changes,
-                }
-
-            old_content_map = {}
-            for file_path in changes["changed_files"].union(changes["deleted_files"]):
-                rel_path = str(file_path.relative_to(project_path))
-                content = self._get_file_content_before_changes(
-                    str(file_path), project.name
-                )
-                old_content_map[rel_path] = content
-
-            indexing_result = self.indexer.incremental_index_project(
-                project.name, old_content_map
-            )
-
-            if indexing_result.get("status") == "success":
-                enhanced_changes = dict(changes)
-                enhanced_changes["old_content"] = {
-                    str(k): old_content_map.get(str(k.relative_to(project_path)), "")
-                    for k in changes["changed_files"].union(changes["deleted_files"])
-                }
-
-                return {
-                    "project_id": project.id,
-                    "project_path": project.path,
-                    "status": "success",
-                    "changes": enhanced_changes,
-                    "diffs": indexing_result.get("diffs", []),
-                    "indexing_result": indexing_result,
-                }
-            else:
-                return {
-                    "project_id": project.id,
-                    "project_path": project.path,
-                    "status": "failed",
-                    "error": indexing_result.get("error", "Unknown error"),
-                }
-
-        except Exception as e:
-            return {
-                "project_id": project.id,
-                "project_path": project.path,
-                "status": "failed",
-                "error": str(e),
-            }
-
     def handle_multiple_project_indexing_with_old_content(self) -> Dict[str, Any]:
         """
         Handle incremental indexing with old content fetching for checkpoint creation.
@@ -187,15 +122,84 @@ class IndexingPrerequisitesHandler:
 
             # Process each project
             for project in projects:
-                result = self._process_single_project_indexing(project)
-                results.append(result)
+                try:
+                    # Check if project directory exists
+                    project_path = Path(project.path)
+                    if not project_path.exists() or not project_path.is_dir():
+                        skipped_count += 1
+                        results.append(
+                            {
+                                "project_id": project.id,
+                                "project_path": project.path,
+                                "status": "skipped",
+                                "reason": "Project directory not found",
+                            }
+                        )
+                        continue
 
-                if result["status"] == "success" and "diffs" in result:
-                    indexed_count += 1
-                elif result["status"] == "failed":
+                    # Step 1: Detect changes without updating database
+                    changes = self.indexer.detect_project_changes(
+                        project_path, project.name
+                    )
+
+                    if not any(changes.values()):
+                        # No changes detected
+                        results.append(
+                            {
+                                "project_id": project.id,
+                                "project_path": project.path,
+                                "status": "success",
+                                "changes": changes,
+                            }
+                        )
+                        continue
+
+                    # Step 2: Fetch old content BEFORE database is updated
+                    old_content = self._fetch_old_content_for_changes(
+                        changes, project.name
+                    )
+
+                    # Step 3: Run incremental indexing (which updates database)
+                    indexing_result = self.indexer.incremental_index_project(
+                        project.name
+                    )
+
+                    if indexing_result.get("status") == "success":
+                        indexed_count += 1
+
+                        # Add old content to the changes
+                        enhanced_changes = dict(changes)
+                        enhanced_changes["old_content"] = old_content
+
+                        results.append(
+                            {
+                                "project_id": project.id,
+                                "project_path": project.path,
+                                "status": "success",
+                                "changes": enhanced_changes,
+                            }
+                        )
+                    else:
+                        failed_count += 1
+                        results.append(
+                            {
+                                "project_id": project.id,
+                                "project_path": project.path,
+                                "status": "failed",
+                                "error": indexing_result.get("error", "Unknown error"),
+                            }
+                        )
+
+                except Exception as e:
                     failed_count += 1
-                elif result["status"] == "skipped":
-                    skipped_count += 1
+                    results.append(
+                        {
+                            "project_id": project.id,
+                            "project_path": project.path,
+                            "status": "failed",
+                            "error": str(e),
+                        }
+                    )
 
             # Determine overall status
             if failed_count == 0 and skipped_count == 0:
@@ -247,7 +251,7 @@ class IndexingPrerequisitesHandler:
             from src.services.project_manager import ProjectManager
 
             # Initialize project manager
-            project_manager = ProjectManager()
+            project_manager = ProjectManager(self.connection)
 
             # Validate project path
             project_path_obj = Path(project_path).absolute()

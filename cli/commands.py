@@ -106,7 +106,7 @@ def handle_index_command(args) -> None:
 
         # Initialize required components
         db_connection = SQLiteConnection()
-        project_manager = ProjectManager(db_connection)
+        project_manager = ProjectManager()
 
         # Determine project name
         project_name = args.project_name

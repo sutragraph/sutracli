@@ -1,9 +1,9 @@
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from baml_client.types import Agent
 
-from .base import BaseAgent
+if TYPE_CHECKING:
+    from .base import BaseAgent
 
 
 class AgentRegistry:

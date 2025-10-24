@@ -1,5 +1,6 @@
 """Incremental indexing for efficient database updates when code changes."""
 
+import difflib
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
@@ -88,7 +89,9 @@ class ProjectIndexer:
             console.print("   Continuing with limited functionality.")
             raise
 
-    def incremental_index_project(self, project_name: str) -> Dict[str, Any]:
+    def incremental_index_project(
+        self, project_name: str, old_content_map: Dict[str, str]
+    ) -> Dict[str, Any]:
         """Perform incremental indexing by updating only changed files.
 
         This function performs incremental parsing for a project by:
@@ -187,7 +190,13 @@ class ProjectIndexer:
                 changes, extraction_data, project_id, project_name
             )
 
-            # Step 7: Update Sutra memory for file changes
+            # Step 7: Generate diffs for all changes
+            logger.debug(f"🔄 Generating diffs for all changed files")
+            file_diffs = self._generate_diffs_for_changes(
+                changes, old_content_map, project_dir
+            )
+
+            # Step 8: Update Sutra memory for file changes
             memory_updates = self._update_sutra_memory_for_changes(changes, project_id)
 
             logger.debug(f"✅ Incremental reindexing completed successfully!")
@@ -203,6 +212,7 @@ class ProjectIndexer:
                 "relationships_added": stats["relationships_added"],
                 "memory_updates": memory_updates,
                 "changes": changes,  # Include actual file changes for checkpoint creation
+                "diffs": file_diffs,
             }
 
         except Exception as e:
@@ -901,6 +911,75 @@ class ProjectIndexer:
         console.print(f"      Files processed: {embedding_stats['files_processed']}")
         console.print(f"      Total chunks: {embedding_stats['total_chunks']}")
         console.print(f"      Blocks embedded: {embedding_stats['blocks_processed']}")
+
+    def _generate_diffs_for_changes(
+        self,
+        changes: Dict[str, Set[Path]],
+        old_content_map: Dict[str, str],
+        project_dir: Path,
+    ) -> List[Dict[str, str]]:
+        """Generate unified diffs for all changed files."""
+        file_diffs = []
+
+        try:
+            all_changed_files = (
+                changes["changed_files"]
+                .union(changes["new_files"])
+                .union(changes["deleted_files"])
+            )
+
+            for file_path in all_changed_files:
+                try:
+                    rel_path = str(file_path.relative_to(project_dir))
+
+                    if file_path in changes["new_files"]:
+                        change_type = "added"
+                        old_content = ""
+                        new_content = file_path.read_text(
+                            encoding="utf-8", errors="replace"
+                        )
+                    elif file_path in changes["deleted_files"]:
+                        change_type = "deleted"
+                        old_content = old_content_map.get(rel_path, "")
+                        new_content = ""
+                    else:  # modified
+                        change_type = "modified"
+                        old_content = old_content_map.get(rel_path, "")
+                        new_content = file_path.read_text(
+                            encoding="utf-8", errors="replace"
+                        )
+
+                    old_lines = old_content.splitlines(keepends=True)
+                    new_lines = new_content.splitlines(keepends=True)
+
+                    diff_lines = list(
+                        difflib.unified_diff(
+                            old_lines,
+                            new_lines,
+                            fromfile=f"a/{rel_path}",
+                            tofile=f"b/{rel_path}",
+                            lineterm="",
+                        )
+                    )
+
+                    diff_text = "\n".join(diff_lines)
+
+                    file_diffs.append(
+                        {
+                            "path": rel_path,
+                            "change_type": change_type,
+                            "diff": diff_text,
+                        }
+                    )
+
+                except Exception as e:
+                    logger.error(f"Error generating diff for {file_path}: {e}")
+                    continue
+
+        except Exception as e:
+            logger.error(f"Error generating diffs: {e}")
+
+        return file_diffs
 
     def _get_current_project_hashes_and_content(self):
         """Get current hashes and content for all projects using same logic as incremental indexing."""

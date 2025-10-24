@@ -20,7 +20,6 @@ from utils.console import console
 
 from .agent.memory_management import SutraMemoryManager
 from .agent.session_management import SessionManager
-from .project_manager import ProjectManager
 
 
 class AgentService:
@@ -31,6 +30,7 @@ class AgentService:
         session_id: Optional[str] = None,
         agent_name: Optional[Agent] = None,
         project_path: Optional[Path] = None,
+        sutra_memory: Optional[str] = None,
     ):
         """Initialize the Agent Service.
 
@@ -46,9 +46,7 @@ class AgentService:
 
         self.agent_name = agent_name
         self.session_manager = SessionManager.get_or_create_session(session_id)
-        self.memory_manager = SutraMemoryManager()
-
-        self.project_manager = ProjectManager(self.memory_manager)
+        self.memory_manager = sutra_memory or SutraMemoryManager()
 
         self.last_tool_result = None
         self.result = None
@@ -61,80 +59,6 @@ class AgentService:
         self.total_output_tokens = 0
         self.total_tokens_used = 0
         self.llm_call_count = 0
-
-        # Prompt user to confirm indexing if project is not indexed
-        self.current_project_name = self.project_manager.determine_project_name(
-            project_path
-        )
-
-        is_project_indexed = self.project_manager.check_project_exists(
-            self.current_project_name
-        )
-
-        self._should_index_current_project = not is_project_indexed
-
-        if not is_project_indexed:
-            self._prompt_and_index_project(project_path)
-
-    def _prompt_and_index_project(self, project_path: Path) -> None:
-        """Prompt user to index the current project if it's not already indexed.
-
-        Args:
-            project_path: Path to the project directory
-        """
-        try:
-            # Create informative panel about the current project
-            project_info = Text()
-            project_info.append("Project Name: ", style="bold blue")
-            project_info.append(f"{self.current_project_name}\n", style="white")
-            project_info.append("Project Path: ", style="bold blue")
-            project_info.append(f"{project_path}\n", style="white")
-            project_info.append("Status: ", style="bold blue")
-            project_info.append("Not indexed", style="red")
-
-            panel = Panel(
-                project_info,
-                title="[bold yellow]Project Not Found[/bold yellow]",
-                border_style="yellow",
-                padding=(1, 2),
-            )
-
-            console.print()
-            console.print(panel)
-            console.print()
-
-            self._should_index_current_project = Confirm.ask(
-                "[bold cyan]Would you like to index this repository now?[/bold cyan]",
-                default=True,
-            )
-
-            if self._should_index_current_project:
-                console.print()
-                console.process("Starting project indexing...")
-
-                try:
-                    # Perform the indexing
-                    self.project_manager.auto_index_project(
-                        self.current_project_name, project_path
-                    )
-
-                    console.success(
-                        f"Successfully indexed project '{self.current_project_name}'"
-                    )
-
-                except Exception as e:
-                    logger.error(f"Failed to index project: {e}")
-                    console.error(f"Failed to index project: {e}")
-                    console.warning("Continuing with limited functionality...")
-
-            else:
-                console.warning(
-                    "Project indexing skipped. Some features may be limited."
-                )
-
-        except Exception as e:
-            logger.error(f"Error during project indexing prompt: {e}")
-            console.error(f"Error during indexing setup: {e}")
 
     def run(self) -> Optional[AllToolParams]:
         """Run the agent with user prompting and problem solving.
@@ -171,12 +95,6 @@ class AgentService:
         return self.solve_problem(problem_query=user_input)
 
     def solve_problem(self, problem_query: str) -> Optional[AllToolParams]:
-        if self._should_index_current_project:
-            console.warning("Project is not indexed. Some features may be limited.")
-        else:
-            # Perform incremental indexing
-            self.project_manager.perform_incremental_indexing(self.current_project_name)
-
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
 
