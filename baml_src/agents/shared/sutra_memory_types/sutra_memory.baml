@@ -24,10 +24,10 @@ enum CodeStorageAction {
 class CodeStorage {
   action CodeStorageAction @description("The action to perform on the code snippet: 'add' to store a new code snippet")
   id string @description("Unique identifier for the code snippet")
-  file string? @description("File path where the code snippet is located")
-  start_line int? @description("Starting line number of the code snippet")
-  end_line int? @description("Ending line number of the code snippet")
-  description string? @description("Description for the code snippet")
+  file string @description("File path where the code snippet is located")
+  start_line int @description("Starting line number of the code snippet")
+  end_line int @description("Ending line number of the code snippet")
+  description string @description("Description for the code snippet")
 }
 
 class SutraMemoryParams {

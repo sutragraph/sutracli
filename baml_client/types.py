@@ -169,10 +169,10 @@ class CodeManagerResponse(BaseModel):
 class CodeStorage(BaseModel):
     action: CodeStorageAction
     id: str
-    file: typing.Optional[str] = None
-    start_line: typing.Optional[int] = None
-    end_line: typing.Optional[int] = None
-    description: typing.Optional[str] = None
+    file: str
+    start_line: int
+    end_line: int
+    description: str
 
 class CodeStorage_CrossIndexing(BaseModel):
     action: CodeStorageAction_CrossIndexing
@@ -373,10 +373,10 @@ class QAEngineerResponse(BaseModel):
 class RoadmapCodeStorage(BaseModel):
     action: RoadmapCodeStorageAction
     id: str
-    file: typing.Optional[str] = None
-    start_line: typing.Optional[int] = None
-    end_line: typing.Optional[int] = None
-    description: typing.Optional[str] = None
+    file: str
+    start_line: int
+    end_line: int
+    description: str
     is_traced: typing.Optional[bool] = None
     root_element: typing.Optional["TracedElement"] = None
     needs_tracing: typing.Optional[typing.List["UntracedElement"]] = None

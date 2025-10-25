@@ -64,10 +64,10 @@ class UntracedElement {
 class RoadmapCodeStorage {
   action RoadmapCodeStorageAction
   id string
-  file string?                           // file path for the code snippet (only needed for Add action)
-  start_line int?                        // starting line number (only needed for Add action)
-  end_line int?                          // ending line number (only needed for Add action)
-  description string?                    // description (only needed for Add action)
+  file string                           // file path for the code snippet (only needed for Add action)
+  start_line int                        // starting line number (only needed for Add action)
+  end_line int                          // ending line number (only needed for Add action)
+  description string                    // description (only needed for Add action)
   is_traced bool?                        // whether trace chains have been fully analyzed (for UpdateTracingStatus and Add action)
   root_element TracedElement?            // hierarchical tree of traced elements starting from the main element (for Add action)
   needs_tracing UntracedElement[]?       // array of elements needing tracing (for Add and AddToNeedsTracing actions)
