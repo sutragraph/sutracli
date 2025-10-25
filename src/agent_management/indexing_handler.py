@@ -175,7 +175,7 @@ class IndexingPrerequisitesHandler:
             from src.services.project_manager import ProjectManager
 
             # Initialize project manager
-            project_manager = ProjectManager(self.connection)
+            project_manager = ProjectManager()
 
             # Validate project path
             project_path_obj = Path(project_path).absolute()

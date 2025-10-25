@@ -10,6 +10,7 @@ This is the main interface that combines all the modular components:
 - Memory Formatting (LLM context formatting)
 """
 
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -657,3 +658,45 @@ class SutraMemoryManager:
     def get_project_info(self) -> Optional[str]:
         """Get project info content from memory operations"""
         return self.memory_ops.get_project_info()
+
+    # Memory Manipulation Utility Methods
+    def filter_sections(self, sections: Set[str]) -> Dict[str, Any]:
+        """Filter current memory state to only include specified sections
+
+        Returns a deep copy to prevent unintended mutations.
+        """
+        current_state = self.export_memory_state()
+        return deepcopy(
+            {
+                section: data
+                for section, data in current_state.items()
+                if section in sections
+            }
+        )
+
+    def clear_sections(self, sections: Set[str]) -> bool:
+        """Clear specific sections from current memory"""
+        current_state = deepcopy(self.export_memory_state())
+        for section in sections:
+            if section == "tasks":
+                current_state["tasks"] = {}
+            elif section == "history":
+                current_state["history"] = []
+            elif section == "code_snippets":
+                current_state["code_snippets"] = {}
+            elif section == "file_changes":
+                current_state["file_changes"] = []
+            elif section == "feedback_section":
+                current_state["feedback_section"] = None
+            elif section == "project_info":
+                current_state["project_info"] = None
+            elif section == "counters":
+                pass  # Don't clear counters
+            elif section in current_state:
+                if isinstance(current_state[section], list):
+                    current_state[section] = []
+                elif isinstance(current_state[section], dict):
+                    current_state[section] = {}
+                else:
+                    current_state[section] = None
+        return self.import_memory_state(current_state)
