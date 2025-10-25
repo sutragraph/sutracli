@@ -95,6 +95,8 @@ class StatePersistence:
                 "task_id_counter": self.memory_ops.task_id_counter,
                 "code_id_counter": self.memory_ops.code_id_counter,
             },
+            "feedback_section": self.memory_ops.feedback_section,
+            "project_info": self.memory_ops.project_info,
         }
 
     def import_memory_state(self, state: Dict[str, Any]) -> bool:
@@ -156,6 +158,10 @@ class StatePersistence:
             counters = state.get("counters", {})
             self.memory_ops.task_id_counter = counters.get("task_id_counter", 0)
             self.memory_ops.code_id_counter = counters.get("code_id_counter", 0)
+
+            # Import feedback_section and project_info
+            self.memory_ops.feedback_section = state.get("feedback_section")
+            self.memory_ops.project_info = state.get("project_info")
 
             return True
 

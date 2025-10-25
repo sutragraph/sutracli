@@ -28,76 +28,19 @@ class IndexingPrerequisitesHandler:
         self.cross_project_indexer = CrossProjectIndexer()
         logger.debug("🔧 IndexingPrerequisitesHandler initialized")
 
-    def _get_file_content_before_changes(self, file_path, project_name):
-        """Get file content from before changes (from database)."""
-        try:
-            # Get project from database
-            project = self.connection.get_project(project_name)
-            if not project:
-                return ""
-
-            # Query database for file content directly
-            query = """
-                SELECT content FROM files
-                WHERE project_id = ? AND file_path = ?
-                ORDER BY id DESC
-                LIMIT 1
-            """
-
-            results = self.connection.execute_query(query, (project.id, str(file_path)))
-
-            if results and len(results) > 0:
-                return results[0].get("content", "")
-
-            return ""
-
-        except Exception as e:
-            logger.debug(f"Could not get previous content for {file_path}: {e}")
-            return ""
-
-    def _fetch_old_content_for_changes(self, changes, project_name):
-        """Fetch old content from database for changed and deleted files."""
-        old_content = {}
-
-        try:
-            project = self.graph_ops.get_project_id_by_name(project_name)
-            if not project:
-                return old_content
-
-            # Get old content for changed files
-            for file_path in changes["changed_files"]:
-                try:
-                    content = self._get_file_content_before_changes(
-                        str(file_path), project_name
-                    )
-                    old_content[str(file_path)] = content
-                except Exception:
-                    old_content[str(file_path)] = ""
-
-            # Get old content for deleted files
-            for file_path in changes["deleted_files"]:
-                try:
-                    content = self._get_file_content_before_changes(
-                        str(file_path), project_name
-                    )
-                    old_content[str(file_path)] = content
-                except Exception:
-                    old_content[str(file_path)] = ""
-
-        except Exception as e:
-            logger.debug(f"Error fetching old content: {e}")
-
-        return old_content
-
     def handle_multiple_project_indexing_with_old_content(self) -> Dict[str, Any]:
         """
-        Handle incremental indexing with old content fetching for checkpoint creation.
+        Handle incremental indexing for all projects.
 
         This method:
-        1. Identifies changes for each project
-        2. Fetches old content from database before incremental indexing
-        3. Runs incremental indexing
-        4. Returns results with old/new content for checkpoint creation
+        1. Gets all projects from database
+        2. Runs incremental indexing for each project
+        3. Returns results with changes and diffs (fetched internally by incremental_index_project)
+
+        Note: The incremental_index_project method now handles:
+        - Detecting changes
+        - Fetching old content from database before updating
+        - Generating diffs
         """
         try:
             # Get all projects from database
@@ -137,29 +80,8 @@ class IndexingPrerequisitesHandler:
                         )
                         continue
 
-                    # Step 1: Detect changes without updating database
-                    changes = self.indexer.detect_project_changes(
-                        project_path, project.name
-                    )
-
-                    if not any(changes.values()):
-                        # No changes detected
-                        results.append(
-                            {
-                                "project_id": project.id,
-                                "project_path": project.path,
-                                "status": "success",
-                                "changes": changes,
-                            }
-                        )
-                        continue
-
-                    # Step 2: Fetch old content BEFORE database is updated
-                    old_content = self._fetch_old_content_for_changes(
-                        changes, project.name
-                    )
-
-                    # Step 3: Run incremental indexing (which updates database)
+                    # Run incremental indexing (which now handles change detection,
+                    # old content fetching, and diff generation internally)
                     indexing_result = self.indexer.incremental_index_project(
                         project.name
                     )
@@ -167,9 +89,11 @@ class IndexingPrerequisitesHandler:
                     if indexing_result.get("status") == "success":
                         indexed_count += 1
 
-                        # Add old content to the changes
-                        enhanced_changes = dict(changes)
-                        enhanced_changes["old_content"] = old_content
+                        # Enhance changes with old_content like the old code
+                        enhanced_changes = dict(indexing_result.get("changes", {}))
+                        enhanced_changes["old_content"] = indexing_result.get(
+                            "old_content", {}
+                        )
 
                         results.append(
                             {

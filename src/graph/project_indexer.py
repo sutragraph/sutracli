@@ -89,14 +89,12 @@ class ProjectIndexer:
             console.print("   Continuing with limited functionality.")
             raise
 
-    def incremental_index_project(
-        self, project_name: str, old_content_map: Dict[str, str]
-    ) -> Dict[str, Any]:
+    def incremental_index_project(self, project_name: str) -> Dict[str, Any]:
         """Perform incremental indexing by updating only changed files.
 
         This function performs incremental parsing for a project by:
-        1. Computing current file content hashes for the project directory
-        2. Comparing with stored hashes in the database to identify changes
+        1. Detecting changes using detect_project_changes (computes hashes and compares)
+        2. Fetching old content from database BEFORE updating (for diff generation)
         3. Parsing only changed files using the indexer
         4. Replacing changed files in previous extraction result and saving new file
         5. Recomputing relationships for changed files only
@@ -106,7 +104,7 @@ class ProjectIndexer:
             project_name: Name of the project/codebase
 
         Returns:
-            Dictionary with update statistics
+            Dictionary with update statistics including changes and diffs
         """
         logger.debug(f"🔄 Starting incremental reindexing for project: {project_name}")
 
@@ -118,6 +116,13 @@ class ProjectIndexer:
                 return {
                     "status": "failed",
                     "error": f"Project not found: {project_name}",
+                    "changes": {
+                        "changed_files": set(),
+                        "new_files": set(),
+                        "deleted_files": set(),
+                    },
+                    "old_content": {},
+                    "diffs": [],
                 }
 
             project_id = project.id
@@ -127,97 +132,85 @@ class ProjectIndexer:
                 return {
                     "status": "failed",
                     "error": f"Project directory does not exist: {project_dir}",
+                    "changes": {
+                        "changed_files": set(),
+                        "new_files": set(),
+                        "deleted_files": set(),
+                    },
+                    "old_content": {},
+                    "diffs": [],
                 }
 
-            # Step 1: Compute current file content hashes for the project directory
-            logger.debug(f"📊 Computing current file hashes for: {project_dir}")
-            current_file_hashes = self._compute_current_file_hashes(project_dir)
-            logger.debug(
-                f"📊 Found {len(current_file_hashes)} files in project directory"
-            )
-
-            # Step 2: Get stored file hashes from database
-            logger.debug(f"📊 Getting stored file hashes from database")
-            db_file_hashes = self._get_db_file_hashes(project_id)
-            logger.debug(f"📊 Found {len(db_file_hashes)} files in database")
-
-            # Step 3: Identify changed files by comparing hashes
-            changes = self._identify_file_changes(current_file_hashes, db_file_hashes)
-            logger.debug(
-                f"📊 Changes identified: {len(changes['changed_files'])} changed, "
-                f"{len(changes['new_files'])} new, {len(changes['deleted_files'])} deleted"
-            )
+            # Step 1: Detect changes (computes hashes, compares with DB, identifies changes)
+            logger.debug(f"📊 Detecting changes for project: {project_name}")
+            changes = self.detect_project_changes(project_dir, project_name)
 
             # If no changes, return early
             if not any(changes.values()):
                 logger.debug("✅ No changes detected, skipping reindexing")
                 return {
                     "status": "success",
-                    "files_changed": 0,
-                    "files_added": 0,
-                    "files_deleted": 0,
-                    "nodes_deleted": 0,
-                    "relationships_deleted": 0,
-                    "nodes_added": 0,
-                    "relationships_added": 0,
-                    "memory_updates": {
-                        "codes_updated": 0,
-                        "codes_removed": 0,
-                        "files_processed": 0,
-                    },
-                    "changes": {
-                        "changed_files": set(),
-                        "new_files": set(),
-                        "deleted_files": set(),
-                    },
+                    "changes": changes,
+                    "old_content": {},
+                    "diffs": [],
                 }
 
-            # Step 4: Parse changed files and update extraction results
+            # Step 2: Fetch old content from database BEFORE updating (for diff generation)
+            logger.debug(
+                f"📦 Fetching old content from database for changed/deleted files"
+            )
+            old_content_map = self._fetch_old_content_for_changes(
+                changes, project_id, project_dir
+            )
+
+            # Step 3: Parse changed files and update extraction results
             logger.debug(f"🔄 Parsing changed files and updating extraction results")
             updated_extraction_file = self._parse_and_update_extraction_results(
                 changes, project_name
             )
 
-            # Step 5: Load the updated extraction data and convert to database format
+            # Step 4: Load the updated extraction data and convert to database format
             logger.debug(
                 f"📦 Loading updated extraction data from: {updated_extraction_file}"
             )
             json_data = load_json_file(updated_extraction_file)
             extraction_data = ExtractionData(**json_data)
 
-            # Step 6: Process changes in database (delete old, insert new)
-            stats = self._process_database_changes(
+            # Step 5: Process changes in database (delete old, insert new)
+            self._process_database_changes(
                 changes, extraction_data, project_id, project_name
             )
 
-            # Step 7: Generate diffs for all changes
+            # Step 6: Generate diffs for all changes using fetched old content
             logger.debug(f"🔄 Generating diffs for all changed files")
             file_diffs = self._generate_diffs_for_changes(
                 changes, old_content_map, project_dir
             )
 
-            # Step 8: Update Sutra memory for file changes
-            memory_updates = self._update_sutra_memory_for_changes(changes, project_id)
+            # Step 7: Update Sutra memory for file changes
+            self._update_sutra_memory_for_changes(changes, project_id)
 
             logger.debug(f"✅ Incremental reindexing completed successfully!")
             return {
                 "status": "success",
-                "extraction_file": str(updated_extraction_file),
-                "files_changed": len(changes["changed_files"]),
-                "files_added": len(changes["new_files"]),
-                "files_deleted": len(changes["deleted_files"]),
-                "nodes_deleted": stats["nodes_deleted"],
-                "relationships_deleted": stats["relationships_deleted"],
-                "nodes_added": stats["nodes_added"],
-                "relationships_added": stats["relationships_added"],
-                "memory_updates": memory_updates,
-                "changes": changes,  # Include actual file changes for checkpoint creation
-                "diffs": file_diffs,
+                "changes": changes,
+                "old_content": old_content_map or {},
+                "diffs": file_diffs or [],
             }
 
         except Exception as e:
             logger.error(f"Incremental reindexing failed: {e}")
-            return {"status": "failed", "error": str(e)}
+            return {
+                "status": "failed",
+                "error": str(e),
+                "changes": {
+                    "changed_files": set(),
+                    "new_files": set(),
+                    "deleted_files": set(),
+                },
+                "old_content": {},
+                "diffs": [],
+            }
 
     def _get_project_id(self, project_name: str) -> Optional[int]:
         """Get project ID from project name."""
@@ -288,7 +281,6 @@ class ProjectIndexer:
     def detect_project_changes(self, project_path: Path, project_name: str):
         """
         Detect changes in a project without running full incremental indexing.
-
         Args:
             project_path: Path to the project directory
             project_name: Name of the project
@@ -297,7 +289,6 @@ class ProjectIndexer:
             Dictionary with sets of changed_files, new_files, and deleted_files
         """
         try:
-            # Get current file hashes for the project
             current_hashes = self._compute_current_file_hashes(project_path)
 
             # Get project from database
@@ -310,12 +301,9 @@ class ProjectIndexer:
                     "deleted_files": set(),
                 }
 
-            # Get database hashes for the project
             db_hashes = self._get_db_file_hashes(project.id)
 
-            # Compare and identify changes
             changes = self._identify_file_changes(current_hashes, db_hashes)
-
             return changes
 
         except Exception as e:
@@ -594,8 +582,15 @@ class ProjectIndexer:
 
     def _delete_files_and_embeddings(
         self, file_path: str, project_id: int
-    ) -> Dict[str, int]:
-        """Delete all nodes and relationships for a specific file."""
+    ) -> Dict[str, Any]:
+        """Delete all nodes and relationships for a specific file.
+
+        Returns:
+            Dictionary with:
+                - nodes: Number of nodes deleted
+                - relationships: Number of relationships deleted
+                - preserved_connections: Optional dict with connection data to restore later
+        """
         try:
             # First get the file ID
             file_result = self.connection.execute_query(
@@ -911,6 +906,77 @@ class ProjectIndexer:
         console.print(f"      Files processed: {embedding_stats['files_processed']}")
         console.print(f"      Total chunks: {embedding_stats['total_chunks']}")
         console.print(f"      Blocks embedded: {embedding_stats['blocks_processed']}")
+
+    def _fetch_old_content_for_changes(
+        self, changes: Dict[str, Set[Path]], project_id: int, project_dir: Path
+    ) -> Dict[str, str]:
+        """
+        Fetch old content from database for changed and deleted files.
+
+        Args:
+            changes: Dictionary containing changed_files, new_files, and deleted_files
+            project_id: Project ID for database queries
+            project_dir: Path to the project directory (for computing relative paths)
+
+        Returns:
+            Dictionary mapping relative file paths to their old content from database
+        """
+        old_content_map = {}
+
+        try:
+            # Get old content for changed files
+            for file_path in changes["changed_files"]:
+                try:
+                    rel_path = str(file_path.relative_to(project_dir))
+                    content = self._get_file_content_from_db(str(file_path), project_id)
+                    old_content_map[rel_path] = content
+                except Exception as e:
+                    logger.debug(f"Could not get old content for {file_path}: {e}")
+                    old_content_map[str(file_path.relative_to(project_dir))] = ""
+
+            # Get old content for deleted files
+            for file_path in changes["deleted_files"]:
+                try:
+                    rel_path = str(file_path.relative_to(project_dir))
+                    content = self._get_file_content_from_db(str(file_path), project_id)
+                    old_content_map[rel_path] = content
+                except Exception as e:
+                    logger.debug(f"Could not get old content for {file_path}: {e}")
+                    old_content_map[str(file_path.relative_to(project_dir))] = ""
+
+        except Exception as e:
+            logger.error(f"Error fetching old content: {e}")
+
+        return old_content_map
+
+    def _get_file_content_from_db(self, file_path: str, project_id: int) -> str:
+        """
+        Get file content from database.
+
+        Args:
+            file_path: Absolute path to the file
+            project_id: Project ID for database query
+
+        Returns:
+            File content from database, or empty string if not found
+        """
+        try:
+            query = """
+                SELECT content FROM files
+                WHERE project_id = ? AND file_path = ?
+                ORDER BY id DESC
+                LIMIT 1
+            """
+            results = self.connection.execute_query(query, (project_id, file_path))
+
+            if results and len(results) > 0:
+                return results[0].get("content", "")
+
+            return ""
+
+        except Exception as e:
+            logger.debug(f"Could not get content from database for {file_path}: {e}")
+            return ""
 
     def _generate_diffs_for_changes(
         self,

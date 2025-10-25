@@ -30,7 +30,7 @@ class AgentService:
         session_id: Optional[str] = None,
         agent_name: Optional[Agent] = None,
         project_path: Optional[Path] = None,
-        sutra_memory: Optional[str] = None,
+        sutra_memory: Optional[SutraMemoryManager] = None,
     ):
         """Initialize the Agent Service.
 
