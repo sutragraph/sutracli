@@ -143,7 +143,7 @@ class AgentService:
                 logger.debug(f"Is completion: {is_completion}")
                 if is_completion:
                     # Check if this is a roadmap agent and if post-processing requests continuation
-                    if self.agent_name == Agent.ROADMAP and self.result:
+                    if self.agent_name == Agent.Roadmap and self.result:
                         post_result = self._handle_roadmap_post_processing()
 
                         # If user provided feedback, continue the loop with that feedback
@@ -212,7 +212,7 @@ class AgentService:
             )
 
             for i, project_prompt in enumerate(project_prompts, 1):
-                feedback_section += f"=== PROJECT {i} ROADMAP ===\n"
+                feedback_section += f"=== PROJECT {i} Roadmap ===\n"
                 feedback_section += (
                     f"Project Path: {project_prompt.get('project_path', 'Unknown')}\n\n"
                 )
@@ -282,7 +282,7 @@ class AgentService:
     def _parse_agent_response(self, response: AgentResponse) -> bool:
         """Parse agent response and return True if completion occurred."""
         match response.agent_type:
-            case Agent.ROADMAP:
+            case Agent.Roadmap:
                 return self._parse_roadmap_response(response.content)
 
             case _:
@@ -331,13 +331,13 @@ class AgentService:
                         return False  # Don't show completion, continue agent loop
 
             # Execute tool for formatting and display (only if file paths are valid)
-            self.last_tool_result = execute_tool(Agent.ROADMAP, tool_name, tool_params)
+            self.last_tool_result = execute_tool(Agent.Roadmap, tool_name, tool_params)
 
         return is_completion
 
     def _should_verify_file_paths(self) -> bool:
         """Check if we should verify file paths for this agent."""
-        return self.agent_name == Agent.ROADMAP
+        return self.agent_name == Agent.Roadmap
 
     def _verify_file_paths_before_display(self) -> Dict[str, Any]:
         """Verify file paths before displaying project info to user."""

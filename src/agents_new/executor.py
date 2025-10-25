@@ -43,7 +43,7 @@ def execute_agent(agent_name: Agent, context: str) -> AgentResponse:
     """
     # Map agent types to their BAML function names
     agent_function_mapping = {
-        Agent.ROADMAP: "RoadmapAgent",
+        Agent.Roadmap: "RoadmapAgent",
         Agent.Developer: "DeveloperAgent",
         Agent.QAEngineer: "QAEngineerAgent",
     }
@@ -91,7 +91,7 @@ def get_agent_params(
         project_context = ProjectContext(projects=[])
 
     match agent:
-        case Agent.ROADMAP:
+        case Agent.Roadmap:
             return RoadmapPromptParams(
                 context=context,
                 system_info=system_info,

@@ -4,7 +4,7 @@ template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
 {{ RoadmapWorkflow() }}
 {{ RoadmapStrategy() }}
 {{ RoadmapSutraMemoryPrompt() }}
-{{ ToolsPrompt(Agent.ROADMAP, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles]) }}
+{{ ToolsPrompt(Agent.Roadmap, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles]) }}
 
 {{ SystemInfo(params.system_info) }}
 

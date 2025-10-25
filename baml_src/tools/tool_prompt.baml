@@ -48,7 +48,7 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 "#
 
 template_string CompletionToolPrompt(agent_name: Agent) #"
-{% if agent_name == Agent.ROADMAP %}
+{% if agent_name == Agent.Roadmap %}
 {{ RoadmapCompletionToolTemplate() }}
 
 {% elif agent_name == Agent.CrossIndexing %}

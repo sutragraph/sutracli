@@ -8,7 +8,7 @@ from .base import AgentData, BaseAgent
 
 class RoadmapAgent(BaseAgent):
     def __init__(self, project_path: Optional[Path] = None):
-        super().__init__(Agent.ROADMAP, project_path)
+        super().__init__(Agent.Roadmap, project_path)
 
     def start_project(self, project_data: str) -> None:
         print(f"\n[{self.agent_type.name}] Starting project planning...")

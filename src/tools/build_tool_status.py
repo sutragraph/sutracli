@@ -356,7 +356,7 @@ def _build_completion_status(
         return f"Tool: attempt_completion\nERROR: {error}"
 
     # Use agent to determine completion type
-    if agent == Agent.ROADMAP and not is_simple:
+    if agent == Agent.Roadmap and not is_simple:
         return _build_roadmap_completion_status(event)
     else:
         return _build_simple_completion_status(event)

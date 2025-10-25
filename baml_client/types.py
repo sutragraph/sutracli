@@ -41,7 +41,7 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 class Agent(str, Enum):
-    ROADMAP = "ROADMAP"
+    Roadmap = "Roadmap"
     CrossIndexing = "CrossIndexing"
     Developer = "Developer"
     QAEngineer = "QAEngineer"

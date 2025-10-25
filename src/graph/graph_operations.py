@@ -795,7 +795,7 @@ class GraphOperations:
             return None
 
     # ============================================================================
-    # ROADMAP AGENT QUERY METHODS
+    # Roadmap AGENT QUERY METHODS
     # ============================================================================
 
     def resolve_block(self, block_id: int) -> Optional[Dict[str, Any]]:

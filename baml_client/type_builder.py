@@ -404,7 +404,7 @@ class AgentAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.enum("Agent")
-        self._values: typing.Set[str] = set([  "ROADMAP",  "CrossIndexing",  "Developer",  "QAEngineer",  ])
+        self._values: typing.Set[str] = set([  "Roadmap",  "CrossIndexing",  "Developer",  "QAEngineer",  ])
         self._vals = AgentValues(self._bldr, self._values)
 
     def type(self) -> baml_py.FieldType:
@@ -432,8 +432,8 @@ class AgentValues:
     
     
     @property
-    def ROADMAP(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("ROADMAP"))
+    def Roadmap(self) -> type_builder.EnumValueViewer:
+        return type_builder.EnumValueViewer(self.__bldr.value("Roadmap"))
     
     @property
     def CrossIndexing(self) -> type_builder.EnumValueViewer:

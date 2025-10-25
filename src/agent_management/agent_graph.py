@@ -28,7 +28,7 @@ class AgentGraph:
     """Static graph defining agent routing - pure map, no state"""
 
     GRAPH: Dict[Agent, AgentConfig] = {
-        Agent.ROADMAP: AgentConfig(
+        Agent.Roadmap: AgentConfig(
             description="",
             prerequisites=[
                 IndexingRequirement.INDEXING,
@@ -46,7 +46,7 @@ class AgentGraph:
                 IndexingRequirement.INCREMENTAL_INDEXING,
             ],
             downstream=Agent.QAEngineer,
-            upstream=Agent.ROADMAP,
+            upstream=Agent.Roadmap,
         ),
         Agent.QAEngineer: AgentConfig(
             description="",

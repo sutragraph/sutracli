@@ -641,7 +641,7 @@ class BaseAgentHandler:
 # Factory function to get appropriate handler
 def get_agent_handler(agent_key: Agent):
     """Get the appropriate handler for an agent."""
-    if agent_key == Agent.ROADMAP:
+    if agent_key == Agent.Roadmap:
         return RoadmapAgentHandler()
     else:
         return BaseAgentHandler(agent_key)
