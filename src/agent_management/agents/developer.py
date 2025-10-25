@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 from baml_client.types import Agent
+from services.agent.memory_management.models import MemorySection
 
 from .base import AgentData, BaseAgent
 
@@ -32,7 +33,7 @@ class DeveloperAgent(BaseAgent):
         else:
             print(f"[{self.agent_type.name}] Tests failed. Fixing issues...")
 
-            self.clear_memory_sections({"tasks"})
+            self.clear_memory_sections({MemorySection.TASKS})
 
             self.run_agent_loop("Fix failing tests")
 

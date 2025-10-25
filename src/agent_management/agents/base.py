@@ -3,18 +3,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Set
 
+from agent_management.core.agent_graph import AgentGraph
+from agent_management.core.registry import AgentRegistry
 from baml_client.types import Agent
-from src.agent_management.core.agent_graph import AgentGraph
-from src.agent_management.core.registry import AgentRegistry
-from src.services.agent.memory_management import SutraMemoryManager
-from src.services.agent_service_new import AgentService
-from src.tools import AllToolParams
-
-from ..services.agent.memory_management import SutraMemoryManager
-from ..services.agent.memory_management.models import MemorySection
-from ..services.agent_service_new import AgentService
-from .agent_graph import AgentGraph
-from .registry import AgentRegistry
+from services.agent.memory_management import SutraMemoryManager
+from services.agent.memory_management.models import MemorySection
+from services.agent_service_new import AgentService
+from tools import AllToolParams
 
 
 @dataclass

@@ -20,36 +20,6 @@ class TaskStatus(Enum):
     COMPLETED = "completed"
 
 
-class MemorySection(Enum):
-    """Memory section enumeration for type-safe section operations"""
-
-    TASKS = "tasks"
-    CODE_SNIPPETS = "code_snippets"
-    HISTORY = "history"
-    FILE_CHANGES = "file_changes"
-    COUNTERS = "counters"
-    FEEDBACK_SECTION = "feedback_section"
-    PROJECT_INFO = "project_info"
-
-    @classmethod
-    def all_sections(cls) -> Set[str]:
-        """Get all section names as a set"""
-        return {section.value for section in cls}
-
-
-@dataclass
-class MemorySectionData:
-    """Memory section data container"""
-
-    tasks: Dict[str, Task] = field(default_factory=dict)
-    code_snippets: Dict[str, CodeSnippet] = field(default_factory=dict)
-    history: List[HistoryEntry] = field(default_factory=list)
-    file_changes: List[FileChange] = field(default_factory=list)
-    counters: Dict[str, int] = field(default_factory=dict)
-    feedback_section: Optional[str] = None
-    project_info: Optional[str] = None
-
-
 @dataclass
 class Task:
     """Task representation"""
@@ -106,3 +76,33 @@ class HistoryEntry:
     def __post_init__(self):
         if self.iteration_id is None:
             self.iteration_id = str(int(self.timestamp.timestamp()))
+
+
+class MemorySection(Enum):
+    """Memory section enumeration for type-safe section operations"""
+
+    TASKS = "tasks"
+    CODE_SNIPPETS = "code_snippets"
+    HISTORY = "history"
+    FILE_CHANGES = "file_changes"
+    COUNTERS = "counters"
+    FEEDBACK_SECTION = "feedback_section"
+    PROJECT_INFO = "project_info"
+
+    @classmethod
+    def all_sections(cls) -> Set[str]:
+        """Get all section names as a set"""
+        return {section.value for section in cls}
+
+
+@dataclass
+class MemorySectionData:
+    """Memory section data container"""
+
+    tasks: Dict[str, Task] = field(default_factory=dict)
+    code_snippets: Dict[str, CodeSnippet] = field(default_factory=dict)
+    history: List[HistoryEntry] = field(default_factory=list)
+    file_changes: List[FileChange] = field(default_factory=list)
+    counters: Dict[str, int] = field(default_factory=dict)
+    feedback_section: Optional[str] = None
+    project_info: Optional[str] = None

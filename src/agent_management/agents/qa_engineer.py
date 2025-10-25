@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 from baml_client.types import Agent
+from services.agent.memory_management.models import MemorySection
 
 from .base import AgentData, BaseAgent
 
@@ -16,7 +17,7 @@ class QAEngineerAgent(BaseAgent):
 
         self.copy_memory_from_agent(
             Agent.Developer,
-            sections_to_copy={"code_snippets"},
+            sections_to_copy={MemorySection.CODE_SNIPPETS},
         )
         print(f"[{self.agent_type.name}] Copied code snippets from Developer")
 
