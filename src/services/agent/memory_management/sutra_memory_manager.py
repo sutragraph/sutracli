@@ -30,7 +30,14 @@ from tools import AllSutraMemoryParams
 from .memory_formatter import MemoryFormatter
 from .memory_operations import MemoryOperations
 from .memory_updater import MemoryUpdater
-from .models import CodeSnippet, HistoryEntry, Task, TaskStatus
+from .models import (
+    CodeSnippet,
+    HistoryEntry,
+    MemorySection,
+    MemorySectionData,
+    Task,
+    TaskStatus,
+)
 from .state_persistence import StatePersistence
 
 
@@ -312,11 +319,11 @@ class SutraMemoryManager:
         return self.memory_ops.reset_memory()
 
     # State Persistence Methods
-    def export_memory_state(self) -> Dict[str, Any]:
+    def export_memory_state(self):
         """Export current memory state to dictionary for persistence"""
         return self.state_persistence.export_memory_state()
 
-    def import_memory_state(self, state: Dict[str, Any]) -> bool:
+    def import_memory_state(self, state: MemorySectionData) -> bool:
         """Import memory state from dictionary"""
         return self.state_persistence.import_memory_state(state)
 
@@ -678,43 +685,44 @@ class SutraMemoryManager:
             )
 
     # Memory Manipulation Utility Methods
-    def filter_sections(self, sections: Set[str]) -> Dict[str, Any]:
+    def filter_sections(self, sections: Set[MemorySection]) -> MemorySectionData:
         """Filter current memory state to only include specified sections
 
         Returns a deep copy to prevent unintended mutations.
-        """
-        current_state = self.export_memory_state()
-        return deepcopy(
-            {
-                section: data
-                for section, data in current_state.items()
-                if section in sections
-            }
-        )
 
-    def clear_sections(self, sections: Set[str]) -> bool:
-        """Clear specific sections from current memory"""
+        Args:
+            sections: Set of MemorySection enums
+
+        Returns:
+            MemorySectionData containing only the specified memory sections
+        """
+        return self.state_persistence.export_memory_state(sections)
+
+    def clear_sections(self, sections: Set[MemorySection]) -> bool:
+        """Clear specific sections from current memory
+
+        Args:
+            sections: Set of MemorySection enums to clear
+
+        Returns:
+            bool: True if sections were cleared successfully
+        """
         current_state = deepcopy(self.export_memory_state())
+
         for section in sections:
-            if section == "tasks":
-                current_state["tasks"] = {}
-            elif section == "history":
-                current_state["history"] = []
-            elif section == "code_snippets":
-                current_state["code_snippets"] = {}
-            elif section == "file_changes":
-                current_state["file_changes"] = []
-            elif section == "feedback_section":
-                current_state["feedback_section"] = None
-            elif section == "project_info":
-                current_state["project_info"] = None
-            elif section == "counters":
+            if section == MemorySection.TASKS:
+                current_state.tasks = {}
+            elif section == MemorySection.HISTORY:
+                current_state.history = []
+            elif section == MemorySection.CODE_SNIPPETS:
+                current_state.code_snippets = {}
+            elif section == MemorySection.FILE_CHANGES:
+                current_state.file_changes = []
+            elif section == MemorySection.FEEDBACK_SECTION:
+                current_state.feedback_section = None
+            elif section == MemorySection.PROJECT_INFO:
+                current_state.project_info = None
+            elif section == MemorySection.COUNTERS:
                 pass  # Don't clear counters
-            elif section in current_state:
-                if isinstance(current_state[section], list):
-                    current_state[section] = []
-                elif isinstance(current_state[section], dict):
-                    current_state[section] = {}
-                else:
-                    current_state[section] = None
+
         return self.import_memory_state(current_state)

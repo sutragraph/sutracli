@@ -7,7 +7,7 @@ Data classes and enums for the memory management system.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional, Set
 
 from baml_client.types import TracedElement, UntracedElement
 
@@ -18,6 +18,36 @@ class TaskStatus(Enum):
     PENDING = "pending"
     CURRENT = "current"
     COMPLETED = "completed"
+
+
+class MemorySection(Enum):
+    """Memory section enumeration for type-safe section operations"""
+
+    TASKS = "tasks"
+    CODE_SNIPPETS = "code_snippets"
+    HISTORY = "history"
+    FILE_CHANGES = "file_changes"
+    COUNTERS = "counters"
+    FEEDBACK_SECTION = "feedback_section"
+    PROJECT_INFO = "project_info"
+
+    @classmethod
+    def all_sections(cls) -> Set[str]:
+        """Get all section names as a set"""
+        return {section.value for section in cls}
+
+
+@dataclass
+class MemorySectionData:
+    """Memory section data container"""
+
+    tasks: Dict[str, Task] = field(default_factory=dict)
+    code_snippets: Dict[str, CodeSnippet] = field(default_factory=dict)
+    history: List[HistoryEntry] = field(default_factory=list)
+    file_changes: List[FileChange] = field(default_factory=list)
+    counters: Dict[str, int] = field(default_factory=dict)
+    feedback_section: Optional[str] = None
+    project_info: Optional[str] = None
 
 
 @dataclass

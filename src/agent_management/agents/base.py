@@ -10,6 +10,12 @@ from src.services.agent.memory_management import SutraMemoryManager
 from src.services.agent_service_new import AgentService
 from src.tools import AllToolParams
 
+from ..services.agent.memory_management import SutraMemoryManager
+from ..services.agent.memory_management.models import MemorySection
+from ..services.agent_service_new import AgentService
+from .agent_graph import AgentGraph
+from .registry import AgentRegistry
+
 
 @dataclass
 class AgentData:
@@ -74,7 +80,7 @@ class BaseAgent(ABC):
     def load_memory_from_agent(
         self,
         agent_type: Agent,
-        preserve_sections: Optional[Set[str]] = None,
+        preserve_sections: Optional[Set[MemorySection]] = None,
         project_path: Optional[Path] = None,
     ) -> bool:
         target_path = project_path or self.project_path
@@ -97,7 +103,7 @@ class BaseAgent(ABC):
     def copy_memory_from_agent(
         self,
         agent_type: Agent,
-        sections_to_copy: Optional[Set[str]] = None,
+        sections_to_copy: Optional[Set[MemorySection]] = None,
         project_path: Optional[Path] = None,
     ) -> bool:
         target_path = project_path or self.project_path
@@ -117,5 +123,5 @@ class BaseAgent(ABC):
         source_state = source_agent.memory.export_memory_state()
         return self.memory.import_memory_state(source_state)
 
-    def clear_memory_sections(self, sections: Set[str]) -> None:
+    def clear_memory_sections(self, sections: Set[MemorySection]) -> None:
         self.memory.clear_sections(sections)
