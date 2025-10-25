@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from baml_client.types import Agent
 
 if TYPE_CHECKING:
-    from .base import BaseAgent
+    from src.agent_management.agents.base import BaseAgent
 
 
 class AgentRegistry:

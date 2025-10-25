@@ -3,10 +3,15 @@ Agent Management System for SutraKit.
 Handles prerequisites, post-requisites, and external agent providers.
 """
 
-from .agent_graph import AgentConfig, AgentGraph, IndexingRequirement
-from .indexing_handler import IndexingPrerequisitesHandler
+from src.agent_management.agents.qa_engineer import QAEngineerAgent
+from src.agent_management.core.agent_graph import (
+    AgentConfig,
+    AgentGraph,
+    IndexingRequirement,
+)
+from src.agent_management.handlers.indexing_handler import IndexingPrerequisitesHandler
+
 from .providers.manager import AgentProviderManager
-from .qa_engineer import QAEngineerAgent
 
 __all__ = [
     "AgentGraph",

@@ -27,7 +27,6 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
 
-from build.lib.agent_management import prerequisites
 from src.agent_management import (
     AgentGraph,
     IndexingPrerequisitesHandler,
