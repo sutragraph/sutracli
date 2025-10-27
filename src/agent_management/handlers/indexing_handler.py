@@ -11,12 +11,12 @@ from loguru import logger
 from rich.panel import Panel
 from rich.prompt import Confirm
 
-from agent_management.core.exceptions import UserCancelledError
 from graph.cross_project_indexer import CrossProjectIndexer
 from graph.graph_operations import GraphOperations
 from graph.project_indexer import ProjectIndexer
 from graph.sqlite_client import SQLiteConnection
 from models.schema import Project
+from src.agent_management.utils.exceptions import UserCancelledError
 from utils.console import console
 
 
