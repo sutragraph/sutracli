@@ -2317,7 +2317,7 @@ class DeveloperCompletionParamsAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("DeveloperCompletionParams")
-        self._properties: typing.Set[str] = set([  "result",  ])
+        self._properties: typing.Set[str] = set([  "give_up",  "result",  ])
         self._props = DeveloperCompletionParamsProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -2344,6 +2344,10 @@ class DeveloperCompletionParamsProperties:
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
 
     
+    
+    @property
+    def give_up(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("give_up"))
     
     @property
     def result(self) -> type_builder.ClassPropertyViewer:

@@ -153,6 +153,7 @@ class DatabaseToolCallSimple(BaseModel):
     parameters: typing.Optional[typing.Union["DatabaseParamsGetFileByPath", "DatabaseParamsGetBlockDetails"]] = None
 
 class DeveloperCompletionParams(BaseModel):
+    give_up: typing.Optional[bool] = None
     result: typing.Optional[str] = None
 
 class DeveloperCompletionToolCall(BaseModel):

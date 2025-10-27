@@ -71,7 +71,26 @@ def handle_agent_command(agent_name: Agent, project_path: Path):
     try:
         agent = AgentService(agent_name=agent_name, project_path=project_path)
 
-        return agent.run()
+        while True:
+            try:
+                user_input = input("\n👤 You: ").strip()
+                console.print("-" * 40)
+
+                if not user_input:
+                    continue
+
+                # Got valid input, break out of input loop
+                break
+            except KeyboardInterrupt:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+            except EOFError:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+
+        # Run agent session with the input
+        console.print("🚀 Starting agent session...")
+        return agent.solve_problem(problem_query=user_input)
 
     except KeyboardInterrupt:
         console.print("\n❌ Operation interrupted by user")

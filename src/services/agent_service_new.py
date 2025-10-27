@@ -47,49 +47,6 @@ class AgentService:
         self.last_tool_result = None
         self.result = None
 
-        self._memory_needs_update = False
-
-        self._consecutive_failures = 0
-
-        self.total_input_tokens = 0
-        self.total_output_tokens = 0
-        self.total_tokens_used = 0
-        self.llm_call_count = 0
-
-    def run(self) -> Optional[AllToolParams]:
-        """Run the agent with user prompting and problem solving.
-
-        Returns:
-            The result of the problem solving process
-        """
-        console.print("🚀 Welcome to Sutra Agent!")
-        console.print(
-            "   I'm here to help you with coding, debugging, and knowledge sharing."
-        )
-        console.print("\n💬 How can I help you? Type your questions or requests below.")
-
-        # Get user input
-        while True:
-            try:
-                user_input = input("\n👤 You: ").strip()
-                console.print("-" * 40)
-
-                if not user_input:
-                    continue
-
-                # Got valid input, break out of input loop
-                break
-            except KeyboardInterrupt:
-                console.print("\n\n👋 Goodbye! Session ended.")
-                return None
-            except EOFError:
-                console.print("\n\n👋 Goodbye! Session ended.")
-                return None
-
-        # Run agent session with the input
-        console.print("🚀 Starting agent session...")
-        return self.solve_problem(problem_query=user_input)
-
     def solve_problem(self, problem_query: str) -> AllToolParams:
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
@@ -134,7 +91,7 @@ class AgentService:
 
                 # Check if completion occurred
                 is_completion = self._parse_response(
-                    agent_response.agent_type, agent_response.content
+                    agent_response.agent_type, agent_response
                 )
                 logger.debug(f"Is completion: {is_completion}")
                 if is_completion:

@@ -267,6 +267,7 @@ class DatabaseToolCallSimple(BaseModel):
     parameters: typing.Union["DatabaseParamsGetFileByPath", "DatabaseParamsGetBlockDetails"]
 
 class DeveloperCompletionParams(BaseModel):
+    give_up: bool
     result: str
 
 class DeveloperCompletionToolCall(BaseModel):
