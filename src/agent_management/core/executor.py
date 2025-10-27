@@ -1,29 +1,17 @@
-from typing import NamedTuple, Union
+from typing import Union
 
 from loguru import logger
 
+from agent_management.types.agent import AgentResponse
+from agent_management.utils import get_project_context_for_agent, get_system_info
 from baml_client.types import (
     Agent,
     DeveloperPromptParams,
-    DeveloperResponse,
     ProjectContext,
     QAEngineerPromptParams,
-    QAEngineerResponse,
     RoadmapPromptParams,
-    RoadmapResponse,
 )
 from services.baml_service import BAMLService
-
-from .utils import get_project_context_for_agent, get_system_info
-
-AgentContentType = Union[RoadmapResponse, DeveloperResponse, QAEngineerResponse]
-
-
-class AgentResponse(NamedTuple):
-    """Structured response from agent execution including agent type."""
-
-    agent_type: Agent
-    content: AgentContentType
 
 
 def execute_agent(agent_name: Agent, context: str) -> AgentResponse:

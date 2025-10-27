@@ -9,6 +9,7 @@ class IndexingRequirement(Enum):
     """Indexing requirements that can be used as prerequisites."""
 
     INDEXING = auto()
+    MULTI_PROJECT_INCREMENTAL_INDEXING = auto()
     INCREMENTAL_INDEXING = auto()
     CROSS_INDEXING = auto()
     INCREMENTAL_CROSS_INDEXING = auto()
@@ -32,7 +33,7 @@ class AgentGraph:
             description="",
             prerequisites=[
                 IndexingRequirement.INDEXING,
-                IndexingRequirement.INCREMENTAL_INDEXING,
+                IndexingRequirement.MULTI_PROJECT_INCREMENTAL_INDEXING,
                 IndexingRequirement.CROSS_INDEXING,
                 IndexingRequirement.INCREMENTAL_CROSS_INDEXING,
             ],

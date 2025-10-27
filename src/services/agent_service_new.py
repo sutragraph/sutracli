@@ -8,13 +8,9 @@ from rich.panel import Panel
 from rich.prompt import Confirm
 from rich.text import Text
 
-from agents_new import (
-    Agent,
-    AgentResponse,
-    DeveloperResponse,
-    RoadmapResponse,
-    execute_agent,
-)
+from baml_client.types import Agent
+from src.agent_management.core.executor import execute_agent
+from src.agent_management.types.agent import AgentResponse
 from tools import AllSutraMemoryParams, AllToolParams, execute_tool
 from utils.console import console
 
@@ -94,52 +90,52 @@ class AgentService:
         console.print("🚀 Starting agent session...")
         return self.solve_problem(problem_query=user_input)
 
-    def solve_problem(self, problem_query: str) -> Optional[AllToolParams]:
+    def solve_problem(self, problem_query: str) -> AllToolParams:
         query_id = self.session_manager.start_new_query(problem_query)
         self.session_manager.set_problem_context(problem_query)
 
         logger.debug(
             f"Session {self.session_manager.session_id} - Starting new query {query_id}"
         )
-
         current_iteration = 0
-        max_iterations = 50
+        max_iterations = 70
 
         try:
             while current_iteration < max_iterations:
                 current_iteration += 1
-                if current_iteration == 15:
+
+                if current_iteration % 15 == 0:
                     console.print()
                     console.print(
-                        "[yellow]Completed 15 iterations. Current progress:[/yellow]"
+                        f"[yellow]Completed {current_iteration} iterations. Current progress:[/yellow]"
                     )
 
-                    should_continue = Confirm.ask(
-                        f"[bold cyan]Continue with the remaining {max_iterations - current_iteration} iterations?[/bold cyan]",
-                        default=True,
-                    )
-
-                    if not should_continue:
-                        console.print(
-                            "[yellow]Task stopped by user after 15 iterations.[/yellow]"
+                    remaining = max_iterations - current_iteration
+                    if remaining > 0:
+                        should_continue = Confirm.ask(
+                            f"[bold cyan]Continue with the remaining {remaining} iterations?[/bold cyan]",
+                            default=True,
                         )
-                        return None
+
+                        if not should_continue:
+                            console.print(
+                                f"[yellow]Task stopped by user after {current_iteration} iterations.[/yellow]"
+                            )
+                            return None
 
                 # Store current problem query for potential modification during file verification
                 self._current_problem_query = problem_query
 
-                user_message = self._build_user_message(
-                    problem_query, current_iteration
-                )
+                user_message = self._build_user_message(problem_query)
 
                 logger.debug(f"Invoking agent: {self.agent_name}")
 
-                agent_response: AgentResponse = execute_agent(
-                    self.agent_name, context=user_message
-                )
+                agent_response = execute_agent(self.agent_name, context=user_message)
 
                 # Check if completion occurred
-                is_completion = self._parse_agent_response(agent_response)
+                is_completion = self._parse_response(
+                    agent_response.agent_type, agent_response.content
+                )
                 logger.debug(f"Is completion: {is_completion}")
                 if is_completion:
                     # Check if this is a roadmap agent and if post-processing requests continuation
@@ -245,53 +241,33 @@ class AgentService:
             # Fallback to simple feedback status
             self.last_tool_result = "Tool: feedback_received\nStatus: User provided feedback for roadmap improvement."
 
-    def _build_user_message(self, problem_query: str, current_iteration: int) -> str:
+    def _build_user_message(self, problem_query: str) -> str:
         user_message = []
 
         user_message.append(f"User Query: {problem_query}\n")
 
-        memory_status = self._build_memory_status(current_iteration)
+        memory_status = self._build_memory_status()
         user_message.append(memory_status)
-
-        task_progress = self.session_manager.get_task_progress_history()
-        if task_progress and task_progress.strip():
-            user_message.append(f"\nTASK PROGRESS HISTORY\n\n{task_progress}\n")
 
         user_message.append(f"\nTOOL STATUS\n\n{self.last_tool_result}\n")
 
         return "\n".join(user_message)
 
-    def _build_memory_status(self, current_iteration: int) -> str:
-        if current_iteration == 1:
-            memory_status = (
-                "No previous memory available. This is first message from user."
-            )
-            logger.debug("Agent: First iteration with empty memory")
-            return f"\nSUTRA MEMORY STATUS\n\n{memory_status}"
+    def _build_memory_status(self) -> str:
+        sutra_memory_rich = self.memory_manager.get_memory_for_llm()
+
+        if sutra_memory_rich and sutra_memory_rich.strip():
+            logger.debug("Agent: Using Sutra memory from memory manager")
+            return f"\nSUTRA MEMORY STATUS\n\n{sutra_memory_rich}\n"
         else:
-            sutra_memory_rich = self.memory_manager.get_memory_for_llm()
+            memory_status = "No previous memory available."
+            logger.debug("Agent: No memory available")
+            return f"\nSUTRA MEMORY STATUS\n\n{memory_status}\n"
 
-            if sutra_memory_rich and sutra_memory_rich.strip():
-                logger.debug("Agent: Using Sutra memory from memory manager")
-                return f"\nSUTRA MEMORY STATUS\n\n{sutra_memory_rich}\n"
-            else:
-                memory_status = "No previous memory available."
-                logger.debug("Agent: No memory available")
-                return f"\nSUTRA MEMORY STATUS\n\n{memory_status}\n"
-
-    def _parse_agent_response(self, response: AgentResponse) -> bool:
-        """Parse agent response and return True if completion occurred."""
-        match response.agent_type:
-            case Agent.Roadmap:
-                return self._parse_roadmap_response(response.content)
-
-            case _:
-                logger.warning(f"Unknown agent type: {response.agent_type}")
-                return False
-
-    def _parse_roadmap_response(self, content: RoadmapResponse) -> bool:
+    def _parse_response(self, agent: Agent, response: AgentResponse) -> bool:
         """Parse roadmap response and return True if completion occurred."""
         is_completion = False
+        content = response.content
 
         if content.sutra_memory:
             self._parse_sutra_memory(content.sutra_memory)
@@ -331,7 +307,7 @@ class AgentService:
                         return False  # Don't show completion, continue agent loop
 
             # Execute tool for formatting and display (only if file paths are valid)
-            self.last_tool_result = execute_tool(Agent.Roadmap, tool_name, tool_params)
+            self.last_tool_result = execute_tool(agent, tool_name, tool_params)
 
         return is_completion
 

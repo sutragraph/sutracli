@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 # IMPORTANT: Setup logging FIRST before any imports that use loguru
 # This prevents debug logs from appearing when log level is INFO
+from baml_client.types import Agent
 from src.utils.logging import setup_logging
 
 # Set up basic INFO logging early to prevent debug logs during imports
@@ -27,21 +28,11 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
 
-from src.agent_management import (
-    AgentGraph,
-    IndexingPrerequisitesHandler,
-    IndexingRequirement,
-)
-from src.agents_new import Agent
+from src.agent_management import AgentGraph
+from src.agent_management.utils.exceptions import UserCancelledError
 from src.config.settings import reload_config
 from src.utils.console import console
 from src.utils.version_checker import show_update_notification
-
-
-class UserCancelledError(Exception):
-    """Exception raised when user cancels an operation."""
-
-    pass
 
 
 class ModernSutraKit:
@@ -55,8 +46,6 @@ class ModernSutraKit:
         # Reconfigure logging with the requested level (if different from initial INFO setup)
         if log_level != "INFO":
             setup_logging(log_level)
-
-        self.indexing_handler = IndexingPrerequisitesHandler()
 
     def print_banner(self):
         """Print the welcome banner."""
@@ -817,187 +806,13 @@ class ModernSutraKit:
 
     def run_agent_workflow(self, agent: Agent, current_dir: Path):
         """Run the workflow for selected agent."""
-        agent_config = AgentGraph.get_config(agent)
-        if not agent_config:
-            console.error(f"Agent '{agent}' not found.")
-            return
-
         try:
-            # Check if indexing is required
-            prerequisites = agent_config.prerequisites
-            if IndexingRequirement.INDEXING in prerequisites:
-                self._run_indexing(current_dir)
-
-            if IndexingRequirement.INCREMENTAL_INDEXING in prerequisites:
-                # Run incremental indexing and get the changes
-                changes_by_project = self._run_incremental_indexing_and_get_changes()
-
-                if (
-                    IndexingRequirement.INCREMENTAL_CROSS_INDEXING in prerequisites
-                    and changes_by_project
-                ):
-                    self.indexing_handler.run_incremental_cross_indexing(
-                        changes_by_project
-                    )
-
-            # Check if cross-indexing is required
-            if IndexingRequirement.CROSS_INDEXING in prerequisites:
-                self._run_cross_indexing(current_dir)
-
             self._execute_agent(agent, current_dir)
 
         except UserCancelledError:
             console.warning("Workflow stopped by user choice.")
             console.dim("You can restart the workflow anytime when ready.")
             return
-
-    def _run_indexing(self, project_dir: Path):
-        """Run normal indexing for the project."""
-        console.print()
-        console.info(f"Starting indexing for: {project_dir}")
-        console.dim("   • Analyzing code structure and relationships")
-        console.dim("   • Generating embeddings for semantic search")
-        console.print()
-
-        try:
-            # Import and run indexing
-            from cli.commands import handle_index_command
-
-            # Mock args object for indexing
-            class Args:
-                project_path = str(project_dir)
-                directory = str(project_dir)
-                project_name = None
-                log_level = self.log_level
-                force = False
-
-            args = Args()
-            handle_index_command(args)
-
-            console.success("Normal indexing completed successfully!")
-
-        except Exception as e:
-            console.error(f"Indexing failed: {e}")
-            raise
-
-    def _run_incremental_indexing_and_get_changes(self) -> Dict[str, Any]:
-        """Run incremental indexing and return the changes found by project."""
-        console.print()
-        console.info("Starting incremental indexing")
-
-        try:
-            # Execute incremental indexing for all projects and capture changes with old content
-            result = (
-                self.indexing_handler.handle_multiple_project_indexing_with_old_content()
-            )
-
-            # Extract changes by project from the result
-            changes_by_project = {}
-
-            if result["status"] in ["completed", "partial"]:
-                # Get the actual changes from each project that was processed
-                if "results" in result:
-                    for project_info in result["results"]:
-                        if (
-                            isinstance(project_info, dict)
-                            and project_info.get("status") == "success"
-                        ):
-                            if "changes" in project_info:
-                                project_id = project_info.get("project_id", "unknown")
-                                changes_by_project[project_id] = project_info["changes"]
-
-            elif result["status"] == "skipped":
-                console.info("No changes detected for incremental indexing")
-                return {}
-            else:
-                console.error(f"Incremental indexing failed: {result['message']}")
-                if result.get("error"):
-                    console.print(f"   Error: {result['error']}")
-                return {}
-
-            return changes_by_project
-
-        except Exception as e:
-            console.error(f"Error during incremental indexing: {e}")
-            return {}
-
-    def _run_cross_indexing(self, project_dir: Path):
-        """Run cross-indexing for the project."""
-
-        # Check if cross-indexing is already completed
-        try:
-            from src.graph.graph_operations import GraphOperations
-            from src.services.project_manager import ProjectManager
-
-            project_manager = ProjectManager()
-            graph_ops = GraphOperations()
-
-            project_name = project_manager.determine_project_name(project_dir)
-
-            if graph_ops.is_cross_indexing_done(project_name):
-                return
-
-        except Exception as e:
-            # If we can't check, proceed with the normal flow
-            console.dim(f"⚠️ Could not verify cross-indexing status: {e}")
-
-        warning_text = """
-• ⏱️  Time: May take 5-30 minutes based on codebase size
-• 🔥 Tokens: Will consume LLM tokens for deep analysis
-• 🔄 Process: This is a one-time setup for this project
-• 💻 Session: Do not close the terminal during this process
-
-This analysis will create detailed inter-service connection mappings
-for advanced code understanding and agent capabilities.
-Closing the terminal or interrupting may lead to incomplete data and token wastage.
-        """
-
-        warning_panel = Panel(
-            warning_text.strip(),
-            title="⚠️  Cross-Indexing Analysis",
-            border_style="yellow",
-            title_align="left",
-        )
-
-        console.print()
-        console.print(warning_panel)
-        console.print()
-
-        # Ask for user confirmation
-        proceed = Confirm.ask(
-            "[bold yellow]Do you want to proceed with cross-indexing analysis?[/bold yellow]",
-            default=True,
-        )
-
-        if not proceed:
-            console.warning("Cross-indexing declined by user.")
-            console.dim(
-                "💡 Tip: You can run this later when you're ready to spend the time and tokens."
-            )
-            console.dim("📝 To continue later, simply run the same command again.")
-            # Raise a custom exception to stop the workflow
-            raise UserCancelledError("User declined cross-indexing analysis")
-
-        console.process("Starting cross-indexing analysis...")
-
-        try:
-            # Import and run cross-indexing
-            from cli.commands import handle_cross_indexing_command
-
-            # Mock args object for cross-indexing
-            class Args:
-                project_path = project_dir
-                directory = str(project_dir)
-                project_name = None
-                log_level = "INFO"
-
-            args = Args()
-            handle_cross_indexing_command(args)
-
-            console.success("Cross-indexing completed successfully!")
-
-        except Exception as e:
-            console.error(f"Cross-indexing failed: {e}")
 
     def _execute_agent(self, agent: Agent, project_dir: Path):
         """Execute the actual agent."""

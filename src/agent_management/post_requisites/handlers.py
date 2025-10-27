@@ -11,7 +11,7 @@ from rich.prompt import Confirm
 from rich.text import Text
 
 from agent_management.providers.manager import get_agent_provider_manager
-from agents_new import Agent
+from baml_client.types import Agent
 from tools import RoadmapCompletionParams
 from utils.console import console
 

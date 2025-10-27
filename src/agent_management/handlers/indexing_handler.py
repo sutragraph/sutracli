@@ -11,6 +11,7 @@ from loguru import logger
 from rich.panel import Panel
 from rich.prompt import Confirm
 
+from agent_management.core.exceptions import UserCancelledError
 from graph.cross_project_indexer import CrossProjectIndexer
 from graph.graph_operations import GraphOperations
 from graph.project_indexer import ProjectIndexer
@@ -27,6 +28,176 @@ class IndexingPrerequisitesHandler:
         self.indexer = ProjectIndexer()
         self.cross_project_indexer = CrossProjectIndexer()
         logger.debug("🔧 IndexingPrerequisitesHandler initialized")
+
+    def run_full_indexing(self, project_path: Path) -> None:
+        """Run full indexing for a project."""
+        from services.project_manager import ProjectManager
+
+        project_manager = ProjectManager()
+
+        console.print()
+        console.info(f"Starting indexing for: {project_path}")
+        console.dim("   • Analyzing code structure and relationships")
+        console.dim("   • Generating embeddings for semantic search")
+        console.print()
+
+        try:
+            project_name = project_manager.determine_project_name(project_path)
+
+            # Check if project exists
+            if not project_manager.check_project_exists(project_name):
+                # Full indexing needed
+                project_manager.auto_index_project(project_name, project_path)
+                console.success("Indexing completed successfully!")
+            else:
+                logger.debug(f"Project {project_name} already indexed")
+
+        except Exception as e:
+            console.error(f"Indexing failed: {e}")
+            raise
+
+    def run_single_project_incremental_indexing(
+        self, project_path: Path
+    ) -> Dict[str, Any]:
+        """Run incremental indexing for a single project and return changes."""
+        from services.project_manager import ProjectManager
+
+        project_manager = ProjectManager()
+
+        console.print()
+        console.info("Running incremental indexing for current project")
+
+        try:
+            project_name = project_manager.determine_project_name(project_path)
+            result = project_manager.perform_incremental_indexing(project_name)
+
+            if result.get("type") == "indexing_complete":
+                stats = result.get("stats", {})
+                changes = stats.get("changes", {})
+
+                console.success("Incremental indexing completed!")
+                return changes
+            else:
+                console.warning("No changes detected")
+                return {}
+
+        except Exception as e:
+            console.error(f"Incremental indexing failed: {e}")
+            return {}
+
+    def run_multi_project_incremental_indexing(self) -> Dict[str, Any]:
+        """Run incremental indexing for all projects and return changes by project."""
+        console.print()
+        console.info("Starting incremental indexing for all projects")
+
+        try:
+            result = self.handle_multiple_project_indexing_with_old_content()
+
+            changes_by_project = {}
+
+            if result["status"] in ["completed", "partial"]:
+                if "results" in result:
+                    for project_info in result["results"]:
+                        if (
+                            isinstance(project_info, dict)
+                            and project_info.get("status") == "success"
+                        ):
+                            project_id = project_info.get("project_id")
+                            changes = project_info.get("changes", {})
+                            if changes:
+                                changes_by_project[str(project_id)] = changes
+
+                console.success(
+                    f"Incremental indexing completed for {result['indexed_count']} projects"
+                )
+            elif result["status"] == "skipped":
+                console.info("No changes detected for incremental indexing")
+            else:
+                console.error(f"Incremental indexing failed: {result.get('message')}")
+                if result.get("error"):
+                    console.print(f"   Error: {result['error']}")
+
+            return changes_by_project
+
+        except Exception as e:
+            console.error(f"Error during incremental indexing: {e}")
+            return {}
+
+    def run_cross_indexing(self, project_path: Path) -> None:
+        """Run cross-indexing for the project."""
+        from services.project_manager import ProjectManager
+
+        project_manager = ProjectManager()
+
+        # Check if cross-indexing is already completed
+        try:
+            project_name = project_manager.determine_project_name(project_path)
+
+            if self.graph_ops.is_cross_indexing_done(project_name):
+                logger.debug(
+                    f"Cross-indexing already completed for project {project_name}"
+                )
+                return
+
+        except Exception as e:
+            logger.debug(f"Could not verify cross-indexing status: {e}")
+
+        warning_text = """
+• ⏱️  Time: May take 5-30 minutes based on codebase size
+• 🔥 Tokens: Will consume LLM tokens for deep analysis
+• 🔄 Process: This is a one-time setup for this project
+• 💻 Session: Do not close the terminal during this process
+
+This analysis will create detailed inter-service connection mappings
+for advanced code understanding and agent capabilities.
+Closing the terminal or interrupting may lead to incomplete data and token wastage.
+        """
+
+        warning_panel = Panel(
+            warning_text.strip(),
+            title="⚠️  Cross-Indexing Analysis",
+            border_style="yellow",
+            title_align="left",
+        )
+
+        console.print()
+        console.print(warning_panel)
+        console.print()
+
+        # Ask for user confirmation
+        proceed = Confirm.ask(
+            "[bold yellow]Do you want to proceed with cross-indexing analysis?[/bold yellow]",
+            default=True,
+        )
+
+        if not proceed:
+            console.warning("Cross-indexing declined by user.")
+            console.dim(
+                "💡 Tip: You can run this later when you're ready to spend the time and tokens."
+            )
+            console.dim("📝 To continue later, simply run the same command again.")
+
+            raise UserCancelledError("User declined cross-indexing analysis")
+
+        console.process("Starting cross-indexing analysis...")
+
+        try:
+            from cli.commands import handle_cross_indexing_command
+
+            # Mock args object for cross-indexing
+            class Args:
+                directory = str(project_path)
+                project_name = None
+                log_level = "INFO"
+                auto = False
+
+            args = Args()
+            handle_cross_indexing_command(args)
+
+            console.success("Cross-indexing completed successfully!")
+
+        except Exception as e:
+            console.error(f"Cross-indexing failed: {e}")
 
     def handle_multiple_project_indexing_with_old_content(self) -> Dict[str, Any]:
         """

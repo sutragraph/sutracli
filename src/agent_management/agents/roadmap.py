@@ -13,6 +13,8 @@ class RoadmapAgent(BaseAgent):
     def start_project(self, project_data: str) -> None:
         print(f"\n[{self.agent_type.name}] Starting project planning...")
 
+        self.run_prerequisites()
+
         self.run_agent_loop("Create project roadmap")
 
         data = AgentData(context=project_data)
@@ -28,4 +30,5 @@ class RoadmapAgent(BaseAgent):
         if "success" in data.context:
             print(f"[{self.agent_type.name}] Project completed successfully!")
         else:
+            self.run_prerequisites()
             print(f"[{self.agent_type.name}] Developer is working on fixes...")

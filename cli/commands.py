@@ -8,7 +8,7 @@ from loguru import logger
 from rich.panel import Panel
 from rich.text import Text
 
-from src.agents_new import Agent
+from baml_client.types import Agent
 from src.embeddings import get_vector_store
 from src.graph import SQLiteConnection
 from src.services.agent_service_new import AgentService
