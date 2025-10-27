@@ -2,8 +2,9 @@ from pathlib import Path
 from typing import Optional
 
 from baml_client.types import Agent
+from src.agent_management.types.agent import AgentData
 
-from .base import AgentData, BaseAgent
+from .base import BaseAgent
 
 
 class RoadmapAgent(BaseAgent):

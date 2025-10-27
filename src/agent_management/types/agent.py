@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import NamedTuple, Union
 
 from baml_client.types import (
@@ -15,3 +16,9 @@ class AgentResponse(NamedTuple):
 
     agent_type: Agent
     content: AgentContentType
+
+
+@dataclass
+class AgentData:
+    context: str
+    success: bool = True

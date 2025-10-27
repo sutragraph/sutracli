@@ -3,8 +3,9 @@ from typing import Optional
 
 from baml_client.types import Agent, DeveloperCompletionParams
 from services.agent.memory_management.models import MemorySection
+from src.agent_management.types.agent import AgentData
 
-from .base import AgentData, BaseAgent
+from .base import BaseAgent
 
 
 class DeveloperAgent(BaseAgent):

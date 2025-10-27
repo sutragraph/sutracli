@@ -12,13 +12,8 @@ from baml_client.types import Agent
 from services.agent.memory_management import SutraMemoryManager
 from services.agent.memory_management.models import MemorySection
 from services.agent_service_new import AgentService
+from src.agent_management.types.agent import AgentData
 from tools import AllToolParams
-
-
-@dataclass
-class AgentData:
-    context: str
-    success: bool = True
 
 
 class BaseAgent(ABC):
