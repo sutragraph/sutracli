@@ -20,14 +20,14 @@ from src.agent_management.utils.exceptions import UserCancelledError
 from utils.console import console
 
 
-class IndexingPrerequisitesHandler:
+class IndexingHandler:
     def __init__(self):
         """Initialize the indexing prerequisites handler."""
         self.connection = SQLiteConnection()
         self.graph_ops = GraphOperations()
         self.indexer = ProjectIndexer()
         self.cross_project_indexer = CrossProjectIndexer()
-        logger.debug("🔧 IndexingPrerequisitesHandler initialized")
+        logger.debug("🔧 IndexingHandler initialized")
 
     def run_full_indexing(self, project_path: Path) -> None:
         """Run full indexing for a project."""

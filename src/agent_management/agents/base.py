@@ -7,7 +7,7 @@ from loguru import logger
 
 from agent_management.core.agent_graph import AgentGraph, IndexingRequirement
 from agent_management.core.registry import AgentRegistry
-from agent_management.handlers.indexing_handler import IndexingPrerequisitesHandler
+from agent_management.handlers.indexing_handler import IndexingHandler
 from baml_client.types import Agent
 from services.agent.memory_management import SutraMemoryManager
 from services.agent.memory_management.models import MemorySection
@@ -27,7 +27,7 @@ class BaseAgent(ABC):
         self.memory = SutraMemoryManager()
         self.project_path = project_path
         self.indexing_changes: Dict[str, Any] = {}
-        self.indexing_handler = IndexingPrerequisitesHandler()
+        self.indexing_handler = IndexingHandler()
 
         if project_path:
             AgentRegistry.register(self)
