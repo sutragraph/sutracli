@@ -36,6 +36,7 @@ class DeveloperAgent(BaseAgent):
         if give_up:
             new_data = AgentData.from_context(response.result, self.agent_type)
             new_data.success = False
+            new_data.project_path = self.project_path
             self.send_to_upstream(new_data)
 
     def from_downstream(self, data: AgentData) -> None:
@@ -60,10 +61,15 @@ class DeveloperAgent(BaseAgent):
             if give_up:
                 new_data = AgentData.from_context(response.result, self.agent_type)
                 new_data.success = False
+                new_data.project_path = self.project_path
                 self.send_to_upstream(new_data)
 
         if tests_passed:
-            new_data = AgentData(conversation=data.conversation.copy(), success=True)
+            new_data = AgentData(
+                success=True,
+                conversation=data.conversation.copy(),
+                project_path=self.project_path,
+            )
             new_data.add_message(
                 self.agent_type,
                 "I have made all the requested changes and tested them successfully",

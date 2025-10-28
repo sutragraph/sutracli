@@ -2,9 +2,12 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from loguru import logger
+
+from src.agent_management.types.agent import AgentData
+from src.agent_management.utils.roadmap_utils import convert_roadmap_to_prompts
 
 
 def convert_roadmap_to_prompts(data: Dict[str, Any]) -> list:
@@ -429,3 +432,46 @@ def format_feedback_tool_status(user_feedback: str) -> str:
     feedback_status += f"Feedback: {user_feedback}\n"
 
     return feedback_status
+
+
+def separate_results_by_status(
+    agents_result: List[AgentData],
+) -> Tuple[List[AgentData], List[AgentData]]:
+    """
+    Separates spawned agent responses into successful and failed lists.
+
+    Returns:
+        Tuple[List[AgentData], List[AgentData]]: (successful_results, failed_results)
+    """
+    successful_results = []
+    failed_results = []
+
+    for agent_data in agents_result:
+        if agent_data.success:
+            successful_results.append(agent_data)
+        else:
+            failed_results.append(agent_data)
+
+    return successful_results, failed_results
+
+
+def format_agents_result(results: Tuple[List[AgentData], List[AgentData]]) -> str:
+    context = ""
+
+    successful_results, failed_results = results
+
+    if successful_results:
+        context += "SUCCESS:\n\n"
+        for agent_data in successful_results:
+            response = agent_data.get_last_message()
+            message_value = list(response.values())[0] if response else "No response"
+            context += f"{str(agent_data.project_path)}\n{message_value}"
+
+    if failed_results:
+        context += "FAILURE:\n\n"
+        for agent_data in failed_results:
+            response = agent_data.get_last_message()
+            message_value = list(response.values())[0] if response else "No response"
+            context += f"{str(agent_data.project_path)}\nreason: {message_value}"
+
+    return context

@@ -1,23 +1,24 @@
-import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.text import Text
 
-from baml_client.types import Agent, RoadmapCompletionParams
-from src.agent_management.types.agent import AgentData
-from src.agent_management.utils.roadmap_utils import (
+from agent_management.types.agent import AgentData
+from agent_management.utils.roadmap_utils import (
     convert_roadmap_to_prompts,
+    format_agents_result,
     format_feedback_section,
     format_feedback_tool_status,
+    separate_results_by_status,
     verify_roadmap_file_paths,
 )
-from src.config.settings import get_config
-from src.utils.console import console
+from baml_client.types import Agent, RoadmapCompletionParams
+from config.settings import get_config
+from utils.console import console
 
 from .base import BaseAgent
 
@@ -25,15 +26,49 @@ from .base import BaseAgent
 class RoadmapAgent(BaseAgent):
     def __init__(self, project_path: Optional[Path] = None):
         super().__init__(Agent.Roadmap, project_path)
+        self.spawned_agent_results: List[AgentData] = []
+        self.spawned_agent_count = 0
+
+    def from_upstream(self, data: AgentData) -> None:
+        response = data.format_conversation()
+
+        self.run_agent_loop(response)
+
+    def from_downstream(self, data: AgentData) -> None:
+        """Save the result in spawned_agent_results array till all the sub agents are done"""
+
+        self.spawned_agent_results.append(data)
+
+        if self.spawned_agent_count == len(self.spawned_agent_results):
+            self._on_all_agents_complete()
+
+    def _on_all_agents_complete(self):
+        separated_results = separate_results_by_status(self.spawned_agent_results)
+
+        _, failed_results = separated_results
+
+        if len(failed_results) == 0:
+            # not do something? maybe ask give options to user:
+            # - create new roadmap
+            # - quit
+            # - maybe user has something to say
+            pass
+
+        else:
+            formatted_result = format_agents_result(separated_results)
+            # missing previous roadmap?
+            data = AgentData.from_context(formatted_result)
+            context = data.format_conversation()
+            self.run_agent_loop(context)
 
     def run_agent_loop(self, problem_query: str) -> Optional[RoadmapCompletionParams]:
         logger.debug(f"[{self.agent_type.name}] Starting project planning...")
         print(f"\n[{self.agent_type.name}] Starting project planning...")
 
-        self.run_prerequisites()
-
         current_query = problem_query
         max_refinement_iterations = 20
+
+        self.run_prerequisites()
 
         for iteration in range(max_refinement_iterations):
             logger.debug(
@@ -227,7 +262,7 @@ class RoadmapAgent(BaseAgent):
                 f"Spawning Developer agent for project at: {actual_project_dir}"
             )
 
-            data = AgentData(context=prompt)
+            data = AgentData.from_context(prompt, "USER")
             self.send_to_downstream(data, target_project_path=actual_project_dir)
 
     def _spawn_agents_parallel(self, project_prompts: list) -> None:
@@ -247,7 +282,7 @@ class RoadmapAgent(BaseAgent):
                 f"Spawning Developer agent for project at: {actual_project_dir}"
             )
 
-            data = AgentData(context=prompt)
+            data = AgentData.from_context(prompt, "USER")
             self.send_to_downstream(data, target_project_path=actual_project_dir)
 
         with ThreadPoolExecutor(max_workers=len(project_prompts)) as executor:
@@ -278,15 +313,3 @@ class RoadmapAgent(BaseAgent):
             logger.debug("Stored feedback section in sutra memory")
         except Exception as e:
             logger.error(f"Error storing feedback in sutra memory: {e}")
-
-    def from_upstream(self, data: AgentData) -> None:
-        pass
-
-    def from_downstream(self, data: AgentData) -> None:
-        print(f"\n[{self.agent_type.name}] Received results from Developer")
-
-        if "success" in data.context:
-            print(f"[{self.agent_type.name}] Project completed successfully!")
-        else:
-            self.run_prerequisites()
-            print(f"[{self.agent_type.name}] Developer is working on fixes...")
