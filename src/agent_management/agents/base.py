@@ -82,9 +82,6 @@ class BaseAgent(ABC):
             logger.debug(f"[{self.agent_type.name}] No upstream agent")
 
     def run_agent_loop(self, problem_query: str) -> AllToolParams:
-        if not self.project_path:
-            raise ValueError(f"Project path must be set for {self.agent_type.name}")
-
         agent_service = AgentService(
             agent_name=self.agent_type,
             project_path=self.project_path,
@@ -101,28 +98,17 @@ class BaseAgent(ABC):
                 )
             raise
 
-    def load_memory_from_agent(
-        self,
-        agent_type: Agent,
-        preserve_sections: Optional[Set[MemorySection]] = None,
-        project_path: Optional[Path] = None,
-    ) -> bool:
-        target_path = project_path or self.project_path
-        if not target_path:
-            raise ValueError(
-                f"Project path must be set or provided for {self.agent_type.name}"
-            )
+    def run_with_user_role(self, input_data: str) -> None:
+        """Run agent with user role and maintain normal downstream/upstream flow.
 
-        source_agent = AgentRegistry.get(agent_type, target_path)
-        if not source_agent:
-            return False
+        Args:
+            input_data: String input that will be treated as coming from USER role.
+        """
+        # Create AgentData with USER role
+        data = AgentData.from_context(input_data, "USER")
 
-        if preserve_sections:
-            filtered_state = source_agent.memory.filter_sections(preserve_sections)
-            return self.memory.import_memory_state(filtered_state)
-
-        source_state = source_agent.memory.export_memory_state()
-        return self.memory.import_memory_state(source_state)
+        # Process the user input and follow normal flow
+        self.from_upstream(data)
 
     def copy_memory_from_agent(
         self,

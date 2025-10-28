@@ -20,35 +20,43 @@ class DeveloperAgent(BaseAgent):
         return result
 
     def from_upstream(self, data: AgentData) -> None:
-        print(f"\n[{self.agent_type.name}] Received task from Roadmap")
-        print(f"[{self.agent_type.name}] Context: {data.context[:100]}...")
-
         self.run_prerequisites()
 
-        data2 = self.run_agent_loop("Complete development tasks")
+        context = data.format_conversation()
 
-        result_data = AgentData(context="development_complete")
-        print(f"\n[{self.agent_type.name}] Sending work to QA Engineer")
-        self.send_to_downstream(result_data)
+        response = self.run_agent_loop(context)
+
+        give_up = response.give_up
+
+        if not give_up:
+            new_data = AgentData(conversation=data.conversation.copy(), success=True)
+            new_data.add_message(self.agent_type, response.result)
+            self.send_to_downstream(new_data)
+
+        if give_up:
+            new_data = AgentData(conversation=data.conversation.copy(), success=False)
+            new_data.add_message(self.agent_type, response.result)
+            self.send_to_upstream(new_data)
 
     def from_downstream(self, data: AgentData) -> None:
         print(f"\n[{self.agent_type.name}] Received QA results")
 
-        if "tests_passed" in data.context:
-            print(
-                f"[{self.agent_type.name}] All tests passed! Sending success to Roadmap"
-            )
-            success_data = AgentData(context="success")
-            self.send_to_upstream(success_data)
-        else:
-            print(f"[{self.agent_type.name}] Tests failed. Fixing issues...")
+        tests_passed = data.success
 
+        if not tests_passed:
             self.run_prerequisites()
-
             self.clear_memory_sections({MemorySection.TASKS})
 
-            self.run_agent_loop("Fix failing tests")
+            context = data.format_conversation()
+            response = self.run_agent_loop(context)
 
-            result_data = AgentData(context="fixes_complete")
-            print(f"\n[{self.agent_type.name}] Sending fixed code to QA Engineer")
-            self.send_to_downstream(result_data)
+            new_data = AgentData(conversation=data.conversation.copy(), success=True)
+            new_data.add_message(self.agent_type, response.result)
+            self.send_to_downstream(new_data)
+
+        if tests_passed:
+            new_data = AgentData(conversation=data.conversation.copy(), success=True)
+            new_data.add_message(
+                self.agent_type, "All changes made and tested successfully"
+            )
+            self.send_to_upstream(new_data)
