@@ -646,7 +646,7 @@ class ProjectIndexer:
             outgoing_count = len(outgoing_connections) if outgoing_connections else 0
 
             if incoming_count > 0 or outgoing_count > 0:
-                logger.info(
+                logger.debug(
                     f"🔄 Preserving {incoming_count} incoming and {outgoing_count} outgoing connections "
                     f"for file {file_path} during incremental indexing"
                 )
@@ -702,7 +702,7 @@ class ProjectIndexer:
                 outgoing_count = len(outgoing_connections)
 
                 if incoming_count > 0 or outgoing_count > 0:
-                    logger.info(
+                    logger.debug(
                         f"🔄 Restoring {incoming_count} incoming and {outgoing_count} outgoing connections "
                         f"for file {file_path} (file_id: {file_id})"
                     )
@@ -744,7 +744,7 @@ class ProjectIndexer:
                     total_restored += 1
 
             if total_restored > 0:
-                logger.info(
+                logger.debug(
                     f"✅ Successfully restored {total_restored} connections after file recreation"
                 )
 

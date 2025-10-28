@@ -27,7 +27,7 @@ class RoadmapAgent(BaseAgent):
         super().__init__(Agent.Roadmap, project_path)
 
     def run_agent_loop(self, problem_query: str) -> Optional[RoadmapCompletionParams]:
-        logger.info(f"[{self.agent_type.name}] Starting project planning...")
+        logger.debug(f"[{self.agent_type.name}] Starting project planning...")
         print(f"\n[{self.agent_type.name}] Starting project planning...")
 
         self.run_prerequisites()
@@ -64,13 +64,13 @@ class RoadmapAgent(BaseAgent):
 
                 continue
 
-            logger.info(f"[{self.agent_type.name}] Roadmap generated successfully")
+            logger.debug(f"[{self.agent_type.name}] Roadmap generated successfully")
             print(f"\n[{self.agent_type.name}] Roadmap generated successfully")
 
             user_action = self._get_user_action_on_roadmap()
 
             if user_action["action"] == "approved":
-                logger.info("User approved roadmap, proceeding with agent spawning")
+                logger.debug("User approved roadmap, proceeding with agent spawning")
                 self._spawn_agents_based_on_config(result)
                 return result
 
@@ -85,7 +85,7 @@ class RoadmapAgent(BaseAgent):
                     )
                     return None
 
-                logger.info(f"User requested refinement: {feedback[:100]}...")
+                logger.debug(f"User requested refinement: {feedback[:100]}...")
                 print(
                     f"\n[{self.agent_type.name}] Refining roadmap based on feedback..."
                 )
@@ -99,7 +99,7 @@ class RoadmapAgent(BaseAgent):
                 continue
 
             elif user_action["action"] == "cancelled":
-                logger.info("User cancelled roadmap workflow")
+                logger.debug("User cancelled roadmap workflow")
                 console.print(
                     "[yellow]⚠️  Roadmap workflow cancelled by user.[/yellow]"
                 )
@@ -264,7 +264,7 @@ class RoadmapAgent(BaseAgent):
                     logger.error(f"Error spawning agent in parallel: {e}")
                     console.print(f"[red]❌ Error spawning agent: {e}[/red]")
 
-        logger.info(f"All {len(project_prompts)} agents spawned in parallel")
+        logger.debug(f"All {len(project_prompts)} agents spawned in parallel")
         print(
             f"\n[{self.agent_type.name}] All {len(project_prompts)} agents spawned in parallel"
         )

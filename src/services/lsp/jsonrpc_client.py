@@ -100,7 +100,7 @@ class JSONRPCClient:
                     # Always set the event to indicate we've received diagnostics
                     # (even if they're empty)
                     self._diagnostics_received.set()
-                    logger.info(f"Received {len(diags)} diagnostic(s)")
+                    logger.debug(f"Received {len(diags)} diagnostic(s)")
                 continue
 
             # Handle other notifications
@@ -266,7 +266,7 @@ class JSONRPCClient:
 
         with self._lock:
             diagnostics = self._latest_diagnostics.copy()
-        logger.info(f"Total diagnostics collected: {len(diagnostics)}")
+        logger.debug(f"Total diagnostics collected: {len(diagnostics)}")
         return diagnostics
 
     def shutdown(self):

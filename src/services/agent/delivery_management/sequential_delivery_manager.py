@@ -365,7 +365,7 @@ class DeliveryManager:
         self._completed_deliveries[query_signature] = False
         total_items = len(self._delivery_queues[query_signature])
 
-        logger.info(
+        logger.debug(
             f"RESET: Queue reset for {query_signature[:50]}... ({total_items} items, position reset to 0)"
         )
         return True
