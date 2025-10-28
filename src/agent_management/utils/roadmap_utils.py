@@ -1,5 +1,7 @@
 """Utility functions for roadmap processing."""
 
+import os
+from pathlib import Path
 from typing import Any, Dict
 
 from loguru import logger
@@ -277,3 +279,153 @@ def convert_roadmap_to_prompts(data: Dict[str, Any]) -> list:
         )
 
     return project_prompts
+
+
+def verify_roadmap_file_paths(roadmap_result: Any) -> Dict[str, Any]:
+    """Verify that file paths for modify and delete operations exist.
+
+    Args:
+        roadmap_result: RoadmapCompletionParams object with roadmap data
+
+    Returns:
+        Dict with 'valid' (bool), 'feedback' (str) if validation fails, and 'non_existing_paths' list
+    """
+    try:
+        if not roadmap_result:
+            logger.warning("No roadmap result available to verify")
+            return {"valid": True}
+
+        roadmap_data = roadmap_result.model_dump()
+        projects = roadmap_data.get("projects", [])
+        non_existing_paths = []
+
+        for project in projects:
+            project_path = project.get("project_path", "")
+            changes = project.get("changes", [])
+
+            # Determine project root directory
+            if os.path.isabs(project_path) and os.path.exists(project_path):
+                project_root = project_path
+            else:
+                # Try relative to current working directory
+                clean_path = (
+                    project_path[1:] if project_path.startswith("/") else project_path
+                )
+                potential_root = Path.cwd() / clean_path
+                project_root = str(potential_root) if potential_root.exists() else None
+
+            for change in changes:
+                operation = change.get("operation", "")
+                file_path = change.get("file_path", "")
+
+                # Convert operation to string if it's an enum
+                operation_str = str(operation).lower()
+                if hasattr(operation, "value"):
+                    operation_str = operation.value.lower()
+
+                # Only check modify and delete operations
+                if operation_str in ["modify", "delete"]:
+                    if project_root:
+                        full_file_path = os.path.join(project_root, file_path)
+                    else:
+                        full_file_path = file_path
+
+                    # Check if file exists
+                    if not os.path.exists(full_file_path):
+                        non_existing_paths.append(
+                            {
+                                "project": project.get("project_name", "Unknown"),
+                                "project_path": project_path,
+                                "file_path": file_path,
+                                "operation": operation,
+                                "full_path": full_file_path,
+                            }
+                        )
+                    else:
+                        logger.debug(f"File exists and verified: {full_file_path}")
+
+        if non_existing_paths:
+            # Create feedback message for non-existing paths
+            feedback_message = "The following file paths provided for modify or delete operations do not exist:\n\n"
+
+            for i, path_info in enumerate(non_existing_paths, 1):
+                feedback_message += f"{i}. Project: {path_info['project']}\n"
+                feedback_message += f"   Operation: {path_info['operation']}\n"
+                feedback_message += f"   File path: {path_info['file_path']}\n"
+                feedback_message += f"   Full path: {path_info['full_path']}\n"
+                feedback_message += f"   Status: FILE DOES NOT EXIST\n\n"
+
+            feedback_message += "Please provide correct file paths that exist in the project before proceeding with any modification or deletion operations. "
+            feedback_message += "Make sure to verify the file paths are correct and the files actually exist in the specified locations."
+
+            return {
+                "valid": False,
+                "feedback": feedback_message,
+                "non_existing_paths": non_existing_paths,
+            }
+
+        return {"valid": True}
+
+    except Exception as e:
+        logger.error(f"Error during file path verification: {e}")
+        # If verification fails, assume paths are valid to avoid blocking
+        return {"valid": True}
+
+
+def format_feedback_section(feedback: str, roadmap_result: Any) -> str:
+    """Format feedback section with user feedback and generated roadmap prompts.
+
+    Args:
+        feedback: User feedback text
+        roadmap_result: RoadmapCompletionParams object with roadmap data
+
+    Returns:
+        Formatted feedback section string
+    """
+    try:
+        if not roadmap_result:
+            logger.warning("No roadmap result available to format feedback")
+            return f"FEEDBACK SECTION: \nUSER FEEDBACK: {feedback}\n"
+
+        project_prompts = convert_roadmap_to_prompts(roadmap_result.model_dump())
+
+        feedback_section = "FEEDBACK SECTION: \n"
+        feedback_section += f"USER FEEDBACK: {feedback}\n\n"
+
+        feedback_section += (
+            f"GENERATED PROJECT ROADMAPS ({len(project_prompts)} projects):\n\n"
+        )
+
+        for i, project_prompt in enumerate(project_prompts, 1):
+            feedback_section += f"=== PROJECT {i} ROADMAP ===\n"
+            feedback_section += (
+                f"Project Path: {project_prompt.get('project_path', 'Unknown')}\n\n"
+            )
+            feedback_section += project_prompt.get("prompt", "No prompt available")
+            feedback_section += "\n\n"
+
+        logger.debug(
+            f"Formatted feedback section with {len(project_prompts)} roadmap prompts"
+        )
+
+        return feedback_section
+
+    except Exception as e:
+        logger.error(f"Error formatting feedback section: {e}")
+        return f"FEEDBACK SECTION: \nUSER FEEDBACK: {feedback}\n"
+
+
+def format_feedback_tool_status(user_feedback: str) -> str:
+    """Format feedback tool status message.
+
+    Args:
+        user_feedback: User feedback text
+
+    Returns:
+        Formatted feedback tool status string
+    """
+    feedback_status = "Tool: feedback_received\n"
+    feedback_status += "Status: User provided feedback for roadmap improvement. The generated project roadmaps are stored in FEEDBACK section. Create new task for these improvements and work on it.\n"
+    feedback_status += f"Feedback: {user_feedback}\n"
+
+    return feedback_status

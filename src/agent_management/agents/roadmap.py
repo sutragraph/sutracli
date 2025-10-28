@@ -1,3 +1,4 @@
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -9,7 +10,12 @@ from rich.text import Text
 
 from baml_client.types import Agent, RoadmapCompletionParams
 from src.agent_management.types.agent import AgentData
-from src.agent_management.utils.roadmap_utils import convert_roadmap_to_prompts
+from src.agent_management.utils.roadmap_utils import (
+    convert_roadmap_to_prompts,
+    format_feedback_section,
+    format_feedback_tool_status,
+    verify_roadmap_file_paths,
+)
 from src.config.settings import get_config
 from src.utils.console import console
 
@@ -21,7 +27,6 @@ class RoadmapAgent(BaseAgent):
         super().__init__(Agent.Roadmap, project_path)
 
     def run_agent_loop(self, problem_query: str) -> Optional[RoadmapCompletionParams]:
-        """Override base class to implement feedback loop for roadmap refinement."""
         logger.info(f"[{self.agent_type.name}] Starting project planning...")
         print(f"\n[{self.agent_type.name}] Starting project planning...")
 
@@ -35,13 +40,29 @@ class RoadmapAgent(BaseAgent):
                 f"Roadmap generation iteration {iteration + 1}/{max_refinement_iterations}"
             )
 
-            # Call parent's run_agent_loop to get LLM result
             result = super().run_agent_loop(current_query)
 
             if not isinstance(result, RoadmapCompletionParams):
                 logger.error(f"Expected RoadmapCompletionParams, got {type(result)}")
                 console.print(f"[red]❌ Failed to generate valid roadmap[/red]")
                 return None
+
+            verification_result = verify_roadmap_file_paths(result)
+            if not verification_result["valid"]:
+                feedback = verification_result["feedback"]
+                logger.warning(f"File path verification failed: {feedback[:100]}...")
+
+                self._store_feedback_in_sutra_memory(feedback, result)
+                format_feedback_tool_status(feedback)
+
+                if "FILE DOES NOT EXIST" in feedback:
+                    current_query = f"{problem_query}\n\nIMPORTANT: The provided file paths for modify or delete operations do not exist. {feedback}"
+                else:
+                    current_query = (
+                        f"{problem_query}\n\nUser feedback for improvement: {feedback}"
+                    )
+
+                continue
 
             logger.info(f"[{self.agent_type.name}] Roadmap generated successfully")
             print(f"\n[{self.agent_type.name}] Roadmap generated successfully")
@@ -68,6 +89,9 @@ class RoadmapAgent(BaseAgent):
                 print(
                     f"\n[{self.agent_type.name}] Refining roadmap based on feedback..."
                 )
+
+                self._store_feedback_in_sutra_memory(feedback, result)
+                format_feedback_tool_status(feedback)
 
                 current_query = (
                     f"{problem_query}\n\nUser feedback for improvement: {feedback}"
@@ -226,14 +250,12 @@ class RoadmapAgent(BaseAgent):
             data = AgentData(context=prompt)
             self.send_to_downstream(data, target_project_path=actual_project_dir)
 
-        # Execute all projects in parallel
         with ThreadPoolExecutor(max_workers=len(project_prompts)) as executor:
             futures = [
                 executor.submit(process_project, project_prompt)
                 for project_prompt in project_prompts
             ]
 
-            # Wait for all tasks to complete
             for i, future in enumerate(as_completed(futures), 1):
                 try:
                     future.result()
@@ -246,6 +268,16 @@ class RoadmapAgent(BaseAgent):
         print(
             f"\n[{self.agent_type.name}] All {len(project_prompts)} agents spawned in parallel"
         )
+
+    def _store_feedback_in_sutra_memory(
+        self, feedback: str, result: RoadmapCompletionParams
+    ) -> None:
+        try:
+            feedback_section = format_feedback_section(feedback, result)
+            self.memory.set_feedback_section(feedback_section)
+            logger.debug("Stored feedback section in sutra memory")
+        except Exception as e:
+            logger.error(f"Error storing feedback in sutra memory: {e}")
 
     def from_upstream(self, data: AgentData) -> None:
         pass
