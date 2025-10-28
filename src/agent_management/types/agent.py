@@ -30,12 +30,15 @@ class AgentData:
         """Add a message to the conversation history."""
         self.conversation.append({role: message})
 
-    def format_conversation(self, include_roles: List[Role] = None) -> str:
+    def format_conversation(
+        self, include_roles: List[Role] | None = None, current_agent: Role | None = None
+    ) -> str:
         """Format the conversation into a string for agent consumption.
 
         Args:
             include_roles: If provided, only include messages from these role types.
                           If None, include all messages.
+            current_agent: If provided, this agent's messages will be displayed as "YOU".
 
         Returns:
             Formatted conversation string.
@@ -45,12 +48,19 @@ class AgentData:
         for msg in self.conversation:
             for role, message in msg.items():
                 if include_roles is None or role in include_roles:
-                    role_name = role.name if hasattr(role, "name") else role
+                    # Use "YOU" for the current agent's messages
+                    if current_agent is not None and role == current_agent:
+                        role_name = "YOU"
+                    else:
+                        if isinstance(role, str):
+                            role_name = role
+                        else:
+                            role_name = role.name
                     formatted_messages.append(f"{role_name}:\n{message}")
 
         return "\n\n".join(formatted_messages) if formatted_messages else ""
 
-    def get_last_message(self, role: Role = None) -> Dict[Role, str] | None:
+    def get_last_message(self, role: Role = "USER") -> Dict[Role, str] | None:
         """Get the last message from the conversation.
 
         Args:

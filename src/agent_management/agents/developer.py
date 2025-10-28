@@ -22,7 +22,7 @@ class DeveloperAgent(BaseAgent):
     def from_upstream(self, data: AgentData) -> None:
         self.run_prerequisites()
 
-        context = data.format_conversation()
+        context = data.format_conversation(current_agent=self.agent_type)
 
         response = self.run_agent_loop(context)
 
@@ -34,29 +34,38 @@ class DeveloperAgent(BaseAgent):
             self.send_to_downstream(new_data)
 
         if give_up:
-            new_data = AgentData(conversation=data.conversation.copy(), success=False)
-            new_data.add_message(self.agent_type, response.result)
+            new_data = AgentData.from_context(response.result, self.agent_type)
+            new_data.success = False
             self.send_to_upstream(new_data)
 
     def from_downstream(self, data: AgentData) -> None:
-        print(f"\n[{self.agent_type.name}] Received QA results")
-
         tests_passed = data.success
 
         if not tests_passed:
             self.run_prerequisites()
             self.clear_memory_sections({MemorySection.TASKS})
 
-            context = data.format_conversation()
+            context = data.format_conversation(current_agent=self.agent_type)
             response = self.run_agent_loop(context)
 
-            new_data = AgentData(conversation=data.conversation.copy(), success=True)
-            new_data.add_message(self.agent_type, response.result)
-            self.send_to_downstream(new_data)
+            give_up = response.give_up
+
+            if not give_up:
+                new_data = AgentData(
+                    conversation=data.conversation.copy(), success=True
+                )
+                new_data.add_message(self.agent_type, response.result)
+                self.send_to_downstream(new_data)
+
+            if give_up:
+                new_data = AgentData.from_context(response.result, self.agent_type)
+                new_data.success = False
+                self.send_to_upstream(new_data)
 
         if tests_passed:
             new_data = AgentData(conversation=data.conversation.copy(), success=True)
             new_data.add_message(
-                self.agent_type, "All changes made and tested successfully"
+                self.agent_type,
+                "I have made all the requested changes and tested them successfully",
             )
             self.send_to_upstream(new_data)
