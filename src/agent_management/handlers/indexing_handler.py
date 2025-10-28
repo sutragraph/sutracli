@@ -16,7 +16,8 @@ from graph.graph_operations import GraphOperations
 from graph.project_indexer import ProjectIndexer
 from graph.sqlite_client import SQLiteConnection
 from models.schema import Project
-from src.agent_management.utils.exceptions import UserCancelledError
+from src.agent_management.types.exception import AgentErrorType
+from src.utils.error_utils import raiseError
 from utils.console import console
 
 
@@ -177,7 +178,11 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             )
             console.dim("📝 To continue later, simply run the same command again.")
 
-            raise UserCancelledError("User declined cross-indexing analysis")
+            raiseError(
+                AgentErrorType.USER_CANCELLED,
+                "User declined cross-indexing analysis",
+                RuntimeError,
+            )
 
         console.process("Starting cross-indexing analysis...")
 

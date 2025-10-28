@@ -29,7 +29,7 @@ from rich.table import Table
 from rich.text import Text
 
 from src.agent_management import AgentGraph
-from src.agent_management.utils.exceptions import UserCancelledError
+from src.agent_management.types.exception import AgentErrorType
 from src.config.settings import reload_config
 from src.utils.console import console
 from src.utils.version_checker import show_update_notification
@@ -809,10 +809,15 @@ class ModernSutraKit:
         try:
             self._execute_agent(agent, current_dir)
 
-        except UserCancelledError:
-            console.warning("Workflow stopped by user choice.")
-            console.dim("You can restart the workflow anytime when ready.")
-            return
+        except RuntimeError as e:
+            # Check if it's a user cancellation error
+            error_type = getattr(e, "error_type", None)
+            if error_type == AgentErrorType.USER_CANCELLED:
+                console.warning("Workflow stopped by user choice.")
+                console.dim("You can restart the workflow anytime when ready.")
+                return
+            # Re-raise if it's a different runtime error
+            raise
 
     def _execute_agent(self, agent: Agent, project_dir: Path):
         """Execute the actual agent."""
@@ -820,12 +825,34 @@ class ModernSutraKit:
         console.highlight(f"Executing {agent.name}")
 
         try:
-            from cli.commands import handle_agent_command
+            # Get user query input
+            while True:
+                try:
+                    user_input = input("\n👤 You: ").strip()
+                    console.print("-" * 40)
 
-            # Execute the agent - post-processing is handled internally by the agent service
-            agent_result = handle_agent_command(
-                agent_name=agent, project_path=project_dir
-            )
+                    if not user_input:
+                        continue
+
+                    # Got valid input, break out of input loop
+                    break
+                except KeyboardInterrupt:
+                    console.print("\n\n👋 Goodbye! Session ended.")
+                    return None
+                except EOFError:
+                    console.print("\n\n👋 Goodbye! Session ended.")
+                    return None
+
+            from src.agent_management.core.factory import AgentFactory
+
+            try:
+                agent_instance = AgentFactory.get_or_create(agent, project_dir)
+            except ValueError as e:
+                console.error(str(e))
+                return None
+
+            # All agents now use run_agent_loop
+            agent_result = agent_instance.run_agent_loop(user_input)
 
             if agent_result:
                 console.success("Agent execution completed successfully!!!")
@@ -870,9 +897,13 @@ class ModernSutraKit:
             self.run_agent_workflow(selected_agent, current_dir)
             console.success("🎉 SutraGraph workflow completed!")
             console.dim("Thank you for using SutraGraph!")
-        except UserCancelledError:
-            # This should already be handled in _run_roadmap_agent, but just in case
-            pass
+        except RuntimeError as e:
+            # Check if it's a user cancellation - already handled in run_agent_workflow
+            error_type = getattr(e, "error_type", None)
+            if error_type == AgentErrorType.USER_CANCELLED:
+                pass
+            else:
+                raise
 
 
 def main():

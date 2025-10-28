@@ -1,7 +1,7 @@
 """Agent Service with unified tool status handling."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from loguru import logger
 from rich.panel import Panel
@@ -11,6 +11,8 @@ from rich.text import Text
 from baml_client.types import Agent
 from src.agent_management.core.executor import execute_agent
 from src.agent_management.types.agent import AgentResponse
+from src.agent_management.types.exception import AgentErrorType
+from src.utils.error_utils import raiseError
 from tools import AllSutraMemoryParams, AllToolParams, execute_tool
 from utils.console import console
 
@@ -78,9 +80,12 @@ class AgentService:
                             console.print(
                                 f"[yellow]Task stopped by user after {current_iteration} iterations.[/yellow]"
                             )
-                            return None
+                            raiseError(
+                                AgentErrorType.USER_CANCELLED,
+                                f"Task stopped by user after {current_iteration} iterations",
+                                RuntimeError,
+                            )
 
-                # Store current problem query for potential modification during file verification
                 self._current_problem_query = problem_query
 
                 user_message = self._build_user_message(problem_query)
@@ -89,114 +94,29 @@ class AgentService:
 
                 agent_response = execute_agent(self.agent_name, context=user_message)
 
-                # Check if completion occurred
                 is_completion = self._parse_response(
                     agent_response.agent_type, agent_response
                 )
                 logger.debug(f"Is completion: {is_completion}")
                 if is_completion:
-                    # Check if this is a roadmap agent and if post-processing requests continuation
-                    if self.agent_name == Agent.Roadmap and self.result:
-                        post_result = self._handle_roadmap_post_processing()
-
-                        # If user provided feedback, continue the loop with that feedback
-                        if (
-                            post_result
-                            and post_result.get("continue_roadmap")
-                            and post_result.get("feedback")
-                        ):
-                            # Store the formatted roadmap prompts in sutra memory feedback section
-                            feedback = post_result.get("feedback")
-                            self._store_feedback_in_sutra_memory(feedback)
-
-                            # Set feedback tool status for next iteration
-                            self._set_feedback_tool_status(feedback)
-
-                            # Update the problem query from the stored version (may have been modified during file verification)
-                            problem_query = self._current_problem_query
-
-                            # Continue the loop instead of returning - this preserves the session
-                            continue
-
+                    if self.result is None:
+                        raiseError(
+                            AgentErrorType.COMPLETION_WITHOUT_RESULT,
+                            "Agent signaled completion but no result was set",
+                            RuntimeError,
+                        )
                     return self.result
 
         except KeyboardInterrupt:
             console.print()
             console.print("[yellow]Task interrupted by user.[/yellow]")
-            return None
+            raise  # Re-raise KeyboardInterrupt to propagate it up
 
-        return None
-
-    def _handle_roadmap_post_processing(self) -> Optional[Dict[str, Any]]:
-        """Handle roadmap post-processing and return continuation info if needed."""
-        try:
-            from src.agent_management.post_requisites.handlers import get_agent_handler
-
-            logger.debug("Starting roadmap post-processing...")
-            handler = get_agent_handler(self.agent_name)
-            post_result = handler.process_agent_result_direct(self.result)
-
-            return post_result
-
-        except Exception as e:
-            logger.error(f"Error in roadmap post-processing: {e}")
-            return None
-
-    def _store_feedback_in_sutra_memory(self, feedback: str) -> None:
-        """Store user feedback and roadmap prompts in a dedicated FEEDBACK section in sutra memory."""
-        try:
-            # Get the formatted project prompts from the post-processing handlers
-            from src.agent_management.post_requisites.handlers import (
-                RoadmapAgentHandler,
-            )
-
-            handler = RoadmapAgentHandler()
-            project_prompts = handler._convert_roadmap_to_prompts(
-                self.result.model_dump()
-            )
-
-            # Create FEEDBACK section in sutra memory
-            feedback_section = "FEEDBACK SECTION: \n"
-            feedback_section += f"USER FEEDBACK: {feedback}\n\n"
-
-            # Add information about the generated project roadmaps
-            feedback_section += (
-                f"GENERATED PROJECT ROADMAPS ({len(project_prompts)} projects):\n\n"
-            )
-
-            for i, project_prompt in enumerate(project_prompts, 1):
-                feedback_section += f"=== PROJECT {i} Roadmap ===\n"
-                feedback_section += (
-                    f"Project Path: {project_prompt.get('project_path', 'Unknown')}\n\n"
-                )
-                feedback_section += project_prompt.get("prompt", "No prompt available")
-
-            self.memory_manager.set_feedback_section(feedback_section)
-
-            logger.debug(
-                f"Stored feedback and {len(project_prompts)} roadmap prompts in FEEDBACK section"
-            )
-
-        except Exception as e:
-            logger.error(f"Error storing feedback in sutra memory: {e}")
-
-    def _set_feedback_tool_status(self, user_feedback) -> None:
-        """Set tool status to show feedback information instead of attempt_completion."""
-        try:
-            # Enhanced feedback tool status with roadmap information
-            feedback_status = "Tool: feedback_received\n"
-            feedback_status += "Status: User provided feedback for roadmap improvement. The generated project roadmaps are stored in FEEDBACK section. Create new task for these improvements and work on it.\n"
-            feedback_status += f"Feedback: {user_feedback}\n"
-
-            # Set this as the last tool result
-            self.last_tool_result = feedback_status
-
-            logger.debug("Set enhanced feedback tool status with roadmap information")
-
-        except Exception as e:
-            logger.error(f"Error setting feedback tool status: {e}")
-            # Fallback to simple feedback status
-            self.last_tool_result = "Tool: feedback_received\nStatus: User provided feedback for roadmap improvement."
+        raiseError(
+            AgentErrorType.MAX_ITERATIONS_REACHED,
+            f"Maximum iterations ({max_iterations}) reached without completion",
+            RuntimeError,
+        )
 
     def _build_user_message(self, problem_query: str) -> str:
         user_message = []
@@ -222,7 +142,6 @@ class AgentService:
             return f"\nSUTRA MEMORY STATUS\n\n{memory_status}\n"
 
     def _parse_response(self, agent: Agent, response: AgentResponse) -> bool:
-        """Parse roadmap response and return True if completion occurred."""
         is_completion = False
         content = response.content
 
@@ -238,56 +157,13 @@ class AgentService:
             tool_name = tool_to_execute.tool_name
             tool_params = tool_to_execute.parameters.model_dump()
 
-            # Check if this was a completion call and capture parameters
             if tool_name == "attempt_completion":
                 is_completion = True
                 self.result = tool_to_execute.parameters
 
-                # Do file path verification BEFORE displaying anything to user
-                if self._should_verify_file_paths():
-                    verification_result = self._verify_file_paths_before_display()
-
-                    if not verification_result["valid"]:
-                        # File paths are invalid - return False to continue agent loop
-                        # Set feedback for next iteration
-                        feedback = verification_result["feedback"]
-                        self._store_feedback_in_sutra_memory(feedback)
-                        self._set_feedback_tool_status(feedback)
-
-                        # Modify problem query for next iteration
-                        if hasattr(self, "_current_problem_query"):
-                            if "FILE DOES NOT EXIST" in feedback:
-                                self._current_problem_query = f"{self._current_problem_query}\n\nIMPORTANT: The provided file paths for modify or delete operations do not exist. {feedback}"
-                            else:
-                                self._current_problem_query = f"{self._current_problem_query}\n\nUser feedback for improvement: {feedback}"
-
-                        return False  # Don't show completion, continue agent loop
-
-            # Execute tool for formatting and display (only if file paths are valid)
             self.last_tool_result = execute_tool(agent, tool_name, tool_params)
 
         return is_completion
-
-    def _should_verify_file_paths(self) -> bool:
-        """Check if we should verify file paths for this agent."""
-        return self.agent_name == Agent.Roadmap
-
-    def _verify_file_paths_before_display(self) -> Dict[str, Any]:
-        """Verify file paths before displaying project info to user."""
-        try:
-            from src.agent_management.post_requisites.handlers import (
-                RoadmapAgentHandler,
-            )
-
-            handler = RoadmapAgentHandler()
-            roadmap_data = self.result.model_dump()
-            result = handler._verify_file_paths(roadmap_data)
-            return result
-
-        except Exception as e:
-            logger.error(f"Error during file path verification: {e}")
-            # If verification fails, assume paths are valid to avoid blocking
-            return {"valid": True}
 
     def _parse_thinking(self, thinking: str) -> None:
         header = Text("THINKING", style="bold yellow")

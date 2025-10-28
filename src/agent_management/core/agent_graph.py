@@ -6,8 +6,6 @@ from baml_client.types import Agent
 
 
 class IndexingRequirement(Enum):
-    """Indexing requirements that can be used as prerequisites."""
-
     INDEXING = auto()
     MULTI_PROJECT_INCREMENTAL_INDEXING = auto()
     INCREMENTAL_INDEXING = auto()
@@ -17,17 +15,15 @@ class IndexingRequirement(Enum):
 
 @dataclass
 class AgentConfig:
-    """Configuration for an agent node in the graph"""
-
     description: str
     prerequisites: List[IndexingRequirement]
     downstream: Optional[Agent]
     upstream: Optional[Agent]
+    module: Optional[str] = None
+    class_name: Optional[str] = None
 
 
 class AgentGraph:
-    """Static graph defining agent routing - pure map, no state"""
-
     GRAPH: Dict[Agent, AgentConfig] = {
         Agent.Roadmap: AgentConfig(
             description="",
@@ -39,6 +35,8 @@ class AgentGraph:
             ],
             downstream=Agent.Developer,
             upstream=None,
+            module="agent_management.agents.roadmap",
+            class_name="RoadmapAgent",
         ),
         Agent.Developer: AgentConfig(
             description="",
@@ -48,6 +46,8 @@ class AgentGraph:
             ],
             downstream=Agent.QAEngineer,
             upstream=Agent.Roadmap,
+            module="agent_management.agents.developer",
+            class_name="DeveloperAgent",
         ),
         Agent.QAEngineer: AgentConfig(
             description="",
@@ -57,39 +57,35 @@ class AgentGraph:
             ],
             downstream=None,
             upstream=Agent.Developer,
+            module="agent_management.agents.qa_engineer",
+            class_name="QAEngineerAgent",
         ),
     }
 
     @classmethod
     def get_all_agents(cls) -> List[Agent]:
-        """Get list of all agents in the graph"""
         return list(cls.GRAPH.keys())
 
     @classmethod
     def get_config(cls, agent_type: Agent) -> Optional[AgentConfig]:
-        """Get complete configuration for an agent"""
         return cls.GRAPH.get(agent_type)
 
     @classmethod
     def get_downstream(cls, agent_type: Agent) -> Optional[Agent]:
-        """Get downstream agent type"""
         config = cls.get_config(agent_type)
         return config.downstream if config else None
 
     @classmethod
     def get_upstream(cls, agent_type: Agent) -> Optional[Agent]:
-        """Get upstream agent type"""
         config = cls.get_config(agent_type)
         return config.upstream if config else None
 
     @classmethod
     def get_prerequisites(cls, agent_type: Agent) -> List[IndexingRequirement]:
-        """Get list of prerequisite agents"""
         config = cls.get_config(agent_type)
         return config.prerequisites if config else []
 
     @classmethod
     def get_description(cls, agent_type: Agent) -> str:
-        """Get description of agent"""
         config = cls.get_config(agent_type)
         return config.description if config else ""

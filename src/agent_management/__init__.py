@@ -8,7 +8,7 @@ from src.agent_management.core.agent_graph import (
     AgentGraph,
     IndexingRequirement,
 )
-from src.agent_management.utils.exceptions import UserCancelledError
+from src.agent_management.types.exception import AgentErrorType
 
 from .providers.manager import AgentProviderManager
 
@@ -17,5 +17,5 @@ __all__ = [
     "AgentConfig",
     "IndexingRequirement",
     "AgentProviderManager",
-    "UserCancelledError",
+    "AgentErrorType",
 ]

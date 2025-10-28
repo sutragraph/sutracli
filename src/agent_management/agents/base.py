@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional, Set
 
@@ -35,17 +34,29 @@ class BaseAgent(ABC):
     def from_downstream(self, data: AgentData) -> None:
         pass
 
-    def send_to_downstream(self, data: AgentData) -> None:
+    def send_to_downstream(
+        self, data: AgentData, target_project_path: Optional[Path] = None
+    ) -> None:
         if not self.project_path:
             raise ValueError(f"Project path must be set for {self.agent_type.name}")
 
         downstream_type = AgentGraph.get_downstream(self.agent_type)
 
         if downstream_type:
-            downstream = AgentRegistry.get(downstream_type, self.project_path)
-            if downstream:
-                logger.debug(f"[{self.agent_type.name}] → [{downstream_type.name}]")
-                downstream.from_upstream(data)
+            lookup_path = (
+                target_project_path if target_project_path else self.project_path
+            )
+            downstream = AgentRegistry.get(downstream_type, lookup_path)
+            if downstream is None:
+                from agent_management.core.factory import AgentFactory
+
+                downstream = AgentFactory.get_or_create(downstream_type, lookup_path)
+                logger.debug(
+                    f"[{self.agent_type.name}] auto-registered downstream [{downstream_type.name}] at {lookup_path}"
+                )
+
+            logger.debug(f"[{self.agent_type.name}] → [{downstream_type.name}]")
+            downstream.from_upstream(data)
         else:
             logger.debug(f"[{self.agent_type.name}] End of flow")
 
@@ -57,9 +68,16 @@ class BaseAgent(ABC):
 
         if upstream_type:
             upstream = AgentRegistry.get(upstream_type, self.project_path)
-            if upstream:
-                logger.debug(f"[{self.agent_type.name}] ← [{upstream_type.name}]")
-                upstream.from_downstream(data)
+            if upstream is None:
+                from agent_management.core.factory import AgentFactory
+
+                upstream = AgentFactory.get_or_create(upstream_type, self.project_path)
+                logger.debug(
+                    f"[{self.agent_type.name}] auto-registered upstream [{upstream_type.name}] at {self.project_path}"
+                )
+
+            logger.debug(f"[{self.agent_type.name}] ← [{upstream_type.name}]")
+            upstream.from_downstream(data)
         else:
             logger.debug(f"[{self.agent_type.name}] No upstream agent")
 
@@ -72,7 +90,16 @@ class BaseAgent(ABC):
             project_path=self.project_path,
             sutra_memory=self.memory,
         )
-        return agent_service.solve_problem(problem_query)
+
+        try:
+            return agent_service.solve_problem(problem_query)
+        except RuntimeError as e:
+            error_type = getattr(e, "error_type", None)
+            if error_type:
+                logger.error(
+                    f"[{self.agent_type.name}] Agent error: {error_type} - {str(e)}"
+                )
+            raise
 
     def load_memory_from_agent(
         self,
@@ -124,10 +151,6 @@ class BaseAgent(ABC):
         self.memory.clear_sections(sections)
 
     def run_prerequisites(self) -> bool:
-        """
-        Run all prerequisites for this agent based on its configuration.
-        Returns True if prerequisites ran successfully, False otherwise.
-        """
         if not self.project_path:
             raise ValueError(f"Project path must be set for {self.agent_type.name}")
 
@@ -143,14 +166,12 @@ class BaseAgent(ABC):
             return True
 
         try:
-            # Handle INDEXING prerequisite
             if IndexingRequirement.INDEXING in prerequisites:
                 logger.debug(
                     f"Running INDEXING prerequisite for {self.agent_type.name}"
                 )
                 self.indexing_handler.run_full_indexing(self.project_path)
 
-            # Handle MULTI_PROJECT_INCREMENTAL_INDEXING prerequisite
             if IndexingRequirement.MULTI_PROJECT_INCREMENTAL_INDEXING in prerequisites:
                 logger.debug(
                     f"Running MULTI_PROJECT_INCREMENTAL_INDEXING prerequisite for {self.agent_type.name}"
@@ -159,7 +180,6 @@ class BaseAgent(ABC):
                     self.indexing_handler.run_multi_project_incremental_indexing()
                 )
 
-                # Handle INCREMENTAL_CROSS_INDEXING if needed
                 if (
                     IndexingRequirement.INCREMENTAL_CROSS_INDEXING in prerequisites
                     and changes_by_project
@@ -171,7 +191,6 @@ class BaseAgent(ABC):
                         changes_by_project
                     )
 
-            # Handle INCREMENTAL_INDEXING prerequisite (for single project)
             if IndexingRequirement.INCREMENTAL_INDEXING in prerequisites:
                 logger.debug(
                     f"Running INCREMENTAL_INDEXING prerequisite for {self.agent_type.name}"
@@ -182,7 +201,6 @@ class BaseAgent(ABC):
                     )
                 )
 
-            # Handle CROSS_INDEXING prerequisite
             if IndexingRequirement.CROSS_INDEXING in prerequisites:
                 logger.debug(
                     f"Running CROSS_INDEXING prerequisite for {self.agent_type.name}"

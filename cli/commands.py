@@ -9,6 +9,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from baml_client.types import Agent
+from src.agent_management.types.exception import AgentErrorType
 from src.embeddings import get_vector_store
 from src.graph import SQLiteConnection
 from src.services.agent_service_new import AgentService
@@ -95,6 +96,22 @@ def handle_agent_command(agent_name: Agent, project_path: Path):
     except KeyboardInterrupt:
         console.print("\n❌ Operation interrupted by user")
         sys.exit(1)
+    except RuntimeError as e:
+        # Check if it's a typed agent error
+        error_type = getattr(e, "error_type", None)
+        if error_type == AgentErrorType.USER_CANCELLED:
+            console.print("\n⚠️  Task cancelled by user")
+            return None
+        elif error_type == AgentErrorType.MAX_ITERATIONS_REACHED:
+            console.print(f"\n⚠️  {str(e)}")
+            return None
+        elif error_type == AgentErrorType.COMPLETION_WITHOUT_RESULT:
+            console.print(f"\n❌ Agent error: {str(e)}")
+            sys.exit(1)
+        else:
+            # Unknown runtime error
+            console.print(f"\n❌ Runtime error: {e}")
+            sys.exit(1)
     except Exception as e:
         console.print(f"\n❌ Unexpected error: {e}")
         sys.exit(1)

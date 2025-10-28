@@ -285,6 +285,20 @@ class WebScrapperConfig:
     markdown_options: dict
 
 
+@dataclass
+class RoadmapAgentConfig:
+    """Roadmap agent configuration."""
+
+    processing_mode: str  # "sequence" or "parallel"
+
+
+@dataclass
+class AgentsConfig:
+    """Agents configuration."""
+
+    roadmap: RoadmapAgentConfig
+
+
 class Config:
     """Main configuration class."""
 
@@ -360,6 +374,23 @@ class Config:
             # Initialize web scrapper config
             webscrapper_config = config_data.get("web_scrap", {})
             self.web_scrap = WebScrapperConfig(**webscrapper_config)
+
+            # Initialize agents config
+            agents_config = config_data.get("agents", {})
+            if agents_config:
+                roadmap_config = agents_config.get("roadmap", {})
+                self.agents = AgentsConfig(
+                    roadmap=RoadmapAgentConfig(
+                        processing_mode=roadmap_config.get(
+                            "processing_mode", "sequence"
+                        )
+                    )
+                )
+            else:
+                # Default configuration
+                self.agents = AgentsConfig(
+                    roadmap=RoadmapAgentConfig(processing_mode="sequence")
+                )
 
             # Initialize LLM config
             llm_config = config_data.get("llm", {})

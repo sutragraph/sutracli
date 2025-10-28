@@ -270,6 +270,7 @@ def setup_configuration():
             },
             "superllm": {},
         },
+        "agents": {"roadmap": {"processing_mode": "sequence"}},
     }
 
     system_config_path = config_dir / "system.json"
