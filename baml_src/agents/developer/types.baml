@@ -13,6 +13,6 @@ class DeveloperPromptParams {
 
 class DeveloperResponse {
   thinking string?
-  tool_call DeveloperToolCall?
   sutra_memory SutraMemoryParams
+  tool_call DeveloperToolCall?
 }

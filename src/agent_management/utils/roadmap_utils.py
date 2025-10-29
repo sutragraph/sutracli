@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Tuple
 from loguru import logger
 
 from src.agent_management.types.agent import AgentData
-from src.agent_management.utils.roadmap_utils import convert_roadmap_to_prompts
 
 
 def convert_roadmap_to_prompts(data: Dict[str, Any]) -> list:

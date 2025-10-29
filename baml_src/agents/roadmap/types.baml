@@ -14,8 +14,8 @@ class RoadmapPromptParams {
 
 class RoadmapResponse {
   thinking string?
-  tool_call RoadmapToolCall?
   sutra_memory RoadmapSutraMemoryParams
+  tool_call RoadmapToolCall?
 }
 
 // Code storage actions - move-only tracing actions (no removals allowed)

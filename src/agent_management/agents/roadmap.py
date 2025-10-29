@@ -264,7 +264,7 @@ class RoadmapAgent(BaseAgent):
                 f"Spawning Developer agent for project at: {actual_project_dir}"
             )
 
-            data = AgentData.from_context(prompt, "USER")
+            data = AgentData.from_context(prompt, self.agent_type)
             self.send_to_downstream(data, target_project_path=actual_project_dir)
 
     def _spawn_agents_parallel(self, project_prompts: list) -> None:
@@ -284,7 +284,7 @@ class RoadmapAgent(BaseAgent):
                 f"Spawning Developer agent for project at: {actual_project_dir}"
             )
 
-            data = AgentData.from_context(prompt, "USER")
+            data = AgentData.from_context(prompt, self.agent_type)
             self.send_to_downstream(data, target_project_path=actual_project_dir)
 
         with ThreadPoolExecutor(max_workers=len(project_prompts)) as executor:

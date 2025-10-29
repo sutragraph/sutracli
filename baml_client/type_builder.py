@@ -2446,7 +2446,7 @@ class DeveloperResponseAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("DeveloperResponse")
-        self._properties: typing.Set[str] = set([  "thinking",  "tool_call",  "sutra_memory",  ])
+        self._properties: typing.Set[str] = set([  "thinking",  "sutra_memory",  "tool_call",  ])
         self._props = DeveloperResponseProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -2479,12 +2479,12 @@ class DeveloperResponseProperties:
         return type_builder.ClassPropertyViewer(self.__bldr.property("thinking"))
     
     @property
-    def tool_call(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_call"))
-    
-    @property
     def sutra_memory(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("sutra_memory"))
+    
+    @property
+    def tool_call(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_call"))
     
     
 
@@ -3578,7 +3578,7 @@ class RoadmapResponseAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("RoadmapResponse")
-        self._properties: typing.Set[str] = set([  "thinking",  "tool_call",  "sutra_memory",  ])
+        self._properties: typing.Set[str] = set([  "thinking",  "sutra_memory",  "tool_call",  ])
         self._props = RoadmapResponseProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -3611,12 +3611,12 @@ class RoadmapResponseProperties:
         return type_builder.ClassPropertyViewer(self.__bldr.property("thinking"))
     
     @property
-    def tool_call(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_call"))
-    
-    @property
     def sutra_memory(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("sutra_memory"))
+    
+    @property
+    def tool_call(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_call"))
     
     
 

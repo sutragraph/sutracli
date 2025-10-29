@@ -289,10 +289,10 @@ def _build_edit_file_status(
         diff = data.get("diff")
 
         if original_path:
-            status_parts.append(f"File Edited: {original_path}")
-        if diff:
-            status_parts.append("Diff:")
-            status_parts.append(diff)
+            status_parts.append(f"File Edited Successfully: {original_path}")
+        # if diff:
+        #     status_parts.append("Diff:")
+        #     status_parts.append(diff)
 
     if error:
         status_parts.append(f"ERROR: {error}")

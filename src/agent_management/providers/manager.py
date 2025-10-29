@@ -5,7 +5,7 @@ Manager for external agent providers.
 import concurrent.futures
 from typing import Any, Dict, List, Optional
 
-from src.tools.tool_terminal_commands.action import TerminalSessionManager
+from src.tools.tool_terminal.action import TerminalSessionManager
 from src.utils.console import console
 
 from .config import get_provider_config_manager
