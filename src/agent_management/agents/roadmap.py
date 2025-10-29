@@ -227,6 +227,8 @@ class RoadmapAgent(BaseAgent):
 
         project_prompts = convert_roadmap_to_prompts(roadmap_result.model_dump())
 
+        self.spawned_agent_count = len(project_prompts)
+
         if not project_prompts:
             logger.warning("No project prompts generated from roadmap")
             console.print("[yellow]⚠️  No projects to process in roadmap.[/yellow]")
