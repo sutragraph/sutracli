@@ -358,6 +358,10 @@ def _build_completion_status(
     # Use agent to determine completion type
     if agent == Agent.Roadmap and not is_simple:
         return _build_roadmap_completion_status(event)
+    if agent == Agent.Developer:
+        return _build_developer_completion_status(event)
+    if agent == Agent.QAEngineer:
+        return _build_qaengineer_completion_status(event)
     else:
         return _build_simple_completion_status(event)
 
@@ -663,4 +667,139 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         f"Summary: {summary}",
     ]
     logger.debug("Roadmap completion status built successfully.")
+    return "\n".join(status_parts)
+
+
+# class DeveloperCompletionParams {
+#   give_up bool @description("True if abandoning the task due to blockers or missing information; false if successfully completing the request")
+#   result string @description("A short summary of the changes you have made to the files or clarification on giving up")
+# }
+
+
+def _build_developer_completion_status(event: Dict[str, Any]) -> str:
+    """Build status for developer completion with panel display."""
+    data = event.get("data", {})
+    result = data.get("result", "")
+    give_up = data.get("give_up", False)
+
+    # Determine status styling based on give_up flag
+    if give_up:
+        status_icon = "⚠️"
+        status_title = "TASK ABANDONED"
+        status_style = "bold yellow"
+        border_style = "yellow"
+        status_text = f"[yellow]Reason: {result}[/yellow]"
+    else:
+        status_icon = "✅"
+        status_title = "TASK COMPLETE"
+        status_style = "bold green"
+        border_style = "green"
+        status_text = f"[green]{result}[/green]"
+
+    # Create header
+    header = Text(status_title, style=status_style)
+
+    # Create content
+    content = Text(status_text)
+
+    # Create panel
+    completion_panel = Panel(
+        content,
+        title=header,
+        title_align="left",
+        border_style=border_style,
+        padding=(1, 2),
+    )
+
+    console.print(status_icon, completion_panel)
+
+    # Build status string for return
+    status_parts = ["Tool: attempt_completion"]
+    status_parts.append(f"Result: {result}")
+
+    return "\n".join(status_parts)
+
+
+def _build_qaengineer_completion_status(event: Dict[str, Any]) -> str:
+    """Build status for QA engineer completion with detailed panel display."""
+    data = event.get("data", {})
+    result = data.get("result", "")
+    failed_tests = data.get("failed_tests", [])
+
+    # Determine status based on failed tests
+    if failed_tests:
+        status_icon = "❌"
+        status_title = "TESTS FAILED"
+        status_style = "bold red"
+        border_style = "red"
+        failed_count = len(failed_tests)
+        status_subtitle = (
+            f"[red]{failed_count} test{'s' if failed_count != 1 else ''} failed[/red]"
+        )
+    else:
+        status_icon = "✅"
+        status_title = "TESTS PASSED"
+        status_style = "bold green"
+        border_style = "green"
+        status_subtitle = "[green]All tests completed successfully[/green]"
+
+    # Main status header
+    console.print(status_icon, f"[bold]{status_title}[/bold]")
+    console.print(status_subtitle)
+    console.print()
+
+    # Test summary
+    if result:
+        console.print(f"[dim]{result}[/dim]")
+        console.print()
+
+    # Display failed tests details if any
+    if failed_tests:
+        console.print(f"[bold red]Failed Test Details:[/bold red]")
+        console.print()
+
+        for i, failed_test in enumerate(failed_tests, 1):
+            test_name = failed_test.get("test_name", f"Test {i}")
+            test_details = failed_test.get("test_details", "No details provided")
+
+            # Create test header
+            test_header = Text()
+            test_header.append(f"FAILED TEST {i}/{len(failed_tests)}", style="bold red")
+            test_header.append(f"\nTest: {test_name}", style="dim")
+
+            # Create test details content
+            content_elements = []
+
+            # Test details
+            details_text = Text()
+            details_text.append("Details: ", style="bold")
+            details_text.append(test_details)
+            content_elements.append(details_text)
+
+            # Create panel for this failed test
+            panel_content = Group(*content_elements)
+
+            test_panel = Panel(
+                panel_content,
+                title=test_header,
+                title_align="left",
+                border_style="red",
+                padding=(1, 2),
+            )
+
+            console.print(test_panel)
+            console.print()
+
+    # Build status string for return
+    status_parts = ["Tool: attempt_completion"]
+    status_parts.append(f"Result: {result}")
+
+    if failed_tests:
+        status_parts.append(f"Failed Tests: {len(failed_tests)}")
+        for i, failed_test in enumerate(failed_tests, 1):
+            test_name = failed_test.get("test_name", f"Test {i}")
+            test_details = failed_test.get("test_details", "No details provided")
+            status_parts.append(f"  Test {i}: {test_name}")
+            status_parts.append(f"    Details: {test_details}")
+
     return "\n".join(status_parts)
