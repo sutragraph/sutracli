@@ -1,13 +1,9 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from loguru import logger
 
-from baml_client.types import (
-    Agent,
-    QAEngineerCompletionParams,
-    QAEngineerFailedTestsParams,
-)
+from baml_client.types import Agent, QAEngineerCompletionParams
 from services.agent.memory_management.models import MemorySection
 from src.agent_management.types.agent import AgentData
 from src.agent_management.utils.qa_utils import format_failed_tests_message
@@ -38,6 +34,16 @@ class QAEngineerAgent(BaseAgent):
 
         last_roadmap_msg = data.get_last_message(Agent.Roadmap)
 
+        if last_roadmap_msg:
+            problem_query = f"I made the following changes to the codebase. Create and run tests to validate these changes:\n{last_roadmap_msg}"
+        else:
+            last_developer_msg = data.get_last_message(Agent.Developer)
+            if last_developer_msg is not None:
+                problem_query = f"Create and run tests to validate these changes:\n{last_developer_msg}"
+            else:
+                context = data.format_conversation(current_agent=self.agent_type)
+                problem_query = f"{context}"
+
         changes_context = ""
         if self.indexing_changes:
             diffs = self.indexing_changes.get("diffs", [])
@@ -46,13 +52,14 @@ class QAEngineerAgent(BaseAgent):
                 for diff in diffs:
                     changes_context += f"{diff}\n"
 
-        problem_query = f"I made the following changes to the codebase. Create and run tests to validate these changes:\n\n{last_roadmap_msg}{changes_context}"
+            problem_query += f"{changes_context}"
 
         response = self.run_agent_loop(problem_query)
 
         new_data = AgentData(
             conversation=data.conversation.copy(),
             success=response.failed_tests is None or len(response.failed_tests) == 0,
+            project_path=self.project_path,
         )
         new_data.add_message(
             self.agent_type,
