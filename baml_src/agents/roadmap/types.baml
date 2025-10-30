@@ -40,7 +40,7 @@ enum ElementType {
 
 // Hierarchical traced element representing the actual call tree structure
 class TracedElement {
-  id int?                       // Unique identifier for this element in the hierarchy (auto-generated if not provided)
+  id string?                       // Unique identifier for this element in the hierarchy (auto-generated if not provided)
   name string                       // Element name (function, property, variable, etc.)
   element_type ElementType          // Type of element being traced
   start_line int                   // Starting line number
@@ -53,7 +53,7 @@ class TracedElement {
 
 // Code elements that still need trace chain analysis
 class UntracedElement {
-  id int?                       // Unique identifier for this element (auto-generated if not provided)
+  id string?                       // Unique identifier for this element (auto-generated if not provided)
   name string                      // Element name that needs tracing (function, property, variable, etc.)
   element_type ElementType         // Type of element that needs tracing
   reason string?                   // Why this needs tracing (e.g., "called_in_main_flow", "accessed_in_property", "assigned_from_return")

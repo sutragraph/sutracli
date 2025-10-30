@@ -512,7 +512,7 @@ class TermianlToolCall(BaseModel):
     parameters: "TermianlParams"
 
 class TracedElement(BaseModel):
-    id: typing.Optional[int] = None
+    id: typing.Optional[str] = None
     name: str
     element_type: ElementType
     start_line: int
@@ -523,7 +523,7 @@ class TracedElement(BaseModel):
     is_fully_traced: typing.Optional[bool] = None
 
 class UntracedElement(BaseModel):
-    id: typing.Optional[int] = None
+    id: typing.Optional[str] = None
     name: str
     element_type: ElementType
     reason: typing.Optional[str] = None
