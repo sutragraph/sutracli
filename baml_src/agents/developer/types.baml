@@ -12,7 +12,7 @@ class DeveloperPromptParams {
 
 
 class DeveloperResponse {
-  thinking string?
-  sutra_memory SutraMemoryParams
-  tool_call DeveloperToolCall?
+  thinking string @description("Concise user-facing progress update for the UI (one sentence).")
+  sutra_memory SutraMemoryParams @description("Persistent memory for code snippets, task updates, and history.")
+  tool_call DeveloperToolCall? @description("Next tool to invoke with parameters.")
 }

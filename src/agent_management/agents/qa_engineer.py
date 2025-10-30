@@ -32,17 +32,8 @@ class QAEngineerAgent(BaseAgent):
             sections_to_copy={MemorySection.CODE_SNIPPETS, MemorySection.HISTORY},
         )
 
-        last_roadmap_msg = data.get_last_message(Agent.Roadmap)
-
-        if last_roadmap_msg:
-            problem_query = f"I made the following changes to the codebase. Create and run tests to validate these changes:\n{last_roadmap_msg}"
-        else:
-            last_developer_msg = data.get_last_message(Agent.Developer)
-            if last_developer_msg is not None:
-                problem_query = f"Create and run tests to validate these changes:\n{last_developer_msg}"
-            else:
-                context = data.format_conversation(current_agent=self.agent_type)
-                problem_query = f"{context}"
+        context = data.format_conversation(current_agent=self.agent_type)
+        problem_query = f"{context}"
 
         changes_context = ""
         if self.indexing_changes:
@@ -50,7 +41,13 @@ class QAEngineerAgent(BaseAgent):
             if diffs:
                 changes_context = "\n\nDiff of changes made:\n"
                 for diff in diffs:
-                    changes_context += f"{diff}\n"
+                    if isinstance(diff, dict):
+                        file_path = diff.get("path", "unknown")
+                        change_type = diff.get("change_type", "modified")
+                        diff_text = diff.get("diff", "")
+
+                        changes_context += f"\n{change_type.upper()}: {file_path}\n"
+                        changes_context += f"{diff_text}\n"
 
             problem_query += f"{changes_context}"
 

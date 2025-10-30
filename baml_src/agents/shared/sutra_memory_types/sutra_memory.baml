@@ -11,7 +11,7 @@ enum TaskOperationAction {
 
 class TaskOperation {
   action TaskOperationAction @description("The action to perform on the task: 'add' to create a new task, 'move' to change the status of an existing task")
-  id string @description("Unique identifier for the task")
+  id int @description("Unique identifier for the task 1-based index")
   to_status TaskStatus? @description("The status to move the task to Required if action is 'move'")
   description string? @description("Description of the task Required if action is 'add'")
 }
@@ -23,7 +23,7 @@ enum CodeStorageAction {
 
 class CodeStorage {
   action CodeStorageAction @description("The action to perform on the code snippet: 'add' to store a new code snippet")
-  id string @description("Unique identifier for the code snippet")
+  id int @description("Unique identifier for the code snippet 1-based index")
   file string @description("File path where the code snippet is located")
   start_line int @description("Starting line number of the code snippet")
   end_line int @description("Ending line number of the code snippet")

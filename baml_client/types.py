@@ -168,7 +168,7 @@ class CodeManagerResponse(BaseModel):
 
 class CodeStorage(BaseModel):
     action: CodeStorageAction
-    id: str
+    id: int
     file: str
     start_line: int
     end_line: int
@@ -279,7 +279,7 @@ class DeveloperPromptParams(BaseModel):
     system_info: "SystemInfoParams"
 
 class DeveloperResponse(BaseModel):
-    thinking: typing.Optional[str] = None
+    thinking: str
     sutra_memory: "SutraMemoryParams"
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
 
@@ -373,7 +373,7 @@ class QAEngineerResponse(BaseModel):
 
 class RoadmapCodeStorage(BaseModel):
     action: RoadmapCodeStorageAction
-    id: str
+    id: int
     file: str
     start_line: int
     end_line: int
@@ -486,7 +486,7 @@ class TaskFilterResponse(BaseModel):
 
 class TaskOperation(BaseModel):
     action: TaskOperationAction
-    id: str
+    id: int
     to_status: typing.Optional[TaskStatus] = None
     description: typing.Optional[str] = None
 
@@ -512,7 +512,7 @@ class TermianlToolCall(BaseModel):
     parameters: "TermianlParams"
 
 class TracedElement(BaseModel):
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     name: str
     element_type: ElementType
     start_line: int
@@ -523,7 +523,7 @@ class TracedElement(BaseModel):
     is_fully_traced: typing.Optional[bool] = None
 
 class UntracedElement(BaseModel):
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     name: str
     element_type: ElementType
     reason: typing.Optional[str] = None
