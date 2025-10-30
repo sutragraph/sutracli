@@ -21,17 +21,17 @@ Usage Format
     "tasks": [
       {
         "action": "move",
-        "id": "task_id",
+        "id": task_id,
         "to_status": "current",
       },
       {
         "action": "move",
-        "id": "task_id",
+        "id": task_id,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "unique_id",
+        "id": unique_id,
         "to_status": "pending",
         "description": "new task description"
       }
@@ -60,18 +60,18 @@ Example 2: Task completion after successful retry
     "tasks": [
       {
         "action": "move",
-        "id": "2",
+        "id": 2,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "3",
+        "id": 3,
         "to_status": "pending",
         "description": "Use database tool to analyze axios usage in src/api/client.js"
       },
       {
         "action": "add",
-        "id": "4",
+        "id": 4,
         "to_status": "pending",
         "description": "Use database tool to analyze axios usage in src/services/http.js"
       }
@@ -88,12 +88,12 @@ Example 3: Task completion after exhaustive search attempts
     "tasks": [
       {
         "action": "move",
-        "id": "3",
+        "id": 3,
         "to_status": "completed",
       },
       {
         "action": "move",
-        "id": "4",
+        "id": 4,
         "to_status": "current",
       }
     ],
@@ -109,13 +109,13 @@ Example 4: Built-in pattern task creation (always required)
     "tasks": [
       {
         "action": "add",
-        "id": "14",
+        "id": 14,
         "to_status": "pending",
         "description": "Create built-in pattern task for JavaScript: Use search_keyword with pattern 'fetch.*\(|new.*XMLHttpRequest|new.*WebSocket.*\(' and regex=true, case_sensitive=false to find native JavaScript connection patterns"
       },
       {
         "action": "add",
-        "id": "15",
+        "id": 15,
         "to_status": "pending",
         "description": "Create built-in pattern task for Python: Use search_keyword with pattern 'urllib\.|http\.client|socket\.' to find Python built-in connection patterns"
       }
@@ -132,18 +132,18 @@ Example 5: Task completion with new task creation based on findings
     "tasks": [
       {
         "action": "move",
-        "id": "5",
+        "id": 5,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "16",
+        "id": 16,
         "to_status": "pending",
         "description": "Found axios imports in src/api/client.js. Use database tool to read this file and analyze axios.get(), axios.post() usage patterns"
       },
       {
         "action": "add",
-        "id": "17",
+        "id": 17,
         "to_status": "pending",
         "description": "Found axios imports in src/services/http.js. Use database tool to read this file and analyze axios.get(), axios.post() usage patterns"
       }
@@ -160,7 +160,7 @@ Example 6: Task completion scenario
     "tasks": [
       {
         "action": "move",
-        "id": "3",
+        "id": 3,
         "to_status": "completed",
       }
     ],

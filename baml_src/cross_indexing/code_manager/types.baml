@@ -4,7 +4,7 @@ class CodeManagerResponse {
 }
 
 class CodeConnection {
-  id string
+  id int
   file string
   start_line int
   end_line int

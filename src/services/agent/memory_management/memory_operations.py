@@ -21,8 +21,8 @@ class MemoryOperations:
     """Handles core memory operations for tasks, code snippets, and file changes"""
 
     def __init__(self):
-        self.tasks: Dict[str, Task] = {}
-        self.code_snippets: Dict[str, CodeSnippet] = {}
+        self.tasks: Dict[int, Task] = {}
+        self.code_snippets: Dict[int, CodeSnippet] = {}
         self.history: List[HistoryEntry] = []
         self.file_changes: List[FileChange] = []
         self.task_id_counter = 0
@@ -64,12 +64,11 @@ class MemoryOperations:
         return f"elem_{hash_hex}"
 
     # Task Management Methods
-    def add_task(self, task_id: str, description: str, status: TaskStatus) -> bool:
+    def add_task(self, description: str, status: TaskStatus) -> bool:
         """
         Add a new task with validation.
 
         Args:
-            task_id: Unique task identifier (ignored, counter+1 used instead)
             description: Task description
             status: Task status
 
@@ -81,7 +80,7 @@ class MemoryOperations:
         """
         # Always use counter + 1 instead of LLM provided ID
         self.task_id_counter += 1
-        actual_task_id = str(self.task_id_counter)
+        actual_task_id = self.task_id_counter
 
         if status == TaskStatus.CURRENT and self.get_current_task() is not None:
             raise ValueError("Only one current task is allowed at a time")
@@ -90,12 +89,10 @@ class MemoryOperations:
             id=actual_task_id, description=description, status=status
         )
 
-        logger.debug(
-            f"Task {actual_task_id} added successfully (LLM ID {task_id} ignored)"
-        )
+        logger.debug(f"Task {actual_task_id} added successfully")
         return True
 
-    def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
+    def move_task(self, task_id: int, new_status: TaskStatus) -> bool:
         """
         Move task to new status with validation.
 
@@ -138,7 +135,7 @@ class MemoryOperations:
         )
         return True
 
-    def remove_task(self, task_id: str) -> bool:
+    def remove_task(self, task_id: int) -> bool:
         """
         Remove task from memory.
 
@@ -187,7 +184,6 @@ class MemoryOperations:
     # Code Snippet Management Methods
     def add_code_snippet(
         self,
-        code_id: str,
         file_path: str,
         start_line: int,
         end_line: int,
@@ -201,7 +197,6 @@ class MemoryOperations:
         Add code snippet to memory with optional trace chain information.
 
         Args:
-            code_id: Unique code identifier (ignored, counter+1 used instead)
             file_path: Path to the file
             start_line: Starting line number
             end_line: Ending line number
@@ -215,9 +210,8 @@ class MemoryOperations:
             bool: True if code snippet was added successfully
         """
         try:
-            # Always use counter + 1 instead of LLM provided ID
             self.code_id_counter += 1
-            actual_code_id = str(self.code_id_counter)
+            actual_code_id = self.code_id_counter
 
             # Fetch code content using the code fetcher
             code_content = self.code_fetcher.fetch_code_from_file(
@@ -268,16 +262,14 @@ class MemoryOperations:
                 call_chain_summary=call_chain_summary,
             )
 
-            logger.debug(
-                f"Code snippet {actual_code_id} added successfully (LLM ID {code_id} ignored)"
-            )
+            logger.debug(f"Code snippet {actual_code_id} added successfully)")
             return True
 
         except Exception as e:
             logger.error(f"Error adding code snippet: {str(e)}")
             return False
 
-    def remove_code_snippet(self, code_id: str) -> bool:
+    def remove_code_snippet(self, code_id: int) -> bool:
         """
         Remove code snippet from memory.
 
@@ -292,7 +284,7 @@ class MemoryOperations:
             return True
         return False
 
-    def get_code_snippet(self, code_id: str) -> Optional[CodeSnippet]:
+    def get_code_snippet(self, code_id: int) -> Optional[CodeSnippet]:
         """
         Get code snippet by ID.
 
@@ -304,7 +296,7 @@ class MemoryOperations:
         """
         return self.code_snippets.get(code_id)
 
-    def get_all_code_snippets(self) -> Dict[str, CodeSnippet]:
+    def get_all_code_snippets(self):
         """
         Get all stored code snippets.
 

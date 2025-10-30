@@ -1468,7 +1468,6 @@ class CrossProjectIndexer:
                 # Add batch items to task_manager
                 for info in batch:
                     self._task_manager.add_code_snippet(
-                        code_id="dummy_id",
                         file_path=info["file_path"],
                         start_line=info["start_line"],
                         end_line=info["end_line"],

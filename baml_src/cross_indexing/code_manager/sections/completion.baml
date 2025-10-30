@@ -17,7 +17,7 @@ Output Format:
   "thinking": "detailed analysis of tool results and reasoning for connection code extraction decisions",
   "connection_code": [
     {
-      "id": "unique_id",
+      "id": unique_id,
       "file": "relative/path/to/file",
       "start_line": int,
       "end_line": int,
@@ -33,7 +33,7 @@ Example 1: Direct endpoint discovery - extracting multiple endpoints found
   "thinking": "Tool results show multiple REST API endpoints in src/api/routes.py. These are direct incoming connection points that need to be extracted as they represent entry points for external services to connect to this application.",
   "connection_code": [
     {
-      "id": "1",
+      "id": 1,
       "file": "src/api/routes.py",
       "start_line": 12,
       "end_line": 250,
@@ -47,14 +47,14 @@ Example 2: RabbitMQ wrapper function with queue names - extracting multiple func
   "thinking": "Tool results identified RabbitMQ functions with hardcoded queue names. These represent outgoing connections to message queues and should be extracted because they show explicit connection destinations that other services need to know about.",
   "connection_code": [
     {
-      "id": "2",
+      "id": 2,
       "file": "src/messaging/queue_manager.py",
       "start_line": 30,
       "end_line": 40,
       "description": "RabbitMQ function sendToOrderQueue() with hardcoded queue name 'order-processing'"
     },
     {
-      "id": "3",
+      "id": 3,
       "file": "src/messaging/queue_manager.py",
       "start_line": 50,
       "end_line": 66,
@@ -68,21 +68,21 @@ Example 3: RabbitMQ with dynamic queue names - wrapper function calls
   "thinking": "Tool results show a wrapper function pattern where queue names are passed as parameters. Need to extract both the wrapper function definition and all its usage calls to capture the complete connection picture including actual queue names being used.",
   "connection_code": [
     {
-      "id": "4",
+      "id": 4,
       "file": "src/messaging/publisher.js",
       "start_line": 25,
       "end_line": 35,
       "description": "RabbitMQ wrapper function publishMessage(queueName, data) that accepts queue names as arguments"
     },
     {
-      "id": "5",
+      "id": 5,
       "file": "src/services/orderService.js",
       "start_line": 45,
       "end_line": 47,
       "description": "publishMessage() call with queue name 'order-processing' for order management"
     },
     {
-      "id": "6",
+      "id": 6,
       "file": "src/services/notificationService.js",
       "start_line": 23,
       "end_line": 25,
@@ -96,21 +96,21 @@ Example 4: HTTP client wrapper function discovery and call analysis
   "thinking": "Tool results revealed an HTTP wrapper function pattern. The wrapper function shows how HTTP calls are made, while the usage calls reveal actual endpoints and HTTP methods being used. All should be extracted to understand the complete HTTP connection landscape.",
   "connection_code": [
     {
-      "id": "7",
+      "id": 7,
       "file": "src/services/httpClient.js",
       "start_line": 18,
       "end_line": 28,
       "description": "HTTP wrapper function apiCall(serviceUrl, endpoint, method) that accepts URLs and endpoints as arguments"
     },
     {
-      "id": "8",
+      "id": 8,
       "file": "src/services/userService.js",
       "start_line": 34,
       "end_line": 36,
       "description": "apiCall() usage with endpoint '/admin/users' and POST method for user management"
     },
     {
-      "id": "9",
+      "id": 9,
       "file": "src/services/orderService.js",
       "start_line": 67,
       "end_line": 69,
@@ -124,14 +124,14 @@ Example 5: WebSocket connection discovery with socket.emit events
   "thinking": "Tool results found WebSocket implementation with both outgoing (socket.emit) and incoming (socket.on) connection patterns. Both directions need to be extracted as they represent bidirectional communication channels that are essential for understanding real-time connection architecture.",
   "connection_code": [
     {
-      "id": "10",
+      "id": 10,
       "file": "src/services/websocketClient.js",
       "start_line": 12,
       "end_line": 35,
       "description": "WebSocket outgoing connections with socket.emit() for room joining and message sending"
     },
     {
-      "id": "11",
+      "id": 11,
       "file": "src/services/websocketClient.js",
       "start_line": 80,
       "end_line": 128,

@@ -478,7 +478,6 @@ Tool Results:
                     # Add code snippet to task manager
                     try:
                         snippet_id = self.task_manager.add_code_snippet(
-                            code_id="dummy_id",  # Will be replaced with counter+1
                             file_path=file_path,
                             start_line=start_line,
                             end_line=end_line,

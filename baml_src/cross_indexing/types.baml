@@ -35,7 +35,7 @@ enum Status_CrossIndexing {
 // Task Management Types
 class TaskOperation_CrossIndexing {
   action TaskOperationAction_CrossIndexing // "add" | "move" | "remove"
-  id string
+  id int
   to_status Status_CrossIndexing? // for "add" and "move" operations: "pending" | "current" | "completed"
   description string?
 }
@@ -48,7 +48,7 @@ enum CodeStorageAction_CrossIndexing{
 // Code Storage Types
 class CodeStorage_CrossIndexing {
   action CodeStorageAction_CrossIndexing
-  id string
+  id int
   file string
   start_line int
   end_line int

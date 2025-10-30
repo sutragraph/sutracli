@@ -24,7 +24,7 @@ class TaskStatus(Enum):
 class Task:
     """Task representation"""
 
-    id: str
+    id: int
     description: str
     status: TaskStatus
     created_at: datetime = field(default_factory=datetime.now)
@@ -35,7 +35,7 @@ class Task:
 class CodeSnippet:
     """Code snippet representation with comprehensive trace chain analysis"""
 
-    id: str
+    id: int
     file_path: str
     start_line: int
     end_line: int

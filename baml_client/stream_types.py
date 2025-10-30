@@ -42,7 +42,7 @@ class ChangeInstruction(BaseModel):
     additional_notes: typing.Optional[str] = None
 
 class CodeConnection(BaseModel):
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     file: typing.Optional[str] = None
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
@@ -54,7 +54,7 @@ class CodeManagerResponse(BaseModel):
 
 class CodeStorage(BaseModel):
     action: typing.Optional[types.CodeStorageAction] = None
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     file: typing.Optional[str] = None
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
@@ -62,7 +62,7 @@ class CodeStorage(BaseModel):
 
 class CodeStorage_CrossIndexing(BaseModel):
     action: typing.Optional[types.CodeStorageAction_CrossIndexing] = None
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     file: typing.Optional[str] = None
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
@@ -84,8 +84,8 @@ class ConnectionDetail(BaseModel):
     description: typing.Optional[str] = None
 
 class ConnectionMatch(BaseModel):
-    incoming_id: typing.Optional[str] = None
-    outgoing_id: typing.Optional[str] = None
+    incoming_id: typing.Optional[int] = None
+    outgoing_id: typing.Optional[int] = None
     match_confidence: typing.Optional[str] = None
     match_reason: typing.Optional[str] = None
 
@@ -259,7 +259,7 @@ class QAEngineerResponse(BaseModel):
 
 class RoadmapCodeStorage(BaseModel):
     action: typing.Optional[types.RoadmapCodeStorageAction] = None
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     file: typing.Optional[str] = None
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
@@ -372,13 +372,13 @@ class TaskFilterResponse(BaseModel):
 
 class TaskOperation(BaseModel):
     action: typing.Optional[types.TaskOperationAction] = None
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     to_status: typing.Optional[types.TaskStatus] = None
     description: typing.Optional[str] = None
 
 class TaskOperation_CrossIndexing(BaseModel):
     action: typing.Optional[types.TaskOperationAction_CrossIndexing] = None
-    id: typing.Optional[str] = None
+    id: typing.Optional[int] = None
     to_status: typing.Optional[types.Status_CrossIndexing] = None
     description: typing.Optional[str] = None
 

@@ -21,18 +21,18 @@ Usage Format
     "tasks": [
       {
         "action": "add",
-        "id": "unique_id",
+        "id": unique_id,
         "to_status": "pending",
         "description": "specific task description"
       },
       {
         "action": "move",
-        "id": "task_id",
+        "id": task_id,
         "to_status": "completed",
       },
       {
         "action": "move",
-        "id": "task_id",
+        "id": task_id,
         "to_status": "current",
       }
     ],
@@ -59,7 +59,7 @@ Example 2: Package file analysis
     "tasks": [
       {
         "action": "add",
-        "id": "2",
+        "id": 2,
         "to_status": "pending",
         "description": "Use search_keyword tool with pattern 'require.*axios|import.*axios' and regex=true, case_sensitive=false to find axios import statements. Look for HTTP client library imports enabling requests to other services."
       }
@@ -76,7 +76,7 @@ Example 3: Multiple package files analysis
     "tasks": [
       {
         "action": "add",
-        "id": "3",
+        "id": 3,
         "to_status": "pending",
         "description": "Use search_keyword tool with pattern 'import.*pika|from.*pika' and regex=true, case_sensitive=false to find pika import statements in Python files"
       }
@@ -93,7 +93,7 @@ Example 4: Task completion scenario with project summary (only mark as completed
     "tasks": [
       {
         "action": "move",
-        "id": "1",
+        "id": 1,
         "to_status": "completed",
       }
     ],

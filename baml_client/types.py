@@ -156,7 +156,7 @@ class ChangeInstruction(BaseModel):
     additional_notes: typing.Optional[str] = None
 
 class CodeConnection(BaseModel):
-    id: str
+    id: int
     file: str
     start_line: int
     end_line: int
@@ -168,7 +168,7 @@ class CodeManagerResponse(BaseModel):
 
 class CodeStorage(BaseModel):
     action: CodeStorageAction
-    id: str
+    id: int
     file: str
     start_line: int
     end_line: int
@@ -176,7 +176,7 @@ class CodeStorage(BaseModel):
 
 class CodeStorage_CrossIndexing(BaseModel):
     action: CodeStorageAction_CrossIndexing
-    id: str
+    id: int
     file: str
     start_line: int
     end_line: int
@@ -198,8 +198,8 @@ class ConnectionDetail(BaseModel):
     description: str
 
 class ConnectionMatch(BaseModel):
-    incoming_id: str
-    outgoing_id: str
+    incoming_id: int
+    outgoing_id: int
     match_confidence: str
     match_reason: str
 
@@ -373,7 +373,7 @@ class QAEngineerResponse(BaseModel):
 
 class RoadmapCodeStorage(BaseModel):
     action: RoadmapCodeStorageAction
-    id: str
+    id: int
     file: str
     start_line: int
     end_line: int
@@ -486,13 +486,13 @@ class TaskFilterResponse(BaseModel):
 
 class TaskOperation(BaseModel):
     action: TaskOperationAction
-    id: str
+    id: int
     to_status: typing.Optional[TaskStatus] = None
     description: typing.Optional[str] = None
 
 class TaskOperation_CrossIndexing(BaseModel):
     action: TaskOperationAction_CrossIndexing
-    id: str
+    id: int
     to_status: typing.Optional[Status_CrossIndexing] = None
     description: typing.Optional[str] = None
 
@@ -523,7 +523,7 @@ class TracedElement(BaseModel):
     is_fully_traced: typing.Optional[bool] = None
 
 class UntracedElement(BaseModel):
-    id: typing.Optional[str] = None
+    id: str
     name: str
     element_type: ElementType
     reason: typing.Optional[str] = None

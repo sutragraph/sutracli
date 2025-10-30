@@ -179,7 +179,7 @@ RULES
   - Task operations MUST include all required fields: `action`, `id`, `description`
   - For add or move operations: MUST include `to_status` (pending/current/completed)
   - The `add_history` field is MANDATORY in every sutra_memory response
-  - Task IDs MUST be strings, not integers
+  - Task IDs MUST be integers, not strings
   - All enum values MUST use lowercase aliases: "add", "move", "remove", "pending", "current", "completed"
 
 19. COMPLETION REQUIREMENT: When implementation discovery is complete, you MUST use the `attempt_completion` tool with a summary of discovered connection implementations.

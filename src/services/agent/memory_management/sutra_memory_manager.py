@@ -71,15 +71,15 @@ class SutraMemoryManager:
         return self.memory_ops.get_next_code_id()
 
     # Task Management Methods
-    def add_task(self, task_id: str, description: str, status: TaskStatus) -> bool:
+    def add_task(self, description: str, status: TaskStatus) -> bool:
         """Add a new task with validation (task_id is ignored, counter+1 used instead)"""
-        return self.memory_ops.add_task(task_id, description, status)
+        return self.memory_ops.add_task(description, status)
 
-    def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
+    def move_task(self, task_id: int, new_status: TaskStatus) -> bool:
         """Move task to new status with validation"""
         return self.memory_ops.move_task(task_id, new_status)
 
-    def remove_task(self, task_id: str) -> bool:
+    def remove_task(self, task_id: int) -> bool:
         """Remove task from memory"""
         return self.memory_ops.remove_task(task_id)
 
@@ -98,7 +98,6 @@ class SutraMemoryManager:
     # Code Snippet Management Methods
     def add_code_snippet(
         self,
-        code_id: str,
         file_path: str,
         start_line: int,
         end_line: int,
@@ -110,7 +109,6 @@ class SutraMemoryManager:
     ) -> bool:
         """Add code snippet to memory with optional tracing information (code_id is ignored, counter+1 used instead)"""
         return self.memory_ops.add_code_snippet(
-            code_id,
             file_path,
             start_line,
             end_line,
@@ -121,19 +119,19 @@ class SutraMemoryManager:
             call_chain_summary,
         )
 
-    def remove_code_snippet(self, code_id: str) -> bool:
+    def remove_code_snippet(self, code_id: int) -> bool:
         """Remove code snippet from memory"""
         return self.memory_ops.remove_code_snippet(code_id)
 
-    def get_code_snippet(self, code_id: str) -> Optional[CodeSnippet]:
+    def get_code_snippet(self, code_id: int):
         """Get code snippet by ID"""
         return self.memory_ops.get_code_snippet(code_id)
 
-    def get_all_code_snippets(self) -> Dict[str, CodeSnippet]:
+    def get_all_code_snippets(self):
         """Get all stored code snippets"""
         return self.memory_ops.get_all_code_snippets()
 
-    def get_code_snippets_by_file(self, file_path: str) -> List[CodeSnippet]:
+    def get_code_snippets_by_file(self, file_path: str):
         """Get all code snippets for a specific file"""
         return self.memory_ops.get_code_snippets_by_file(file_path)
 
@@ -203,7 +201,7 @@ class SutraMemoryManager:
 
                         # add_task will use counter+1 internally and ignore the LLM provided ID
                         if task_op.description and self.add_task(
-                            task_op.id, task_op.description, status
+                            task_op.description, status
                         ):
                             # Get the actual ID that was assigned (current counter value)
                             actual_task_id = str(self.memory_ops.task_id_counter)
@@ -225,7 +223,7 @@ class SutraMemoryManager:
                         if task_op.to_status:
                             target_status = TaskStatus(task_op.to_status.value.lower())
 
-                            if self.move_task(task_op.id, target_status):
+                            if task_op.id and self.move_task(task_op.id, target_status):
                                 results["changes_applied"]["tasks"].append(
                                     f"Moved task {task_op.id} to {target_status.value}"
                                 )
@@ -471,7 +469,6 @@ class SutraMemoryManager:
             and code_op.end_line is not None
             and code_op.description
             and self.add_code_snippet(
-                code_op.id,
                 code_op.file,
                 code_op.start_line,
                 code_op.end_line,
@@ -483,9 +480,9 @@ class SutraMemoryManager:
             )
         ):
             # Get the actual ID that was assigned (current counter value)
-            actual_code_id = str(self.memory_ops.code_id_counter)
+            actual_code_id = self.memory_ops.code_id_counter
             results["changes_applied"]["code"].append(
-                f"Added code {actual_code_id}: {code_op.description} (LLM ID {code_op.id} ignored)"
+                f"Added code {actual_code_id}: {code_op.description}"
             )
         else:
             missing_fields = []
@@ -528,9 +525,10 @@ class SutraMemoryManager:
         self, code_op: RoadmapCodeStorage, results: Dict[str, Any]
     ) -> None:
         """Handle MoveToTraced operation"""
-        existing_snippet = self.get_code_snippet(code_op.id)
+
         traced_element = code_op.traced_element
         element_path = code_op.element_path if code_op.element_path else []
+        existing_snippet = self.get_code_snippet(code_op.id)
 
         if existing_snippet and traced_element:
             element_name = traced_element.name
@@ -641,8 +639,9 @@ class SutraMemoryManager:
         self, code_op: RoadmapCodeStorage, results: Dict[str, Any]
     ) -> None:
         """Handle AddToNeedsTracing operation"""
-        existing_snippet = self.get_code_snippet(code_op.id)
+
         needs_tracing = code_op.needs_tracing
+        existing_snippet = self.get_code_snippet(code_op.id)
 
         if existing_snippet and needs_tracing:
             # Auto-generate IDs for new untraced elements if not provided
