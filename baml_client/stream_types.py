@@ -54,7 +54,7 @@ class CodeManagerResponse(BaseModel):
 
 class CodeStorage(BaseModel):
     action: typing.Optional[types.CodeStorageAction] = None
-    id: typing.Optional[int] = None
+    id: typing.Optional[str] = None
     file: typing.Optional[str] = None
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
@@ -259,7 +259,7 @@ class QAEngineerResponse(BaseModel):
 
 class RoadmapCodeStorage(BaseModel):
     action: typing.Optional[types.RoadmapCodeStorageAction] = None
-    id: typing.Optional[int] = None
+    id: typing.Optional[str] = None
     file: typing.Optional[str] = None
     start_line: typing.Optional[int] = None
     end_line: typing.Optional[int] = None
@@ -372,7 +372,7 @@ class TaskFilterResponse(BaseModel):
 
 class TaskOperation(BaseModel):
     action: typing.Optional[types.TaskOperationAction] = None
-    id: typing.Optional[int] = None
+    id: typing.Optional[str] = None
     to_status: typing.Optional[types.TaskStatus] = None
     description: typing.Optional[str] = None
 

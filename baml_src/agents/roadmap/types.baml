@@ -63,7 +63,7 @@ class UntracedElement {
 // Code Storage Types - enhanced for comprehensive trace chain analysis
 class RoadmapCodeStorage {
   action RoadmapCodeStorageAction
-  id int
+  id string
   file string                           // file path for the code snippet (only needed for Add action)
   start_line int                        // starting line number (only needed for Add action)
   end_line int                          // ending line number (only needed for Add action)

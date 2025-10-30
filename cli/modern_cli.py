@@ -852,7 +852,7 @@ class ModernSutraKit:
                 return None
 
             # All agents now use run_agent_loop
-            agent_result = agent_instance.run_agent_loop(user_input)
+            agent_result = agent_instance.run_with_user_role(user_input)
 
             if agent_result:
                 console.success("Agent execution completed successfully!!!")

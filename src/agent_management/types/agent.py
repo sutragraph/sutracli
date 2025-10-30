@@ -43,7 +43,7 @@ class AgentData:
         Args:
             include_roles: If provided, only include messages from these role types.
                           If None, include all messages.
-            current_agent: If provided, this agent's messages will be displayed as "USER".
+            current_agent: If provided, this agent's messages will be displayed as "YOU".
             exclude_roles: If provided, exclude messages from these role types.
                           This takes precedence over include_roles.
 
@@ -60,9 +60,9 @@ class AgentData:
 
                 # Check if role should be included
                 if include_roles is None or role in include_roles:
-                    # Use "USER" for the current agent's messages
+                    # Use "YOU" for the current agent's messages
                     if current_agent is not None and role == current_agent:
-                        role_name = "USER"
+                        role_name = "YOU"
                     else:
                         if isinstance(role, str):
                             role_name = role

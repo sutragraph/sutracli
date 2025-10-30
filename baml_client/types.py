@@ -168,7 +168,7 @@ class CodeManagerResponse(BaseModel):
 
 class CodeStorage(BaseModel):
     action: CodeStorageAction
-    id: int
+    id: str
     file: str
     start_line: int
     end_line: int
@@ -373,7 +373,7 @@ class QAEngineerResponse(BaseModel):
 
 class RoadmapCodeStorage(BaseModel):
     action: RoadmapCodeStorageAction
-    id: int
+    id: str
     file: str
     start_line: int
     end_line: int
@@ -486,7 +486,7 @@ class TaskFilterResponse(BaseModel):
 
 class TaskOperation(BaseModel):
     action: TaskOperationAction
-    id: int
+    id: str
     to_status: typing.Optional[TaskStatus] = None
     description: typing.Optional[str] = None
 
