@@ -10,7 +10,6 @@ class DeveloperPromptParams {
   system_info SystemInfoParams
 }
 
-
 class DeveloperResponse {
   thinking string @description("Concise user-facing progress update for the UI (one sentence).")
   sutra_memory SutraMemoryParams @description("Persistent memory for code snippets, task updates, and history.")
