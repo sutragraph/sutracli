@@ -18,6 +18,18 @@ class MemoryFormatter:
     def __init__(self, memory_ops: MemoryOperations):
         self.memory_ops = memory_ops
 
+    def _has_tracing_information(self) -> bool:
+        """
+        Check if any code snippets have tracing information.
+
+        Returns:
+            bool: True if any code snippet has tracing features (root_elements, needs_tracing, or call_chain_summary)
+        """
+        for code in self.memory_ops.code_snippets.values():
+            if code.root_elements or code.needs_tracing or code.call_chain_summary:
+                return True
+        return False
+
     def get_memory_for_llm(self) -> str:
         """
         Get current memory state formatted for LLM context in text format.
@@ -146,52 +158,66 @@ class MemoryFormatter:
         """
         content = []
         for code in self.memory_ops.code_snippets.values():
-            # Add tracing status indicator
-            trace_status = "yes" if code.is_traced else "no"
-            content.extend(
-                [
-                    f"SNIPPET {code.id}: {code.file_path}(lines {code.start_line} - {code.end_line})[TRACED: {trace_status}]",
-                    f"  Description: {code.description}",
-                ]
+            # Check if this code snippet has any tracing information
+            has_tracing_info = bool(
+                code.root_elements or code.needs_tracing or code.call_chain_summary
             )
 
-            # Add call chain summary if available
-            if code.call_chain_summary:
-                content.append(f"  call_chain: {code.call_chain_summary}")
+            if has_tracing_info:
+                # Format with tracing information (for roadmap agent)
+                trace_status = "yes" if code.is_traced else "no"
+                content.extend(
+                    [
+                        f"SNIPPET {code.id}: {code.file_path}(lines {code.start_line} - {code.end_line})[TRACED: {trace_status}]",
+                        f"  Description: {code.description}",
+                    ]
+                )
 
-            # Add traced elements section - handle both old and new format
-            content.append("  traced_elements:")
-            if code.root_elements:
-                for root_element in code.root_elements:
-                    content.extend(
-                        self._format_element_hierarchy(
-                            root_element, code.file_path, indent="    "
+                # Add call chain summary if available
+                if code.call_chain_summary:
+                    content.append(f"  call_chain: {code.call_chain_summary}")
+
+                # Add traced elements section
+                content.append("  traced_elements:")
+                if code.root_elements:
+                    for root_element in code.root_elements:
+                        content.extend(
+                            self._format_element_hierarchy(
+                                root_element, code.file_path, indent="    "
+                            )
                         )
-                    )
-            else:
-                content.append("    [] (none)")
+                else:
+                    content.append("    [] (none)")
 
-            # Add needs tracing section - always show header
-            content.append("  needs_tracing:")
-            if code.needs_tracing:
-                for ute in code.needs_tracing:
-                    reason_text = f" ({ute.reason})" if ute.reason else ""
-                    accessed_from_text = (
-                        f" [accessed from {ute.accessed_from}]"
-                        if ute.accessed_from
-                        else ""
-                    )
-                    element_display = self._format_element_name_with_type(
-                        ute.name, ute.element_type
-                    )
-                    element_id_display = (
-                        f" [ID: {ute.id}]" if (ute.id and ute.id.strip()) else ""
-                    )
-                    content.append(
-                        f"    - {element_display}{reason_text}{accessed_from_text}{element_id_display}"
-                    )
+                # Add needs tracing section
+                content.append("  needs_tracing:")
+                if code.needs_tracing:
+                    for ute in code.needs_tracing:
+                        reason_text = f" ({ute.reason})" if ute.reason else ""
+                        accessed_from_text = (
+                            f" [accessed from {ute.accessed_from}]"
+                            if ute.accessed_from
+                            else ""
+                        )
+                        element_display = self._format_element_name_with_type(
+                            ute.name, ute.element_type
+                        )
+                        element_id_display = (
+                            f" [ID: {ute.id}]" if (ute.id and ute.id.strip()) else ""
+                        )
+                        content.append(
+                            f"    - {element_display}{reason_text}{accessed_from_text}{element_id_display}"
+                        )
+                else:
+                    content.append("    [] (none)")
             else:
-                content.append("    [] (none)")
+                # Simple format without tracing information (for base agents)
+                content.extend(
+                    [
+                        f"SNIPPET {code.id}: {code.file_path}(lines {code.start_line} - {code.end_line})",
+                        f"  Description: {code.description}",
+                    ]
+                )
 
             # Include actual code content if available with line numbers
             if code.content:
