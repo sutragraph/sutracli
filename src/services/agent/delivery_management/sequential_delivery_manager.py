@@ -82,18 +82,23 @@ class DeliveryManager:
             existing_size = len(self._delivery_queues[query_signature])
             is_complete = self._completed_deliveries.get(query_signature, False)
 
-            # If queue is complete, reset it for re-use
-            if is_complete:
+            # If queue is complete, reset it for re-use only if new items match or exceed existing
+            if is_complete and len(items) >= existing_size:
                 logger.debug(
-                    f"Resetting completed queue for re-registration: {query_signature}"
+                    f"Resetting completed queue for re-registration: {query_signature} (new items: {len(items)}, existing: {existing_size})"
                 )
                 self._queue_positions[query_signature] = 0
                 self._completed_deliveries[query_signature] = False
                 logger.debug("Queue reset complete - ready for reuse")
+                # Don't return early - continue to re-register with new items
+            elif is_complete:
+                # Queue is complete but new registration has fewer items - skip
+                logger.debug(
+                    f"📦 Skipping registration - queue complete and new items ({len(items)}) < existing ({existing_size})"
+                )
                 return query_signature
-
-            # If queue is not complete and has sufficient items, skip registration
-            if existing_size >= len(items):
+            elif existing_size >= len(items):
+                # If queue is not complete and has sufficient items, skip registration
                 logger.debug(
                     f"📦 Skipping duplicate registration - existing queue has {existing_size} items"
                 )
@@ -218,14 +223,13 @@ class DeliveryManager:
             f"queue_len={len(queue)}, is_complete={is_complete}"
         )
 
-        # If queue is complete, check if we should reset it for reuse
+        # If queue is complete, return None - don't auto-reset
+        # Reset only happens during re-registration
         if is_complete:
             logger.debug(
-                f"📦 Queue was complete, resetting for reuse - position: {current_pos}, queue_length: {len(queue)}"
+                f"📦 Queue already complete - position: {current_pos}, queue_length: {len(queue)}. Return None."
             )
-            self._queue_positions[query_signature] = 0
-            self._completed_deliveries[query_signature] = False
-            current_pos = 0
+            return None
 
         if current_pos >= len(queue):
             logger.debug(
