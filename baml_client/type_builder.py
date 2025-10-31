@@ -20,13 +20,13 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AddTask","BaseCompletionParams","ChangeInstruction","CodeConnection","CodeManagerResponse","CodeStorage","CodeStorage_CrossIndexing","CompletionResponse_CrossIndexing","CompletionToolCall","CompletionToolCall_CrossIndexing","ConnectionDetail","ConnectionMatch","ConnectionMatchingResponse","ConnectionSplittingResponse","Contract","ContractField","CrossIndexingResponse","DatabaseParams","DatabaseParamsGetBlockDetails","DatabaseParamsGetFileByPath","DatabaseToolCall","DatabaseToolCallSimple","DeveloperCompletionParams","DeveloperCompletionToolCall","DeveloperPromptParams","DeveloperResponse","DiagnosticsParams","DiagnosticsToolCall","Edit","EditFileParams","EditFileToolCall","FileChange","ListFilesParams","ListFilesParamsWithoutProjectName","ListFilesToolCall","ListFilesToolCallSimple","ListFilesToolCallWithoutProjectName","Project","ProjectContext","ProjectRoadmap","QAEngineerCompletionParams","QAEngineerCompletionToolCall","QAEngineerFailedTestsParams","QAEngineerPromptParams","QAEngineerResponse","RoadmapCodeStorage","RoadmapCompletionParams","RoadmapCompletionToolCall","RoadmapPromptParams","RoadmapResponse","RoadmapSutraMemoryParams","SearchKeywordParams","SearchKeywordParamsWithoutProjectName","SearchKeywordToolCall","SearchKeywordToolCallSimple","SearchKeywordToolCallWithoutProjectName","SemanticSearchParams","SemanticSearchParamsWithoutProjectName","SemanticSearchToolCall","SemanticSearchToolCallSimple","SemanticSearchToolCallWithoutProjectName","SutraMemoryParams","SutraMemoryParams_CrossIndexing","SystemInfoParams","SystemInfo_CrossIndexing","TaskFilterResponse","TaskOperation","TaskOperation_CrossIndexing","TechnologyCorrection","TechnologyCorrectionResponse","TermianlParams","TermianlToolCall","TracedElement","UntracedElement",]
+          ["AddTask","BaseCompletionParams","ChangeInstruction","CodeConnection","CodeManagerResponse","CodeStorage","CodeStorage_CrossIndexing","CompletionResponse_CrossIndexing","CompletionToolCall","CompletionToolCall_CrossIndexing","ConnectionDetail","ConnectionMatch","ConnectionMatchingResponse","ConnectionSplittingResponse","CrossIndexingResponse","DatabaseParams","DatabaseParamsGetBlockDetails","DatabaseParamsGetFileByPath","DatabaseToolCall","DatabaseToolCallSimple","DeveloperCompletionParams","DeveloperCompletionToolCall","DeveloperPromptParams","DeveloperResponse","DiagnosticsParams","DiagnosticsToolCall","Edit","EditFileParams","EditFileToolCall","FileChange","IntegrationContract","ListFilesParamsWithProjectName","ListFilesParamsWithoutProjectName","ListFilesToolCallWithProjectName","ListFilesToolCallWithoutProjectName","Project","ProjectContext","ProjectExecutionPlan","QAEngineerCompletionParams","QAEngineerCompletionToolCall","QAEngineerFailedTestsParams","QAEngineerPromptParams","QAEngineerResponse","RoadmapCodeStorage","RoadmapCompletionParams","RoadmapCompletionToolCall","RoadmapPromptParams","RoadmapResponse","RoadmapSutraMemoryParams","SearchKeywordParamsWithProjectName","SearchKeywordParamsWithoutProjectName","SearchKeywordToolCallWithProjectName","SearchKeywordToolCallWithoutProjectName","SemanticSearchParamsWithProjectName","SemanticSearchParamsWithoutProjectName","SemanticSearchToolCallWithProjectName","SemanticSearchToolCallWithoutProjectName","SutraMemoryParams","SutraMemoryParams_CrossIndexing","SystemInfoParams","SystemInfo_CrossIndexing","TaskFilterResponse","TaskOperation","TaskOperation_CrossIndexing","TechnologyCorrection","TechnologyCorrectionResponse","TermianlParams","TermianlToolCall","TracedElement","UntracedElement",]
         ), enums=set(
-          ["Agent","CodeStorageAction","CodeStorageAction_CrossIndexing","ContractRole","DatabaseQueryName","EditFileMode","ElementType","FileOperation","ImpactLevel","RoadmapCodeStorageAction","Status_CrossIndexing","TaskOperationAction","TaskOperationAction_CrossIndexing","TaskStatus","TechnologyType","ToolName",]
+          ["Agent","CodeStorageAction","CodeStorageAction_CrossIndexing","DatabaseQueryName","EditFileMode","ElementType","FileOperation","ImpactLevel","RoadmapCodeStorageAction","Status_CrossIndexing","TaskOperationAction","TaskOperationAction_CrossIndexing","TaskStatus","TechnologyType","ToolName",]
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
 
     # #########################################################################
-    # Generated enums 16
+    # Generated enums 15
     # #########################################################################
 
     @property
@@ -40,10 +40,6 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def CodeStorageAction_CrossIndexing(self) -> "CodeStorageAction_CrossIndexingViewer":
         return CodeStorageAction_CrossIndexingViewer(self)
-
-    @property
-    def ContractRole(self) -> "ContractRoleViewer":
-        return ContractRoleViewer(self)
 
     @property
     def DatabaseQueryName(self) -> "DatabaseQueryNameViewer":
@@ -95,7 +91,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 74
+    # Generated classes 70
     # #########################################################################
 
     @property
@@ -153,14 +149,6 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def ConnectionSplittingResponse(self) -> "ConnectionSplittingResponseViewer":
         return ConnectionSplittingResponseViewer(self)
-
-    @property
-    def Contract(self) -> "ContractViewer":
-        return ContractViewer(self)
-
-    @property
-    def ContractField(self) -> "ContractFieldViewer":
-        return ContractFieldViewer(self)
 
     @property
     def CrossIndexingResponse(self) -> "CrossIndexingResponseViewer":
@@ -227,20 +215,20 @@ class TypeBuilder(type_builder.TypeBuilder):
         return FileChangeViewer(self)
 
     @property
-    def ListFilesParams(self) -> "ListFilesParamsViewer":
-        return ListFilesParamsViewer(self)
+    def IntegrationContract(self) -> "IntegrationContractViewer":
+        return IntegrationContractViewer(self)
+
+    @property
+    def ListFilesParamsWithProjectName(self) -> "ListFilesParamsWithProjectNameViewer":
+        return ListFilesParamsWithProjectNameViewer(self)
 
     @property
     def ListFilesParamsWithoutProjectName(self) -> "ListFilesParamsWithoutProjectNameViewer":
         return ListFilesParamsWithoutProjectNameViewer(self)
 
     @property
-    def ListFilesToolCall(self) -> "ListFilesToolCallViewer":
-        return ListFilesToolCallViewer(self)
-
-    @property
-    def ListFilesToolCallSimple(self) -> "ListFilesToolCallSimpleViewer":
-        return ListFilesToolCallSimpleViewer(self)
+    def ListFilesToolCallWithProjectName(self) -> "ListFilesToolCallWithProjectNameViewer":
+        return ListFilesToolCallWithProjectNameViewer(self)
 
     @property
     def ListFilesToolCallWithoutProjectName(self) -> "ListFilesToolCallWithoutProjectNameViewer":
@@ -255,8 +243,8 @@ class TypeBuilder(type_builder.TypeBuilder):
         return ProjectContextViewer(self)
 
     @property
-    def ProjectRoadmap(self) -> "ProjectRoadmapViewer":
-        return ProjectRoadmapViewer(self)
+    def ProjectExecutionPlan(self) -> "ProjectExecutionPlanViewer":
+        return ProjectExecutionPlanViewer(self)
 
     @property
     def QAEngineerCompletionParams(self) -> "QAEngineerCompletionParamsViewer":
@@ -303,40 +291,32 @@ class TypeBuilder(type_builder.TypeBuilder):
         return RoadmapSutraMemoryParamsViewer(self)
 
     @property
-    def SearchKeywordParams(self) -> "SearchKeywordParamsViewer":
-        return SearchKeywordParamsViewer(self)
+    def SearchKeywordParamsWithProjectName(self) -> "SearchKeywordParamsWithProjectNameViewer":
+        return SearchKeywordParamsWithProjectNameViewer(self)
 
     @property
     def SearchKeywordParamsWithoutProjectName(self) -> "SearchKeywordParamsWithoutProjectNameViewer":
         return SearchKeywordParamsWithoutProjectNameViewer(self)
 
     @property
-    def SearchKeywordToolCall(self) -> "SearchKeywordToolCallViewer":
-        return SearchKeywordToolCallViewer(self)
-
-    @property
-    def SearchKeywordToolCallSimple(self) -> "SearchKeywordToolCallSimpleViewer":
-        return SearchKeywordToolCallSimpleViewer(self)
+    def SearchKeywordToolCallWithProjectName(self) -> "SearchKeywordToolCallWithProjectNameViewer":
+        return SearchKeywordToolCallWithProjectNameViewer(self)
 
     @property
     def SearchKeywordToolCallWithoutProjectName(self) -> "SearchKeywordToolCallWithoutProjectNameViewer":
         return SearchKeywordToolCallWithoutProjectNameViewer(self)
 
     @property
-    def SemanticSearchParams(self) -> "SemanticSearchParamsViewer":
-        return SemanticSearchParamsViewer(self)
+    def SemanticSearchParamsWithProjectName(self) -> "SemanticSearchParamsWithProjectNameViewer":
+        return SemanticSearchParamsWithProjectNameViewer(self)
 
     @property
     def SemanticSearchParamsWithoutProjectName(self) -> "SemanticSearchParamsWithoutProjectNameViewer":
         return SemanticSearchParamsWithoutProjectNameViewer(self)
 
     @property
-    def SemanticSearchToolCall(self) -> "SemanticSearchToolCallViewer":
-        return SemanticSearchToolCallViewer(self)
-
-    @property
-    def SemanticSearchToolCallSimple(self) -> "SemanticSearchToolCallSimpleViewer":
-        return SemanticSearchToolCallSimpleViewer(self)
+    def SemanticSearchToolCallWithProjectName(self) -> "SemanticSearchToolCallWithProjectNameViewer":
+        return SemanticSearchToolCallWithProjectNameViewer(self)
 
     @property
     def SemanticSearchToolCallWithoutProjectName(self) -> "SemanticSearchToolCallWithoutProjectNameViewer":
@@ -397,7 +377,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated enums 16
+# Generated enums 15
 # #########################################################################
 
 class AgentAst:
@@ -526,48 +506,6 @@ class CodeStorageAction_CrossIndexingValues:
     @property
     def Remove(self) -> type_builder.EnumValueViewer:
         return type_builder.EnumValueViewer(self.__bldr.value("Remove"))
-    
-    
-
-
-class ContractRoleAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.enum("ContractRole")
-        self._values: typing.Set[str] = set([  "Provider",  "Consumer",  ])
-        self._vals = ContractRoleValues(self._bldr, self._values)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def values(self) -> "ContractRoleValues":
-        return self._vals
-
-
-class ContractRoleViewer(ContractRoleAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-    
-    def list_values(self) -> typing.List[typing.Tuple[str, type_builder.EnumValueViewer]]:
-        return [(name, type_builder.EnumValueViewer(self._bldr.value(name))) for name in self._values]
-    
-
-class ContractRoleValues:
-    def __init__(self, enum_bldr: baml_py.EnumBuilder, values: typing.Set[str]):
-        self.__bldr = enum_bldr
-        self.__values = values # type: ignore (we know how to use this private attribute) # noqa: F821
-
-    
-    
-    @property
-    def Provider(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("Provider"))
-    
-    @property
-    def Consumer(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("Consumer"))
     
     
 
@@ -1120,7 +1058,7 @@ class ToolNameAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.enum("ToolName")
-        self._values: typing.Set[str] = set([  "Database",  "DatabaseSimple",  "SearchKeyword",  "SearchKeywordSimple",  "SearchKeywordWithoutProjectName",  "SemanticSearch",  "SemanticSearchSimple",  "SemanticSearchWithoutProjectName",  "ListFiles",  "ListFilesSimple",  "ListFilesWithoutProjectName",  "Terminal",  "Completion",  "EditFile",  "Diagnostics",  ])
+        self._values: typing.Set[str] = set([  "Database",  "DatabaseSimple",  "SearchKeyword",  "SearchKeywordSimple",  "SearchKeywordWithoutProjectName",  "SemanticSearch",  "SemanticSearchSimple",  "ListFilesWithProjectName",  "ListFilesWithoutProjectName",  "Terminal",  "Completion",  "EditFile",  "Diagnostics",  ])
         self._vals = ToolNameValues(self._bldr, self._values)
 
     def type(self) -> baml_py.FieldType:
@@ -1176,16 +1114,8 @@ class ToolNameValues:
         return type_builder.EnumValueViewer(self.__bldr.value("SemanticSearchSimple"))
     
     @property
-    def SemanticSearchWithoutProjectName(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("SemanticSearchWithoutProjectName"))
-    
-    @property
-    def ListFiles(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("ListFiles"))
-    
-    @property
-    def ListFilesSimple(self) -> type_builder.EnumValueViewer:
-        return type_builder.EnumValueViewer(self.__bldr.value("ListFilesSimple"))
+    def ListFilesWithProjectName(self) -> type_builder.EnumValueViewer:
+        return type_builder.EnumValueViewer(self.__bldr.value("ListFilesWithProjectName"))
     
     @property
     def ListFilesWithoutProjectName(self) -> type_builder.EnumValueViewer:
@@ -1212,7 +1142,7 @@ class ToolNameValues:
 
 
 # #########################################################################
-# Generated classes 74
+# Generated classes 70
 # #########################################################################
 
 class AddTaskAst:
@@ -1301,7 +1231,7 @@ class ChangeInstructionAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("ChangeInstruction")
-        self._properties: typing.Set[str] = set([  "description",  "current_state",  "target_state",  "start_line",  "end_line",  "additional_notes",  ])
+        self._properties: typing.Set[str] = set([  "description",  "guidance",  "integration_notes",  ])
         self._props = ChangeInstructionProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -1334,24 +1264,12 @@ class ChangeInstructionProperties:
         return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
     
     @property
-    def current_state(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("current_state"))
+    def guidance(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("guidance"))
     
     @property
-    def target_state(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("target_state"))
-    
-    @property
-    def start_line(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("start_line"))
-    
-    @property
-    def end_line(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("end_line"))
-    
-    @property
-    def additional_notes(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("additional_notes"))
+    def integration_notes(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("integration_notes"))
     
     
 
@@ -1873,148 +1791,6 @@ class ConnectionSplittingResponseProperties:
     @property
     def summary(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("summary"))
-    
-    
-
-
-class ContractAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("Contract")
-        self._properties: typing.Set[str] = set([  "contract_id",  "contract_type",  "name",  "description",  "role",  "interface",  "input_format",  "output_format",  "error_codes",  "authentication_required",  "examples",  "instructions",  ])
-        self._props = ContractProperties(self._bldr, self._properties)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "ContractProperties":
-        return self._props
-
-
-class ContractViewer(ContractAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-    
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-    
-
-
-class ContractProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
-
-    
-    
-    @property
-    def contract_id(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("contract_id"))
-    
-    @property
-    def contract_type(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("contract_type"))
-    
-    @property
-    def name(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("name"))
-    
-    @property
-    def description(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
-    
-    @property
-    def role(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("role"))
-    
-    @property
-    def interface(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("interface"))
-    
-    @property
-    def input_format(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("input_format"))
-    
-    @property
-    def output_format(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("output_format"))
-    
-    @property
-    def error_codes(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("error_codes"))
-    
-    @property
-    def authentication_required(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("authentication_required"))
-    
-    @property
-    def examples(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("examples"))
-    
-    @property
-    def instructions(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("instructions"))
-    
-    
-
-
-class ContractFieldAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("ContractField")
-        self._properties: typing.Set[str] = set([  "name",  "type",  "required",  "description",  "validation",  "nested",  ])
-        self._props = ContractFieldProperties(self._bldr, self._properties)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "ContractFieldProperties":
-        return self._props
-
-
-class ContractFieldViewer(ContractFieldAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-    
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-    
-
-
-class ContractFieldProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
-
-    
-    
-    @property
-    def name(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("name"))
-    
-    @property
-    def type(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("type"))
-    
-    @property
-    def required(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("required"))
-    
-    @property
-    def description(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
-    
-    @property
-    def validation(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("validation"))
-    
-    @property
-    def nested(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("nested"))
     
     
 
@@ -2759,22 +2535,22 @@ class FileChangeProperties:
     
 
 
-class ListFilesParamsAst:
+class IntegrationContractAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("ListFilesParams")
-        self._properties: typing.Set[str] = set([  "path",  "project_name",  "recursive",  "fetch_next_chunk",  ])
-        self._props = ListFilesParamsProperties(self._bldr, self._properties)
+        self._bldr = _tb.class_("IntegrationContract")
+        self._properties: typing.Set[str] = set([  "contract_id",  "description",  "related_projects",  "specifications",  ])
+        self._props = IntegrationContractProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
         return self._bldr.field()
 
     @property
-    def props(self) -> "ListFilesParamsProperties":
+    def props(self) -> "IntegrationContractProperties":
         return self._props
 
 
-class ListFilesParamsViewer(ListFilesParamsAst):
+class IntegrationContractViewer(IntegrationContractAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
@@ -2784,7 +2560,58 @@ class ListFilesParamsViewer(ListFilesParamsAst):
     
 
 
-class ListFilesParamsProperties:
+class IntegrationContractProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def contract_id(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("contract_id"))
+    
+    @property
+    def description(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
+    
+    @property
+    def related_projects(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("related_projects"))
+    
+    @property
+    def specifications(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("specifications"))
+    
+    
+
+
+class ListFilesParamsWithProjectNameAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ListFilesParamsWithProjectName")
+        self._properties: typing.Set[str] = set([  "path",  "project_name",  "recursive",  "fetch_next_chunk",  ])
+        self._props = ListFilesParamsWithProjectNameProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ListFilesParamsWithProjectNameProperties":
+        return self._props
+
+
+class ListFilesParamsWithProjectNameViewer(ListFilesParamsWithProjectNameAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class ListFilesParamsWithProjectNameProperties:
     def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
@@ -2857,22 +2684,22 @@ class ListFilesParamsWithoutProjectNameProperties:
     
 
 
-class ListFilesToolCallAst:
+class ListFilesToolCallWithProjectNameAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("ListFilesToolCall")
+        self._bldr = _tb.class_("ListFilesToolCallWithProjectName")
         self._properties: typing.Set[str] = set([  "tool_name",  "parameters",  ])
-        self._props = ListFilesToolCallProperties(self._bldr, self._properties)
+        self._props = ListFilesToolCallWithProjectNameProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
         return self._bldr.field()
 
     @property
-    def props(self) -> "ListFilesToolCallProperties":
+    def props(self) -> "ListFilesToolCallWithProjectNameProperties":
         return self._props
 
 
-class ListFilesToolCallViewer(ListFilesToolCallAst):
+class ListFilesToolCallWithProjectNameViewer(ListFilesToolCallWithProjectNameAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
@@ -2882,50 +2709,7 @@ class ListFilesToolCallViewer(ListFilesToolCallAst):
     
 
 
-class ListFilesToolCallProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
-
-    
-    
-    @property
-    def tool_name(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_name"))
-    
-    @property
-    def parameters(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("parameters"))
-    
-    
-
-
-class ListFilesToolCallSimpleAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("ListFilesToolCallSimple")
-        self._properties: typing.Set[str] = set([  "tool_name",  "parameters",  ])
-        self._props = ListFilesToolCallSimpleProperties(self._bldr, self._properties)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "ListFilesToolCallSimpleProperties":
-        return self._props
-
-
-class ListFilesToolCallSimpleViewer(ListFilesToolCallSimpleAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-    
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-    
-
-
-class ListFilesToolCallSimpleProperties:
+class ListFilesToolCallWithProjectNameProperties:
     def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
@@ -3072,22 +2856,22 @@ class ProjectContextProperties:
     
 
 
-class ProjectRoadmapAst:
+class ProjectExecutionPlanAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("ProjectRoadmap")
-        self._properties: typing.Set[str] = set([  "project_name",  "project_path",  "impact_level",  "reasoning",  "implementation_plan",  "changes",  "contracts",  ])
-        self._props = ProjectRoadmapProperties(self._bldr, self._properties)
+        self._bldr = _tb.class_("ProjectExecutionPlan")
+        self._properties: typing.Set[str] = set([  "project_name",  "project_path",  "impact_level",  "reasoning",  "implementation_plan",  "changes",  "integration_contracts",  ])
+        self._props = ProjectExecutionPlanProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
         return self._bldr.field()
 
     @property
-    def props(self) -> "ProjectRoadmapProperties":
+    def props(self) -> "ProjectExecutionPlanProperties":
         return self._props
 
 
-class ProjectRoadmapViewer(ProjectRoadmapAst):
+class ProjectExecutionPlanViewer(ProjectExecutionPlanAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
@@ -3097,7 +2881,7 @@ class ProjectRoadmapViewer(ProjectRoadmapAst):
     
 
 
-class ProjectRoadmapProperties:
+class ProjectExecutionPlanProperties:
     def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
@@ -3129,8 +2913,8 @@ class ProjectRoadmapProperties:
         return type_builder.ClassPropertyViewer(self.__bldr.property("changes"))
     
     @property
-    def contracts(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("contracts"))
+    def integration_contracts(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("integration_contracts"))
     
     
 
@@ -3668,22 +3452,22 @@ class RoadmapSutraMemoryParamsProperties:
     
 
 
-class SearchKeywordParamsAst:
+class SearchKeywordParamsWithProjectNameAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("SearchKeywordParams")
-        self._properties: typing.Set[str] = set([  "keyword",  "before_lines",  "after_lines",  "case_sensitive",  "regex",  "file_paths",  "project_name",  "fetch_next_chunk",  ])
-        self._props = SearchKeywordParamsProperties(self._bldr, self._properties)
+        self._bldr = _tb.class_("SearchKeywordParamsWithProjectName")
+        self._properties: typing.Set[str] = set([  "keyword",  "file_paths",  "before_lines",  "after_lines",  "case_sensitive",  "regex",  "project_name",  "fetch_next_chunk",  ])
+        self._props = SearchKeywordParamsWithProjectNameProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
         return self._bldr.field()
 
     @property
-    def props(self) -> "SearchKeywordParamsProperties":
+    def props(self) -> "SearchKeywordParamsWithProjectNameProperties":
         return self._props
 
 
-class SearchKeywordParamsViewer(SearchKeywordParamsAst):
+class SearchKeywordParamsWithProjectNameViewer(SearchKeywordParamsWithProjectNameAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
@@ -3693,7 +3477,7 @@ class SearchKeywordParamsViewer(SearchKeywordParamsAst):
     
 
 
-class SearchKeywordParamsProperties:
+class SearchKeywordParamsWithProjectNameProperties:
     def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
@@ -3703,6 +3487,10 @@ class SearchKeywordParamsProperties:
     @property
     def keyword(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("keyword"))
+    
+    @property
+    def file_paths(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("file_paths"))
     
     @property
     def before_lines(self) -> type_builder.ClassPropertyViewer:
@@ -3719,10 +3507,6 @@ class SearchKeywordParamsProperties:
     @property
     def regex(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("regex"))
-    
-    @property
-    def file_paths(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("file_paths"))
     
     @property
     def project_name(self) -> type_builder.ClassPropertyViewer:
@@ -3798,22 +3582,22 @@ class SearchKeywordParamsWithoutProjectNameProperties:
     
 
 
-class SearchKeywordToolCallAst:
+class SearchKeywordToolCallWithProjectNameAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("SearchKeywordToolCall")
+        self._bldr = _tb.class_("SearchKeywordToolCallWithProjectName")
         self._properties: typing.Set[str] = set([  "tool_name",  "parameters",  ])
-        self._props = SearchKeywordToolCallProperties(self._bldr, self._properties)
+        self._props = SearchKeywordToolCallWithProjectNameProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
         return self._bldr.field()
 
     @property
-    def props(self) -> "SearchKeywordToolCallProperties":
+    def props(self) -> "SearchKeywordToolCallWithProjectNameProperties":
         return self._props
 
 
-class SearchKeywordToolCallViewer(SearchKeywordToolCallAst):
+class SearchKeywordToolCallWithProjectNameViewer(SearchKeywordToolCallWithProjectNameAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
@@ -3823,50 +3607,7 @@ class SearchKeywordToolCallViewer(SearchKeywordToolCallAst):
     
 
 
-class SearchKeywordToolCallProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
-
-    
-    
-    @property
-    def tool_name(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_name"))
-    
-    @property
-    def parameters(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("parameters"))
-    
-    
-
-
-class SearchKeywordToolCallSimpleAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("SearchKeywordToolCallSimple")
-        self._properties: typing.Set[str] = set([  "tool_name",  "parameters",  ])
-        self._props = SearchKeywordToolCallSimpleProperties(self._bldr, self._properties)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "SearchKeywordToolCallSimpleProperties":
-        return self._props
-
-
-class SearchKeywordToolCallSimpleViewer(SearchKeywordToolCallSimpleAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-    
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-    
-
-
-class SearchKeywordToolCallSimpleProperties:
+class SearchKeywordToolCallWithProjectNameProperties:
     def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
@@ -3927,22 +3668,22 @@ class SearchKeywordToolCallWithoutProjectNameProperties:
     
 
 
-class SemanticSearchParamsAst:
+class SemanticSearchParamsWithProjectNameAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("SemanticSearchParams")
+        self._bldr = _tb.class_("SemanticSearchParamsWithProjectName")
         self._properties: typing.Set[str] = set([  "query",  "project_name",  "fetch_next_chunk",  ])
-        self._props = SemanticSearchParamsProperties(self._bldr, self._properties)
+        self._props = SemanticSearchParamsWithProjectNameProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
         return self._bldr.field()
 
     @property
-    def props(self) -> "SemanticSearchParamsProperties":
+    def props(self) -> "SemanticSearchParamsWithProjectNameProperties":
         return self._props
 
 
-class SemanticSearchParamsViewer(SemanticSearchParamsAst):
+class SemanticSearchParamsWithProjectNameViewer(SemanticSearchParamsWithProjectNameAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
@@ -3952,7 +3693,7 @@ class SemanticSearchParamsViewer(SemanticSearchParamsAst):
     
 
 
-class SemanticSearchParamsProperties:
+class SemanticSearchParamsWithProjectNameProperties:
     def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
@@ -4017,22 +3758,22 @@ class SemanticSearchParamsWithoutProjectNameProperties:
     
 
 
-class SemanticSearchToolCallAst:
+class SemanticSearchToolCallWithProjectNameAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("SemanticSearchToolCall")
+        self._bldr = _tb.class_("SemanticSearchToolCallWithProjectName")
         self._properties: typing.Set[str] = set([  "tool_name",  "parameters",  ])
-        self._props = SemanticSearchToolCallProperties(self._bldr, self._properties)
+        self._props = SemanticSearchToolCallWithProjectNameProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
         return self._bldr.field()
 
     @property
-    def props(self) -> "SemanticSearchToolCallProperties":
+    def props(self) -> "SemanticSearchToolCallWithProjectNameProperties":
         return self._props
 
 
-class SemanticSearchToolCallViewer(SemanticSearchToolCallAst):
+class SemanticSearchToolCallWithProjectNameViewer(SemanticSearchToolCallWithProjectNameAst):
     def __init__(self, tb: type_builder.TypeBuilder):
         super().__init__(tb)
 
@@ -4042,50 +3783,7 @@ class SemanticSearchToolCallViewer(SemanticSearchToolCallAst):
     
 
 
-class SemanticSearchToolCallProperties:
-    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
-
-    
-    
-    @property
-    def tool_name(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("tool_name"))
-    
-    @property
-    def parameters(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("parameters"))
-    
-    
-
-
-class SemanticSearchToolCallSimpleAst:
-    def __init__(self, tb: type_builder.TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("SemanticSearchToolCallSimple")
-        self._properties: typing.Set[str] = set([  "tool_name",  "parameters",  ])
-        self._props = SemanticSearchToolCallSimpleProperties(self._bldr, self._properties)
-
-    def type(self) -> baml_py.FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "SemanticSearchToolCallSimpleProperties":
-        return self._props
-
-
-class SemanticSearchToolCallSimpleViewer(SemanticSearchToolCallSimpleAst):
-    def __init__(self, tb: type_builder.TypeBuilder):
-        super().__init__(tb)
-
-    
-    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
-        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-    
-
-
-class SemanticSearchToolCallSimpleProperties:
+class SemanticSearchToolCallWithProjectNameProperties:
     def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
         self.__bldr = bldr
         self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821

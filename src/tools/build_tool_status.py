@@ -478,11 +478,8 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                         description = instruction.get(
                             "description", "No description provided"
                         )
-                        current_state = instruction.get("current_state", "")
-                        target_state = instruction.get("target_state", "")
-                        start_line = instruction.get("start_line")
-                        end_line = instruction.get("end_line")
-                        additional_notes = instruction.get("additional_notes", "")
+                        guidance = instruction.get("guidance", "")
+                        integration_notes = instruction.get("integration_notes", "")
 
                         # Description
                         desc_text = Text()
@@ -490,37 +487,19 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                         desc_text.append(description)
                         content_elements.append(desc_text)
 
-                        # Line number information
-                        if start_line is not None:
-                            line_text = Text("     ")
-                            if end_line is not None and end_line != start_line:
-                                line_text.append("Lines: ", style="bold")
-                                line_text.append(f"{start_line}-{end_line}")
-                            else:
-                                line_text.append("Line: ", style="bold")
-                                line_text.append(str(start_line))
-                            content_elements.append(line_text)
+                        # Guidance
+                        if guidance:
+                            guidance_text = Text("     ")
+                            guidance_text.append("Guidance: ", style="bold")
+                            guidance_text.append(guidance)
+                            content_elements.append(guidance_text)
 
-                        # Current state
-                        if current_state:
-                            current_text = Text("     ")
-                            current_text.append("Current: ", style="bold")
-                            current_text.append(current_state)
-                            content_elements.append(current_text)
-
-                        # Target state
-                        if target_state:
-                            target_text = Text("     ")
-                            target_text.append("Target: ", style="bold")
-                            target_text.append(target_state)
-                            content_elements.append(target_text)
-
-                        # Additional notes
-                        if additional_notes:
-                            notes_text = Text("     ")
-                            notes_text.append("Notes: ", style="bold")
-                            notes_text.append(additional_notes)
-                            content_elements.append(notes_text)
+                        # Integration notes
+                        if integration_notes:
+                            integration_text = Text("     ")
+                            integration_text.append("Integration Notes: ", style="bold")
+                            integration_text.append(integration_notes)
+                            content_elements.append(integration_text)
 
                         # Add spacing between instructions if there are multiple
                         if k < len(instructions):
@@ -537,7 +516,7 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
             content_elements.append(no_changes_text)
 
         # Contracts summary
-        contracts = project.get("contracts", [])
+        contracts = project.get("integration_contracts", [])
         if contracts:
             content_elements.append(Text())  # Add spacing
             contract_header = Text()
@@ -548,40 +527,16 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
 
             for j, contract in enumerate(contracts, 1):
                 contract_id = contract.get("contract_id", "Unknown")
-                contract_type = contract.get("contract_type", "Unknown")
-                contract_name = contract.get("name", "Unnamed Contract")
                 description = contract.get("description", "")
-                role = contract.get("role", "")
-                interface = contract.get("interface", {})
-                authentication_required = contract.get("authentication_required", False)
+                related_projects = contract.get("related_projects", [])
+                specifications = contract.get("specifications", "")
 
                 # Contract header line
                 contract_line = Text()
                 contract_line.append(f"   {j}. ", style="bold")
-                contract_line.append(f"{contract_type.upper()}", style="bold magenta")
-                contract_line.append(f" → {contract_name}")
+                contract_line.append("CONTRACT", style="bold magenta")
+                contract_line.append(f" → {contract_id}")
                 content_elements.append(contract_line)
-
-                # Contract ID and Role
-                id_text = Text("     ")
-                id_text.append("ID: ", style="bold")
-                id_text.append(contract_id, style="magenta")
-                if role:
-                    id_text.append(" | Role: ", style="bold")
-                    if role == "provider":
-                        role_color = "green"
-                        role_label = "PROVIDER"
-                    elif role == "consumer":
-                        role_color = "blue"
-                        role_label = "CONSUMER"
-                    elif role == "both":
-                        role_color = "yellow"
-                        role_label = "BOTH (Proxy/Intermediary)"
-                    else:
-                        role_color = "white"
-                        role_label = role.upper()
-                    id_text.append(role_label, style=f"bold {role_color}")
-                content_elements.append(id_text)
 
                 # Description
                 if description:
@@ -590,57 +545,19 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                     desc_text.append(description)
                     content_elements.append(desc_text)
 
-                # Interface details
-                if interface:
-                    interface_text = Text("     ")
-                    interface_text.append("Interface: ", style="bold")
-                    interface_parts = []
-                    for key, value in interface.items():
-                        interface_parts.append(f"{key}={value}")
-                    interface_text.append(", ".join(interface_parts))
-                    content_elements.append(interface_text)
+                # Related projects
+                if related_projects:
+                    projects_text = Text("     ")
+                    projects_text.append("Related Projects: ", style="bold")
+                    projects_text.append(", ".join(related_projects))
+                    content_elements.append(projects_text)
 
-                # Authentication
-                if authentication_required:
-                    auth_text = Text("     ")
-                    auth_text.append("Authentication: ", style="bold")
-                    auth_text.append("Required", style="red")
-                    content_elements.append(auth_text)
-
-                # Input/Output formats (simplified for display)
-                input_format = contract.get("input_format", [])
-                if input_format:
-                    input_text = Text("     ")
-                    input_text.append("Input: ", style="bold")
-                    input_fields = []
-                    for field in input_format:
-                        field_name = field.get("name", "")
-                        field_type = field.get("type", "")
-                        required = field.get("required", False)
-                        req_marker = "*" if required else ""
-                        input_fields.append(f"{field_name}: {field_type}{req_marker}")
-                    input_text.append(", ".join(input_fields))  #
-                    content_elements.append(input_text)
-
-                output_format = contract.get("output_format", [])
-                if output_format:
-                    output_text = Text("     ")
-                    output_text.append("Output: ", style="bold")
-                    output_fields = []
-                    for field in output_format:
-                        field_name = field.get("name", "")
-                        field_type = field.get("type", "")
-                        output_fields.append(f"{field_name}: {field_type}")
-                    output_text.append(", ".join(output_fields))
-                    content_elements.append(output_text)
-
-                # Error codes
-                error_codes = contract.get("error_codes", [])
-                if error_codes:
-                    error_text = Text("     ")
-                    error_text.append("Error Codes: ", style="bold")
-                    error_text.append(", ".join(error_codes))
-                    content_elements.append(error_text)
+                # Specifications
+                if specifications:
+                    spec_text = Text("     ")
+                    spec_text.append("Specifications: ", style="bold")
+                    spec_text.append(specifications)
+                    content_elements.append(spec_text)
 
                 # Add spacing between contracts if there are multiple
                 if j < len(contracts):

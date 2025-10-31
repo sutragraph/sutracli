@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (74)
+# Generated classes (70)
 # #########################################################################
 
 class AddTask(BaseModel):
@@ -35,11 +35,8 @@ class BaseCompletionParams(BaseModel):
 
 class ChangeInstruction(BaseModel):
     description: typing.Optional[str] = None
-    current_state: typing.Optional[str] = None
-    target_state: typing.Optional[str] = None
-    start_line: typing.Optional[int] = None
-    end_line: typing.Optional[int] = None
-    additional_notes: typing.Optional[str] = None
+    guidance: typing.Optional[str] = None
+    integration_notes: typing.Optional[str] = None
 
 class CodeConnection(BaseModel):
     id: typing.Optional[int] = None
@@ -97,28 +94,6 @@ class ConnectionSplittingResponse(BaseModel):
     outgoing_connections: typing.Optional[typing.Dict[typing.Union[types.TechnologyType, str], typing.Dict[str, typing.List["ConnectionDetail"]]]] = None
     summary: typing.Optional[str] = None
 
-class Contract(BaseModel):
-    contract_id: typing.Optional[str] = None
-    contract_type: typing.Optional[str] = None
-    name: typing.Optional[str] = None
-    description: typing.Optional[str] = None
-    role: typing.Optional[types.ContractRole] = None
-    interface: typing.Dict[str, str]
-    input_format: typing.Optional[typing.List["ContractField"]] = None
-    output_format: typing.Optional[typing.List["ContractField"]] = None
-    error_codes: typing.Optional[typing.List[str]] = None
-    authentication_required: typing.Optional[bool] = None
-    examples: typing.Optional[str] = None
-    instructions: typing.Optional[str] = None
-
-class ContractField(BaseModel):
-    name: typing.Optional[str] = None
-    type: typing.Optional[str] = None
-    required: typing.Optional[bool] = None
-    description: typing.Optional[str] = None
-    validation: typing.Optional[str] = None
-    nested: typing.Optional[typing.List["ContractField"]] = None
-
 class CrossIndexingResponse(BaseModel):
     thinking: typing.Optional[str] = None
     tool_call: typing.Optional[typing.Union["ListFilesToolCallWithoutProjectName", "DatabaseToolCall", "SearchKeywordToolCallWithoutProjectName", "CompletionToolCall_CrossIndexing"]] = None
@@ -167,7 +142,7 @@ class DeveloperPromptParams(BaseModel):
 class DeveloperResponse(BaseModel):
     thinking: typing.Optional[str] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
 
 class DiagnosticsParams(BaseModel):
     path: typing.Optional[str] = None
@@ -196,7 +171,13 @@ class FileChange(BaseModel):
     operation: typing.Optional[types.FileOperation] = None
     instructions: typing.List["ChangeInstruction"]
 
-class ListFilesParams(BaseModel):
+class IntegrationContract(BaseModel):
+    contract_id: typing.Optional[str] = None
+    description: typing.Optional[str] = None
+    related_projects: typing.List[str]
+    specifications: typing.Optional[str] = None
+
+class ListFilesParamsWithProjectName(BaseModel):
     path: typing.Optional[str] = None
     project_name: typing.Optional[str] = None
     recursive: typing.Optional[bool] = None
@@ -207,13 +188,9 @@ class ListFilesParamsWithoutProjectName(BaseModel):
     recursive: typing.Optional[bool] = None
     fetch_next_chunk: typing.Optional[bool] = None
 
-class ListFilesToolCall(BaseModel):
+class ListFilesToolCallWithProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
-    parameters: typing.Optional["ListFilesParams"] = None
-
-class ListFilesToolCallSimple(BaseModel):
-    tool_name: typing.Optional[str] = None
-    parameters: typing.Optional["ListFilesParamsWithoutProjectName"] = None
+    parameters: typing.Optional["ListFilesParamsWithProjectName"] = None
 
 class ListFilesToolCallWithoutProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
@@ -227,14 +204,14 @@ class Project(BaseModel):
 class ProjectContext(BaseModel):
     projects: typing.List["Project"]
 
-class ProjectRoadmap(BaseModel):
+class ProjectExecutionPlan(BaseModel):
     project_name: typing.Optional[str] = None
     project_path: typing.Optional[str] = None
     impact_level: typing.Optional[types.ImpactLevel] = None
     reasoning: typing.Optional[str] = None
     implementation_plan: typing.List[str]
     changes: typing.Optional[typing.List["FileChange"]] = None
-    contracts: typing.Optional[typing.List["Contract"]] = None
+    integration_contracts: typing.Optional[typing.List["IntegrationContract"]] = None
 
 class QAEngineerCompletionParams(BaseModel):
     result: typing.Optional[str] = None
@@ -255,7 +232,7 @@ class QAEngineerPromptParams(BaseModel):
 class QAEngineerResponse(BaseModel):
     thinking: typing.Optional[str] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
 
 class RoadmapCodeStorage(BaseModel):
     action: typing.Optional[types.RoadmapCodeStorageAction] = None
@@ -273,7 +250,7 @@ class RoadmapCodeStorage(BaseModel):
     call_chain_summary: typing.Optional[str] = None
 
 class RoadmapCompletionParams(BaseModel):
-    projects: typing.List["ProjectRoadmap"]
+    projects: typing.List["ProjectExecutionPlan"]
     summary: typing.Optional[str] = None
 
 class RoadmapCompletionToolCall(BaseModel):
@@ -288,20 +265,20 @@ class RoadmapPromptParams(BaseModel):
 class RoadmapResponse(BaseModel):
     thinking: typing.Optional[str] = None
     sutra_memory: typing.Optional["RoadmapSutraMemoryParams"] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]] = None
 
 class RoadmapSutraMemoryParams(BaseModel):
     add_history: typing.Optional[str] = None
     tasks: typing.Optional[typing.List["TaskOperation"]] = None
     code: typing.Optional[typing.List["RoadmapCodeStorage"]] = None
 
-class SearchKeywordParams(BaseModel):
+class SearchKeywordParamsWithProjectName(BaseModel):
     keyword: typing.Optional[str] = None
+    file_paths: typing.Optional[str] = None
     before_lines: typing.Optional[int] = None
     after_lines: typing.Optional[int] = None
     case_sensitive: typing.Optional[bool] = None
     regex: typing.Optional[bool] = None
-    file_paths: typing.Optional[str] = None
     project_name: typing.Optional[str] = None
     fetch_next_chunk: typing.Optional[bool] = None
 
@@ -314,11 +291,7 @@ class SearchKeywordParamsWithoutProjectName(BaseModel):
     regex: typing.Optional[bool] = None
     fetch_next_chunk: typing.Optional[bool] = None
 
-class SearchKeywordToolCall(BaseModel):
-    tool_name: typing.Optional[str] = None
-    parameters: typing.Optional["SearchKeywordParams"] = None
-
-class SearchKeywordToolCallSimple(BaseModel):
+class SearchKeywordToolCallWithProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["SearchKeywordParamsWithoutProjectName"] = None
 
@@ -326,7 +299,7 @@ class SearchKeywordToolCallWithoutProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
     parameters: typing.Optional["SearchKeywordParamsWithoutProjectName"] = None
 
-class SemanticSearchParams(BaseModel):
+class SemanticSearchParamsWithProjectName(BaseModel):
     query: typing.Optional[str] = None
     project_name: typing.Optional[str] = None
     fetch_next_chunk: typing.Optional[bool] = None
@@ -335,13 +308,9 @@ class SemanticSearchParamsWithoutProjectName(BaseModel):
     query: typing.Optional[str] = None
     fetch_next_chunk: typing.Optional[bool] = None
 
-class SemanticSearchToolCall(BaseModel):
+class SemanticSearchToolCallWithProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
-    parameters: typing.Optional["SemanticSearchParams"] = None
-
-class SemanticSearchToolCallSimple(BaseModel):
-    tool_name: typing.Optional[str] = None
-    parameters: typing.Optional["SemanticSearchParamsWithoutProjectName"] = None
+    parameters: typing.Optional["SemanticSearchParamsWithProjectName"] = None
 
 class SemanticSearchToolCallWithoutProjectName(BaseModel):
     tool_name: typing.Optional[str] = None
@@ -420,13 +389,13 @@ class UntracedElement(BaseModel):
 # #########################################################################
 
 
-DeveloperToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]]
+DeveloperToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]]
 
 
-QAEngineerToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallSimple", "SemanticSearchToolCallSimple", "ListFilesToolCallSimple", "TermianlToolCall", "QAEngineerCompletionToolCall"]]
+QAEngineerToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall"]]
 
 
-RoadmapToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCall", "SearchKeywordToolCall", "SemanticSearchToolCall", "ListFilesToolCall", "RoadmapCompletionToolCall"]]
+RoadmapToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]]
 
 
 ToolCall_CrossIndexing: typing_extensions.TypeAlias = typing.Optional[typing.Union["ListFilesToolCallWithoutProjectName", "DatabaseToolCall", "SearchKeywordToolCallWithoutProjectName", "CompletionToolCall_CrossIndexing"]]

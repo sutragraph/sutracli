@@ -1,4 +1,4 @@
-template_string SimpleSearchKeywordToolTemplate() #"
+template_string SearchKeywordToolTemplate() #"
 ## search_keyword
 
 Search for keywords or patterns in the codebase using ripgrep. Supports single keywords, multiple patterns (using OR), and regex patterns. Faster than terminal commands and provides line numbers for precise location tracking.

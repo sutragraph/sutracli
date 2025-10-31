@@ -6,9 +6,7 @@ enum ToolName {
   SearchKeywordWithoutProjectName
   SemanticSearch
   SemanticSearchSimple
-  SemanticSearchWithoutProjectName
-  ListFiles
-  ListFilesSimple
+  ListFilesWithProjectName
   ListFilesWithoutProjectName
   Terminal
   Completion
@@ -27,24 +25,14 @@ class DatabaseToolCallSimple {
   parameters DatabaseParamsGetFileByPath | DatabaseParamsGetBlockDetails
 }
 
-class SearchKeywordToolCall {
-  tool_name "search_keyword"
-  parameters SearchKeywordParams
-}
-
 class SearchKeywordToolCallWithoutProjectName {
   tool_name "search_keyword"
   parameters SearchKeywordParamsWithoutProjectName
 }
 
-class SearchKeywordToolCallSimple {
+class SearchKeywordToolCallWithProjectName {
   tool_name "search_keyword"
   parameters SearchKeywordParamsWithoutProjectName
-}
-
-class SemanticSearchToolCall {
-  tool_name "semantic_search"
-  parameters SemanticSearchParams
 }
 
 class SemanticSearchToolCallWithoutProjectName {
@@ -52,22 +40,17 @@ class SemanticSearchToolCallWithoutProjectName {
   parameters SemanticSearchParamsWithoutProjectName
 }
 
-class SemanticSearchToolCallSimple {
+class SemanticSearchToolCallWithProjectName {
   tool_name "semantic_search"
-  parameters SemanticSearchParamsWithoutProjectName
+  parameters SemanticSearchParamsWithProjectName
 }
 
-class ListFilesToolCall {
+class ListFilesToolCallWithProjectName {
   tool_name "list_files"
-  parameters ListFilesParams
+  parameters ListFilesParamsWithProjectName
 }
 
 class ListFilesToolCallWithoutProjectName {
-  tool_name "list_files"
-  parameters ListFilesParamsWithoutProjectName
-}
-
-class ListFilesToolCallSimple {
   tool_name "list_files"
   parameters ListFilesParamsWithoutProjectName
 }

@@ -1,13 +1,18 @@
 template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
 {{ RoadmapIdentity() }}
-{{ RoadmapConstraints() }}
+
+{{ ChainOfThought() }}
+
+{{ ctx.output_format }}
+
+{{ RoadmapGuidelines() }}
+
 {{ RoadmapWorkflow() }}
-{{ RoadmapStrategy() }}
+
 {{ RoadmapSutraMemoryPrompt() }}
-{{ ToolsPrompt(Agent.Roadmap, [ToolName.Database, ToolName.SearchKeyword, ToolName.SemanticSearch, ToolName.ListFiles]) }}
 
-{{ SystemInfo(params.system_info) }}
 
+{{ ToolsPrompt(Agent.Roadmap, [ToolName.DatabaseSimple, ToolName.SearchKeyword, ToolName.SemanticSearchSimple, ToolName.ListFilesWithProjectName]) }}
 {% if params.project_context.projects|length > 0 %}
 {{ ProjectContextTemplate(params.project_context) }}
 {% endif %}
@@ -89,4 +94,55 @@ function OpenRouterRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse 
     {{ RoadmapSystemPrompt(params) }}
     {{ RoadmapUserPrompt(params.context) }}
   "#
+}
+
+test TestName {
+  functions [AwsBedrockRoadmapAgent]
+  args {
+    params {
+        context #"
+        hello world
+      "#
+        system_info {
+          os #"
+          hello world
+        "#
+          shell #"
+          hello world
+        "#
+          home #"
+          hello world
+        "#
+          current_dir #"
+          hello world
+        "#
+      }
+        project_context {
+          projects [
+          {
+              name #"
+              hello world
+            "#
+              path #"
+              hello world
+            "#
+              description #"
+              hello world
+            "#
+          },
+          {
+              name #"
+              hello world
+            "#
+              path #"
+              hello world
+            "#
+              description #"
+              hello world
+            "#
+          }
+        ]
+      }
+    }
+  }
 }

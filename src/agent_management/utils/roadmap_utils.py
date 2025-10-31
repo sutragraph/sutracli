@@ -33,7 +33,7 @@ def convert_roadmap_to_prompts(data: Dict[str, Any]) -> list:
         impact_level = project.get("impact_level", "Medium")
         reasoning = project.get("reasoning", "")
         changes = project.get("changes", [])
-        contracts = project.get("contracts", [])
+        contracts = project.get("integration_contracts", [])
         implementation_plan = project.get("implementation_plan", [])
 
         # Build the prompt string
@@ -69,32 +69,18 @@ def convert_roadmap_to_prompts(data: Dict[str, Any]) -> list:
                     prompt_parts.append("Instructions:")
                     for j, instruction in enumerate(instructions, 1):
                         description = instruction.get("description", "")
-                        current_state = instruction.get("current_state", "")
-                        target_state = instruction.get("target_state", "")
-                        start_line = instruction.get("start_line")
-                        end_line = instruction.get("end_line")
-                        additional_notes = instruction.get("additional_notes", "")
+                        guidance = instruction.get("guidance", "")
+                        integration_notes = instruction.get("integration_notes", "")
 
                         prompt_parts.append(f"{j}. Change: {str(description)}")
 
-                        if current_state:
+                        if guidance:
+                            prompt_parts.append(f"   Guidance: {str(guidance)}")
+
+                        if integration_notes:
                             prompt_parts.append(
-                                f"   Current State: {str(current_state)}"
+                                f"   Integration Notes: {str(integration_notes)}"
                             )
-
-                        if target_state:
-                            prompt_parts.append(f"   Target State: {str(target_state)}")
-
-                        if start_line is not None:
-                            if end_line is not None:
-                                prompt_parts.append(
-                                    f"   Lines: {start_line}-{end_line}"
-                                )
-                            else:
-                                prompt_parts.append(f"   Line: {start_line}")
-
-                        if additional_notes:
-                            prompt_parts.append(f"   Notes: {str(additional_notes)}")
 
                         prompt_parts.append("")
 
@@ -111,118 +97,23 @@ def convert_roadmap_to_prompts(data: Dict[str, Any]) -> list:
 
             for i, contract in enumerate(contracts, 1):
                 contract_id = contract.get("contract_id", "")
-                contract_type = contract.get("contract_type", "")
-                contract_name = contract.get("name", "")
                 description = contract.get("description", "")
-                role = contract.get("role", "")
-                interface = contract.get("interface", {})
-                input_format = contract.get("input_format", [])
-                output_format = contract.get("output_format", [])
-                error_codes = contract.get("error_codes", [])
-                authentication_required = contract.get("authentication_required", False)
-                examples = contract.get("examples", "")
-                instructions_contract = contract.get("instructions", "")
+                related_projects = contract.get("related_projects", [])
+                specifications = contract.get("specifications", "")
 
-                prompt_parts.append(f"### {i}. {contract_name}")
+                prompt_parts.append(f"### {i}. Integration Contract")
                 prompt_parts.append(f"Contract ID: {contract_id}")
-                prompt_parts.append(f"Type: {contract_type}")
-
-                if role:
-                    if role == "provider":
-                        role_desc = "Implements this contract"
-                    elif role == "consumer":
-                        role_desc = "Consumes this contract"
-                    elif role == "both":
-                        role_desc = "Acts as both provider and consumer for this contract (proxy/intermediary)"
-                    else:
-                        role_desc = f"Role: {role}"
-                    prompt_parts.append(f"Role: {role} ({role_desc})")
-
-                prompt_parts.append("")
 
                 if description:
                     prompt_parts.append(f"Description: {str(description)}")
-                    prompt_parts.append("")
 
-                if interface:
-                    prompt_parts.append("Interface Details:")
-                    for key, value in interface.items():
-                        prompt_parts.append(f"- {key}: {value}")
-                    prompt_parts.append("")
-
-                # Define a helper function to process nested fields recursively
-                def _process_level(fields, indent_level=0):
-                    # Determine the indentation and bullet style based on the current depth
-                    indent = "  " * indent_level
-                    bullet = "•" if indent_level > 0 else "-"
-
-                    for field in fields:
-                        # Safely get all field attributes
-                        name = field.get("name", "N/A")
-                        field_type = field.get("type", "N/A")
-                        description = field.get("description")
-                        validation = field.get("validation")
-                        nested_fields = field.get("nested")
-
-                        # Format the 'required' text only if the key is present
-                        req_text = ""
-                        if "required" in field:
-                            req_text = (
-                                " (required)" if field["required"] else " (optional)"
-                            )
-
-                        # 1. Add the main line for the current field
-                        prompt_parts.append(
-                            f"{indent}{bullet} {name}: `{field_type}`{req_text}"
-                        )
-
-                        # 2. Add sub-details like description and validation
-                        sub_indent = indent + "  "
-                        if description:
-                            prompt_parts.append(
-                                f"{sub_indent}Description: {description}"
-                            )
-                        if validation:
-                            prompt_parts.append(
-                                f"{sub_indent}Validation: `{validation}`"
-                            )
-
-                        # 3. If there are nested fields, call this function again with an increased indent
-                        if nested_fields:
-                            _process_level(nested_fields, indent_level + 1)
-
-                if input_format:
-                    prompt_parts.append("Input Format:")
-                    _process_level(input_format)
-                    prompt_parts.append("")
-
-                if output_format:
-                    prompt_parts.append("Output Format:")
-                    _process_level(output_format)
-                    prompt_parts.append("")
-
-                if error_codes:
-                    prompt_parts.append("Error Codes:")
-                    for error_code in error_codes:
-                        prompt_parts.append(f"- {error_code}")
-                    prompt_parts.append("")
-
-                if authentication_required:
-                    prompt_parts.append("Authentication: Required")
-                    prompt_parts.append("")
-
-                if examples:
-                    prompt_parts.append("Examples:")
-                    prompt_parts.append("```")
-                    prompt_parts.append(str(examples))
-                    prompt_parts.append("```")
-                    prompt_parts.append("")
-
-                if instructions_contract:
+                if related_projects:
                     prompt_parts.append(
-                        f"Implementation Notes: {str(instructions_contract)}"
+                        f"Related Projects: {', '.join(related_projects)}"
                     )
-                    prompt_parts.append("")
+
+                if specifications:
+                    prompt_parts.append(f"Specifications: {str(specifications)}")
 
                 prompt_parts.append("")
 

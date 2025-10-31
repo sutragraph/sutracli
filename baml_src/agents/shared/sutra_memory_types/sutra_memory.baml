@@ -23,7 +23,7 @@ enum CodeStorageAction {
 
 class CodeStorage {
   action CodeStorageAction @description("The action to perform on the code snippet: 'add' to store a new code snippet")
-  id int @skip //skipping for now cuz remove is not being used and for add its auto generated
+  id int @skip // skipping for now cuz `remove` is not being used and for `add` its auto generated
   file string @description("File path where the code snippet is located")
   start_line int @description("Starting line number of the code snippet")
   end_line int @description("Ending line number of the code snippet")

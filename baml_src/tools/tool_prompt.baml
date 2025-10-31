@@ -13,23 +13,11 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 {% elif tool == ToolName.SearchKeyword %}
 {{ SearchKeywordToolTemplate() }}
 
-{% elif tool == ToolName.SearchKeywordSimple %}
-{{ SimpleSearchKeywordToolTemplate() }}
-
 {% elif tool == ToolName.SearchKeywordWithoutProjectName %}
 {{ SearchKeywordToolWithoutProjectNameTemplate() }}
 
-{% elif tool == ToolName.SemanticSearch %}
-{{ SemanticSearchToolTemplate() }}
-
-{% elif tool == ToolName.SemanticSearchSimple %}
-{{ SimpleSemanticSearchToolTemplate() }}
-
-{% elif tool == ToolName.ListFiles %}
+{% elif tool == ToolName.ListFilesWithProjectName %}
 {{ ListFilesToolTemplate() }}
-
-{% elif tool == ToolName.ListFilesSimple %}
-{{ SimpleListFilesToolTemplate() }}
 
 {% elif tool == ToolName.ListFilesWithoutProjectName %}
 {{ ListFilesToolWithoutProjectNameTemplate() }}
@@ -42,6 +30,12 @@ template_string GlobalToolsPrompt(tools: ToolName[]) #"
 
 {% elif tool == ToolName.Diagnostics %}
 {{ DiagnosticsToolTemplate() }}
+
+{% elif tool == ToolName.SemanticSearch %}
+{{ SemanticSearchToolTemplate() }}
+
+{% elif tool == ToolName.SemanticSearchSimple %}
+{{ SimpleSemanticSearchToolTemplate() }}
 
 {% endif %}
 {% endfor %}

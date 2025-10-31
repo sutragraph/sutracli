@@ -16,7 +16,9 @@ Description: {{ project.description }}
 
 template_string ProjectContextTemplate(project_context: ProjectContext) #"
 ## PROJECTS CONTEXT:
+
 {% for project in project_context.projects %}
 {{ ProjectEntry(project) }}
+
 {% endfor %}
 "#

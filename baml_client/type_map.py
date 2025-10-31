@@ -58,12 +58,6 @@ type_map = {
     "types.ConnectionSplittingResponse": types.ConnectionSplittingResponse,
     "stream_types.ConnectionSplittingResponse": stream_types.ConnectionSplittingResponse,
 
-    "types.Contract": types.Contract,
-    "stream_types.Contract": stream_types.Contract,
-
-    "types.ContractField": types.ContractField,
-    "stream_types.ContractField": stream_types.ContractField,
-
     "types.CrossIndexingResponse": types.CrossIndexingResponse,
     "stream_types.CrossIndexingResponse": stream_types.CrossIndexingResponse,
 
@@ -112,17 +106,17 @@ type_map = {
     "types.FileChange": types.FileChange,
     "stream_types.FileChange": stream_types.FileChange,
 
-    "types.ListFilesParams": types.ListFilesParams,
-    "stream_types.ListFilesParams": stream_types.ListFilesParams,
+    "types.IntegrationContract": types.IntegrationContract,
+    "stream_types.IntegrationContract": stream_types.IntegrationContract,
+
+    "types.ListFilesParamsWithProjectName": types.ListFilesParamsWithProjectName,
+    "stream_types.ListFilesParamsWithProjectName": stream_types.ListFilesParamsWithProjectName,
 
     "types.ListFilesParamsWithoutProjectName": types.ListFilesParamsWithoutProjectName,
     "stream_types.ListFilesParamsWithoutProjectName": stream_types.ListFilesParamsWithoutProjectName,
 
-    "types.ListFilesToolCall": types.ListFilesToolCall,
-    "stream_types.ListFilesToolCall": stream_types.ListFilesToolCall,
-
-    "types.ListFilesToolCallSimple": types.ListFilesToolCallSimple,
-    "stream_types.ListFilesToolCallSimple": stream_types.ListFilesToolCallSimple,
+    "types.ListFilesToolCallWithProjectName": types.ListFilesToolCallWithProjectName,
+    "stream_types.ListFilesToolCallWithProjectName": stream_types.ListFilesToolCallWithProjectName,
 
     "types.ListFilesToolCallWithoutProjectName": types.ListFilesToolCallWithoutProjectName,
     "stream_types.ListFilesToolCallWithoutProjectName": stream_types.ListFilesToolCallWithoutProjectName,
@@ -133,8 +127,8 @@ type_map = {
     "types.ProjectContext": types.ProjectContext,
     "stream_types.ProjectContext": stream_types.ProjectContext,
 
-    "types.ProjectRoadmap": types.ProjectRoadmap,
-    "stream_types.ProjectRoadmap": stream_types.ProjectRoadmap,
+    "types.ProjectExecutionPlan": types.ProjectExecutionPlan,
+    "stream_types.ProjectExecutionPlan": stream_types.ProjectExecutionPlan,
 
     "types.QAEngineerCompletionParams": types.QAEngineerCompletionParams,
     "stream_types.QAEngineerCompletionParams": stream_types.QAEngineerCompletionParams,
@@ -169,32 +163,26 @@ type_map = {
     "types.RoadmapSutraMemoryParams": types.RoadmapSutraMemoryParams,
     "stream_types.RoadmapSutraMemoryParams": stream_types.RoadmapSutraMemoryParams,
 
-    "types.SearchKeywordParams": types.SearchKeywordParams,
-    "stream_types.SearchKeywordParams": stream_types.SearchKeywordParams,
+    "types.SearchKeywordParamsWithProjectName": types.SearchKeywordParamsWithProjectName,
+    "stream_types.SearchKeywordParamsWithProjectName": stream_types.SearchKeywordParamsWithProjectName,
 
     "types.SearchKeywordParamsWithoutProjectName": types.SearchKeywordParamsWithoutProjectName,
     "stream_types.SearchKeywordParamsWithoutProjectName": stream_types.SearchKeywordParamsWithoutProjectName,
 
-    "types.SearchKeywordToolCall": types.SearchKeywordToolCall,
-    "stream_types.SearchKeywordToolCall": stream_types.SearchKeywordToolCall,
-
-    "types.SearchKeywordToolCallSimple": types.SearchKeywordToolCallSimple,
-    "stream_types.SearchKeywordToolCallSimple": stream_types.SearchKeywordToolCallSimple,
+    "types.SearchKeywordToolCallWithProjectName": types.SearchKeywordToolCallWithProjectName,
+    "stream_types.SearchKeywordToolCallWithProjectName": stream_types.SearchKeywordToolCallWithProjectName,
 
     "types.SearchKeywordToolCallWithoutProjectName": types.SearchKeywordToolCallWithoutProjectName,
     "stream_types.SearchKeywordToolCallWithoutProjectName": stream_types.SearchKeywordToolCallWithoutProjectName,
 
-    "types.SemanticSearchParams": types.SemanticSearchParams,
-    "stream_types.SemanticSearchParams": stream_types.SemanticSearchParams,
+    "types.SemanticSearchParamsWithProjectName": types.SemanticSearchParamsWithProjectName,
+    "stream_types.SemanticSearchParamsWithProjectName": stream_types.SemanticSearchParamsWithProjectName,
 
     "types.SemanticSearchParamsWithoutProjectName": types.SemanticSearchParamsWithoutProjectName,
     "stream_types.SemanticSearchParamsWithoutProjectName": stream_types.SemanticSearchParamsWithoutProjectName,
 
-    "types.SemanticSearchToolCall": types.SemanticSearchToolCall,
-    "stream_types.SemanticSearchToolCall": stream_types.SemanticSearchToolCall,
-
-    "types.SemanticSearchToolCallSimple": types.SemanticSearchToolCallSimple,
-    "stream_types.SemanticSearchToolCallSimple": stream_types.SemanticSearchToolCallSimple,
+    "types.SemanticSearchToolCallWithProjectName": types.SemanticSearchToolCallWithProjectName,
+    "stream_types.SemanticSearchToolCallWithProjectName": stream_types.SemanticSearchToolCallWithProjectName,
 
     "types.SemanticSearchToolCallWithoutProjectName": types.SemanticSearchToolCallWithoutProjectName,
     "stream_types.SemanticSearchToolCallWithoutProjectName": stream_types.SemanticSearchToolCallWithoutProjectName,
@@ -244,8 +232,6 @@ type_map = {
     "types.CodeStorageAction": types.CodeStorageAction,
 
     "types.CodeStorageAction_CrossIndexing": types.CodeStorageAction_CrossIndexing,
-
-    "types.ContractRole": types.ContractRole,
 
     "types.DatabaseQueryName": types.DatabaseQueryName,
 
