@@ -8,6 +8,7 @@ template_string RoadmapGuidelines() #"
 2. Provide every required argument.
 3. DO NOT use tools to access items that are already available in the context section.
 4. Based on Tool Status take decisions on next steps carefully.
+5. Use `'fetch_next_chunk': true` only when there are more results available. (do not use preemptively)
 
 ## Feedback Handling
 If feedback_received: Review feedback + priors; identify tasks for improvements; analyze; apply mods; generate new plan.

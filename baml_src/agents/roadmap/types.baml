@@ -64,7 +64,7 @@ class UntracedElement {
 class RoadmapCodeStorage {
   action RoadmapCodeStorageAction @description("The action to perform on the code snippet")
   id int @description("Unique identifier of the code snippet. Required for all actions.")
-  file string @description("File path where the code snippet is located. Required for 'add' action.")
+  file string @description("Absolute file path where the code snippet is located. Required for 'add' action.")
   start_line int @description("Starting line number of the code snippet. Required for 'add' action.")
   end_line int @description("Ending line number of the code snippet. Required for 'add' action.")
   description string @description("Brief description of the code snippet's purpose. Required for 'add' action.")
