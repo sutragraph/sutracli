@@ -147,18 +147,18 @@ class EditFileToolWithMode:
         """Apply edits to file content."""
         result = content
 
-        # Apply edits in reverse order to maintain line numbers
-        for edit in reversed(edits):
-            # SPECIAL CASE: Handle empty old_text for insertion
-            if edit.old_text == "":
-                # For empty old_text, we treat this as an insertion operation
-                if edit.line_hint is not None:
-                    result = EditFileToolWithMode.insert_at_line(result, edit)
-                else:
-                    # If no line_hint is provided with empty old_text, append to end
-                    result = result + edit.new_text
-                continue
+        # Separate insertion edits (empty old_text) from other edits
+        insertion_edits = []
+        other_edits = []
 
+        for edit in edits:
+            if edit.old_text == "":
+                insertion_edits.append(edit)
+            else:
+                other_edits.append(edit)
+
+        # Apply other edits in reverse order to maintain line numbers
+        for edit in reversed(other_edits):
             # Count occurrences of old_text
             occurrences = result.count(edit.old_text)
 
@@ -179,12 +179,46 @@ class EditFileToolWithMode:
                         f"Multiple occurrences of text found but no line_hint provided: '{edit.old_text}'"
                     )
 
+        # Apply insertion edits in forward order with proper line number tracking
+        if insertion_edits:
+            # Sort insertion edits by line_hint to maintain order
+            insertion_edits.sort(key=lambda e: e.line_hint or 0)
+
+            # For insertions, we need to track line offsets to maintain correct positions
+            # We'll use a line-by-line approach to ensure accuracy
+            result = EditFileToolWithMode.apply_multiple_insertions(
+                result, insertion_edits
+            )
+
+        return result
+
+    @staticmethod
+    def apply_multiple_insertions(content: str, edits: List[Edit]) -> str:
+        """Apply multiple insertion edits with proper line number tracking."""
+        if not edits:
+            return content
+
+        # Sort edits by line_hint to process them in order
+        # Put None line_hint at the end
+        sorted_edits = sorted(
+            edits, key=lambda e: (e.line_hint is None, e.line_hint or 0)
+        )
+
+        # Apply insertions one by one, reusing the existing insert_at_line method
+        result = content
+        for edit in sorted_edits:
+            result = EditFileToolWithMode.insert_at_line(result, edit)
+
         return result
 
     @staticmethod
     def insert_at_line(content: str, edit: Edit) -> str:
         """Insert text at the specified line number (1-based)."""
         lines = content.splitlines(keepends=True)
+
+        # Handle None line_hint (append to end)
+        if edit.line_hint is None:
+            return content + edit.new_text
 
         # Convert line_hint from 1-based to 0-based index
         target_line = edit.line_hint - 1  # type: ignore[arg-type]
