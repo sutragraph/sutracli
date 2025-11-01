@@ -340,7 +340,7 @@ class QAEngineerPromptParams(BaseModel):
 class QAEngineerResponse(BaseModel):
     thinking: str
     sutra_memory: "SutraMemoryParams"
-    tool_call: typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall"]
+    tool_call: typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall", "EditFileToolCall", "DiagnosticsToolCall"]
 
 class RoadmapCodeStorage(BaseModel):
     action: RoadmapCodeStorageAction
@@ -500,7 +500,7 @@ class UntracedElement(BaseModel):
 DeveloperToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]
 
 
-QAEngineerToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall"]
+QAEngineerToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall", "EditFileToolCall", "DiagnosticsToolCall"]
 
 
 RoadmapToolCall: typing_extensions.TypeAlias = typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]

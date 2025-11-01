@@ -1,6 +1,7 @@
 template_string RoadmapGuidelines() #"
 ## Searching and Reading
-If you are unsure how to fulfill the user's request, gather more information with tool calls.
+1. If you are unsure how to fulfill the user's request, gather more information with tool calls.
+2. Always Use Chain of Thought Reasoning step-by-step before giving your json response.
 
 ## Tool Use
 1. Make sure to adhere to the tools schema.

@@ -3,7 +3,7 @@ class QAEngineerCompletionToolCall {
   parameters QAEngineerCompletionParams
 }
 
-type QAEngineerToolCall = DatabaseToolCallSimple | SearchKeywordToolCallWithoutProjectName | SemanticSearchToolCallWithoutProjectName | ListFilesToolCallWithoutProjectName | TermianlToolCall | QAEngineerCompletionToolCall
+type QAEngineerToolCall = DatabaseToolCallSimple | SearchKeywordToolCallWithoutProjectName | SemanticSearchToolCallWithoutProjectName | ListFilesToolCallWithoutProjectName | TermianlToolCall | QAEngineerCompletionToolCall | EditFileToolCall | DiagnosticsToolCall
 
 class QAEngineerPromptParams {
   context string

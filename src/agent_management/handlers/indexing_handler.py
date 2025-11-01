@@ -536,7 +536,7 @@ modified code components and updates service connection mappings.
                 self.cross_project_indexer.run_incremental_cross_indexing()
             else:
                 console.print()
-                console.info("⏭️  Skipping incremental cross-indexing")
+                console.print("⏭️  Skipping incremental cross-indexing")
                 console.dim("   • You can run this later when you're ready")
                 console.dim(
                     "   • Your changes are saved and will be analyzed next time"

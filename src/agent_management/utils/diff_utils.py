@@ -19,8 +19,8 @@ def generate_unified_diff(old_content: str, new_content: str, file_path: str) ->
         Unified diff as a string
     """
     try:
-        old_lines = old_content.splitlines(keepends=True)
-        new_lines = new_content.splitlines(keepends=True)
+        old_lines = old_content.splitlines()
+        new_lines = new_content.splitlines()
 
         diff_lines = difflib.unified_diff(
             old_lines,

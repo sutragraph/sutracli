@@ -1,7 +1,7 @@
 template_string QAEngineerSystemPrompt(params: QAEngineerPromptParams) #"
 {{ QAEngineerIdentity() }}
 
-{{ ToolsPrompt(Agent.QAEngineer, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.Terminal]) }}
+{{ ToolsPrompt(Agent.QAEngineer, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.EditFile, ToolName.Terminal, ToolName.Diagnostics]) }}
 {{ QAEngineerToolGuidelines() }}
 
 {{ QAEngineerSutraMemory() }}
@@ -15,6 +15,8 @@ template_string QAEngineerSystemPrompt(params: QAEngineerPromptParams) #"
 "#
 
 template_string QAEngineerUserPrompt(context: string) #"
+====
+
 {{ ChainOfThought() }}
 
 ====

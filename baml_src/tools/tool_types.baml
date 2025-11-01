@@ -12,7 +12,6 @@ enum ToolName {
   Completion
   EditFile
   Diagnostics
-
 }
 
 class DatabaseToolCall {

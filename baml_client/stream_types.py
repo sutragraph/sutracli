@@ -232,7 +232,7 @@ class QAEngineerPromptParams(BaseModel):
 class QAEngineerResponse(BaseModel):
     thinking: typing.Optional[str] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall"]] = None
+    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
 
 class RoadmapCodeStorage(BaseModel):
     action: typing.Optional[types.RoadmapCodeStorageAction] = None
@@ -392,7 +392,7 @@ class UntracedElement(BaseModel):
 DeveloperToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]]
 
 
-QAEngineerToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall"]]
+QAEngineerToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall", "EditFileToolCall", "DiagnosticsToolCall"]]
 
 
 RoadmapToolCall: typing_extensions.TypeAlias = typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]]
