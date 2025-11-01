@@ -149,6 +149,16 @@ class EditFileToolWithMode:
 
         # Apply edits in reverse order to maintain line numbers
         for edit in reversed(edits):
+            # SPECIAL CASE: Handle empty old_text for insertion
+            if edit.old_text == "":
+                # For empty old_text, we treat this as an insertion operation
+                if edit.line_hint is not None:
+                    result = EditFileToolWithMode.insert_at_line(result, edit)
+                else:
+                    # If no line_hint is provided with empty old_text, append to end
+                    result = result + edit.new_text
+                continue
+
             # Count occurrences of old_text
             occurrences = result.count(edit.old_text)
 
@@ -170,6 +180,30 @@ class EditFileToolWithMode:
                     )
 
         return result
+
+    @staticmethod
+    def insert_at_line(content: str, edit: Edit) -> str:
+        """Insert text at the specified line number (1-based)."""
+        lines = content.splitlines(keepends=True)
+
+        # Convert line_hint from 1-based to 0-based index
+        target_line = edit.line_hint - 1  # type: ignore[arg-type]
+
+        # Handle edge cases for line number
+        if target_line < 0:
+            # Insert at beginning
+            insert_pos = 0
+        elif target_line >= len(lines):
+            # Insert at end
+            insert_pos = len(lines)
+        else:
+            # Insert after the target line (more intuitive for insertions)
+            insert_pos = target_line + 1
+
+        # Insert the new text at the calculated position
+        lines.insert(insert_pos, edit.new_text)
+
+        return "".join(lines)
 
     @staticmethod
     def apply_edit_with_line_hint(content: str, edit: Edit) -> str:
