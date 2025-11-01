@@ -10,7 +10,7 @@ from agent_management.handlers.indexing_handler import IndexingHandler
 from baml_client.types import Agent
 from services.agent.memory_management import SutraMemoryManager
 from services.agent.memory_management.models import MemorySection
-from services.agent_service_new import AgentService
+from services.agent_service import AgentService
 from src.agent_management.types.agent import AgentData
 from tools import AllToolParams
 
@@ -20,8 +20,8 @@ class BaseAgent(ABC):
         self.agent_type = agent_type
         self.memory = SutraMemoryManager()
         self.project_path = project_path
-        self.indexing_changes: Dict[str, Any] = {}
         self.indexing_handler = IndexingHandler()
+        self.file_content_map: Dict[str, Dict[str, str]] = {}
 
         if project_path:
             AgentRegistry.register(self)
@@ -86,6 +86,7 @@ class BaseAgent(ABC):
             agent_name=self.agent_type,
             project_path=self.project_path,
             sutra_memory=self.memory,
+            file_content_map=self.file_content_map,
         )
 
         try:
@@ -136,6 +137,13 @@ class BaseAgent(ABC):
     def clear_memory_sections(self, sections: Set[MemorySection]) -> None:
         self.memory.clear_sections(sections)
 
+    def clear_file_content_map(self) -> None:
+        """Clear the file content map."""
+        logger.debug(
+            f"[{self.agent_type.name}] Clearing file content map with {len(self.file_content_map)} entries"
+        )
+        self.file_content_map.clear()
+
     def run_prerequisites(self) -> bool:
         if not self.project_path:
             raise ValueError(f"Project path must be set for {self.agent_type.name}")
@@ -181,10 +189,8 @@ class BaseAgent(ABC):
                 logger.debug(
                     f"Running INCREMENTAL_INDEXING prerequisite for {self.agent_type.name}"
                 )
-                self.indexing_changes = (
-                    self.indexing_handler.run_single_project_incremental_indexing(
-                        self.project_path
-                    )
+                self.indexing_handler.run_single_project_incremental_indexing(
+                    self.project_path
                 )
 
             if IndexingRequirement.CROSS_INDEXING in prerequisites:

@@ -28,7 +28,7 @@ class MemoryOperations:
         self.task_id_counter = 0
         self.code_id_counter = 0
 
-        self.max_history_entries = 30
+        self.max_history_entries = 40
         self.code_fetcher = CodeFetcher()
         self.feedback_section: Optional[str] = None  # Store feedback section
         self.project_info: Optional[str] = None  # Store project information

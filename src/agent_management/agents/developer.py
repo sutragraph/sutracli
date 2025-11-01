@@ -1,9 +1,15 @@
 from pathlib import Path
 from typing import Optional
 
+from loguru import logger
+
 from baml_client.types import Agent, DeveloperCompletionParams
 from services.agent.memory_management.models import MemorySection
 from src.agent_management.types.agent import AgentData
+from src.agent_management.utils.diff_utils import (
+    format_diffs_for_message,
+    generate_diffs_from_content_map,
+)
 
 from .base import BaseAgent
 
@@ -30,7 +36,9 @@ class DeveloperAgent(BaseAgent):
 
         if not give_up:
             new_data = AgentData(conversation=data.conversation.copy(), success=True)
-            new_data.add_message(self.agent_type, response.result)
+
+            message = self._append_diffs_to_message(response.result)
+            new_data.add_message(self.agent_type, message)
             self.send_to_downstream(new_data)
 
         if give_up:
@@ -55,7 +63,9 @@ class DeveloperAgent(BaseAgent):
                 new_data = AgentData(
                     conversation=data.conversation.copy(), success=True
                 )
-                new_data.add_message(self.agent_type, response.result)
+
+                message = self._append_diffs_to_message(response.result)
+                new_data.add_message(self.agent_type, message)
                 self.send_to_downstream(new_data)
 
             if give_up:
@@ -75,3 +85,14 @@ class DeveloperAgent(BaseAgent):
                 "I have made all the requested changes and tested them successfully",
             )
             self.send_to_upstream(new_data)
+
+    def _append_diffs_to_message(self, message: str) -> str:
+        if self.file_content_map:
+            logger.debug(
+                f"[{self.agent_type.name}] Generating diffs for {len(self.file_content_map)} files"
+            )
+            diffs = generate_diffs_from_content_map(self.file_content_map)
+            diff_message = format_diffs_for_message(diffs)
+            message += diff_message
+            self.clear_file_content_map()
+        return message

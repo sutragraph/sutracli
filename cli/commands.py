@@ -12,7 +12,7 @@ from baml_client.types import Agent
 from src.agent_management.types.exception import AgentErrorType
 from src.embeddings import get_vector_store
 from src.graph import SQLiteConnection
-from src.services.agent_service_new import AgentService
+from src.services.agent_service import AgentService
 from src.services.project_manager import ProjectManager
 from src.tools.tool_web_scrap.action import WebScraper
 from src.tools.tool_web_search.action import (

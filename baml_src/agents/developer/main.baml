@@ -1,9 +1,9 @@
 template_string DeveloperSystemPromptBase(params:DeveloperPromptParams) #"
 {{ DeveloperIdentity() }}
 
-{{ ChainOfThought() }}
-
 {{ ctx.output_format }}
+
+{{ ChainOfThought() }}
 
 {{ DeveloperGuidelines() }}
 

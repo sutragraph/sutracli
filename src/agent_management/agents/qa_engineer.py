@@ -35,22 +35,6 @@ class QAEngineerAgent(BaseAgent):
         context = data.format_conversation(current_agent=self.agent_type)
         problem_query = f"{context}"
 
-        changes_context = ""
-        if self.indexing_changes:
-            diffs = self.indexing_changes.get("diffs", [])
-            if diffs:
-                changes_context = "\n\nDiff of changes made:\n"
-                for diff in diffs:
-                    if isinstance(diff, dict):
-                        file_path = diff.get("path", "unknown")
-                        change_type = diff.get("change_type", "modified")
-                        diff_text = diff.get("diff", "")
-
-                        changes_context += f"\n{change_type.upper()}: {file_path}\n"
-                        changes_context += f"{diff_text}\n"
-
-            problem_query += f"{changes_context}"
-
         response = self.run_agent_loop(problem_query)
 
         new_data = AgentData(

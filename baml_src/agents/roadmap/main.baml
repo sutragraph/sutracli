@@ -1,16 +1,15 @@
 template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
 {{ RoadmapIdentity() }}
 
-{{ ChainOfThought() }}
-
 {{ ctx.output_format }}
+
+{{ ChainOfThought() }}
 
 {{ RoadmapGuidelines() }}
 
 {{ RoadmapWorkflow() }}
 
 {{ RoadmapSutraMemoryPrompt() }}
-
 
 {{ ToolsPrompt(Agent.Roadmap, [ToolName.DatabaseSimple, ToolName.SearchKeyword, ToolName.SemanticSearchSimple, ToolName.ListFilesWithProjectName]) }}
 {% if params.project_context.projects|length > 0 %}

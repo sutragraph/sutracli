@@ -14,11 +14,7 @@ from src.graph.sqlite_client import SQLiteConnection
 from src.indexer.ast_parser import ASTParser
 from src.models.schema import ExtractionData, FileData
 from src.utils.console import console
-from src.utils.file_utils import (
-    get_extraction_file_path,
-    get_last_extraction_file_path,
-    read_file_content,
-)
+from src.utils.file_utils import get_extraction_file_path, get_last_extraction_file_path
 from src.utils.hash_utils import compute_directory_hashes
 from src.utils.helpers import load_json_file
 from utils.json_serializer import make_json_serializable
@@ -122,7 +118,6 @@ class ProjectIndexer:
                         "deleted_files": set(),
                     },
                     "old_content": {},
-                    "diffs": [],
                 }
 
             project_id = project.id
@@ -138,7 +133,6 @@ class ProjectIndexer:
                         "deleted_files": set(),
                     },
                     "old_content": {},
-                    "diffs": [],
                 }
 
             # Step 1: Detect changes (computes hashes, compares with DB, identifies changes)
@@ -152,7 +146,6 @@ class ProjectIndexer:
                     "status": "success",
                     "changes": changes,
                     "old_content": {},
-                    "diffs": [],
                 }
 
             # Step 2: Fetch old content from database BEFORE updating (for diff generation)
@@ -181,13 +174,7 @@ class ProjectIndexer:
                 changes, extraction_data, project_id, project_name
             )
 
-            # Step 6: Generate diffs for all changes using fetched old content
-            logger.debug(f"🔄 Generating diffs for all changed files")
-            file_diffs = self._generate_diffs_for_changes(
-                changes, old_content_map, project_dir
-            )
-
-            # Step 7: Update Sutra memory for file changes
+            # Step 6: Update Sutra memory for file changes
             self._update_sutra_memory_for_changes(changes, project_id)
 
             logger.debug(f"✅ Incremental reindexing completed successfully!")
@@ -195,7 +182,7 @@ class ProjectIndexer:
                 "status": "success",
                 "changes": changes,
                 "old_content": old_content_map or {},
-                "diffs": file_diffs or [],
+                "project_dir": project_dir,
             }
 
         except Exception as e:
@@ -209,7 +196,6 @@ class ProjectIndexer:
                     "deleted_files": set(),
                 },
                 "old_content": {},
-                "diffs": [],
             }
 
     def _get_project_id(self, project_name: str) -> Optional[int]:
@@ -928,7 +914,7 @@ class ProjectIndexer:
             for file_path in changes["changed_files"]:
                 try:
                     rel_path = str(file_path.relative_to(project_dir))
-                    content = self._get_file_content_from_db(str(file_path), project_id)
+                    content = self._get_file_content_from_db(str(file_path))
                     old_content_map[rel_path] = content
                 except Exception as e:
                     logger.debug(f"Could not get old content for {file_path}: {e}")
@@ -938,7 +924,7 @@ class ProjectIndexer:
             for file_path in changes["deleted_files"]:
                 try:
                     rel_path = str(file_path.relative_to(project_dir))
-                    content = self._get_file_content_from_db(str(file_path), project_id)
+                    content = self._get_file_content_from_db(str(file_path))
                     old_content_map[rel_path] = content
                 except Exception as e:
                     logger.debug(f"Could not get old content for {file_path}: {e}")
@@ -949,13 +935,12 @@ class ProjectIndexer:
 
         return old_content_map
 
-    def _get_file_content_from_db(self, file_path: str, project_id: int) -> str:
+    def _get_file_content_from_db(self, file_path: str) -> str:
         """
         Get file content from database.
 
         Args:
             file_path: Absolute path to the file
-            project_id: Project ID for database query
 
         Returns:
             File content from database, or empty string if not found
@@ -963,11 +948,11 @@ class ProjectIndexer:
         try:
             query = """
                 SELECT content FROM files
-                WHERE project_id = ? AND file_path = ?
+                WHERE file_path = ?
                 ORDER BY id DESC
                 LIMIT 1
             """
-            results = self.connection.execute_query(query, (project_id, file_path))
+            results = self.connection.execute_query(query, (file_path,))
 
             if results and len(results) > 0:
                 return results[0].get("content", "")
@@ -978,116 +963,58 @@ class ProjectIndexer:
             logger.debug(f"Could not get content from database for {file_path}: {e}")
             return ""
 
-    def _generate_diffs_for_changes(
+    def _build_new_content_map(
         self,
         changes: Dict[str, Set[Path]],
-        old_content_map: Dict[str, str],
+        extraction_data: ExtractionData,
         project_dir: Path,
-    ) -> List[Dict[str, str]]:
-        """Generate unified diffs for all changed files."""
-        file_diffs = []
+    ) -> Dict[str, str]:
+        """Build a map of new content for changed and new files.
+
+        Args:
+            changes: Dictionary containing changed_files, new_files, deleted_files
+            extraction_data: Extraction data containing parsed file information
+            project_dir: Path to the project directory
+
+        Returns:
+            Dictionary mapping relative file paths to their new content
+        """
+        new_content_map = {}
 
         try:
-            all_changed_files = (
-                changes["changed_files"]
-                .union(changes["new_files"])
-                .union(changes["deleted_files"])
-            )
+            # Process changed and new files (get new content)
+            files_to_process = changes["changed_files"].union(changes["new_files"])
 
-            for file_path in all_changed_files:
+            for file_path in files_to_process:
                 try:
                     rel_path = str(file_path.relative_to(project_dir))
+                    file_path_str = str(file_path)
 
-                    if file_path in changes["new_files"]:
-                        change_type = "added"
-                        old_content = ""
-                        new_content = file_path.read_text(
-                            encoding="utf-8", errors="replace"
-                        )
-                    elif file_path in changes["deleted_files"]:
-                        change_type = "deleted"
-                        old_content = old_content_map.get(rel_path, "")
-                        new_content = ""
-                    else:  # modified
-                        change_type = "modified"
-                        old_content = old_content_map.get(rel_path, "")
-                        new_content = file_path.read_text(
-                            encoding="utf-8", errors="replace"
-                        )
-
-                    old_lines = old_content.splitlines(keepends=True)
-                    new_lines = new_content.splitlines(keepends=True)
-
-                    diff_lines = list(
-                        difflib.unified_diff(
-                            old_lines,
-                            new_lines,
-                            fromfile=f"a/{rel_path}",
-                            tofile=f"b/{rel_path}",
-                            lineterm="",
-                        )
-                    )
-
-                    diff_text = "\n".join(diff_lines)
-
-                    file_diffs.append(
-                        {
-                            "path": rel_path,
-                            "change_type": change_type,
-                            "diff": diff_text,
-                        }
-                    )
+                    # Try to get content from extraction data first
+                    if file_path_str in extraction_data.files:
+                        file_data = extraction_data.files[file_path_str]
+                        new_content_map[rel_path] = file_data.content
+                    else:
+                        # Fallback to reading from disk
+                        if file_path.exists():
+                            new_content = file_path.read_text(
+                                encoding="utf-8", errors="replace"
+                            )
+                            new_content_map[rel_path] = new_content
 
                 except Exception as e:
-                    logger.error(f"Error generating diff for {file_path}: {e}")
-                    continue
+                    logger.debug(f"Could not get new content for {file_path}: {e}")
+                    new_content_map[str(file_path.relative_to(project_dir))] = ""
+
+            # For deleted files, new content is empty string
+            for file_path in changes["deleted_files"]:
+                try:
+                    rel_path = str(file_path.relative_to(project_dir))
+                    new_content_map[rel_path] = ""
+                except Exception as e:
+                    logger.debug(f"Could not process deleted file {file_path}: {e}")
 
         except Exception as e:
-            logger.error(f"Error generating diffs: {e}")
+            logger.error(f"Error building new content map: {e}")
 
-        return file_diffs
-
-    def _get_current_project_hashes_and_content(self):
-        """Get current hashes and content for all projects using same logic as incremental indexing."""
-        current_hashes = {}
-        current_content = {}
-
-        try:
-            # Use same project discovery as incremental indexing
-            projects = self.connection.list_all_projects()
-
-            console.dim(f"   • Scanning {len(projects)} projects for current state")
-
-            for project in projects:
-                project_path = Path(project.path)
-                project_name = project.name
-
-                if not project_path.exists():
-                    console.dim(f"   • Skipping missing project: {project_name}")
-                    continue
-
-                # Use existing method to compute hashes
-                project_hashes = self._compute_current_file_hashes(project_path)
-                console.dim(
-                    f"   • Project '{project_name}': {len(project_hashes)} files"
-                )
-
-                # Convert to relative paths and also read content
-                for abs_path, file_hash in project_hashes.items():
-                    try:
-                        relative_path = str(abs_path.relative_to(project_path))
-                        file_key = f"{project_name}:{relative_path}"
-                        current_hashes[file_key] = file_hash
-
-                        # Read content using existing utility
-                        content = read_file_content(abs_path)
-                        current_content[file_key] = content or ""
-                    except (ValueError, Exception):
-                        continue
-
-            console.dim(f"   • Total files discovered: {len(current_hashes)}")
-            return current_hashes, current_content
-
-        except Exception as e:
-            console.error(f"   • Error getting project hashes: {e}")
-            return {}, {}
+        return new_content_map

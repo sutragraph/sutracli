@@ -40,17 +40,12 @@ class MemoryFormatter:
         return self._get_memory_text()
 
     def _get_memory_text(self) -> str:
-        """Generate plain text formatted memory state for LLM"""
-        content = [
-            "ID FORMAT: All items use unique IDs for LLM operations (add_task, move_task, remove_task, add_code, remove_code)\n",
-        ]
+        content = []
 
-        # Code snippets
         if self.memory_ops.code_snippets:
             content.extend(["STORED CODE SNIPPETS:", ""])
             content.extend(self._format_code_snippets_section())
 
-        # Current task
         current_task = self.memory_ops.get_current_task()
         if current_task:
             content.extend(
@@ -61,45 +56,49 @@ class MemoryFormatter:
                     "",
                 ]
             )
+        else:
+            content.append("CURRENT TASK:\n(None)\n")
 
-        # Pending tasks
         pending_tasks = self.memory_ops.get_tasks_by_status(TaskStatus.PENDING)
         if pending_tasks:
-            content.extend(["PENDING TASKS:", ""])
+            content.extend(["PENDING TASKS:"])
             for task in pending_tasks:
                 content.append(f"ID: {task.id}")
                 content.append(f"Description: {task.description}")
                 content.append("")
+        else:
+            content.append("PENDING TASKS:\n(None)\n")
 
-        # Completed tasks (recent ones)
         completed_tasks = self.memory_ops.get_tasks_by_status(TaskStatus.COMPLETED)
         if completed_tasks:
             recent_completed = sorted(
                 completed_tasks, key=lambda t: t.updated_at, reverse=True
-            )[:5]
-            content.extend(["COMPLETED TASKS:", ""])
+            )
+            content.extend(["COMPLETED TASKS:"])
             for task in recent_completed:
                 content.append(f"ID: {task.id}")
                 content.append(f"Description: {task.description}")
                 content.append("")
+        else:
+            content.append("COMPLETED TASKS:\n(None)\n")
 
-        # Recent file changes
         if self.memory_ops.file_changes:
             recent_changes = sorted(
                 self.memory_ops.file_changes, key=lambda f: f.timestamp, reverse=True
-            )[:10]
-            content.extend(["FILES CHANGED:", ""])
+            )
+            content.extend(["FILES CHANGED:"])
             for change in recent_changes:
                 content.append(f"- {change.operation.upper()}: {change.path}")
             content.append("")
 
-        # Recent history (last 20 entries)
         recent_history = self.memory_ops.get_recent_history()
         if recent_history:
-            content.extend(["HISTORY:", ""])
+            content.extend(["HISTORY:"])
             for i, entry in enumerate(reversed(recent_history), 1):
                 content.append(f"{i}. {entry.summary}")
             content.append("")
+        else:
+            content.append("HISTORY:\n(No history entries)\n")
 
         feedback_section = self.memory_ops.get_feedback_section()
         if feedback_section:

@@ -166,6 +166,29 @@ class SQLiteConnection:
             logger.error(f"Failed to get project '{project_name}': {e}")
             return None
 
+    def get_project_by_path(self, project_path: str) -> Union[Project, None]:
+        """Get project details by path."""
+        try:
+            result = self.execute_query(
+                "SELECT id, name, path, description, created_at, updated_at, cross_indexing_done FROM projects WHERE path = ?",
+                (project_path,),
+            )
+            if result:
+                row = result[0]
+                return Project(
+                    id=row["id"],
+                    name=row["name"],
+                    path=row["path"],
+                    description=row["description"],
+                    created_at=row["created_at"],
+                    updated_at=row["updated_at"],
+                    cross_indexing_done=bool(row.get("cross_indexing_done", 0)),
+                )
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get project by path '{project_path}': {e}")
+            return None
+
     def delete_project(self, project_name: str) -> None:
         """Delete a project and all associated data."""
         try:
