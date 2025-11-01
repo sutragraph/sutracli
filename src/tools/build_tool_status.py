@@ -29,6 +29,8 @@ def build_tool_status(
             return _build_diagnostics_status(event, agent, tool_params)
         case "attempt_completion":
             return _build_completion_status(event, agent, tool_params)
+        case "terminal":
+            return _build_terminal_status(event, agent, tool_params)
         case _:
             return f"Unknown tool name '{tool_name}' with parameters {tool_params}"
 
@@ -339,6 +341,76 @@ def _build_diagnostics_status(
 
     if error:
         status_parts.append(f"ERROR: {error}")
+
+    return "\n".join(status_parts).rstrip()
+
+
+def _build_terminal_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
+    """Build status for terminal tool."""
+    command = event.get("command")
+    status = event.get("status")
+    output = event.get("output")
+    error = event.get("error")
+    session_id = event.get("session_id")
+    cwd = event.get("cwd")
+    exit_code = event.get("exit_code")
+    is_long_running = event.get("is_long_running", False)
+    action = event.get("action", "execute")
+
+    # Minimal format console output
+    status_parts = []
+
+    if command:
+        status_parts.append(f"[value]'{command}'[/value]")
+
+    if status == "success":
+        if is_long_running:
+            status_parts.append(f"[success]Started[/success]")
+        else:
+            status_parts.append(f"[success]Success[/success]")
+    elif status == "error":
+        status_parts.append(f"[error]Error[/error]")
+    else:
+        status_parts.append(f"[warning]{status}[/warning]")
+
+    if error:
+        status_parts.append(f"[error]Error:[/error]")
+        status_parts.append(f"{error}")
+
+    console.print(f"💻 [bold]Terminal[/bold] → {' → '.join(status_parts)}")
+
+    # Build status string for return
+    status_parts = ["Tool: terminal"]
+    status_parts.append(f"Parameters used: {tool_params}")
+
+    # if action:
+    #     status_parts.append(f"Action: {action}")
+
+    # if command:
+    #     status_parts.append(f"Command: {command}")
+
+    # if session_id:
+    #     status_parts.append(f"Session ID: {session_id}")
+
+    if cwd:
+        status_parts.append(f"Working Directory: {cwd}")
+
+    # if status:
+    #     if is_long_running and status == "success":
+    #         status_parts.append(f"Status: Process started successfully")
+    #     else:
+    #         status_parts.append(f"Status: {status}")
+
+    if exit_code is not None:
+        status_parts.append(f"Exit Code: {exit_code}")
+
+    if error:
+        status_parts.append(f"ERROR: {error}")
+
+    if output:
+        status_parts.extend(["Results:", output])
 
     return "\n".join(status_parts).rstrip()
 

@@ -1192,7 +1192,7 @@ def _handle_create_session(parameters: Dict[str, Any]) -> Iterator[Dict[str, Any
             }
         else:
             yield {
-                "type": "tool_use",
+                "type": "tool_error",
                 "tool_name": "terminal",
                 "status": "error",
                 "action": "create_session",
@@ -1200,7 +1200,7 @@ def _handle_create_session(parameters: Dict[str, Any]) -> Iterator[Dict[str, Any
             }
     except Exception as e:
         yield {
-            "type": "tool_use",
+            "type": "tool_error",
             "tool_name": "terminal",
             "status": "error",
             "action": "create_session",
@@ -1215,7 +1215,7 @@ def _handle_close_session(parameters: Dict[str, Any]) -> Iterator[Dict[str, Any]
 
     if not session_id:
         yield {
-            "type": "tool_use",
+            "type": "tool_error",
             "tool_name": "terminal",
             "status": "error",
             "action": "close_session",
@@ -1225,7 +1225,7 @@ def _handle_close_session(parameters: Dict[str, Any]) -> Iterator[Dict[str, Any]
 
     success = TerminalSessionManager.close_session(session_id)
     yield {
-        "type": "tool_use",
+        "type": "tool_use" if success else "tool_error",
         "tool_name": "terminal",
         "status": "success" if success else "error",
         "action": "close_session",
@@ -1254,7 +1254,7 @@ def _handle_get_output(parameters: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
 
     if not session_id:
         yield {
-            "type": "tool_use",
+            "type": "tool_error",
             "tool_name": "terminal",
             "status": "error",
             "action": "get_output",
@@ -1280,7 +1280,7 @@ def _handle_monitor_output(parameters: Dict[str, Any]) -> Iterator[Dict[str, Any
 
     if not session_id:
         yield {
-            "type": "tool_use",
+            "type": "tool_error",
             "tool_name": "terminal",
             "status": "error",
             "action": "monitor_output",
@@ -1356,7 +1356,7 @@ def _handle_execute_command(parameters: Dict[str, Any]) -> Iterator[Dict[str, An
     command = parameters.get("command")
     if not command:
         yield {
-            "type": "tool_use",
+            "type": "tool_error",
             "tool_name": "terminal",
             "status": "error",
             "error": "command parameter is required",
@@ -1380,7 +1380,7 @@ def _handle_execute_command(parameters: Dict[str, Any]) -> Iterator[Dict[str, An
         except Exception as e:
             logger.error(f"Failed to get or create terminal session: {e}")
             yield {
-                "type": "tool_use",
+                "type": "tool_error",
                 "tool_name": "terminal",
                 "status": "error",
                 "error": f"Failed to get or create terminal session: {str(e)}",
@@ -1394,7 +1394,7 @@ def _handle_execute_command(parameters: Dict[str, Any]) -> Iterator[Dict[str, An
     if not session:
         logger.error(f"Session {session_id} not found")
         yield {
-            "type": "tool_use",
+            "type": "tool_error",
             "tool_name": "terminal",
             "status": "error",
             "error": f"Session {session_id} not found",
@@ -1457,7 +1457,7 @@ def execute_terminal_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
             yield from handler(action.parameters)
         else:
             yield {
-                "type": "tool_use",
+                "type": "tool_error",
                 "tool_name": "terminal",
                 "status": "error",
                 "error": f"Unknown action_type: {action_type}",
@@ -1466,7 +1466,7 @@ def execute_terminal_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Terminal action execution failed: {e}")
         yield {
-            "type": "tool_use",
+            "type": "tool_error",
             "tool_name": "terminal",
             "status": "error",
             "error": f"Terminal execution failed: {str(e)}",
