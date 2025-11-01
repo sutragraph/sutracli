@@ -11,7 +11,6 @@ Focus on strategic direction - WHAT needs to change and WHY, not HOW to implemen
 Provide high-level guidance that allows independent implementation decisions.
 Define integration contracts as concise coordination points between projects.
 Keep plans standalone for independent execution.
-Omit projects with no changes or impact from the output.
 Limit implementation plan to 5-7 focused strategic steps per project.
 
 Note: This tool MUST be used when you have completed all your tasks and there are no pending tasks left.

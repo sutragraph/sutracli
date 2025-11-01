@@ -41,6 +41,6 @@ class ProjectExecutionPlan {
 }
 
 class RoadmapCompletionParams {
-  projects ProjectExecutionPlan[] @description("Array of project execution plans (omit projects with no changes or impact)")
+  projects ProjectExecutionPlan[] @description("Array of project execution plans (omit projects with no changes or impact!)")
   summary string @description("Brief overall strategy")
 }
