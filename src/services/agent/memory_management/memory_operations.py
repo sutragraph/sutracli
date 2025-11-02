@@ -195,6 +195,7 @@ class MemoryOperations:
     ) -> bool:
         """
         Add code snippet to memory with optional trace chain information.
+        Smart merging: if snippet overlaps or extends existing snippet, merge them.
 
         Args:
             file_path: Path to the file
@@ -210,64 +211,134 @@ class MemoryOperations:
             bool: True if code snippet was added successfully
         """
         try:
-            self.code_id_counter += 1
-            actual_code_id = self.code_id_counter
-
-            # Fetch code content using the code fetcher
-            code_content = self.code_fetcher.fetch_code_from_file(
-                file_path, start_line, end_line
+            existing_snippets = self.get_code_snippets_by_file(file_path)
+            merge_result = self._check_and_merge_snippets(
+                start_line, end_line, existing_snippets
             )
 
-            # Auto-generate IDs for needs_tracing elements if missing
-            processed_needs_tracing = []
-            if needs_tracing:
-                for ute in needs_tracing:
-                    if not ute.id:
-                        ute.id = self.generate_element_id_from_signature(
-                            ute.name,
-                            ute.element_type,
-                            file_path,
-                            0,  # UntracedElements don't have line numbers
-                            0,
-                        )
-                    processed_needs_tracing.append(ute)
+            if merge_result["action"] == "skip":
+                logger.info(
+                    f"Skipping add - snippet lines {start_line}-{end_line} already covered by snippet {merge_result['existing_id']} (lines {merge_result['existing_range']})"
+                )
+                return True
 
-            # Auto-generate IDs for root_elements if missing
-            processed_root_elements = []
-            if root_elements:
-                for root_element in root_elements:
-                    if not root_element.id:
-                        root_element.id = self.generate_element_id_from_signature(
-                            root_element.name,
-                            root_element.element_type,
-                            file_path,
-                            getattr(root_element, "start_line", 0),
-                            getattr(root_element, "end_line", 0),
-                        )
-                    # Recursively generate IDs for all child elements
-                    self._generate_ids_for_hierarchy(root_element, file_path)
-                    processed_root_elements.append(root_element)
+            elif merge_result["action"] == "extend":
+                existing_id = merge_result["existing_id"]
+                existing_snippet = self.code_snippets[existing_id]
 
-            # Create and store the code snippet with counter ID
-            self.code_snippets[actual_code_id] = CodeSnippet(
-                id=actual_code_id,
-                file_path=file_path,
-                start_line=start_line,
-                end_line=end_line,
-                description=description,
-                content=code_content,
-                is_traced=is_traced,
-                root_elements=processed_root_elements,
-                needs_tracing=processed_needs_tracing,
-                call_chain_summary=call_chain_summary,
-            )
+                new_start = merge_result["new_range"][0]
+                new_end = merge_result["new_range"][1]
 
-            logger.debug(f"Code snippet {actual_code_id} added successfully)")
-            return True
+                code_content = self.code_fetcher.fetch_code_from_file(
+                    file_path, new_start, new_end
+                )
+
+                existing_snippet.start_line = new_start
+                existing_snippet.end_line = new_end
+                existing_snippet.content = code_content
+                existing_snippet.description = (
+                    f"{existing_snippet.description} | Extended: {description}"
+                )
+
+                logger.info(
+                    f"Extended snippet {existing_id} from lines {merge_result['old_range']} to {new_start}-{new_end}"
+                )
+                return True
+
+            elif merge_result["action"] == "add":
+                self.code_id_counter += 1
+                actual_code_id = self.code_id_counter
+
+                code_content = self.code_fetcher.fetch_code_from_file(
+                    file_path, start_line, end_line
+                )
+
+                processed_needs_tracing = []
+                if needs_tracing:
+                    for ute in needs_tracing:
+                        if not ute.id:
+                            ute.id = self.generate_element_id_from_signature(
+                                ute.name,
+                                ute.element_type,
+                                file_path,
+                                0,
+                                0,
+                            )
+                        processed_needs_tracing.append(ute)
+
+                processed_root_elements = []
+                if root_elements:
+                    for root_element in root_elements:
+                        if not root_element.id:
+                            root_element.id = self.generate_element_id_from_signature(
+                                root_element.name,
+                                root_element.element_type,
+                                file_path,
+                                getattr(root_element, "start_line", 0),
+                                getattr(root_element, "end_line", 0),
+                            )
+                        self._generate_ids_for_hierarchy(root_element, file_path)
+                        processed_root_elements.append(root_element)
+
+                self.code_snippets[actual_code_id] = CodeSnippet(
+                    id=actual_code_id,
+                    file_path=file_path,
+                    start_line=start_line,
+                    end_line=end_line,
+                    description=description,
+                    content=code_content,
+                    is_traced=is_traced,
+                    root_elements=processed_root_elements,
+                    needs_tracing=processed_needs_tracing,
+                    call_chain_summary=call_chain_summary,
+                )
+
+                logger.debug(f"Code snippet {actual_code_id} added successfully")
+                return True
+            else:
+                logger.error(f"Unexpected merge action: {merge_result['action']}")
+                return False
 
         except Exception as e:
             logger.error(f"Error adding code snippet: {str(e)}")
             return False
+
+    def _check_and_merge_snippets(
+        self,
+        start_line: int,
+        end_line: int,
+        existing_snippets: List[CodeSnippet],
+    ) -> Dict[str, Any]:
+        for snippet in existing_snippets:
+            existing_start = snippet.start_line
+            existing_end = snippet.end_line
+
+            if start_line >= existing_start and end_line <= existing_end:
+                return {
+                    "action": "skip",
+                    "existing_id": snippet.id,
+                    "existing_range": f"{existing_start}-{existing_end}",
+                }
+
+            if start_line <= existing_end + 1 and end_line >= existing_start - 1:
+                new_start = min(start_line, existing_start)
+                new_end = max(end_line, existing_end)
+
+                if new_start < existing_start or new_end > existing_end:
+                    return {
+                        "action": "extend",
+                        "existing_id": snippet.id,
+                        "old_range": f"{existing_start}-{existing_end}",
+                        "new_range": (new_start, new_end),
+                    }
+                else:
+                    return {
+                        "action": "skip",
+                        "existing_id": snippet.id,
+                        "existing_range": f"{existing_start}-{existing_end}",
+                    }
+
+        return {"action": "add"}
 
     def remove_code_snippet(self, code_id: int) -> bool:
         """

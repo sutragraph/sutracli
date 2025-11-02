@@ -30,14 +30,7 @@ from tools import AllSutraMemoryParams
 from .memory_formatter import MemoryFormatter
 from .memory_operations import MemoryOperations
 from .memory_updater import MemoryUpdater
-from .models import (
-    CodeSnippet,
-    HistoryEntry,
-    MemorySection,
-    MemorySectionData,
-    Task,
-    TaskStatus,
-)
+from .models import HistoryEntry, MemorySection, MemorySectionData, Task, TaskStatus
 from .state_persistence import StatePersistence
 
 
