@@ -50,7 +50,7 @@ class AgentService:
         self.session_manager = SessionManager.get_or_create_session(session_id)
         self.memory_manager = sutra_memory or SutraMemoryManager()
         self.file_content_map = file_content_map
-        self.indexer = ProjectIndexer()
+        self.indexer = ProjectIndexer(sutra_memory_manager=self.memory_manager)
 
         self.last_tool_result = None
         self.result = None

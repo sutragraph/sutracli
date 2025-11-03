@@ -76,7 +76,7 @@ class BaseAgent(ABC):
                     f"[{self.agent_type.name}] auto-registered upstream [{upstream_type.name}] at {self.project_path}"
                 )
 
-            logger.debug(f"[{self.agent_type.name}] ← [{upstream_type.name}]")
+            logger.debug(f"[{self.agent_type.name}] → [{upstream_type.name}]")
             upstream.from_downstream(data)
         else:
             logger.debug(f"[{self.agent_type.name}] No upstream agent")

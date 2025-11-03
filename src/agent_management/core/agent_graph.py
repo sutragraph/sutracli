@@ -53,6 +53,7 @@ class AgentGraph:
             description="",
             prerequisites=[
                 IndexingRequirement.INDEXING,
+                IndexingRequirement.INCREMENTAL_INDEXING,
             ],
             downstream=None,
             upstream=Agent.Developer,
