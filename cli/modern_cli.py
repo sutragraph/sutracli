@@ -825,7 +825,20 @@ class ModernSutraKit:
         console.highlight(f"Executing {agent.name}")
 
         try:
-            # Get user query input
+            from src.agent_management.core.factory import AgentFactory
+
+            try:
+                agent_instance = AgentFactory.get_or_create(agent, project_dir)
+            except ValueError as e:
+                console.error(str(e))
+                return None
+
+            if not agent_instance.run_prerequisites():
+                console.error(
+                    "Prerequisites failed. Cannot proceed with agent execution."
+                )
+                return None
+
             while True:
                 try:
                     user_input = input("\n👤 You: ").strip()
@@ -842,14 +855,6 @@ class ModernSutraKit:
                 except EOFError:
                     console.print("\n\n👋 Goodbye! Session ended.")
                     return None
-
-            from src.agent_management.core.factory import AgentFactory
-
-            try:
-                agent_instance = AgentFactory.get_or_create(agent, project_dir)
-            except ValueError as e:
-                console.error(str(e))
-                return None
 
             # All agents now use run_agent_loop
             agent_result = agent_instance.run_with_user_role(user_input)
