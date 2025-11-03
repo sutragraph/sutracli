@@ -12,6 +12,7 @@ Parameters:
 
 Note:
   - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
+  - The [hidden] flag on directories means their contents are excluded from results, not empty - request the specific directory path to see its contents.
 
 
 Usage:

@@ -132,11 +132,9 @@ IGNORE_FILE_PATTERNS: List[str] = [
 
 # Directory patterns to ignore (glob patterns)
 IGNORE_DIRECTORY_PATTERNS: List[str] = [
-    # Version control
-    ".git",
-    ".svn",
-    ".hg",
-    ".bzr",
+    # Hidden directories (all directories starting with dot)
+    ".*",
+    # Version control (non-hidden)
     "CVS",
     # Dependencies and packages
     "node_modules",
@@ -146,20 +144,8 @@ IGNORE_DIRECTORY_PATTERNS: List[str] = [
     "packages",
     "third_party",
     "external",
-    # Python specific
+    # Python specific (non-hidden)
     "__pycache__",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".coverage",
-    "htmlcov",
-    ".tox",
-    ".nox",
-    "*venv*",
-    "*env",
-    "env*",
-    "*pyenv*",
-    "*conda*",
-    ".pip*",
     "site-packages",
     "dist-packages",
     "build",
@@ -167,89 +153,63 @@ IGNORE_DIRECTORY_PATTERNS: List[str] = [
     "egg-info",
     "*.egg-info",
     ".eggs",
-    # JavaScript/Node.js specific
+    # JavaScript/Node.js specific (non-hidden)
     "node_modules",
-    ".npm",
-    ".yarn",
     "coverage",
     ".nyc_output",
     "dist",
     "build",
     "out",
-    ".next",
-    ".nuxt",
-    ".parcel-cache",
-    ".vuepress",
-    # Java specific
+    # Java specific (non-hidden)
     "target",
     "bin",
-    ".gradle",
-    ".m2",
     "classes",
-    # .NET specific
+    # .NET specific (non-hidden)
     "bin",
     "obj",
     "packages",
-    ".vs",
-    # Ruby specific
-    ".bundle",
+    # Ruby specific (non-hidden)
     "vendor/bundle",
     "log",
     "tmp",
-    # Go specific
+    # Go specific (non-hidden)
     "vendor",
-    # Rust specific
+    # Rust specific (non-hidden)
     "target",
     "Cargo.lock",
-    # C/C++ specific
+    # C/C++ specific (non-hidden)
     "build",
     "cmake-build-debug",
     "cmake-build-release",
-    ".vs",
     "Debug",
     "Release",
     "x64",
     "x86",
-    # IDE and editor directories
-    ".vscode",
-    ".idea",
-    ".eclipse",
-    ".settings",
-    ".project",
-    ".classpath",
-    ".metadata",
-    ".recommenders",
+    # IDE and editor directories (non-hidden)
     ".sublime-project",
     ".sublime-workspace",
-    # OS specific directories
-    ".Trash",
-    ".Trashes",
+    # OS specific directories (non-hidden)
     "__MACOSX",
     "System Volume Information",
     "$Recycle.Bin",
-    # Documentation build directories
+    # Documentation build directories (non-hidden)
     "_build",
     "docs/_build",
     "site",
-    ".docusaurus",
-    # Test and coverage directories
+    # Test and coverage directories (non-hidden)
     "coverage",
     "test-results",
     "test-reports",
-    ".coverage",
     "htmlcov",
-    # Temporary directories
+    # Temporary directories (non-hidden)
     "tmp",
     "temp",
-    ".tmp",
-    ".temp",
-    # Log directories
+    # Log directories (non-hidden)
     "logs",
     "log",
-    # Backup directories
+    # Backup directories (non-hidden)
     "backup",
     "backups",
-    ".backup",
     # BAML Auto Generated Files
     "baml_client",
 ]
