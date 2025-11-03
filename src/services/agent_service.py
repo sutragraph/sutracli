@@ -127,7 +127,7 @@ class AgentService:
     def _build_user_message(self, problem_query: str) -> str:
         user_message = []
 
-        user_message.append(f"User Query: {problem_query}\n")
+        user_message.append(f"CONVERSATION:\n{problem_query}\n")
 
         memory_status = self._build_memory_status()
         user_message.append(memory_status)

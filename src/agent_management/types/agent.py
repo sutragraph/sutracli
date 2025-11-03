@@ -64,10 +64,8 @@ class AgentData:
                     if current_agent is not None and role == current_agent:
                         role_name = "YOU"
                     else:
-                        if isinstance(role, str):
-                            role_name = role
-                        else:
-                            role_name = role.name
+                        # Use role.name for enums, otherwise use the role directly
+                        role_name = getattr(role, "name", role)
                     formatted_messages.append(f"{role_name}:\n{message}")
 
         return "\n\n".join(formatted_messages) if formatted_messages else ""
