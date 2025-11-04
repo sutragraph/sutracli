@@ -421,22 +421,30 @@ def _resolve_directory_path(
     directory_path: str | None, project_name: str | None
 ) -> str:
     """Resolve the directory path, handling project auto-detection."""
-    # Auto-detect project from directory path if not provided
-    if not project_name and directory_path:
-        detection_result = auto_detect_project_from_paths([directory_path])
-        if detection_result:
-            project_name, matched_paths = detection_result
-
-    # Use project base path if no directory specified
-    if not directory_path and project_name:
+    # Handle case where both project name and directory path are provided
+    if project_name and directory_path:
         project_base_path = resolve_project_base_path(project_name)
         if not project_base_path:
             raise Exception(f"Project '{project_name}' not found or has no path")
-        directory_path = project_base_path
+        # Join the project base path with the relative directory path
+        directory_path = str(Path(project_base_path) / Path(directory_path))
+    else:
+        # Auto-detect project from directory path if not provided
+        if not project_name and directory_path:
+            detection_result = auto_detect_project_from_paths([directory_path])
+            if detection_result:
+                project_name, matched_paths = detection_result
 
-    # Fall back to current directory
-    if not directory_path:
-        directory_path = "."
+        # Use project base path if no directory specified
+        if not directory_path and project_name:
+            project_base_path = resolve_project_base_path(project_name)
+            if not project_base_path:
+                raise Exception(f"Project '{project_name}' not found or has no path")
+            directory_path = project_base_path
+
+        # Fall back to current directory
+        if not directory_path:
+            directory_path = "."
 
     path = Path(directory_path)
     if not path.exists():

@@ -44,7 +44,7 @@ class ArrowKeySelector:
     """Handles arrow key selection for any type of options."""
 
     @staticmethod
-    def select_option(options: list, title: str = "Select an option") -> Optional[any]:
+    def select_option(options: list, title: str = "Select an option") -> Optional[Any]:
         """
         Generic arrow key selection menu that works with any list of options.
 
