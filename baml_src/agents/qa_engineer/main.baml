@@ -42,7 +42,9 @@ function AnthropicClaudeQAEngineerAgent(params: QAEngineerPromptParams) -> QAEng
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ QAEngineerSystemPrompt(params) }}
+
     {{ ctx.output_format }}
+
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -52,7 +54,9 @@ function OpenAIChatGPTQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngin
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params) }}
+
     {{ ctx.output_format }}
+
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -62,7 +66,9 @@ function GoogleGeminiQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngine
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params) }}
+
     {{ ctx.output_format }}
+
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -72,7 +78,9 @@ function GCPVertexAIQAEngineerAgent(params: QAEngineerPromptParams) -> QAEnginee
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params) }}
+
     {{ ctx.output_format }}
+
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -82,7 +90,9 @@ function AzureOpenAIQAEngineerAgent(params: QAEngineerPromptParams) -> QAEnginee
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params) }}
+
     {{ ctx.output_format }}
+
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -92,7 +102,9 @@ function AzureAIFoundryQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngi
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params) }}
+
     {{ ctx.output_format }}
+
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }
@@ -102,7 +114,9 @@ function OpenRouterQAEngineerAgent(params: QAEngineerPromptParams) -> QAEngineer
   prompt #"
     {{ _.role("system") }}
     {{ QAEngineerSystemPrompt(params) }}
+
     {{ ctx.output_format }}
+
     {{ QAEngineerUserPrompt(params.context) }}
   "#
 }

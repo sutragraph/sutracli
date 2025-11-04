@@ -1,15 +1,26 @@
 template_string DeveloperSystemPromptBase(params:DeveloperPromptParams) #"
 {{ DeveloperIdentity() }}
 
-{{ ctx.output_format }}
+{{ToolsPrompt(Agent.Developer, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.EditFile, ToolName.Diagnostics, ToolName.Terminal]) }}
+{{ DeveloperGuidelines() }}
+
+{{ DeveloperSutraMemoryPrompt() }}
+
+{{ SystemInfo(params.system_info)}}
+
+====
+
+"#
+
+template_string DeveloperUserPrompt(context: string) #"
+====
 
 {{ ChainOfThought() }}
 
-{{ DeveloperGuidelines() }}
+====
 
-{{ToolsPrompt(Agent.Developer, [ToolName.DatabaseSimple, ToolName.SearchKeywordSimple, ToolName.SemanticSearchSimple, ToolName.ListFilesSimple, ToolName.EditFile, ToolName.Diagnostics, ToolName.Terminal]) }}
-{{ DeveloperSutraMemoryPrompt() }}
-{{ SystemInfo(params.system_info)}}
+{{ _.role("user") }}
+{{ context }}
 "#
 
 function AwsBedrockDeveloperAgent(params:DeveloperPromptParams) -> DeveloperResponse {
@@ -17,8 +28,10 @@ function AwsBedrockDeveloperAgent(params:DeveloperPromptParams) -> DeveloperResp
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
+
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}
   "#
 }
 
@@ -27,9 +40,10 @@ function AnthropicClaudeDeveloperAgent(params:DeveloperPromptParams) -> Develope
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
 
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}
   "#
 }
 
@@ -38,9 +52,10 @@ function OpenAIChatGPTDeveloperAgent(params:DeveloperPromptParams) -> DeveloperR
   prompt #"
     {{ _.role("system") }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
 
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}
   "#
 }
 
@@ -49,9 +64,10 @@ function GoogleGeminiDeveloperAgent(params:DeveloperPromptParams) -> DeveloperRe
   prompt #"
     {{ _.role("system") }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
 
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}
   "#
 }
 
@@ -60,9 +76,10 @@ function GCPVertexAIDeveloperAgent(params:DeveloperPromptParams) -> DeveloperRes
   prompt #"
     {{ _.role("system") }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
 
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}
   "#
 }
 
@@ -71,9 +88,10 @@ function AzureOpenAIDeveloperAgent(params:DeveloperPromptParams) -> DeveloperRes
   prompt #"
     {{ _.role("system") }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
 
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}
   "#
 }
 
@@ -82,9 +100,10 @@ function AzureAIFoundryDeveloperAgent(params:DeveloperPromptParams) -> Developer
   prompt #"
     {{ _.role("system") }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
 
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}
   "#
 }
 
@@ -93,9 +112,10 @@ function OpenRouterDeveloperAgent(params:DeveloperPromptParams) -> DeveloperResp
   prompt #"
     {{ _.role("system") }}
     {{ DeveloperSystemPromptBase(params) }}
-    {{ _.role("user") }}
-    {{ params.context }}
-  "#
+
+    {{ ctx.output_format }}
+
+    {{ DeveloperUserPrompt(params.context) }}  "#
 }
 
 

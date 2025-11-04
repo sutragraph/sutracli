@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 from rich.panel import Panel
@@ -16,7 +16,7 @@ from agent_management.utils.roadmap_utils import (
     separate_results_by_status,
     verify_roadmap_file_paths,
 )
-from baml_client.types import Agent, RoadmapCompletionParams
+from baml_client.types import Agent, BaseCompletionParams, RoadmapCompletionParams
 from config.settings import get_config
 from utils.console import console
 
@@ -61,7 +61,9 @@ class RoadmapAgent(BaseAgent):
             context = data.format_conversation()
             self.run_agent_loop(context)
 
-    def run_agent_loop(self, problem_query: str) -> Optional[RoadmapCompletionParams]:
+    def run_agent_loop(
+        self, problem_query: str
+    ) -> Optional[Union[RoadmapCompletionParams, BaseCompletionParams]]:
         logger.debug(f"[{self.agent_type.name}] Starting project planning...")
         print(f"\n[{self.agent_type.name}] Starting project planning...")
 
@@ -77,9 +79,42 @@ class RoadmapAgent(BaseAgent):
 
             result = super().run_agent_loop(current_query)
 
+            # Check if result is BaseCompletionParams instead of RoadmapCompletionParams
+            if isinstance(result, BaseCompletionParams):
+                logger.debug(
+                    "Received BaseCompletionParams, prompting user for new input"
+                )
+
+                try:
+                    new_input = Prompt.ask(
+                        "[cyan]Enter your input to continue or leave blank to cancel:[/cyan]",
+                        default="",
+                    )
+
+                    if new_input.strip():
+                        current_query = (
+                            f"{problem_query}\nUser input: {new_input.strip()}"
+                        )
+                        logger.debug("User provided new input, continuing iteration")
+                        continue
+                    else:
+                        console.print(
+                            "[yellow]⚠️  No input provided. Operation cancelled.[/yellow]"
+                        )
+                        return None
+
+                except (KeyboardInterrupt, EOFError):
+                    console.print(
+                        "\n[bold red]❌ Operation cancelled by user[/bold red]"
+                    )
+                    return None
+
+            # At this point, result must be RoadmapCompletionParams
             if not isinstance(result, RoadmapCompletionParams):
-                logger.error(f"Expected RoadmapCompletionParams, got {type(result)}")
-                console.print(f"[red]❌ Failed to generate valid roadmap[/red]")
+                logger.error(f"Unexpected result type: {type(result)}")
+                console.print(
+                    "[red]❌ Unexpected response type from agent. Operation cancelled.[/red]"
+                )
                 return None
 
             verification_result = verify_roadmap_file_paths(result)
@@ -99,8 +134,8 @@ class RoadmapAgent(BaseAgent):
 
                 continue
 
-            logger.debug(f"[{self.agent_type.name}] Roadmap generated successfully")
-            print(f"\n[{self.agent_type.name}] Roadmap generated successfully")
+            logger.debug(f"[{self.agent_type.name}] generated successfully")
+            print(f"\n[{self.agent_type.name}] generated successfully")
 
             user_action = self._get_user_action_on_roadmap()
 

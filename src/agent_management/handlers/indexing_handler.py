@@ -38,8 +38,6 @@ class IndexingHandler:
 
         console.print()
         console.info(f"Starting indexing for: {project_path}")
-        console.dim("   • Analyzing code structure and relationships")
-        console.dim("   • Generating embeddings for semantic search")
         console.print()
 
         try:
@@ -51,7 +49,7 @@ class IndexingHandler:
                 project_manager.auto_index_project(project_name, project_path)
                 console.success("Indexing completed successfully!")
             else:
-                logger.debug(f"Project {project_name} already indexed")
+                console.success(f"Project {project_name.split('_')[0]} already indexed")
 
         except Exception as e:
             console.error(f"Indexing failed: {e}")

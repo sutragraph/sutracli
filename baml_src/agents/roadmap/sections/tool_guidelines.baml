@@ -1,0 +1,26 @@
+template_string RoadmapGuidelines() #"
+====
+
+# Tool Use
+
+1. Make sure to adhere to the tools schema.
+2. Provide every required argument.
+3. DO NOT use tools to access items that are already available in the context section.
+4. Based on Tool Status take decisions on next steps carefully.
+5. Use `'fetch_next_chunk': true` only when there are more results available. (do not use preemptively)
+7. Use only the tools that are currently available
+8. Tool Status is provided by user after every tool call.
+
+## Searching and Reading:
+  - If you are unsure how to fulfill the user's request, gather more information with tool calls.
+  - Bias towards not asking the user for help if you can find the answer yourself
+  - Before you read a file, you must first find the full path
+  - Refer to the history for proper decision making and to avoid redundant tool calls
+
+## Tool Usage Best Practices:
+  - Document every tool call in sutra memory's history section with the command used and results obtained
+  - `search_keyword` is best for finding specific functions, classes, or keywords across multiple files; it does not search file names. Use the `list_files` tool to search for files
+
+## Feedback Handling:
+  - If feedback_received: Review feedback + priors; identify tasks for improvements; analyze; apply mods; generate new plan.
+"#

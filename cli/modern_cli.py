@@ -822,7 +822,6 @@ class ModernSutraKit:
     def _execute_agent(self, agent: Agent, project_dir: Path):
         """Execute the actual agent."""
         console.print()
-        console.highlight(f"Executing {agent.name}")
 
         try:
             from src.agent_management.core.factory import AgentFactory

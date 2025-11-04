@@ -1,23 +1,28 @@
 template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
 {{ RoadmapIdentity() }}
 
-{{ ctx.output_format }}
-
-{{ ChainOfThought() }}
-
+{{ ToolsPrompt(Agent.Roadmap, [ToolName.DatabaseSimple, ToolName.SearchKeyword, ToolName.SemanticSearchSimple, ToolName.ListFilesWithProjectName]) }}
 {{ RoadmapGuidelines() }}
-
-{{ RoadmapWorkflow() }}
 
 {{ RoadmapSutraMemoryPrompt() }}
 
-{{ ToolsPrompt(Agent.Roadmap, [ToolName.DatabaseSimple, ToolName.SearchKeyword, ToolName.SemanticSearchSimple, ToolName.ListFilesWithProjectName]) }}
+{{ RoadmapWorkflow() }}
+
 {% if params.project_context.projects|length > 0 %}
 {{ ProjectContextTemplate(params.project_context) }}
 {% endif %}
+
+====
+
 "#
 
 template_string RoadmapUserPrompt(context: string) #"
+====
+
+{{ ChainOfThought() }}
+
+====
+
 {{ _.role("user") }}
 {{ context }}
 "#
@@ -28,6 +33,9 @@ function AwsBedrockRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse 
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
@@ -37,6 +45,9 @@ function AnthropicClaudeRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResp
   prompt #"
     {{ _.role("system", cache_control={"type": "ephemeral"}) }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
@@ -46,6 +57,9 @@ function OpenAIChatGPTRoadmapAgent(params: RoadmapPromptParams) -> RoadmapRespon
   prompt #"
     {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
@@ -55,6 +69,9 @@ function GoogleGeminiRoadmapAgent(params: RoadmapPromptParams) -> RoadmapRespons
   prompt #"
     {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
@@ -64,6 +81,9 @@ function GCPVertexAIRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse
   prompt #"
     {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
@@ -73,6 +93,9 @@ function AzureOpenAIRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse
   prompt #"
     {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
@@ -82,6 +105,9 @@ function AzureAIFoundryRoadmapAgent(params: RoadmapPromptParams) -> RoadmapRespo
   prompt #"
     {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }
@@ -91,6 +117,9 @@ function OpenRouterRoadmapAgent(params: RoadmapPromptParams) -> RoadmapResponse 
   prompt #"
     {{ _.role("system") }}
     {{ RoadmapSystemPrompt(params) }}
+
+    {{ ctx.output_format }}
+
     {{ RoadmapUserPrompt(params.context) }}
   "#
 }

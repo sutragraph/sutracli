@@ -29,7 +29,7 @@ class QAEngineerAgent(BaseAgent):
 
         self.copy_memory_from_agent(
             Agent.Developer,
-            sections_to_copy={MemorySection.CODE_SNIPPETS, MemorySection.HISTORY},
+            sections_to_copy={MemorySection.CODE_SNIPPETS},
         )
 
         context = data.format_conversation(current_agent=self.agent_type)
