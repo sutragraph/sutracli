@@ -1,7 +1,10 @@
+from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
 from baml_client.types import Agent
+
+from .agent_graph import AgentGraph
 
 if TYPE_CHECKING:
     from src.agent_management.agents.base import BaseAgent
@@ -36,3 +39,32 @@ class AgentRegistry:
         if agent.project_path is None:
             return None
         return cls.get(agent.agent_type, agent.project_path)
+
+    @classmethod
+    def _get_agent_class(cls, agent_type: Agent) -> Type:
+        """Get the agent class for the given agent type."""
+        cfg = AgentGraph.get_config(agent_type)
+        if not cfg or not cfg.module or not cfg.class_name:
+            raise ValueError(f"No implementation configured for {agent_type}")
+        module = import_module(cfg.module)
+        try:
+            return getattr(module, cfg.class_name)
+        except AttributeError as e:
+            raise ValueError(
+                f"Class {cfg.class_name} not found in module {cfg.module} for {agent_type}"
+            ) from e
+
+    @classmethod
+    def get_or_create(cls, agent_type: Agent, project_path: Path) -> "BaseAgent":
+        """Get an existing agent instance or create a new one."""
+        existing = cls.get(agent_type, project_path)
+        if existing is not None:
+            return existing
+
+        agent_class = cls._get_agent_class(agent_type)
+        return agent_class(project_path=project_path)
+
+    @classmethod
+    def clear_all_instances(cls) -> None:
+        """Clear all registered agent instances."""
+        cls._instances.clear()

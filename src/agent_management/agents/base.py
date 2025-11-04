@@ -48,9 +48,7 @@ class BaseAgent(ABC):
             )
             downstream = AgentRegistry.get(downstream_type, lookup_path)
             if downstream is None:
-                from agent_management.core.factory import AgentFactory
-
-                downstream = AgentFactory.get_or_create(downstream_type, lookup_path)
+                downstream = AgentRegistry.get_or_create(downstream_type, lookup_path)
                 logger.debug(
                     f"[{self.agent_type.name}] auto-registered downstream [{downstream_type.name}] at {lookup_path}"
                 )
@@ -69,9 +67,7 @@ class BaseAgent(ABC):
         if upstream_type:
             upstream = AgentRegistry.get(upstream_type, self.project_path)
             if upstream is None:
-                from agent_management.core.factory import AgentFactory
-
-                upstream = AgentFactory.get_or_create(upstream_type, self.project_path)
+                upstream = AgentRegistry.get_or_create(upstream_type, self.project_path)
                 logger.debug(
                     f"[{self.agent_type.name}] auto-registered upstream [{upstream_type.name}] at {self.project_path}"
                 )

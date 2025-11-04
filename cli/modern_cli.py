@@ -16,6 +16,9 @@ from src.utils.logging import setup_logging
 # Set up basic INFO logging early to prevent debug logs during imports
 # This will be reconfigured later in __init__ if a different level is requested
 setup_logging("INFO")
+from dataclasses import dataclass
+from typing import Callable
+
 from prompt_toolkit import Application, prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout
@@ -28,7 +31,110 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
 
+
+@dataclass
+class MenuOption:
+    """Represents a menu option with display name and callback action."""
+
+    name: str
+    callback: Callable[[], None]
+
+
+class ArrowKeySelector:
+    """Handles arrow key selection for any type of options."""
+
+    @staticmethod
+    def select_option(options: list, title: str = "Select an option") -> Optional[any]:
+        """
+        Generic arrow key selection menu that works with any list of options.
+
+        Why: This creates a reusable selection interface that eliminates duplicate
+        arrow key selection code for agents, providers, and options menus.
+
+        Args:
+            options: List of options (can be MenuOption objects, strings, or objects with .name)
+            title: Title to display above the selection menu
+
+        Returns:
+            The selected option object or None if cancelled
+        """
+        current_index = 0
+
+        def get_option_name(option):
+            """Extract display name from different option types."""
+            if isinstance(option, MenuOption):
+                return option.name
+            elif hasattr(option, "name"):
+                return option.name
+            elif isinstance(option, dict) and "name" in option:
+                return option["name"]
+            else:
+                return str(option)
+
+        def get_formatted_text():
+            lines = [
+                ("", f"{title} (↑↓ to navigate, Enter to select, Esc to cancel):\n\n")
+            ]
+
+            for i, option in enumerate(options):
+                option_name = get_option_name(option)
+                if i == current_index:
+                    lines.append(("class:selected", f"▶ {option_name}\n"))
+                else:
+                    lines.append(("", f"  {option_name}\n"))
+
+            return lines
+
+        # Key bindings
+        bindings = KeyBindings()
+
+        @bindings.add("up")
+        def move_up(event):
+            nonlocal current_index
+            current_index = (current_index - 1) % len(options)
+
+        @bindings.add("down")
+        def move_down(event):
+            nonlocal current_index
+            current_index = (current_index + 1) % len(options)
+
+        @bindings.add("enter")
+        def select_item(event):
+            event.app.exit(result=options[current_index])
+
+        @bindings.add("escape")
+        @bindings.add("c-c")
+        def cancel(event):
+            event.app.exit(result=None)
+
+        # Create the application
+        application = Application(
+            layout=Layout(
+                HSplit(
+                    [
+                        Window(
+                            FormattedTextControl(get_formatted_text), wrap_lines=True
+                        ),
+                    ]
+                )
+            ),
+            key_bindings=bindings,
+            mouse_support=False,
+            full_screen=False,
+            style=Style(
+                [
+                    ("selected", "bg:#0066cc #ffffff bold"),
+                    ("dim", "#666666"),
+                ]
+            ),
+        )
+
+        # Run the application
+        return application.run()
+
+
 from src.agent_management import AgentGraph
+from src.agent_management.core.registry import AgentRegistry
 from src.agent_management.types.exception import AgentErrorType
 from src.config.settings import reload_config
 from src.utils.console import console
@@ -46,6 +152,80 @@ class ModernSutraKit:
         # Reconfigure logging with the requested level (if different from initial INFO setup)
         if log_level != "INFO":
             setup_logging(log_level)
+
+    def _get_user_input(self, prompt_msg: str = "👤 You: ") -> Optional[str]:
+        """
+        Reusable method to get user input with consistent error handling.
+
+        Why: This eliminates the duplicate try/catch blocks for KeyboardInterrupt/EOFError
+        that are repeated in _execute_agent, _continue_existing_session, and options menu.
+        """
+        while True:
+            try:
+                user_input = input(f"\n{prompt_msg}").strip()
+                console.print("-" * 40)
+                return user_input
+            except KeyboardInterrupt:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+            except EOFError:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+
+    def _execute_agent_interaction(
+        self, agent: Agent, project_dir: Path, user_input: str
+    ) -> bool:
+        """
+        Execute a single agent interaction with consistent result handling.
+
+        Why: This extracts the agent execution pattern that's duplicated between
+        _execute_agent and _continue_existing_session methods.
+        """
+        agent_instance = AgentRegistry.get_or_create(agent, project_dir)
+
+        agent_result = agent_instance.run_with_user_role(user_input)
+
+        if agent_result:
+            console.success("Response completed!")
+        else:
+            console.warning("Response completed with no result")
+
+        return True
+
+    def _setup_and_execute_agent(self, agent: Agent, project_dir: Path) -> bool:
+        """
+        Set up agent prerequisites and get initial user input.
+
+        Why: This extracts the common agent setup pattern that's needed for both
+        initial execution and new session workflows.
+        """
+        try:
+            agent_instance = AgentRegistry.get_or_create(agent, project_dir)
+
+            if not agent_instance.run_prerequisites():
+                console.error(
+                    "Prerequisites failed. Cannot proceed with agent execution."
+                )
+                return False
+
+            # Get initial user input
+            while True:
+                user_input = self._get_user_input()
+
+                if user_input is None:
+                    return False
+
+                if not user_input:
+                    continue
+
+                return self._execute_agent_interaction(agent, project_dir, user_input)
+
+        except ValueError as e:
+            console.error(str(e))
+            return False
+        except Exception as e:
+            console.error(f"Agent setup failed: {e}")
+            return False
 
     def print_banner(self):
         """Print the welcome banner."""
@@ -639,8 +819,11 @@ class ModernSutraKit:
             console.error("No agents available")
             sys.exit(1)
 
-        # Use arrow key selection
-        selected_agent = self._arrow_key_select_agents(available_agents)
+        # Use arrow key selection with the new ArrowKeySelector
+        selected_agent = ArrowKeySelector.select_option(
+            available_agents, "Select agent"
+        )
+
         if selected_agent:
             return selected_agent
         else:
@@ -648,138 +831,8 @@ class ModernSutraKit:
             sys.exit(1)
 
     def _arrow_key_select_provider(self, providers):
-        """Arrow key selection for LLM providers."""
-        current_index = 0
-
-        def get_formatted_text():
-            lines = [
-                (
-                    "",
-                    "Select LLM provider (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
-                )
-            ]
-
-            for i, provider in enumerate(providers):
-                if i == current_index:
-                    lines.append(("class:selected", f"▶ {provider['name']}\n"))
-                else:
-                    lines.append(("", f"  {provider['name']}\n"))
-
-            return lines
-
-        # Key bindings
-        bindings = KeyBindings()
-
-        @bindings.add("up")
-        def move_up(event):
-            nonlocal current_index
-            current_index = (current_index - 1) % len(providers)
-
-        @bindings.add("down")
-        def move_down(event):
-            nonlocal current_index
-            current_index = (current_index + 1) % len(providers)
-
-        @bindings.add("enter")
-        def select_item(event):
-            event.app.exit(result=providers[current_index])
-
-        @bindings.add("escape")
-        @bindings.add("c-c")
-        def cancel(event):
-            event.app.exit(result=None)
-
-        # Create the application
-        application = Application(
-            layout=Layout(
-                HSplit(
-                    [
-                        Window(
-                            FormattedTextControl(get_formatted_text), wrap_lines=True
-                        ),
-                    ]
-                )
-            ),
-            key_bindings=bindings,
-            mouse_support=False,
-            full_screen=False,
-            style=Style(
-                [
-                    ("selected", "bg:#0066cc #ffffff bold"),
-                    ("dim", "#666666"),
-                ]
-            ),
-        )
-
-        # Run the application
-        return application.run()
-
-    def _arrow_key_select_agents(self, agents: List[Agent]) -> Optional[Agent]:
-        """Custom arrow key selection for agents."""
-        current_index = 0
-
-        def get_formatted_text():
-            lines = [
-                (
-                    "",
-                    "Select agent (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
-                )
-            ]
-
-            for i, agent in enumerate(agents):
-                if i == current_index:
-                    lines.append(("class:selected", f"▶ {agent.name}\n"))
-                else:
-                    lines.append(("", f"  {agent.name}\n"))
-
-            return lines
-
-        # Key bindings
-        bindings = KeyBindings()
-
-        @bindings.add("up")
-        def move_up(event):
-            nonlocal current_index
-            current_index = (current_index - 1) % len(agents)
-
-        @bindings.add("down")
-        def move_down(event):
-            nonlocal current_index
-            current_index = (current_index + 1) % len(agents)
-
-        @bindings.add("enter")
-        def select_item(event):
-            event.app.exit(result=agents[current_index])
-
-        @bindings.add("escape")
-        @bindings.add("c-c")
-        def cancel(event):
-            event.app.exit(result=None)
-
-        # Create the application
-        application = Application(
-            layout=Layout(
-                HSplit(
-                    [
-                        Window(
-                            FormattedTextControl(get_formatted_text), wrap_lines=True
-                        ),
-                    ]
-                )
-            ),
-            key_bindings=bindings,
-            mouse_support=False,
-            full_screen=False,
-            style=Style(
-                [
-                    ("selected", "bg:#0066cc #ffffff bold"),
-                    ("dim", "#666666"),
-                ]
-            ),
-        )
-
-        # Run the application
-        return application.run()
+        """Arrow key selection for LLM providers using ArrowKeySelector."""
+        return ArrowKeySelector.select_option(providers, "Select LLM provider")
 
     def show_agent_prerequisites(self, agent: Agent):
         """Show prerequisites for selected agent."""
@@ -823,48 +876,105 @@ class ModernSutraKit:
         """Execute the actual agent."""
         console.print()
 
-        try:
-            from src.agent_management.core.factory import AgentFactory
+        if self._setup_and_execute_agent(agent, project_dir):
+            console.success("Agent execution completed successfully!!!")
+        else:
+            console.warning("Agent execution completed with no result")
 
-            try:
-                agent_instance = AgentFactory.get_or_create(agent, project_dir)
-            except ValueError as e:
-                console.error(str(e))
-                return None
+        # Show options menu after agent completion
+        self._show_post_completion_options(agent, project_dir)
 
-            if not agent_instance.run_prerequisites():
-                console.error(
-                    "Prerequisites failed. Cannot proceed with agent execution."
-                )
-                return None
+    def _show_post_completion_options(self, agent: Agent, project_dir: Path):
+        """Show options menu after agent completion."""
+        console.print("\n" + "=" * 50)
 
-            while True:
-                try:
-                    user_input = input("\n👤 You: ").strip()
-                    console.print("-" * 40)
+        # Define options with callbacks
+        options = [
+            MenuOption(
+                "Continue with existing session",
+                lambda: self._continue_existing_session(agent, project_dir),
+            ),
+            MenuOption(
+                "Start new session", lambda: self._start_new_session(project_dir)
+            ),
+            MenuOption(
+                "Quit",
+                lambda: console.success("Goodbye! Thank you for using SutraGraph!"),
+            ),
+        ]
 
-                    if not user_input:
-                        continue
+        selected_option = ArrowKeySelector.select_option(
+            options, "What would you like to do next?"
+        )
 
-                    # Got valid input, break out of input loop
-                    break
-                except KeyboardInterrupt:
-                    console.print("\n\n👋 Goodbye! Session ended.")
-                    return None
-                except EOFError:
-                    console.print("\n\n👋 Goodbye! Session ended.")
-                    return None
+        if selected_option is None:  # User pressed Esc/Ctrl+C
+            return
 
-            # All agents now use run_agent_loop
-            agent_result = agent_instance.run_with_user_role(user_input)
+        # Execute the callback for the selected option
+        selected_option.callback()
 
-            if agent_result:
-                console.success("Agent execution completed successfully!!!")
-            else:
-                console.warning("Agent execution completed with no result")
+        # If quit was selected, we need to return from the method
+        if selected_option.name == "Quit":
+            return
 
-        except Exception as e:
-            console.error(f"Agent execution failed: {e}")
+    def _continue_existing_session(self, agent: Agent, project_dir: Path):
+        """Continue with the existing session by prompting for user input."""
+        console.info(f"Continuing with {agent.name} session...")
+        console.print("You can continue interacting with the agent.")
+        console.print()
+
+        while True:
+            user_input = self._get_user_input()
+
+            if user_input is None:
+                return
+
+            if not user_input:
+                continue
+
+            # Execute agent with user input
+            self._execute_agent_interaction(agent, project_dir, user_input)
+
+            # After each interaction, show options menu again
+            console.info("Agent interaction completed!")
+            self._show_post_completion_options(agent, project_dir)
+            return
+
+    def _start_new_session(self, project_dir: Path):
+        """Start a new session by clearing registry and selecting new agent."""
+        console.info("Starting new session...")
+
+        # Clear all agent instances from registry
+        AgentRegistry.clear_all_instances()
+        console.success("All previous sessions cleared.")
+
+        # Select new agent
+        new_agent = self.select_agent()
+
+        # Show prerequisites for new agent
+        self.show_agent_prerequisites(new_agent)
+
+        # Confirm to proceed
+        proceed = Confirm.ask(
+            "Ready to proceed with the new agent workflow?", default=True
+        )
+
+        if not proceed:
+            console.info("Returning to options menu...")
+            self._show_post_completion_options(new_agent, project_dir)
+            return
+
+        # Execute new agent workflow
+        console.print()
+        console.highlight(f"Executing {new_agent.name}")
+
+        if self._setup_and_execute_agent(new_agent, project_dir):
+            console.success("New agent execution completed successfully!!!")
+        else:
+            console.warning("New agent execution completed with no result")
+
+        # Show options menu after completion
+        self._show_post_completion_options(new_agent, project_dir)
 
     def run(self):
         """Main CLI execution flow."""
