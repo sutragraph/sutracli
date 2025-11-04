@@ -185,11 +185,6 @@ class ModernSutraKit:
 
         agent_result = agent_instance.run_with_user_role(user_input)
 
-        if agent_result:
-            console.success("Response completed!")
-        else:
-            console.warning("Response completed with no result")
-
         return True
 
     def _setup_and_execute_agent(self, agent: Agent, project_dir: Path) -> bool:

@@ -81,33 +81,8 @@ class RoadmapAgent(BaseAgent):
 
             # Check if result is BaseCompletionParams instead of RoadmapCompletionParams
             if isinstance(result, BaseCompletionParams):
-                logger.debug(
-                    "Received BaseCompletionParams, prompting user for new input"
-                )
-
-                try:
-                    new_input = Prompt.ask(
-                        "[cyan]Enter your input to continue or leave blank to cancel:[/cyan]",
-                        default="",
-                    )
-
-                    if new_input.strip():
-                        current_query = (
-                            f"{problem_query}\nUser input: {new_input.strip()}"
-                        )
-                        logger.debug("User provided new input, continuing iteration")
-                        continue
-                    else:
-                        console.print(
-                            "[yellow]⚠️  No input provided. Operation cancelled.[/yellow]"
-                        )
-                        return None
-
-                except (KeyboardInterrupt, EOFError):
-                    console.print(
-                        "\n[bold red]❌ Operation cancelled by user[/bold red]"
-                    )
-                    return None
+                logger.debug("Received BaseCompletionParams")
+                return None
 
             # At this point, result must be RoadmapCompletionParams
             if not isinstance(result, RoadmapCompletionParams):
