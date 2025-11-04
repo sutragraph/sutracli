@@ -14,7 +14,6 @@ template_string QAEngineerToolGuidelines() #"
 ## Searching and Reading:
   - If you are unsure how to fulfill the testing requirements, gather more information with tool calls.
   - Bias towards not asking the user for help if you can find the answer yourself
-  - When providing paths to tools, always use absolute paths
   - Before you read or edit a file, you must first find the full path
   - Refer to the history for proper decision making and to avoid redundant tool calls
 

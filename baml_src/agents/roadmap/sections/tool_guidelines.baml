@@ -20,6 +20,7 @@ template_string RoadmapGuidelines() #"
 ## Tool Usage Best Practices:
   - Document every tool call in sutra memory's history section with the command used and results obtained
   - `search_keyword` is best for finding specific functions, classes, or keywords across multiple files; it does not search file names. Use the `list_files` tool to search for files
+  - When providing paths to tools, always use absolute paths
 
 ## Feedback Handling:
   - If feedback_received: Review feedback + priors; identify tasks for improvements; analyze; apply mods; generate new plan.
