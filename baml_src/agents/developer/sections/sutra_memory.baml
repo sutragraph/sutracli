@@ -18,10 +18,12 @@ Note: Sutra memory is not a tool. It is a persistent memory that you must update
   - History is useful for your next tool call decisions to avoid repeating the same tool calls and important files to look at.
 
 3. `task` Best Practices:
-  - Task descriptions must be detailed and self-contained so you can execute them without requiring additional context discovery
-  - Only ONE task should be 'current' at a time
-  - Include specific function names, file paths, and line numbers when relevant to the task
-  - `description` is only required for 'add' actions do not include description for 'move' actions
+  - Tasks are for new requirements, breaking down complex tasks into smaller steps, or recording important findings. Do not create tasks that are already in memory; only include unique, necessary tasks.
+  - Remember to update task status as you work: mark as 'pending' when haven't begun working on yet, 'current' when you begin, and 'completed' when finished.
+  - Task descriptions must be detailed and self-contained so you can execute them without requiring additional context discovery.
+  - Only ONE task should be 'current' at a time.
+  - Include specific function names, file paths, and line numbers when relevant to the task.
+  - `description` is only required for 'add' actions; do not include it for 'move' actions.
 
 4. Only include code snippets or tasks in Sutra memory if they do not already exist. Avoid duplicating information to keep the memory concise and efficient.
 
