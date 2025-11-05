@@ -383,7 +383,7 @@ class RoadmapSutraMemoryParams(BaseModel):
 class SearchKeywordParamsWithProjectName(BaseModel):
     project_name: str
     keyword: str
-    file_paths: typing.Optional[str] = None
+    file_paths: typing.Optional[typing.List[str]] = None
     before_lines: typing.Optional[int] = None
     after_lines: typing.Optional[int] = None
     case_sensitive: typing.Optional[bool] = None
@@ -392,7 +392,7 @@ class SearchKeywordParamsWithProjectName(BaseModel):
 
 class SearchKeywordParamsWithoutProjectName(BaseModel):
     keyword: str
-    file_paths: typing.Optional[str] = None
+    file_paths: typing.Optional[typing.List[str]] = None
     before_lines: typing.Optional[int] = None
     after_lines: typing.Optional[int] = None
     case_sensitive: typing.Optional[bool] = None

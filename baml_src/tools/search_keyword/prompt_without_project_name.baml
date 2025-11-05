@@ -16,7 +16,7 @@ Optional Parameters:
   - after_lines: Lines after match (default: 5)
   - case_sensitive: Case-sensitive search (default: false)
   - regex: Treat keyword as regex pattern (default: false)
-  - file_paths: Comma-separated file or directory paths to search.
+  - file_paths: List of file or directory paths to search.
   - fetch_next_chunk: Set to true to fetch next chunks of results when more are available (default: false)
 
 Notes:
@@ -32,7 +32,7 @@ Usage:
   "tool_name": "search_keyword",
   "parameters": {
     "keyword": "your_search_pattern",
-    "file_paths": "path/to/file1, path/to/dir2",
+    "file_paths": ["path/to/file1", "path/to/dir2"],
     "before_lines": 0,
     "after_lines": 5,
     "case_sensitive": true|false,
@@ -49,7 +49,7 @@ GOOD EXAMPLES:
   "tool_name": "search_keyword",
   "parameters": {
     "keyword": "getUserById",
-    "file_paths": ".",
+    "file_paths": ["."],
     "before_lines": 0,
     "after_lines": 5
   }
@@ -61,8 +61,8 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "function\s+getUserById\s*\(",
     "regex": true,
-    "file_paths": "src/utils/helpers.ts"
-    "before_lines": 0
+    "file_paths": ["src/utils/helpers.ts"],
+    "before_lines": 0,
     "after_lines": 5
   }
 }
@@ -73,8 +73,8 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "import.*redis",
     "regex": true,
-    "file_paths": "src/services/cache-service.ts, src/config/database.ts"
-    "before_lines": 0
+    "file_paths": ["src/services/cache-service.ts", "src/config/database.ts"],
+    "before_lines": 0,
     "after_lines": 5
   }
 }
@@ -85,7 +85,7 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "\b(app|router)\.(put|PUT)\s*\([^)]*apiFunction\b",
     "regex": true,
-    "file_paths": "src/api",
+    "file_paths": ["src/api"],
     "before_lines": 0
     "after_lines": 5
   }
@@ -97,7 +97,7 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "getUserData|setUserData|deleteUserData",
     "regex": true,
-    "file_paths": "src/config",
+    "file_paths": ["src/config"],
     "before_lines": 0
     "after_lines": 5
   }
@@ -108,7 +108,7 @@ GOOD EXAMPLES:
   "tool_name": "search_keyword",
   "parameters": {
     "keyword": "config|Config",
-    "file_paths": "src/config, src/utils",
+    "file_paths": ["src/config", "src/utils"],
     "regex": true,
     "before_lines": 0
     "after_lines": 5
@@ -122,7 +122,7 @@ BAD EXAMPLES: (AVOID THESE)
   "parameters": {
     "keyword": "function|class|method|import|export|const|let|var",
     "regex": true,
-    "file_paths": "src"
+    "file_paths": ["src"]
   }
 }
 
@@ -132,7 +132,7 @@ BAD EXAMPLES: (AVOID THESE)
   "parameters": {
     "keyword": "user|User|auth|Auth|login|register|session|token|jwt|api|controller|service",
     "regex": true,
-    "file_paths": "src"
+    "file_paths": ["src"]
   }
 }
 "#

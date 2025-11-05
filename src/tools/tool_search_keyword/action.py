@@ -253,13 +253,18 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
     try:
         project_name = action.parameters.get("project_name")
         keyword = action.parameters.get("keyword", "")
-        file_paths_str = action.parameters.get("file_paths", "")
+        file_paths_list = action.parameters.get("file_paths", [])
         # Handle None values properly for before_lines and after_lines
         before_lines_param = action.parameters.get("before_lines")
         after_lines_param = action.parameters.get("after_lines")
 
-        before_lines = int(before_lines_param) if before_lines_param is not None else 0
-        after_lines = int(after_lines_param) if after_lines_param is not None else 5
+        # Validate and set default values for line parameters
+        before_lines = max(
+            0, int(before_lines_param) if before_lines_param is not None else 0
+        )
+        after_lines = max(
+            5, int(after_lines_param) if after_lines_param is not None else 5
+        )
 
         logger.debug(
             f"🔍 Search parameters: keyword='{keyword}', before_lines={before_lines}, after_lines={after_lines}, regex={action.parameters.get('regex', 'false')}"
@@ -273,18 +278,15 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
             raise Exception("Missing required parameter: keyword")
 
         # Auto-detect project name from absolute file paths if not provided
-        if not project_name and file_paths_str:
-            raw_paths = [
-                path.strip() for path in file_paths_str.split(",") if path.strip()
-            ]
-            detection_result = auto_detect_project_from_paths(raw_paths)
+        if not project_name and file_paths_list:
+            detection_result = auto_detect_project_from_paths(file_paths_list)
             if detection_result:
                 project_name, matched_paths = detection_result
 
         # Handle case when neither file_paths nor project_name is provided
-        if not file_paths_str and not project_name:
+        if not file_paths_list and not project_name:
             # Use current directory instead of raising an exception
-            file_paths_str = "."
+            file_paths_list = ["."]
 
         # Handle path resolution based on priority and relative/absolute paths
         project_base_path = None
@@ -296,23 +298,24 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                 raise Exception(f"Project '{project_name}' not found or has no path")
 
         # Priority logic for path resolution
-        if not file_paths_str and project_name:
+        if not file_paths_list and project_name:
             # Case 1: Only project_name provided - use project base path
-            file_paths_str = project_base_path
+            file_paths_list = [project_base_path]
             yield {
                 "type": "info",
                 "message": f"Using project base path: {project_base_path}",
                 "tool_name": "search_keyword",
                 "project_name": project_name,
             }
-        elif file_paths_str and project_name and project_base_path:
+        elif file_paths_list and project_name and project_base_path:
             # Case 2: Both provided - check if file_paths are relative and resolve against project base
-            raw_paths = [
-                path.strip() for path in file_paths_str.split(",") if path.strip()
-            ]
             resolved_paths = []
 
-            for path in raw_paths:
+            for path in file_paths_list:
+                # Skip None or non-string values
+                if not isinstance(path, str) or not path.strip():
+                    continue
+
                 path_obj = Path(path)
                 if path_obj.is_absolute():
                     # Absolute path - use as-is
@@ -322,7 +325,7 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
                     resolved_path = str(Path(project_base_path) / path)
                     resolved_paths.append(resolved_path)
 
-            file_paths_str = ", ".join(resolved_paths)
+            file_paths_list = resolved_paths
             yield {
                 "type": "info",
                 "message": f"Resolved relative paths against project base: {project_base_path}",
@@ -334,11 +337,12 @@ def execute_search_keyword_action(action: AgentAction) -> Iterator[Dict[str, Any
         # Parse and validate file paths
         file_paths = []
         invalid_paths = []
-        if file_paths_str:
-            raw_paths = [
-                path.strip() for path in file_paths_str.split(",") if path.strip()
-            ]
-            for path in raw_paths:
+        if file_paths_list:
+            for path in file_paths_list:
+                # Skip None or non-string values
+                if not isinstance(path, str) or not path.strip():
+                    continue
+
                 path_obj = Path(path)
 
                 # Check if path exists (can be file or directory)
