@@ -15,7 +15,7 @@
 template_string ChainOfThought(action: string?) #"
 # Reasoning Methodology
 
-Before providing the JSON response, first use `<thinking>` tags for your step-by-step thought process. This is your space to think about the task, explore possibilities, and plan your response. After you have finished thinking, provide your response as a JSON object. Inside the JSON, add comments to explain your reasoning for the values in the following fields: `tool_call`, `add_history`, `tasks`, and `code`.
+Before providing the JSON response, first use `<thinking>` tags for your step-by-step thought process. This is your space to think about the task, explore possibilities, and plan your response. After you have finished thinking, provide your response as a JSON object. Inside the JSON, add comments for your reasoning before the following fields: `tool_call`, `add_history`, `tasks`, and `code`.
 
 Example:
 <thinking>
