@@ -5,7 +5,9 @@ template_string RoadmapSutraMemoryPrompt() #"
 
 Use this persistent memory to store data critical for future iterations of development tasks. Prioritize actionable, task-specific information to maintain context and avoid redundant work.
 
-## Sutra Memory Guidelines
+Note: Sutra memory is not a tool. It is a persistent memory that you must update in every iteration to keep track of important information for future tasks.
+
+## Sutra Memory Guidelines:
 
 1. Store code snippets using file paths and line numbers that are essential for current or future engineering tasks, particularly when implementation context spans multiple files or requires understanding existing patterns
 
@@ -24,7 +26,7 @@ Use this persistent memory to store data critical for future iterations of devel
 
 5. Prioritize storing code snippets that you think would be usefull in future iterations so you won't need to open the same file again and again.
 
-6. Only include code snippets in memory if they do not already exist. Avoid duplicating information to keep memory concise and efficient.
+6. Only include code snippets or tasks in Sutra memory if they do not already exist. Avoid duplicating information to keep the memory concise and efficient.
 
 7. Keep memory clean, specific, and non-redundant. reference exact files/lines when possible.
 "#

@@ -37,16 +37,35 @@ class DeliveryManager:
 
         if action_type == "database":
             key_params = {
-                "query_name": parameters.get("query_name"),
-                "file_path": parameters.get("file_path"),
-                "node_name": parameters.get("node_name"),
-                "start_line": parameters.get("start_line"),
-                "end_line": parameters.get("end_line"),
+                "query_name": parameters.get("query_name", ""),
+                "file_path": parameters.get("file_path", ""),
+                "start_line": parameters.get("start_line", ""),
+                "end_line": parameters.get("end_line", ""),
+                "block_id": parameters.get("block_id", ""),
             }
         elif action_type == "semantic_search":
             key_params = {
-                "query": parameters.get("query"),
+                "query": parameters.get("query", ""),
+                "project_name": parameters.get("project_name", ""),
             }
+        elif action_type == "search_keyword":
+            key_params = {
+                "keyword": parameters.get("keyword", ""),
+                "file_paths": parameters.get("file_paths", ""),
+                "before_lines": parameters.get("before_lines", ""),
+                "after_lines": parameters.get("after_lines", ""),
+                "case_sensitive": parameters.get("case_sensitive", ""),
+                "regex": parameters.get("regex", ""),
+            }
+        elif action_type == "list_files":
+            key_params = {
+                "path": parameters.get("path", "") or parameters.get("file_path", ""),
+                "project_name": parameters.get("project_name", ""),
+                "recursive": parameters.get("recursive", ""),
+            }
+        else:
+            key_params = parameters.copy()
+            key_params.pop("fetch_next_chunk", None)
 
         filtered_params = {k: v for k, v in key_params.items() if v is not None}
         signature_parts = [action_type] + [

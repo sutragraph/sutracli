@@ -22,7 +22,7 @@ Note: Sutra memory is not a tool. It is a persistent memory that you must update
   - Include specific function names, file paths, and line numbers when relevant to the task
   - `description` is only required for 'add' actions do not include description for 'move' actions
 
-4. Only include code snippets in memory if they do not already exist. Avoid duplicating information to keep memory concise and efficient.
+4. Only include code snippets or tasks in Sutra memory if they do not already exist. Avoid duplicating information to keep the memory concise and efficient.
 
 5. Keep memory clean, specific, and non-redundant. reference exact files/lines when possible.
 "#
