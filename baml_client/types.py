@@ -381,13 +381,13 @@ class RoadmapSutraMemoryParams(BaseModel):
     code: typing.Optional[typing.List["RoadmapCodeStorage"]] = None
 
 class SearchKeywordParamsWithProjectName(BaseModel):
+    project_name: str
     keyword: str
     file_paths: typing.Optional[str] = None
     before_lines: typing.Optional[int] = None
     after_lines: typing.Optional[int] = None
     case_sensitive: typing.Optional[bool] = None
     regex: typing.Optional[bool] = None
-    project_name: str
     fetch_next_chunk: typing.Optional[bool] = None
 
 class SearchKeywordParamsWithoutProjectName(BaseModel):
@@ -401,7 +401,7 @@ class SearchKeywordParamsWithoutProjectName(BaseModel):
 
 class SearchKeywordToolCallWithProjectName(BaseModel):
     tool_name: typing_extensions.Literal['search_keyword']
-    parameters: "SearchKeywordParamsWithoutProjectName"
+    parameters: "SearchKeywordParamsWithProjectName"
 
 class SearchKeywordToolCallWithoutProjectName(BaseModel):
     tool_name: typing_extensions.Literal['search_keyword']

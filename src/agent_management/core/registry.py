@@ -55,14 +55,19 @@ class AgentRegistry:
             ) from e
 
     @classmethod
-    def get_or_create(cls, agent_type: Agent, project_path: Path) -> "BaseAgent":
+    def get_or_create(
+        cls,
+        agent_type: Agent,
+        project_path: Path,
+        parent_key: Optional[Tuple[Agent, Path]] = None,
+    ) -> "BaseAgent":
         """Get an existing agent instance or create a new one."""
         existing = cls.get(agent_type, project_path)
         if existing is not None:
             return existing
 
         agent_class = cls._get_agent_class(agent_type)
-        return agent_class(project_path=project_path)
+        return agent_class(project_path=project_path, parent_key=parent_key)
 
     @classmethod
     def clear_all_instances(cls) -> None:

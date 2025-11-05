@@ -24,8 +24,10 @@ from .base import BaseAgent
 
 
 class RoadmapAgent(BaseAgent):
-    def __init__(self, project_path: Optional[Path] = None):
-        super().__init__(Agent.Roadmap, project_path)
+    def __init__(
+        self, project_path: Path, parent_key: Optional[Tuple[Agent, Path]] = None
+    ):
+        super().__init__(Agent.Roadmap, project_path, parent_key)
         self.spawned_agent_results: List[AgentData] = []
         self.spawned_agent_count = 0
 

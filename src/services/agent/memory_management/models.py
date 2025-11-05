@@ -99,8 +99,8 @@ class MemorySection(Enum):
 class MemorySectionData:
     """Memory section data container"""
 
-    tasks: Dict[str, Task] = field(default_factory=dict)
-    code_snippets: Dict[str, CodeSnippet] = field(default_factory=dict)
+    tasks: Dict[int, Task] = field(default_factory=dict)
+    code_snippets: Dict[int, CodeSnippet] = field(default_factory=dict)
     history: List[HistoryEntry] = field(default_factory=list)
     file_changes: List[FileChange] = field(default_factory=list)
     counters: Dict[str, int] = field(default_factory=dict)

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional, Set, Tuple
 
 from loguru import logger
 
@@ -16,15 +16,20 @@ from tools import AllToolParams
 
 
 class BaseAgent(ABC):
-    def __init__(self, agent_type: Agent, project_path: Optional[Path] = None):
+    def __init__(
+        self,
+        agent_type: Agent,
+        project_path: Path,
+        parent_key: Optional[Tuple[Agent, Path]] = None,
+    ):
         self.agent_type = agent_type
         self.memory = SutraMemoryManager()
         self.project_path = project_path
+        self.parent_key = parent_key  # Registry key of the parent agent
         self.indexing_handler = IndexingHandler()
         self.file_content_map: Dict[str, Dict[str, str]] = {}
 
-        if project_path:
-            AgentRegistry.register(self)
+        AgentRegistry.register(self)
 
     @abstractmethod
     def from_upstream(self, data: AgentData) -> None:
@@ -37,9 +42,6 @@ class BaseAgent(ABC):
     def send_to_downstream(
         self, data: AgentData, target_project_path: Optional[Path] = None
     ) -> None:
-        if not self.project_path:
-            raise ValueError(f"Project path must be set for {self.agent_type.name}")
-
         downstream_type = AgentGraph.get_downstream(self.agent_type)
 
         if downstream_type:
@@ -48,7 +50,11 @@ class BaseAgent(ABC):
             )
             downstream = AgentRegistry.get(downstream_type, lookup_path)
             if downstream is None:
-                downstream = AgentRegistry.get_or_create(downstream_type, lookup_path)
+                # Create downstream with parent key pointing to this agent
+                parent_key = AgentRegistry._make_key(self.agent_type, self.project_path)
+                downstream = AgentRegistry.get_or_create(
+                    downstream_type, lookup_path, parent_key=parent_key
+                )
                 logger.debug(
                     f"[{self.agent_type.name}] auto-registered downstream [{downstream_type.name}] at {lookup_path}"
                 )
@@ -109,25 +115,56 @@ class BaseAgent(ABC):
 
     def copy_memory_from_agent(
         self,
-        agent_type: Agent,
+        agent_key: Optional[Tuple[Agent, Path]] = None,
         sections_to_copy: Optional[Set[MemorySection]] = None,
         project_path: Optional[Path] = None,
     ) -> bool:
+        """
+        Copy memory sections from another agent to this agent.
+
+        Args:
+            agent_key: The registry key (Agent, Path) of the agent to copy memory from.
+                      If None, uses the parent_key if available.
+            sections_to_copy: Specific memory sections to copy. If None, copies all sections.
+            project_path: Project path context for the operation. If None, uses this agent's project_path.
+
+        Returns:
+            bool: True if memory copy was successful, False otherwise.
+
+        Raises:
+            ValueError: If project_path is not set or provided.
+        """
         target_path = project_path or self.project_path
         if not target_path:
             raise ValueError(
                 f"Project path must be set or provided for {self.agent_type.name}"
             )
 
-        source_agent = AgentRegistry.get(agent_type, target_path)
+        # If no agent_key provided, use the parent_key
+        if agent_key is None:
+            agent_key = self.parent_key
+            if not agent_key:
+                logger.warning(
+                    f"[{self.agent_type.name}] No agent_key or parent_key found for memory copy"
+                )
+                return False
+
+        source_agent = AgentRegistry._instances.get(agent_key)
         if not source_agent:
+            logger.warning(
+                f"[{self.agent_type.name}] Source agent not found for key {agent_key}"
+            )
             return False
 
         if sections_to_copy:
-            filtered_state = source_agent.memory.filter_sections(sections_to_copy)
+            # Filter code snippets by project path when copying
+            filtered_state = source_agent.memory.filter_sections(
+                sections_to_copy, str(target_path)
+            )
             return self.memory.import_memory_state(filtered_state)
 
-        source_state = source_agent.memory.export_memory_state()
+        # Filter code snippets by project path when copying all sections
+        source_state = source_agent.memory.export_memory_state(str(target_path))
         return self.memory.import_memory_state(source_state)
 
     def clear_memory_sections(self, sections: Set[MemorySection]) -> None:

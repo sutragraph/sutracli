@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from loguru import logger
 
@@ -15,8 +15,10 @@ from .base import BaseAgent
 
 
 class DeveloperAgent(BaseAgent):
-    def __init__(self, project_path: Optional[Path] = None):
-        super().__init__(Agent.Developer, project_path)
+    def __init__(
+        self, project_path: Path, parent_key: Optional[Tuple[Agent, Path]] = None
+    ):
+        super().__init__(Agent.Developer, project_path, parent_key)
 
     def run_agent_loop(self, problem_query: str) -> DeveloperCompletionParams:
         result = super().run_agent_loop(problem_query)
@@ -27,6 +29,11 @@ class DeveloperAgent(BaseAgent):
 
     def from_upstream(self, data: AgentData) -> None:
         self.run_prerequisites()
+
+        self.copy_memory_from_agent(
+            agent_key=self.parent_key,
+            sections_to_copy={MemorySection.CODE_SNIPPETS},
+        )
 
         context = data.format_conversation(current_agent=self.agent_type)
 

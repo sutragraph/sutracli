@@ -128,6 +128,10 @@ class SutraMemoryManager:
         """Get all code snippets for a specific file"""
         return self.memory_ops.get_code_snippets_by_file(file_path)
 
+    def get_code_snippets_by_project_path(self, project_path: str):
+        """Get all code snippets whose files are within the given project path"""
+        return self.memory_ops.get_code_snippets_by_project_path(project_path)
+
     # File Change Tracking Methods
     def track_file_change(self, file_path: str, operation: str) -> bool:
         """Track file change"""
@@ -310,9 +314,15 @@ class SutraMemoryManager:
         return self.memory_ops.reset_memory()
 
     # State Persistence Methods
-    def export_memory_state(self):
-        """Export current memory state to dictionary for persistence"""
-        return self.state_persistence.export_memory_state()
+    def export_memory_state(self, project_path: Optional[str] = None):
+        """Export current memory state to dictionary for persistence
+
+        Args:
+            project_path: Optional project path to filter code snippets. If provided,
+                         only code snippets whose files are within this project path
+                         will be exported.
+        """
+        return self.state_persistence.export_memory_state(project_path=project_path)
 
     def import_memory_state(self, state: MemorySectionData) -> bool:
         """Import memory state from dictionary"""
@@ -677,18 +687,23 @@ class SutraMemoryManager:
             )
 
     # Memory Manipulation Utility Methods
-    def filter_sections(self, sections: Set[MemorySection]) -> MemorySectionData:
+    def filter_sections(
+        self, sections: Set[MemorySection], project_path: Optional[str] = None
+    ) -> MemorySectionData:
         """Filter current memory state to only include specified sections
 
         Returns a deep copy to prevent unintended mutations.
 
         Args:
             sections: Set of MemorySection enums
+            project_path: Optional project path to filter code snippets. If provided,
+                         only code snippets whose files are within this project path
+                         will be included in the filtered result.
 
         Returns:
             MemorySectionData containing only the specified memory sections
         """
-        return self.state_persistence.export_memory_state(sections)
+        return self.state_persistence.export_memory_state(sections, project_path)
 
     def clear_sections(self, sections: Set[MemorySection]) -> bool:
         """Clear specific sections from current memory

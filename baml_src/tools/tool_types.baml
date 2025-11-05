@@ -31,7 +31,7 @@ class SearchKeywordToolCallWithoutProjectName {
 
 class SearchKeywordToolCallWithProjectName {
   tool_name "search_keyword"
-  parameters SearchKeywordParamsWithoutProjectName
+  parameters SearchKeywordParamsWithProjectName
 }
 
 class SemanticSearchToolCallWithoutProjectName {

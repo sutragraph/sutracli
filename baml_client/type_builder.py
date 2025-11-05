@@ -3456,7 +3456,7 @@ class SearchKeywordParamsWithProjectNameAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("SearchKeywordParamsWithProjectName")
-        self._properties: typing.Set[str] = set([  "keyword",  "file_paths",  "before_lines",  "after_lines",  "case_sensitive",  "regex",  "project_name",  "fetch_next_chunk",  ])
+        self._properties: typing.Set[str] = set([  "project_name",  "keyword",  "file_paths",  "before_lines",  "after_lines",  "case_sensitive",  "regex",  "fetch_next_chunk",  ])
         self._props = SearchKeywordParamsWithProjectNameProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -3485,6 +3485,10 @@ class SearchKeywordParamsWithProjectNameProperties:
     
     
     @property
+    def project_name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("project_name"))
+    
+    @property
     def keyword(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("keyword"))
     
@@ -3507,10 +3511,6 @@ class SearchKeywordParamsWithProjectNameProperties:
     @property
     def regex(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("regex"))
-    
-    @property
-    def project_name(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("project_name"))
     
     @property
     def fetch_next_chunk(self) -> type_builder.ClassPropertyViewer:

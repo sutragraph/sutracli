@@ -26,13 +26,17 @@ class StatePersistence:
         self.memory_ops = memory_ops
 
     def export_memory_state(
-        self, sections: Optional[Set[MemorySection]] = None
+        self,
+        sections: Optional[Set[MemorySection]] = None,
+        project_path: Optional[str] = None,
     ) -> MemorySectionData:
         """
         Export current memory state as MemorySectionData.
 
         Args:
             sections: Optional set of MemorySection enums to export. If None, exports all sections.
+            project_path: Optional project path to filter code snippets. If provided, only code snippets
+                         whose files are within this project path will be exported.
 
         Returns:
             MemorySectionData containing memory state data for specified sections
@@ -53,11 +57,20 @@ class StatePersistence:
                     self.memory_ops.tasks.copy() if self.memory_ops.tasks else {}
                 )
             if MemorySection.CODE_SNIPPETS in sections:
-                code_snippets_data = (
-                    self.memory_ops.code_snippets.copy()
-                    if self.memory_ops.code_snippets
-                    else {}
-                )
+                if project_path:
+                    # Filter code snippets by project path
+                    filtered_snippets = (
+                        self.memory_ops.get_code_snippets_by_project_path(project_path)
+                    )
+                    code_snippets_data = {
+                        snippet.id: snippet for snippet in filtered_snippets
+                    }
+                else:
+                    code_snippets_data = (
+                        self.memory_ops.code_snippets.copy()
+                        if self.memory_ops.code_snippets
+                        else {}
+                    )
             if MemorySection.HISTORY in sections:
                 history_data = (
                     self.memory_ops.history.copy() if self.memory_ops.history else []
@@ -80,11 +93,22 @@ class StatePersistence:
         else:
             # Collect all available data - use actual dataclass objects
             tasks_data = self.memory_ops.tasks.copy() if self.memory_ops.tasks else {}
-            code_snippets_data = (
-                self.memory_ops.code_snippets.copy()
-                if self.memory_ops.code_snippets
-                else {}
-            )
+
+            # Handle code snippets with optional project path filtering
+            if project_path:
+                filtered_snippets = self.memory_ops.get_code_snippets_by_project_path(
+                    project_path
+                )
+                code_snippets_data = {
+                    snippet.id: snippet for snippet in filtered_snippets
+                }
+            else:
+                code_snippets_data = (
+                    self.memory_ops.code_snippets.copy()
+                    if self.memory_ops.code_snippets
+                    else {}
+                )
+
             history_data = (
                 self.memory_ops.history.copy() if self.memory_ops.history else []
             )

@@ -426,6 +426,61 @@ class MemoryOperations:
 
         return matching_snippets
 
+    def get_code_snippets_by_project_path(self, project_path: str) -> List[CodeSnippet]:
+        """
+        Get all code snippets whose file paths are within the given project path.
+
+        Args:
+            project_path: Path to the project directory (can be relative or absolute)
+
+        Returns:
+            List of code snippets whose files are children of the project path
+        """
+        if not project_path:
+            return []
+
+        try:
+            # Normalize and convert project path to absolute
+            normalized_project = os.path.normpath(project_path)
+            abs_project_path = str(Path(project_path).resolve())
+
+            # Ensure project path ends with a separator for proper prefix matching
+            if not abs_project_path.endswith(os.sep):
+                abs_project_path += os.sep
+
+            matching_snippets = []
+            for snippet in self.code_snippets.values():
+                try:
+                    # Convert snippet file path to absolute
+                    abs_snippet_path = str(Path(snippet.file_path).resolve())
+
+                    # Check if snippet path is within project path
+                    if abs_snippet_path.startswith(abs_project_path):
+                        matching_snippets.append(snippet)
+
+                except Exception:
+                    # If path resolution fails for snippet, try string-based matching
+                    normalized_snippet = os.path.normpath(snippet.file_path)
+
+                    # Check if snippet path starts with project path (with separator)
+                    if normalized_project.endswith(os.sep):
+                        if normalized_snippet.startswith(normalized_project):
+                            matching_snippets.append(snippet)
+                    else:
+                        # Add separator to project path for matching
+                        project_with_sep = normalized_project + os.sep
+                        if normalized_snippet.startswith(project_with_sep):
+                            matching_snippets.append(snippet)
+
+            return matching_snippets
+
+        except Exception as e:
+            logger.error(
+                f"Error filtering code snippets by project path {project_path}: {e}"
+            )
+            # Fallback: return all snippets if path resolution fails
+            return list(self.code_snippets.values())
+
     # File Change Tracking Methods
     def track_file_change(self, file_path: str, operation: str) -> bool:
         """
