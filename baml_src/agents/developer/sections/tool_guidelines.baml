@@ -14,6 +14,7 @@ template_string DeveloperGuidelines() #"
 
 ## Searching and Reading:
   - If you are unsure how to fulfill the user's request, gather more information with tool calls.
+  - Do not get file contents if they are already in the STORED CODE SNIPPETS section.
   - Bias towards not asking the user for help if you can find the answer yourself
   - Before you read or edit a file, you must first find the full path
   - Refer to the history for proper decision making and to avoid redundant tool calls
@@ -22,5 +23,6 @@ template_string DeveloperGuidelines() #"
 ## Best Practices:
   - Document every tool call in sutra memory's history section with the command used and results obtained
   - `search_keyword` is best for finding specific functions, classes, or keywords across multiple files; it does not search file names. Use the `list_files` tool to search for files
+  - Prefer `semantic_search` over `search_keyword` when looking for concepts or functionality that may not use exact keywords
   - Do NOT create code that references non-existent tables, functions, or structures - always investigate what actually exists in the codebase before writing new code
 "#

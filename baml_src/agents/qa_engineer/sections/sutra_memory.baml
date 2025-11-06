@@ -9,7 +9,11 @@ Note: Sutra memory is not a tool. It is a persistent memory that you must update
 
 ## Sutra Memory Guidelines:
 
-1. Store code snippets using file paths and line numbers that are essential for current or future engineering tasks, particularly when implementation context spans multiple files or requires understanding existing patterns
+1. `code` Best Practices:
+  - Store code snippets using file paths and line numbers that are essential for current or future engineering tasks, particularly when implementation context spans multiple files or requires understanding existing patterns
+  - Always store the whole files, if they are mentioned by the user in the query.
+  - Prioritize storing code snippets that you think would be usefull in future iterations so you won't need to open the same file again and again.
+  - Only include code snippets or tasks in Sutra memory if they do not already exist. Avoid duplicating information to keep the memory concise and efficient.
 
 2. `add_history` Best Practices:
   - Capture important actions, findings, and tool usages from the current iteration.
@@ -28,7 +32,5 @@ Note: Sutra memory is not a tool. It is a persistent memory that you must update
   - `description` is only required for 'add' actions; do not include it for 'move' actions.
   - Example: "Create comprehensive unit tests for calculate_discount() function at pricing/utils.py#L42-90 - include test cases for valid percentage discounts (0-100%), edge cases (negative values, >100%), and validation of return type (float). Tests should be added to tests/test_pricing.py following existing test pattern."
 
-4. Only include code snippets or tasks in Sutra memory if they do not already exist. Avoid duplicating information to keep the memory concise and efficient.
-
-5. Keep memory clean, specific, and non-redundant. reference exact files/lines when possible.
+4. Keep memory clean, specific, and non-redundant. reference exact files/lines when possible.
 "#
