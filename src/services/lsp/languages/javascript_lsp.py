@@ -64,6 +64,7 @@ class JavaScriptLSP(BaseLSP):
                     "target": "ES2020",
                     "moduleResolution": "node",
                 },
+                "diagnostics": {"enable": True},
             }
         }
 

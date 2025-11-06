@@ -51,6 +51,20 @@ class TypeScriptLSP(BaseLSP):
             }
         }
 
+    @property
+    def workspace_config(self) -> Dict[str, Any]:
+        """Return the workspace configuration for this LSP server."""
+        return {
+            "typescript": {
+                "suggest": {
+                    "enabled": True,
+                    "completeFunctionCalls": True,
+                },
+                "validate": {"enable": True},
+                "diagnostics": {"enable": True},
+            }
+        }
+
     def ensure_installed(self) -> Optional[str]:
         """
         Ensure the LSP server is installed, installing if necessary.

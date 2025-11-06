@@ -133,6 +133,9 @@ build/
 # Zencoder
 .zencoder
 
+# claude
+.claude
+
 # certs
 certs/
 

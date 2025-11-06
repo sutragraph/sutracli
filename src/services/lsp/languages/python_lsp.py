@@ -45,14 +45,23 @@ class PythonLSP(BaseLSP):
         return {
             "pylsp": {
                 "plugins": {
-                    "pycodestyle": {"enabled": False, "maxLineLength": 88},
-                    "pyflakes": {"enabled": True},
-                    "pylint": {"enabled": False},
-                    "mccabe": {"enabled": True, "threshold": 10},
-                    "pydocstyle": {"enabled": True},
-                    "yapf": {"enabled": False},
-                    "autopep8": {"enabled": False},
-                    "rope_autoimport": {"enabled": False},
+                    # Critical error detection plugins (enabled)
+                    "pyflakes": {"enabled": True},  # Critical syntax and logic errors
+                    "pylint": {
+                        "enabled": True,
+                        "args": ["--disable=C,R"],
+                    },  # Only errors/warnings, no convention/refactor
+                    "mccabe": {
+                        "enabled": True,
+                        "threshold": 15,
+                    },  # High complexity threshold for critical issues
+                    # Style and formatting plugins (disabled - non-critical)
+                    "pycodestyle": {"enabled": False},  # Style and formatting
+                    "pydocstyle": {"enabled": False},  # Documentation style
+                    "yapf": {"enabled": False},  # Code formatting
+                    "autopep8": {"enabled": False},  # Code formatting
+                    "rope_autoimport": {"enabled": False},  # Import suggestions
+                    # Core functionality plugins (enabled)
                     "jedi_completion": {"enabled": True},
                     "jedi_definition": {"enabled": True},
                     "jedi_hover": {"enabled": True},

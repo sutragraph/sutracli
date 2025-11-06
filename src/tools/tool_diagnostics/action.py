@@ -35,8 +35,8 @@ def execute_diagnostics_action(action: AgentAction) -> Iterator[Dict[str, Any]]:
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        # Get the workspace root (parent directory or current directory)
-        workspace_root = str(file_path.parent)
+        # Get the workspace root (current working directory)
+        workspace_root = str(Path.cwd())
 
         # Run lint check using LintChecker
         lint_messages = LintChecker.check_lint(str(file_path), workspace_root)
