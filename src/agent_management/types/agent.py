@@ -65,7 +65,11 @@ class AgentData:
                         role_name = "YOU"
                     else:
                         # Use role.name for enums, otherwise use the role directly
-                        role_name = getattr(role, "name", role)
+                        if role == Agent.Roadmap:
+                            role_name = "USER"
+                        else:
+                            role_name = getattr(role, "name", role)
+
                     formatted_messages.append(f"{role_name}:\n{message}")
 
         return "\n\n".join(formatted_messages) if formatted_messages else ""
