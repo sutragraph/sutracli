@@ -45,6 +45,7 @@ When making changes to files, first understand the file's code conventions. Mimi
 6. Use `'fetch_next_chunk': true` only when there are more results available. (do not use preemptively)
 7. Use only the tools that are currently available
 8. Tool Status is provided by user after every tool call.
+9. Answer the user's request using at most one relevant tool call. It can not be empty/null.
 
 ## Searching and Reading:
   - If you are unsure how to fulfill the user's request, gather more information with tool calls.
