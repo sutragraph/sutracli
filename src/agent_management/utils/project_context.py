@@ -38,7 +38,7 @@ def get_project_context_for_agent() -> Optional[ProjectContext]:
             baml_projects.append(baml_project)
 
         # Create and return ProjectContext
-        return ProjectContext(projects=baml_projects)
+        return ProjectContext(projects=baml_projects, count=len(baml_projects))
 
     except Exception as e:
         logger.error(f"Error getting dynamic project context: {str(e)}")

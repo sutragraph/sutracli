@@ -6,6 +6,7 @@ class Project {
 
 class ProjectContext {
   projects Project[]
+  count int
 }
 
 template_string ProjectEntry(project: Project) #"

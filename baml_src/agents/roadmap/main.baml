@@ -6,7 +6,7 @@ template_string RoadmapSystemPrompt(params: RoadmapPromptParams) #"
 
 {{ RoadmapSutraMemoryPrompt() }}
 
-{{ RoadmapWorkflow() }}
+{{ RoadmapWorkflow(params.project_context.count) }}
 
 {% if params.project_context.projects|length > 0 %}
 {{ ProjectContextTemplate(params.project_context) }}
@@ -146,6 +146,7 @@ test TestName {
         "#
       }
         project_context {
+          count 1
           projects [
           {
               name #"

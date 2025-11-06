@@ -311,6 +311,7 @@ class Project(BaseModel):
 
 class ProjectContext(BaseModel):
     projects: typing.List["Project"]
+    count: int
 
 class ProjectExecutionPlan(BaseModel):
     project_name: str

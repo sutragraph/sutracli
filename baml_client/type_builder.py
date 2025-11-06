@@ -2821,7 +2821,7 @@ class ProjectContextAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("ProjectContext")
-        self._properties: typing.Set[str] = set([  "projects",  ])
+        self._properties: typing.Set[str] = set([  "projects",  "count",  ])
         self._props = ProjectContextProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -2852,6 +2852,10 @@ class ProjectContextProperties:
     @property
     def projects(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("projects"))
+    
+    @property
+    def count(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("count"))
     
     
 

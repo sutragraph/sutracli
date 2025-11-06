@@ -203,6 +203,7 @@ class Project(BaseModel):
 
 class ProjectContext(BaseModel):
     projects: typing.List["Project"]
+    count: typing.Optional[int] = None
 
 class ProjectExecutionPlan(BaseModel):
     project_name: typing.Optional[str] = None
