@@ -248,7 +248,7 @@ class DeveloperPromptParams(BaseModel):
     system_info: "SystemInfoParams"
 
 class DeveloperResponse(BaseModel):
-    thinking: str
+    message: str
     sutra_memory: "SutraMemoryParams"
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
 
@@ -338,7 +338,7 @@ class QAEngineerPromptParams(BaseModel):
     system_info: "SystemInfoParams"
 
 class QAEngineerResponse(BaseModel):
-    thinking: str
+    message: str
     sutra_memory: "SutraMemoryParams"
     tool_call: typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall", "EditFileToolCall", "DiagnosticsToolCall"]
 
@@ -371,7 +371,7 @@ class RoadmapPromptParams(BaseModel):
     project_context: "ProjectContext"
 
 class RoadmapResponse(BaseModel):
-    thinking: str
+    message: str
     sutra_memory: "RoadmapSutraMemoryParams"
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]] = None
 

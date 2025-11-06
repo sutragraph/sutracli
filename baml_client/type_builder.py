@@ -2222,7 +2222,7 @@ class DeveloperResponseAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("DeveloperResponse")
-        self._properties: typing.Set[str] = set([  "thinking",  "sutra_memory",  "tool_call",  ])
+        self._properties: typing.Set[str] = set([  "message",  "sutra_memory",  "tool_call",  ])
         self._props = DeveloperResponseProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -2251,8 +2251,8 @@ class DeveloperResponseProperties:
     
     
     @property
-    def thinking(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("thinking"))
+    def message(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("message"))
     
     @property
     def sutra_memory(self) -> type_builder.ClassPropertyViewer:
@@ -3095,7 +3095,7 @@ class QAEngineerResponseAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("QAEngineerResponse")
-        self._properties: typing.Set[str] = set([  "thinking",  "sutra_memory",  "tool_call",  ])
+        self._properties: typing.Set[str] = set([  "message",  "sutra_memory",  "tool_call",  ])
         self._props = QAEngineerResponseProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -3124,8 +3124,8 @@ class QAEngineerResponseProperties:
     
     
     @property
-    def thinking(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("thinking"))
+    def message(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("message"))
     
     @property
     def sutra_memory(self) -> type_builder.ClassPropertyViewer:
@@ -3362,7 +3362,7 @@ class RoadmapResponseAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("RoadmapResponse")
-        self._properties: typing.Set[str] = set([  "thinking",  "sutra_memory",  "tool_call",  ])
+        self._properties: typing.Set[str] = set([  "message",  "sutra_memory",  "tool_call",  ])
         self._props = RoadmapResponseProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -3391,8 +3391,8 @@ class RoadmapResponseProperties:
     
     
     @property
-    def thinking(self) -> type_builder.ClassPropertyViewer:
-        return type_builder.ClassPropertyViewer(self.__bldr.property("thinking"))
+    def message(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("message"))
     
     @property
     def sutra_memory(self) -> type_builder.ClassPropertyViewer:

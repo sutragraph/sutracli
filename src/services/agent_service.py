@@ -154,8 +154,8 @@ class AgentService:
         if content.sutra_memory:
             self._parse_sutra_memory(content.sutra_memory)
 
-        if content.thinking and content.thinking.strip():
-            self._parse_thinking(content.thinking)
+        if content.message and content.message.strip():
+            self._parse_message(content.message)
 
         tool_to_execute = content.tool_call
 
@@ -177,11 +177,11 @@ class AgentService:
 
         return is_completion
 
-    def _parse_thinking(self, thinking: str) -> None:
-        header = Text("THINKING", style="bold yellow")
+    def _parse_message(self, message: str) -> None:
+        header = Text("Message", style="bold yellow")
 
         content_lines = []
-        for line in thinking.split("\n"):
+        for line in message.split("\n"):
             if line.strip():
                 content_lines.append(line)
             else:
@@ -189,7 +189,7 @@ class AgentService:
 
         content = Text("\n".join(content_lines), style="dim")
 
-        thinking_panel = Panel(
+        message_panel = Panel(
             content,
             title=header,
             title_align="left",
@@ -197,7 +197,7 @@ class AgentService:
             padding=(1, 1),
         )
 
-        console.print(thinking_panel)
+        console.print(message_panel)
 
     def _parse_sutra_memory(self, sutra_memory: AllSutraMemoryParams) -> None:
         results = self.memory_manager.process_sutra_memory_params(sutra_memory)

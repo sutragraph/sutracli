@@ -140,7 +140,7 @@ class DeveloperPromptParams(BaseModel):
     system_info: typing.Optional["SystemInfoParams"] = None
 
 class DeveloperResponse(BaseModel):
-    thinking: typing.Optional[str] = None
+    message: typing.Optional[str] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
 
@@ -230,7 +230,7 @@ class QAEngineerPromptParams(BaseModel):
     system_info: typing.Optional["SystemInfoParams"] = None
 
 class QAEngineerResponse(BaseModel):
-    thinking: typing.Optional[str] = None
+    message: typing.Optional[str] = None
     sutra_memory: typing.Optional["SutraMemoryParams"] = None
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "TermianlToolCall", "QAEngineerCompletionToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
 
@@ -263,7 +263,7 @@ class RoadmapPromptParams(BaseModel):
     project_context: typing.Optional["ProjectContext"] = None
 
 class RoadmapResponse(BaseModel):
-    thinking: typing.Optional[str] = None
+    message: typing.Optional[str] = None
     sutra_memory: typing.Optional["RoadmapSutraMemoryParams"] = None
     tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]] = None
 
