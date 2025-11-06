@@ -91,6 +91,17 @@ PROVIDER_INFO = [
     },
 ]
 
+PROVIDER_REQUIRED_FIELDS = {
+    "aws_bedrock": ["access_key_id", "secret_access_key", "model_id", "region"],
+    "anthropic": ["api_key", "model_id"],
+    "openai": ["api_key", "model_id"],
+    "google_ai": ["api_key", "model_id", "base_url"],
+    "vertex_ai": ["location", "model_id"],
+    "azure_openai": ["api_key", "base_url", "api_version"],
+    "azure_aifoundry": ["api_key", "base_url"],
+    "openrouter": ["api_key", "model_id"],
+}
+
 
 @dataclass
 class DatabaseConfig:
@@ -512,3 +523,8 @@ def get_available_providers() -> list:
 def is_provider_supported(provider: str) -> bool:
     """Check if a provider is supported."""
     return provider.lower() in BAML_PROVIDER_MAPPING
+
+
+def get_provider_require_fields() -> dict:
+    """Get the provider required fields."""
+    return PROVIDER_REQUIRED_FIELDS

@@ -266,6 +266,19 @@ def _add_version_parser(subparsers, default_log_level: str) -> None:
     version_parser = subparsers.add_parser("version", help="Show version information")
 
 
+def _add_switch_provider_parser(subparsers, default_log_level: str) -> None:
+    """Add switch-provider command parser."""
+    update_parser = subparsers.add_parser(
+        "switch-provider", help="Switch llm providers or Update current provider config"
+    )
+    update_parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default=default_log_level,
+        help="Set the logging level",
+    )
+
+
 def _add_common_log_level_argument(parser, default_log_level: str) -> None:
     """Add common log level argument to a parser."""
     parser.add_argument(
@@ -296,5 +309,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     _add_cross_index_parser(subparsers, default_log_level)
     _add_phase5_parser(subparsers, default_log_level)
     _add_version_parser(subparsers, default_log_level)
+    _add_switch_provider_parser(subparsers, default_log_level)
 
     return parser

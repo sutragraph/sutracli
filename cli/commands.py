@@ -601,3 +601,14 @@ def handle_version_command() -> None:
         padding=(1, 2),
     )
     console.print(panel)
+
+
+def handle_switch_provider_command(args) -> None:
+    """Handle switch-provider command for switch llm provider."""
+    console.print("🔄 Switch Provider COMMAND")
+
+    # Run modern interactive CLI
+    from cli.modern_cli import ModernSutraKit
+
+    cli = ModernSutraKit()
+    cli.switch_llm_provider()

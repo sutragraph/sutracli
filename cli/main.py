@@ -30,10 +30,12 @@ def main():
         handle_run_phase5_command,
         handle_search_command,
         handle_single_command,
+        handle_switch_provider_command,
         handle_version_command,
         handle_web_scrap_command,
         handle_web_search_command,
     )
+
     from src.utils.logging import setup_logging
 
     # Check if only --log-level is passed (for modern CLI)
@@ -102,6 +104,8 @@ def main():
             handle_cross_indexing_command(args)
         elif args.command == "run-phase5":
             handle_run_phase5_command(args)
+        elif args.command == "switch-provider":
+            handle_switch_provider_command(args)
         else:
             logger.error(f"Unknown command: {args.command}")
             parser.print_help()
