@@ -75,77 +75,199 @@ class ModernSutraKit:
             # Silently fail if update check fails - don't interrupt the user experience
             pass
 
-    def check_llm_provider_configured(self) -> bool:
-        """Check if LLM provider is already configured."""
+    def _load_config(self) -> Dict:
+        """Load configuration from file."""
+        if not self.config_path.exists():
+            return {}
+
+        with open(self.config_path, "r") as f:
+            return json.load(f)
+
+    def _get_llm_config(self) -> Dict:
+        """Get LLM configuration section."""
+        config_obj = self._load_config()
+
+        return config_obj.get("llm", {})
+
+    def _get_provider_config_from_file(self, provider: str) -> Optional[Dict]:
+        """Get specific provider configuration from file.
+
+        Returns:
+            Provider config dict if exists and valid, None otherwise
+        """
+        llm_config = self._get_llm_config()
+        provider_config = llm_config.get(provider, {})
+
+        if not provider_config:
+            return None
+
         try:
-            if not self.config_path.exists():
-                return False
+            if self.validate_provider_config(provider, provider_config):
+                return provider_config
+        except ValueError:
+            return None
 
-            with open(self.config_path, "r") as f:
-                config_data = json.load(f)
+        return None
 
-            llm_config = config_data.get("llm", {})
+    def _display_provider_table(self, providers):
+        """Display available providers in a table."""
+        table = Table()
+        table.add_column("Provider", style="green")
+        table.add_column("Description", style="white")
+
+        for provider in providers:
+            table.add_row(provider["name"], provider["description"])
+
+        console.print(table)
+        console.print()
+
+    def _display_current_config(self, provider_config: Dict) -> None:
+        """Display current provider configuration."""
+        console.info("Current configuration:")
+        for key, value in provider_config.items():
+            console.print(f"  {key}: {value}")
+
+        console.print()
+
+    def validate_provider_config(self, provider: str, provider_config: Dict) -> bool:
+        """Validate provider configuration against required fields.
+
+        Args:
+            provider: Provider key (e.g., 'anthropic', 'openai')
+            provider_config: Dictionary containing provider configuration
+
+        Returns:
+            bool: True if all required fields are present and non-empty
+
+        Raises:
+            ValueError: If provider is not supported
+        """
+        from src.config.settings import get_provider_require_fields
+
+        provider_required_fields = get_provider_require_fields()
+        if provider not in provider_required_fields:
+            raise ValueError(f"Invalid provider: {provider}")
+
+        required_fields = provider_required_fields[provider]
+        return all(provider_config.get(field) for field in required_fields)
+
+    def check_llm_provider_configured(self) -> bool:
+        """Check if LLM provider is already configured.
+
+        Returns:
+            bool: True if a valid provider configuration exists
+        """
+        try:
+            llm_config = self._get_llm_config()
             provider = llm_config.get("provider")
 
             if not provider:
                 return False
 
-            # Check if provider-specific config exists
-            provider_config = llm_config.get(provider, {})
-            if not provider_config:
-                return False
-
-            # Basic validation for each provider
-            if provider == "aws_bedrock":
-                required_fields = [
-                    "access_key_id",
-                    "secret_access_key",
-                    "model_id",
-                    "region",
-                ]
-                return all(provider_config.get(field) for field in required_fields)
-            elif provider == "anthropic":
-                return bool(
-                    provider_config.get("api_key") and provider_config.get("model_id")
-                )
-            elif provider == "openai":
-                return bool(
-                    provider_config.get("api_key") and provider_config.get("model_id")
-                )
-            elif provider == "google_ai":
-                return bool(
-                    provider_config.get("api_key")
-                    and provider_config.get("model_id")
-                    and provider_config.get("base_url")
-                )
-            elif provider == "vertex_ai":
-                return bool(
-                    provider_config.get("location") and provider_config.get("model_id")
-                )
-            elif provider == "azure_openai":
-                required_fields = [
-                    "api_key",
-                    "base_url",
-                    "api_version",
-                ]
-                return all(provider_config.get(field) for field in required_fields)
-            elif provider == "azure_aifoundry":
-                required_fields = [
-                    "api_key",
-                    "base_url",
-                ]
-                return all(provider_config.get(field) for field in required_fields)
-            elif provider == "openrouter":
-                required_fields = [
-                    "api_key",
-                    "model_id",
-                ]
-                return all(provider_config.get(field) for field in required_fields)
-
-            return True
+            provider_config = self._get_provider_config_from_file(provider)
+            return provider_config is not None
 
         except Exception:
             return False
+
+    def _setup_provider_interactive(
+        self, provider_key: str, existing_config: Optional[Dict] = None
+    ) -> Dict:
+        """Setup provider configuration interactively.
+
+        Args:
+            provider_key: Provider identifier
+            existing_config: Existing configuration (if updating)
+
+        Returns:
+            Validated provider configuration
+        """
+        # Show existing config if available
+        if existing_config:
+            self._display_current_config(existing_config)
+            if not Confirm.ask("Update the above configuration?"):
+                return existing_config
+
+        # Collect new configuration
+        config_data = self._get_provider_config(provider_key)
+
+        # Validate before returning
+        if not self.validate_provider_config(provider_key, config_data):
+            console.error("Invalid configuration provided")
+            raise ValueError("Configuration validation failed")
+
+        return config_data
+
+    def setup_llm_provider(self):
+        """Interactive LLM provider setup with arrow keys."""
+        console.info("LLM Provider Setup")
+
+        from src.config.settings import get_provider_info
+
+        providers = get_provider_info()
+
+        # Display provider options
+        self._display_provider_table(providers)
+
+        # Select provider
+        selected_provider = self._arrow_key_select_provider(providers)
+        if not selected_provider:
+            console.error("No provider selected. Exiting.")
+            sys.exit(1)
+
+        provider_key = selected_provider["key"]
+        console.success(f"Selected: {selected_provider['name']}")
+
+        # Setup configuration (no existing config)
+        config_data = self._setup_provider_interactive(provider_key)
+
+        # Update and save
+        updated_config = self._update_provider_config(provider_key, config_data)
+        self._save_config(updated_config)
+
+        console.success("Configuration saved successfully!")
+
+    def switch_llm_provider(self):
+        """Switch provider or update existing LLM provider configuration."""
+        try:
+            if not self.config_path.exists():
+                raise ValueError("Sutrakit is not configured")
+
+            console.info("LLM Provider Update")
+
+            from src.config.settings import get_provider_info
+
+            providers = get_provider_info()
+
+            # Display provider options
+            self._display_provider_table(providers)
+
+            # Select provider
+            selected_provider = self._arrow_key_select_provider(providers)
+            if not selected_provider:
+                console.error("No provider selected. Exiting.")
+                sys.exit(1)
+
+            provider_key = selected_provider["key"]
+            console.success(f"Selected: {selected_provider['name']}")
+
+            # Get existing config if available
+            existing_config = self._get_provider_config_from_file(provider_key)
+
+            # Setup configuration (with existing config if available)
+            config_data = self._setup_provider_interactive(
+                provider_key, existing_config
+            )
+
+            # Update and save
+            updated_config = self._update_provider_config(provider_key, config_data)
+            self._save_config(updated_config)
+
+            console.success("Provider updated successfully!")
+
+        except Exception as e:
+            console.error(f"Error occurred: {str(e)}")
+            raise
 
     def _prompt_api_key(self, prompt_text, is_password=True, error_message=None):
         """Utility to prompt for API key or secret with validation."""
@@ -189,44 +311,6 @@ class ModernSutraKit:
                     console.error("Max tokens must be a valid number.")
             else:
                 console.error("Max tokens is required and cannot be empty.")
-
-    def setup_llm_provider(self):
-        """Interactive LLM provider setup with arrow keys."""
-        console.info("LLM Provider Setup")
-
-        # Import providers from centralized config
-        from src.config.settings import get_provider_info
-
-        providers = get_provider_info()
-
-        table = Table()
-        table.add_column("Provider", style="green")
-        table.add_column("Description", style="white")
-
-        for provider in providers:
-            table.add_row(provider["name"], provider["description"])
-
-        console.print(table)
-        console.print()
-
-        selected_provider = self._arrow_key_select_provider(providers)
-        if not selected_provider:
-            console.error("No provider selected. Exiting.")
-            sys.exit(1)
-
-        provider_key = selected_provider["key"]
-        console.success(f"Selected: {selected_provider['name']}")
-
-        # Collect provider-specific configuration
-        config_data = self._get_provider_config(provider_key)
-
-        # Update the provider configuration in existing config
-        updated_config = self._update_provider_config(provider_key, config_data)
-
-        # Save configuration
-        self._save_config(updated_config)
-
-        console.success("Configuration saved successfully!")
 
     def _get_provider_config(self, provider: str) -> Dict[str, Any]:
         """Get configuration for specific provider."""
