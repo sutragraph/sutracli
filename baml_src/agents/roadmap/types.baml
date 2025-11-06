@@ -15,7 +15,7 @@ class RoadmapPromptParams {
 class RoadmapResponse {
   message string @description("Concise user-facing progress update for the UI (one sentence).")
   sutra_memory RoadmapSutraMemoryParams @description("Persistent memory for code snippets, task updates, and history.")
-  tool_call RoadmapToolCall? @description("Next tool to invoke with parameters.")
+  tool_call RoadmapToolCall @description("Next tool to invoke with parameters.")
 }
 
 // Code storage actions - move-only tracing actions (no removals allowed)

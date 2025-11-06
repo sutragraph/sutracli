@@ -250,7 +250,7 @@ class DeveloperPromptParams(BaseModel):
 class DeveloperResponse(BaseModel):
     message: str
     sutra_memory: "SutraMemoryParams"
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]] = None
+    tool_call: typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithoutProjectName", "SemanticSearchToolCallWithoutProjectName", "ListFilesToolCallWithoutProjectName", "DeveloperCompletionToolCall", "TermianlToolCall", "EditFileToolCall", "DiagnosticsToolCall"]
 
 class DiagnosticsParams(BaseModel):
     path: str
@@ -373,7 +373,7 @@ class RoadmapPromptParams(BaseModel):
 class RoadmapResponse(BaseModel):
     message: str
     sutra_memory: "RoadmapSutraMemoryParams"
-    tool_call: typing.Optional[typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]] = None
+    tool_call: typing.Union["DatabaseToolCallSimple", "SearchKeywordToolCallWithProjectName", "SemanticSearchToolCallWithProjectName", "ListFilesToolCallWithProjectName", "RoadmapCompletionToolCall"]
 
 class RoadmapSutraMemoryParams(BaseModel):
     add_history: str
