@@ -17,7 +17,7 @@ Find similar implementations and patterns in the codebase using semantic similar
   "parameters": {
     "query": "descriptive terms",
     "project_name": "project_name",
-    "fetch_next_chunk": true
+    "fetch_next_chunk": boolean
   }
 }
 

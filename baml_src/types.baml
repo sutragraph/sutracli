@@ -1,4 +1,6 @@
 enum Agent {
-  ROADMAP
+  Roadmap
   CrossIndexing
+  Developer
+  QAEngineer
 }

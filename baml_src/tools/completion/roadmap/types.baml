@@ -11,61 +11,36 @@ enum ImpactLevel {
   NoImpact @alias("None")
 }
 
-enum ContractRole {
-  Provider @alias("provider")
-  Consumer @alias("consumer")
-}
-
-class ContractField {
-  name string
-  type string
-  required bool
-  description string?
-  validation string?
-  nested ContractField[]?
-}
-
-class Contract {
-  contract_id string
-  contract_type string
-  name string
-  description string
-  role ContractRole
-  interface map<string, string>
-  input_format ContractField[]?
-  output_format ContractField[]?
-  error_codes string[]?
-  authentication_required bool?
-  examples string
-  instructions string?
+class IntegrationContract {
+  contract_id string @description("Unique identifier for this integration contract")
+  description string @description("Purpose and integration details explaining how projects coordinate")
+  related_projects string[] @description("Array of project names that this contract connects")
+  specifications string @description("High-level interface requirements and coordination points")
 }
 
 class ChangeInstruction {
-  description string
-  current_state string?
-  target_state string
-  start_line int?
-  end_line int?
-  additional_notes string?
+  description string @description("What to accomplish at high level")
+  guidance string? @description("Strategic direction on how to approach the change")
+  integration_notes string? @description("How this change connects to other systems or contracts")
 }
 
 class FileChange {
-  file_path string
-  operation FileOperation
-  instructions ChangeInstruction[]
+  file_path string @description("Path relative to project root")
+  operation FileOperation @description("Action to perform on the file")
+  instructions ChangeInstruction[] @description("Array of high-level change guidance")
 }
 
-class ProjectRoadmap {
-  project_name string
-  project_path string
-  impact_level ImpactLevel
-  reasoning string
-  implementation_plan string[]
-  changes FileChange[]?
-  contracts Contract[]?
+class ProjectExecutionPlan {
+  project_name string @description("Human-readable project name")
+  project_path string @description("Root directory path of the project")
+  impact_level ImpactLevel @description("Impact level of changes to this project")
+  reasoning string @description("Explanation of changes and why they're needed")
+  implementation_plan string[] @description("High-level strategic steps describing what to accomplish (5-7 focused items)")
+  changes FileChange[]? @description("Array of file modifications (omit if no changes)")
+  integration_contracts IntegrationContract[]? @description("Array of integration contracts defining how this project coordinates with others")
 }
 
 class RoadmapCompletionParams {
-  projects ProjectRoadmap[]
-  summary string
+  projects ProjectExecutionPlan[] @description("Array of project execution plans (omit projects with no changes or impact!)")
+  summary string @description("Brief overall strategy")
 }

@@ -7,6 +7,7 @@ It handles insertion of extraction data from JSON exports and provides various
 query methods for retrieving code structure, relationships, and connections.
 """
 
+import json
 import os
 import time
 from pathlib import Path
@@ -613,9 +614,33 @@ class GraphOperations:
                     if sender_overlaps or receiver_overlaps:
                         filtered_results.append(result)
 
-                return filtered_results
+                final_results = filtered_results
             else:
-                return results
+                final_results = results
+
+            for result in final_results:
+                result["sender_snippet_lines"] = json.dumps(
+                    list(
+                        range(
+                            result["sender_start_line"], result["sender_end_line"] + 1
+                        )
+                    )
+                    if result.get("sender_start_line") and result.get("sender_end_line")
+                    else []
+                )
+                result["receiver_snippet_lines"] = json.dumps(
+                    list(
+                        range(
+                            result["receiver_start_line"],
+                            result["receiver_end_line"] + 1,
+                        )
+                    )
+                    if result.get("receiver_start_line")
+                    and result.get("receiver_end_line")
+                    else []
+                )
+
+            return final_results
 
         except Exception as e:
             logger.error(f"Error getting connection mappings for display: {e}")
@@ -795,7 +820,7 @@ class GraphOperations:
             return None
 
     # ============================================================================
-    # ROADMAP AGENT QUERY METHODS
+    # Roadmap AGENT QUERY METHODS
     # ============================================================================
 
     def resolve_block(self, block_id: int) -> Optional[Dict[str, Any]]:

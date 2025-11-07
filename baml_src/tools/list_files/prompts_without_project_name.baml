@@ -1,8 +1,6 @@
 // List Files Tool Prompts
 
 template_string ListFilesToolWithoutProjectNameTemplate() #"
-====
-
 ## list_files
 
 Description: Request to list files and directories within the specified directory. If recursive is true, it will list all files and directories recursively. If recursive is false or not provided, it will only list the top-level contents.
@@ -14,6 +12,7 @@ Parameters:
 
 Note:
   - use `"fetch_next_chunk": true` only when user explicitly tells you there are more results available - do not use preemptively
+  - The [hidden] flag on directories means their contents are excluded from results, not empty - request the specific directory path to see its contents.
 
 
 Usage:

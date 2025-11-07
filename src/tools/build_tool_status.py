@@ -1,3 +1,4 @@
+from os import error
 from typing import Any, Dict
 
 from loguru import logger
@@ -22,8 +23,14 @@ def build_tool_status(
             return _build_list_files_status(event, agent, tool_params)
         case "search_keyword":
             return _build_search_keyword_status(event, agent, tool_params)
+        case "edit_file":
+            return _build_edit_file_status(event, agent, tool_params)
+        case "diagnostics":
+            return _build_diagnostics_status(event, agent, tool_params)
         case "attempt_completion":
             return _build_completion_status(event, agent, tool_params)
+        case "terminal":
+            return _build_terminal_status(event, agent, tool_params)
         case _:
             return f"Unknown tool name '{tool_name}' with parameters {tool_params}"
 
@@ -254,6 +261,160 @@ def _build_search_keyword_status(
     return "\n".join(status_parts).rstrip()
 
 
+def _build_edit_file_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
+    """Build status for edit_file tool."""
+    error = event.get("error")
+    data = event.get("data", {})
+
+    status_parts = []
+
+    if error:
+        status_parts.append(f"[error]Error:[/error]")
+        status_parts.append(f"{error}")
+
+    if data:
+        original_path = data.get("original_path")
+        diff = data.get("diff")
+
+        if original_path:
+            status_parts.append(f"[value]File Edited: {original_path}[/value]")
+
+    status_parts = ["Tool: edit_file"]
+    status_parts.append(f"Parameters used:\n {tool_params}")
+
+    if data:
+        original_path = data.get("original_path")
+        new_text = data.get("new_text")
+        old_text = data.get("old_text")
+        diff = data.get("diff")
+
+        if original_path:
+            status_parts.append(f"File Edited Successfully: {original_path}")
+        # if diff:
+        #     status_parts.append("Diff:")
+        #     status_parts.append(diff)
+
+    if error:
+        status_parts.append(f"ERROR: {error}")
+
+    return "\n".join(status_parts).rstrip()
+
+
+def _build_diagnostics_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
+    """Build status for diagnostics tool."""
+    error = event.get("error")
+    data = event.get("data", {})
+
+    status_parts = []
+
+    if error:
+        status_parts.append(f"[error]Error:[/error]")
+        status_parts.append(f"{error}")
+
+    if data:
+        file_path = data.get("file_path")
+        count = data.get("count", 0)
+
+        if file_path:
+            status_parts.append(f"[value]Diagnostics for: {file_path}[/value]")
+        status_parts.append(f"[value]Issues Found: {count}[/value]")
+
+    status_parts = ["Tool: diagnostics"]
+    status_parts.append(f"Parameters used:\n {tool_params}")
+
+    if data:
+        file_path = data.get("file_path")
+        diagnostics = data.get("diagnostics", [])
+        count = data.get("count", 0)
+
+        if file_path:
+            status_parts.append(f"File Analyzed: {file_path}")
+        status_parts.append(f"Issues Found: {count}")
+        if diagnostics:
+            status_parts.append("Diagnostics:")
+            for diag in diagnostics:
+                status_parts.append(f"{diag}")
+
+    if error:
+        status_parts.append(f"ERROR: {error}")
+
+    return "\n".join(status_parts).rstrip()
+
+
+def _build_terminal_status(
+    event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
+) -> str:
+    """Build status for terminal tool."""
+    command = event.get("command")
+    status = event.get("status")
+    output = event.get("output")
+    error = event.get("error")
+    session_id = event.get("session_id")
+    cwd = event.get("cwd")
+    exit_code = event.get("exit_code")
+    is_long_running = event.get("is_long_running", False)
+    action = event.get("action", "execute")
+
+    # Minimal format console output
+    status_parts = []
+
+    if command:
+        status_parts.append(f"[value]'{command}'[/value]")
+
+    if status == "success":
+        if is_long_running:
+            status_parts.append(f"[success]Started[/success]")
+        else:
+            status_parts.append(f"[success]Success[/success]")
+    elif status == "error":
+        status_parts.append(f"[error]Error[/error]")
+    else:
+        status_parts.append(f"[warning]{status}[/warning]")
+
+    if error:
+        status_parts.append(f"[error]Error:[/error]")
+        status_parts.append(f"{error}")
+
+    console.print(f"💻 [bold]Terminal[/bold] → {' → '.join(status_parts)}")
+
+    # Build status string for return
+    status_parts = ["Tool: terminal"]
+    status_parts.append(f"Parameters used: {tool_params}")
+
+    # if action:
+    #     status_parts.append(f"Action: {action}")
+
+    # if command:
+    #     status_parts.append(f"Command: {command}")
+
+    # if session_id:
+    #     status_parts.append(f"Session ID: {session_id}")
+
+    if cwd:
+        status_parts.append(f"Working Directory: {cwd}")
+
+    # if status:
+    #     if is_long_running and status == "success":
+    #         status_parts.append(f"Status: Process started successfully")
+    #     else:
+    #         status_parts.append(f"Status: {status}")
+
+    if exit_code is not None:
+        status_parts.append(f"Exit Code: {exit_code}")
+
+    if error:
+        status_parts.append(f"ERROR: {error}")
+
+    if output:
+        status_parts.extend(["Results:", output])
+
+    return "\n".join(status_parts).rstrip()
+
+
 def _build_completion_status(
     event: Dict[str, Any], agent: Agent, tool_params: Dict[str, Any]
 ) -> str:
@@ -267,8 +428,12 @@ def _build_completion_status(
         return f"Tool: attempt_completion\nERROR: {error}"
 
     # Use agent to determine completion type
-    if agent == Agent.ROADMAP and not is_simple:
+    if agent == Agent.Roadmap and not is_simple:
         return _build_roadmap_completion_status(event)
+    if agent == Agent.Developer:
+        return _build_developer_completion_status(event)
+    if agent == Agent.QAEngineer:
+        return _build_qaengineer_completion_status(event)
     else:
         return _build_simple_completion_status(event)
 
@@ -385,11 +550,8 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                         description = instruction.get(
                             "description", "No description provided"
                         )
-                        current_state = instruction.get("current_state", "")
-                        target_state = instruction.get("target_state", "")
-                        start_line = instruction.get("start_line")
-                        end_line = instruction.get("end_line")
-                        additional_notes = instruction.get("additional_notes", "")
+                        guidance = instruction.get("guidance", "")
+                        integration_notes = instruction.get("integration_notes", "")
 
                         # Description
                         desc_text = Text()
@@ -397,37 +559,19 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                         desc_text.append(description)
                         content_elements.append(desc_text)
 
-                        # Line number information
-                        if start_line is not None:
-                            line_text = Text("     ")
-                            if end_line is not None and end_line != start_line:
-                                line_text.append("Lines: ", style="bold")
-                                line_text.append(f"{start_line}-{end_line}")
-                            else:
-                                line_text.append("Line: ", style="bold")
-                                line_text.append(str(start_line))
-                            content_elements.append(line_text)
+                        # Guidance
+                        if guidance:
+                            guidance_text = Text("     ")
+                            guidance_text.append("Guidance: ", style="bold")
+                            guidance_text.append(guidance)
+                            content_elements.append(guidance_text)
 
-                        # Current state
-                        if current_state:
-                            current_text = Text("     ")
-                            current_text.append("Current: ", style="bold")
-                            current_text.append(current_state)
-                            content_elements.append(current_text)
-
-                        # Target state
-                        if target_state:
-                            target_text = Text("     ")
-                            target_text.append("Target: ", style="bold")
-                            target_text.append(target_state)
-                            content_elements.append(target_text)
-
-                        # Additional notes
-                        if additional_notes:
-                            notes_text = Text("     ")
-                            notes_text.append("Notes: ", style="bold")
-                            notes_text.append(additional_notes)
-                            content_elements.append(notes_text)
+                        # Integration notes
+                        if integration_notes:
+                            integration_text = Text("     ")
+                            integration_text.append("Integration Notes: ", style="bold")
+                            integration_text.append(integration_notes)
+                            content_elements.append(integration_text)
 
                         # Add spacing between instructions if there are multiple
                         if k < len(instructions):
@@ -444,7 +588,7 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
             content_elements.append(no_changes_text)
 
         # Contracts summary
-        contracts = project.get("contracts", [])
+        contracts = project.get("integration_contracts", [])
         if contracts:
             content_elements.append(Text())  # Add spacing
             contract_header = Text()
@@ -455,40 +599,16 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
 
             for j, contract in enumerate(contracts, 1):
                 contract_id = contract.get("contract_id", "Unknown")
-                contract_type = contract.get("contract_type", "Unknown")
-                contract_name = contract.get("name", "Unnamed Contract")
                 description = contract.get("description", "")
-                role = contract.get("role", "")
-                interface = contract.get("interface", {})
-                authentication_required = contract.get("authentication_required", False)
+                related_projects = contract.get("related_projects", [])
+                specifications = contract.get("specifications", "")
 
                 # Contract header line
                 contract_line = Text()
                 contract_line.append(f"   {j}. ", style="bold")
-                contract_line.append(f"{contract_type.upper()}", style="bold magenta")
-                contract_line.append(f" → {contract_name}")
+                contract_line.append("CONTRACT", style="bold magenta")
+                contract_line.append(f" → {contract_id}")
                 content_elements.append(contract_line)
-
-                # Contract ID and Role
-                id_text = Text("     ")
-                id_text.append("ID: ", style="bold")
-                id_text.append(contract_id, style="magenta")
-                if role:
-                    id_text.append(" | Role: ", style="bold")
-                    if role == "provider":
-                        role_color = "green"
-                        role_label = "PROVIDER"
-                    elif role == "consumer":
-                        role_color = "blue"
-                        role_label = "CONSUMER"
-                    elif role == "both":
-                        role_color = "yellow"
-                        role_label = "BOTH (Proxy/Intermediary)"
-                    else:
-                        role_color = "white"
-                        role_label = role.upper()
-                    id_text.append(role_label, style=f"bold {role_color}")
-                content_elements.append(id_text)
 
                 # Description
                 if description:
@@ -497,57 +617,19 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
                     desc_text.append(description)
                     content_elements.append(desc_text)
 
-                # Interface details
-                if interface:
-                    interface_text = Text("     ")
-                    interface_text.append("Interface: ", style="bold")
-                    interface_parts = []
-                    for key, value in interface.items():
-                        interface_parts.append(f"{key}={value}")
-                    interface_text.append(", ".join(interface_parts))
-                    content_elements.append(interface_text)
+                # Related projects
+                if related_projects:
+                    projects_text = Text("     ")
+                    projects_text.append("Related Projects: ", style="bold")
+                    projects_text.append(", ".join(related_projects))
+                    content_elements.append(projects_text)
 
-                # Authentication
-                if authentication_required:
-                    auth_text = Text("     ")
-                    auth_text.append("Authentication: ", style="bold")
-                    auth_text.append("Required", style="red")
-                    content_elements.append(auth_text)
-
-                # Input/Output formats (simplified for display)
-                input_format = contract.get("input_format", [])
-                if input_format:
-                    input_text = Text("     ")
-                    input_text.append("Input: ", style="bold")
-                    input_fields = []
-                    for field in input_format:
-                        field_name = field.get("name", "")
-                        field_type = field.get("type", "")
-                        required = field.get("required", False)
-                        req_marker = "*" if required else ""
-                        input_fields.append(f"{field_name}: {field_type}{req_marker}")
-                    input_text.append(", ".join(input_fields))  #
-                    content_elements.append(input_text)
-
-                output_format = contract.get("output_format", [])
-                if output_format:
-                    output_text = Text("     ")
-                    output_text.append("Output: ", style="bold")
-                    output_fields = []
-                    for field in output_format:
-                        field_name = field.get("name", "")
-                        field_type = field.get("type", "")
-                        output_fields.append(f"{field_name}: {field_type}")
-                    output_text.append(", ".join(output_fields))
-                    content_elements.append(output_text)
-
-                # Error codes
-                error_codes = contract.get("error_codes", [])
-                if error_codes:
-                    error_text = Text("     ")
-                    error_text.append("Error Codes: ", style="bold")
-                    error_text.append(", ".join(error_codes))
-                    content_elements.append(error_text)
+                # Specifications
+                if specifications:
+                    spec_text = Text("     ")
+                    spec_text.append("Specifications: ", style="bold")
+                    spec_text.append(specifications)
+                    content_elements.append(spec_text)
 
                 # Add spacing between contracts if there are multiple
                 if j < len(contracts):
@@ -574,4 +656,139 @@ def _build_roadmap_completion_status(event: Dict[str, Any]) -> str:
         f"Summary: {summary}",
     ]
     logger.debug("Roadmap completion status built successfully.")
+    return "\n".join(status_parts)
+
+
+# class DeveloperCompletionParams {
+#   give_up bool @description("True if abandoning the task due to blockers or missing information; false if successfully completing the request")
+#   result string @description("A short summary of the changes you have made to the files or clarification on giving up")
+# }
+
+
+def _build_developer_completion_status(event: Dict[str, Any]) -> str:
+    """Build status for developer completion with panel display."""
+    data = event.get("data", {})
+    result = data.get("result", "")
+    give_up = data.get("give_up", False)
+
+    # Determine status styling based on give_up flag
+    if give_up:
+        status_icon = "⚠️"
+        status_title = "TASK ABANDONED"
+        status_style = "bold yellow"
+        border_style = "yellow"
+        status_text = f"[yellow]Reason: {result}[/yellow]"
+    else:
+        status_icon = "✅"
+        status_title = "TASK COMPLETE"
+        status_style = "bold green"
+        border_style = "green"
+        status_text = f"[green]{result}[/green]"
+
+    # Create header
+    header = Text(status_title, style=status_style)
+
+    # Create content
+    content = Text(status_text)
+
+    # Create panel
+    completion_panel = Panel(
+        content,
+        title=header,
+        title_align="left",
+        border_style=border_style,
+        padding=(1, 2),
+    )
+
+    console.print(status_icon, completion_panel)
+
+    # Build status string for return
+    status_parts = ["Tool: attempt_completion"]
+    status_parts.append(f"Result: {result}")
+
+    return "\n".join(status_parts)
+
+
+def _build_qaengineer_completion_status(event: Dict[str, Any]) -> str:
+    """Build status for QA engineer completion with detailed panel display."""
+    data = event.get("data", {})
+    result = data.get("result", "")
+    failed_tests = data.get("failed_tests", [])
+
+    # Determine status based on failed tests
+    if failed_tests:
+        status_icon = "❌"
+        status_title = "TESTS FAILED"
+        status_style = "bold red"
+        border_style = "red"
+        failed_count = len(failed_tests)
+        status_subtitle = (
+            f"[red]{failed_count} test{'s' if failed_count != 1 else ''} failed[/red]"
+        )
+    else:
+        status_icon = "✅"
+        status_title = "TESTS PASSED"
+        status_style = "bold green"
+        border_style = "green"
+        status_subtitle = "[green]All tests completed successfully[/green]"
+
+    # Main status header
+    console.print(status_icon, f"[bold]{status_title}[/bold]")
+    console.print(status_subtitle)
+    console.print()
+
+    # Test summary
+    if result:
+        console.print(f"[dim]{result}[/dim]")
+        console.print()
+
+    # Display failed tests details if any
+    if failed_tests:
+        console.print(f"[bold red]Failed Test Details:[/bold red]")
+        console.print()
+
+        for i, failed_test in enumerate(failed_tests, 1):
+            test_name = failed_test.get("test_name", f"Test {i}")
+            test_details = failed_test.get("test_details", "No details provided")
+
+            # Create test header
+            test_header = Text()
+            test_header.append(f"FAILED TEST {i}/{len(failed_tests)}", style="bold red")
+            test_header.append(f"\nTest: {test_name}", style="dim")
+
+            # Create test details content
+            content_elements = []
+
+            # Test details
+            details_text = Text()
+            details_text.append("Details: ", style="bold")
+            details_text.append(test_details)
+            content_elements.append(details_text)
+
+            # Create panel for this failed test
+            panel_content = Group(*content_elements)
+
+            test_panel = Panel(
+                panel_content,
+                title=test_header,
+                title_align="left",
+                border_style="red",
+                padding=(1, 2),
+            )
+
+            console.print(test_panel)
+            console.print()
+
+    # Build status string for return
+    status_parts = ["Tool: attempt_completion"]
+    status_parts.append(f"Result: {result}")
+
+    if failed_tests:
+        status_parts.append(f"Failed Tests: {len(failed_tests)}")
+        for i, failed_test in enumerate(failed_tests, 1):
+            test_name = failed_test.get("test_name", f"Test {i}")
+            test_details = failed_test.get("test_details", "No details provided")
+            status_parts.append(f"  Test {i}: {test_name}")
+            status_parts.append(f"    Details: {test_details}")
+
     return "\n".join(status_parts)

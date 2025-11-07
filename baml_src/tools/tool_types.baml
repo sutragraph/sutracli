@@ -1,11 +1,17 @@
 enum ToolName {
   Database
+  DatabaseSimple
   SearchKeyword
+  SearchKeywordSimple
   SearchKeywordWithoutProjectName
   SemanticSearch
-  ListFiles
+  SemanticSearchSimple
+  ListFilesWithProjectName
   ListFilesWithoutProjectName
+  Terminal
   Completion
+  EditFile
+  Diagnostics
 }
 
 class DatabaseToolCall {
@@ -13,9 +19,9 @@ class DatabaseToolCall {
   parameters DatabaseParams
 }
 
-class SearchKeywordToolCall {
-  tool_name "search_keyword"
-  parameters SearchKeywordParams
+class DatabaseToolCallSimple {
+  tool_name "database"
+  parameters DatabaseParamsGetFileByPath | DatabaseParamsGetBlockDetails
 }
 
 class SearchKeywordToolCallWithoutProjectName {
@@ -23,19 +29,44 @@ class SearchKeywordToolCallWithoutProjectName {
   parameters SearchKeywordParamsWithoutProjectName
 }
 
-class SemanticSearchToolCall {
-  tool_name "semantic_search"
-  parameters SemanticSearchParams
+class SearchKeywordToolCallWithProjectName {
+  tool_name "search_keyword"
+  parameters SearchKeywordParamsWithProjectName
 }
 
-class ListFilesToolCall {
+class SemanticSearchToolCallWithoutProjectName {
+  tool_name "semantic_search"
+  parameters SemanticSearchParamsWithoutProjectName
+}
+
+class SemanticSearchToolCallWithProjectName {
+  tool_name "semantic_search"
+  parameters SemanticSearchParamsWithProjectName
+}
+
+class ListFilesToolCallWithProjectName {
   tool_name "list_files"
-  parameters ListFilesParams
+  parameters ListFilesParamsWithProjectName
 }
 
 class ListFilesToolCallWithoutProjectName {
   tool_name "list_files"
   parameters ListFilesParamsWithoutProjectName
+}
+
+class EditFileToolCall {
+  tool_name "edit_file"
+  parameters EditFileParams
+}
+
+class DiagnosticsToolCall {
+  tool_name "diagnostics"
+  parameters DiagnosticsParams
+}
+
+class TermianlToolCall {
+  tool_name "terminal"
+  parameters TermianlParams
 }
 
 class CompletionToolCall {

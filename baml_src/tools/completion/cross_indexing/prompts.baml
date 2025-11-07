@@ -1,6 +1,4 @@
 template_string CrossIndexingCompletion() #"
-====
-
 ## attempt_completion
 
 Give summary of current task in short in 3-4 lines when you are done with your all task.
@@ -25,5 +23,5 @@ Summary Requirements:
   - Mention what you accomplished in your current task
   - Include key findings or results
   - Do NOT include detailed information
-  - MANDATORY: This tool MUST be used when you complete your task
+  - MANDATORY: This tool MUST be used when you complete your all task and there are no pending tasks left
 "#

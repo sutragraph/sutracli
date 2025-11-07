@@ -177,8 +177,8 @@ Therefore the output is:
 {
   "matches": [
     {
-      "outgoing_id": "string",
-      "incoming_id": "string",
+      "outgoing_id": int,
+      "incoming_id": int,
       "match_confidence": "high|medium|low",
       "match_reason": "info about the match"
     }

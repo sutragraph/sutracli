@@ -21,14 +21,14 @@ class MemoryOperations:
     """Handles core memory operations for tasks, code snippets, and file changes"""
 
     def __init__(self):
-        self.tasks: Dict[str, Task] = {}
-        self.code_snippets: Dict[str, CodeSnippet] = {}
+        self.tasks: Dict[int, Task] = {}
+        self.code_snippets: Dict[int, CodeSnippet] = {}
         self.history: List[HistoryEntry] = []
         self.file_changes: List[FileChange] = []
         self.task_id_counter = 0
         self.code_id_counter = 0
 
-        self.max_history_entries = 30
+        self.max_history_entries = 40
         self.code_fetcher = CodeFetcher()
         self.feedback_section: Optional[str] = None  # Store feedback section
         self.project_info: Optional[str] = None  # Store project information
@@ -64,12 +64,11 @@ class MemoryOperations:
         return f"elem_{hash_hex}"
 
     # Task Management Methods
-    def add_task(self, task_id: str, description: str, status: TaskStatus) -> bool:
+    def add_task(self, description: str, status: TaskStatus) -> bool:
         """
         Add a new task with validation.
 
         Args:
-            task_id: Unique task identifier (ignored, counter+1 used instead)
             description: Task description
             status: Task status
 
@@ -81,7 +80,7 @@ class MemoryOperations:
         """
         # Always use counter + 1 instead of LLM provided ID
         self.task_id_counter += 1
-        actual_task_id = str(self.task_id_counter)
+        actual_task_id = self.task_id_counter
 
         if status == TaskStatus.CURRENT and self.get_current_task() is not None:
             raise ValueError("Only one current task is allowed at a time")
@@ -90,12 +89,10 @@ class MemoryOperations:
             id=actual_task_id, description=description, status=status
         )
 
-        logger.debug(
-            f"Task {actual_task_id} added successfully (LLM ID {task_id} ignored)"
-        )
+        logger.debug(f"Task {actual_task_id} added successfully")
         return True
 
-    def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
+    def move_task(self, task_id: int, new_status: TaskStatus) -> bool:
         """
         Move task to new status with validation.
 
@@ -138,7 +135,7 @@ class MemoryOperations:
         )
         return True
 
-    def remove_task(self, task_id: str) -> bool:
+    def remove_task(self, task_id: int) -> bool:
         """
         Remove task from memory.
 
@@ -187,7 +184,6 @@ class MemoryOperations:
     # Code Snippet Management Methods
     def add_code_snippet(
         self,
-        code_id: str,
         file_path: str,
         start_line: int,
         end_line: int,
@@ -199,9 +195,9 @@ class MemoryOperations:
     ) -> bool:
         """
         Add code snippet to memory with optional trace chain information.
+        Smart merging: if snippet overlaps or extends existing snippet, merge them.
 
         Args:
-            code_id: Unique code identifier (ignored, counter+1 used instead)
             file_path: Path to the file
             start_line: Starting line number
             end_line: Ending line number
@@ -215,69 +211,136 @@ class MemoryOperations:
             bool: True if code snippet was added successfully
         """
         try:
-            # Always use counter + 1 instead of LLM provided ID
-            self.code_id_counter += 1
-            actual_code_id = str(self.code_id_counter)
-
-            # Fetch code content using the code fetcher
-            code_content = self.code_fetcher.fetch_code_from_file(
-                file_path, start_line, end_line
+            existing_snippets = self.get_code_snippets_by_file(file_path)
+            merge_result = self._check_and_merge_snippets(
+                start_line, end_line, existing_snippets
             )
 
-            # Auto-generate IDs for needs_tracing elements if missing
-            processed_needs_tracing = []
-            if needs_tracing:
-                for ute in needs_tracing:
-                    if not ute.id:
-                        ute.id = self.generate_element_id_from_signature(
-                            ute.name,
-                            ute.element_type,
-                            file_path,
-                            0,  # UntracedElements don't have line numbers
-                            0,
-                        )
-                    processed_needs_tracing.append(ute)
+            if merge_result["action"] == "skip":
+                logger.info(
+                    f"Skipping add - snippet lines {start_line}-{end_line} already covered by snippet {merge_result['existing_id']} (lines {merge_result['existing_range']})"
+                )
+                return True
 
-            # Auto-generate IDs for root_elements if missing
-            processed_root_elements = []
-            if root_elements:
-                for root_element in root_elements:
-                    if not root_element.id:
-                        root_element.id = self.generate_element_id_from_signature(
-                            root_element.name,
-                            root_element.element_type,
-                            file_path,
-                            getattr(root_element, "start_line", 0),
-                            getattr(root_element, "end_line", 0),
-                        )
-                    # Recursively generate IDs for all child elements
-                    self._generate_ids_for_hierarchy(root_element, file_path)
-                    processed_root_elements.append(root_element)
+            elif merge_result["action"] == "extend":
+                existing_id = merge_result["existing_id"]
+                existing_snippet = self.code_snippets[existing_id]
 
-            # Create and store the code snippet with counter ID
-            self.code_snippets[actual_code_id] = CodeSnippet(
-                id=actual_code_id,
-                file_path=file_path,
-                start_line=start_line,
-                end_line=end_line,
-                description=description,
-                content=code_content,
-                is_traced=is_traced,
-                root_elements=processed_root_elements,
-                needs_tracing=processed_needs_tracing,
-                call_chain_summary=call_chain_summary,
-            )
+                new_start = merge_result["new_range"][0]
+                new_end = merge_result["new_range"][1]
 
-            logger.debug(
-                f"Code snippet {actual_code_id} added successfully (LLM ID {code_id} ignored)"
-            )
-            return True
+                code_content = self.code_fetcher.fetch_code_from_file(
+                    file_path, new_start, new_end
+                )
+
+                existing_snippet.start_line = new_start
+                existing_snippet.end_line = new_end
+                existing_snippet.content = code_content
+                existing_snippet.description = (
+                    f"{existing_snippet.description} | Extended: {description}"
+                )
+
+                logger.info(
+                    f"Extended snippet {existing_id} from lines {merge_result['old_range']} to {new_start}-{new_end}"
+                )
+                return True
+
+            elif merge_result["action"] == "add":
+                self.code_id_counter += 1
+                actual_code_id = self.code_id_counter
+
+                code_content = self.code_fetcher.fetch_code_from_file(
+                    file_path, start_line, end_line
+                )
+
+                processed_needs_tracing = []
+                if needs_tracing:
+                    for ute in needs_tracing:
+                        if not ute.id:
+                            ute.id = self.generate_element_id_from_signature(
+                                ute.name,
+                                ute.element_type,
+                                file_path,
+                                0,
+                                0,
+                            )
+                        processed_needs_tracing.append(ute)
+
+                processed_root_elements = []
+                if root_elements:
+                    for root_element in root_elements:
+                        if not root_element.id:
+                            root_element.id = self.generate_element_id_from_signature(
+                                root_element.name,
+                                root_element.element_type,
+                                file_path,
+                                getattr(root_element, "start_line", 0),
+                                getattr(root_element, "end_line", 0),
+                            )
+                        self._generate_ids_for_hierarchy(root_element, file_path)
+                        processed_root_elements.append(root_element)
+
+                self.code_snippets[actual_code_id] = CodeSnippet(
+                    id=actual_code_id,
+                    file_path=file_path,
+                    start_line=start_line,
+                    end_line=end_line,
+                    description=description,
+                    content=code_content,
+                    is_traced=is_traced,
+                    root_elements=processed_root_elements,
+                    needs_tracing=processed_needs_tracing,
+                    call_chain_summary=call_chain_summary,
+                )
+
+                logger.debug(f"Code snippet {actual_code_id} added successfully")
+                return True
+            else:
+                logger.error(f"Unexpected merge action: {merge_result['action']}")
+                return False
 
         except Exception as e:
             logger.error(f"Error adding code snippet: {str(e)}")
             return False
 
-    def remove_code_snippet(self, code_id: str) -> bool:
+    def _check_and_merge_snippets(
+        self,
+        start_line: int,
+        end_line: int,
+        existing_snippets: List[CodeSnippet],
+    ) -> Dict[str, Any]:
+        for snippet in existing_snippets:
+            existing_start = snippet.start_line
+            existing_end = snippet.end_line
+
+            if start_line >= existing_start and end_line <= existing_end:
+                return {
+                    "action": "skip",
+                    "existing_id": snippet.id,
+                    "existing_range": f"{existing_start}-{existing_end}",
+                }
+
+            if start_line <= existing_end + 1 and end_line >= existing_start - 1:
+                new_start = min(start_line, existing_start)
+                new_end = max(end_line, existing_end)
+
+                if new_start < existing_start or new_end > existing_end:
+                    return {
+                        "action": "extend",
+                        "existing_id": snippet.id,
+                        "old_range": f"{existing_start}-{existing_end}",
+                        "new_range": (new_start, new_end),
+                    }
+                else:
+                    return {
+                        "action": "skip",
+                        "existing_id": snippet.id,
+                        "existing_range": f"{existing_start}-{existing_end}",
+                    }
+
+        return {"action": "add"}
+
+    def remove_code_snippet(self, code_id: int) -> bool:
         """
         Remove code snippet from memory.
 
@@ -292,7 +355,7 @@ class MemoryOperations:
             return True
         return False
 
-    def get_code_snippet(self, code_id: str) -> Optional[CodeSnippet]:
+    def get_code_snippet(self, code_id: int) -> Optional[CodeSnippet]:
         """
         Get code snippet by ID.
 
@@ -304,7 +367,7 @@ class MemoryOperations:
         """
         return self.code_snippets.get(code_id)
 
-    def get_all_code_snippets(self) -> Dict[str, CodeSnippet]:
+    def get_all_code_snippets(self):
         """
         Get all stored code snippets.
 
@@ -362,6 +425,61 @@ class MemoryOperations:
                     matching_snippets.append(snippet)
 
         return matching_snippets
+
+    def get_code_snippets_by_project_path(self, project_path: str) -> List[CodeSnippet]:
+        """
+        Get all code snippets whose file paths are within the given project path.
+
+        Args:
+            project_path: Path to the project directory (can be relative or absolute)
+
+        Returns:
+            List of code snippets whose files are children of the project path
+        """
+        if not project_path:
+            return []
+
+        try:
+            # Normalize and convert project path to absolute
+            normalized_project = os.path.normpath(project_path)
+            abs_project_path = str(Path(project_path).resolve())
+
+            # Ensure project path ends with a separator for proper prefix matching
+            if not abs_project_path.endswith(os.sep):
+                abs_project_path += os.sep
+
+            matching_snippets = []
+            for snippet in self.code_snippets.values():
+                try:
+                    # Convert snippet file path to absolute
+                    abs_snippet_path = str(Path(snippet.file_path).resolve())
+
+                    # Check if snippet path is within project path
+                    if abs_snippet_path.startswith(abs_project_path):
+                        matching_snippets.append(snippet)
+
+                except Exception:
+                    # If path resolution fails for snippet, try string-based matching
+                    normalized_snippet = os.path.normpath(snippet.file_path)
+
+                    # Check if snippet path starts with project path (with separator)
+                    if normalized_project.endswith(os.sep):
+                        if normalized_snippet.startswith(normalized_project):
+                            matching_snippets.append(snippet)
+                    else:
+                        # Add separator to project path for matching
+                        project_with_sep = normalized_project + os.sep
+                        if normalized_snippet.startswith(project_with_sep):
+                            matching_snippets.append(snippet)
+
+            return matching_snippets
+
+        except Exception as e:
+            logger.error(
+                f"Error filtering code snippets by project path {project_path}: {e}"
+            )
+            # Fallback: return all snippets if path resolution fails
+            return list(self.code_snippets.values())
 
     # File Change Tracking Methods
     def track_file_change(self, file_path: str, operation: str) -> bool:

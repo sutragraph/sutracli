@@ -147,6 +147,8 @@ def beautify_node_result(
             else:
                 # Code already has line numbers
                 result_parts.append(code_snippet)
+        else:
+            result_parts.append("<no code snippet available file is empty>")
 
     # Add connection mappings information if available
     connection_mappings = node.get("connection_mappings", [])

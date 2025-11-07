@@ -42,6 +42,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def AnthropicClaudeDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def AnthropicClaudeImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -59,6 +65,12 @@ class LlmResponseParser:
     ) -> types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudePackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
+
+    def AnthropicClaudeQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
 
     def AnthropicClaudeRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -102,6 +114,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def AwsBedrockDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def AwsBedrockImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -120,6 +138,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
 
+    def AwsBedrockQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
+
     def AwsBedrockRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.RoadmapResponse:
@@ -128,9 +152,9 @@ class LlmResponseParser:
 
     def AwsBedrockSutraCliAssistant(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> str:
+    ) -> types.QAEngineerResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockSutraCliAssistant", llm_response=llm_response, mode="request")
-        return typing.cast(str, result)
+        return typing.cast(types.QAEngineerResponse, result)
 
     def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -162,6 +186,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def AzureAIFoundryDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def AzureAIFoundryImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -179,6 +209,12 @@ class LlmResponseParser:
     ) -> types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
 
     def AzureAIFoundryRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -222,6 +258,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def AzureOpenAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def AzureOpenAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -239,6 +281,12 @@ class LlmResponseParser:
     ) -> types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
+
+    def AzureOpenAIQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
 
     def AzureOpenAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -282,6 +330,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def GCPVertexAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def GCPVertexAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -299,6 +353,12 @@ class LlmResponseParser:
     ) -> types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
+
+    def GCPVertexAIQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
 
     def GCPVertexAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -342,6 +402,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def GoogleGeminiDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def GoogleGeminiImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -359,6 +425,12 @@ class LlmResponseParser:
     ) -> types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
+
+    def GoogleGeminiQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
 
     def GoogleGeminiRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -402,6 +474,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def OpenAIChatGPTDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def OpenAIChatGPTImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -419,6 +497,12 @@ class LlmResponseParser:
     ) -> types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
 
     def OpenAIChatGPTRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -462,6 +546,12 @@ class LlmResponseParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionSplitting", llm_response=llm_response, mode="request")
         return typing.cast(types.ConnectionSplittingResponse, result)
 
+    def OpenRouterDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterDeveloperAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.DeveloperResponse, result)
+
     def OpenRouterImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.CrossIndexingResponse:
@@ -479,6 +569,12 @@ class LlmResponseParser:
     ) -> types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterPackageDiscovery", llm_response=llm_response, mode="request")
         return typing.cast(types.CrossIndexingResponse, result)
+
+    def OpenRouterQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterQAEngineerAgent", llm_response=llm_response, mode="request")
+        return typing.cast(types.QAEngineerResponse, result)
 
     def OpenRouterRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -530,6 +626,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def AnthropicClaudeDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def AnthropicClaudeImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -547,6 +649,12 @@ class LlmStreamParser:
     ) -> stream_types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudePackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def AnthropicClaudeQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AnthropicClaudeQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def AnthropicClaudeRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -590,6 +698,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def AwsBedrockDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def AwsBedrockImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -608,6 +722,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
 
+    def AwsBedrockQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
+
     def AwsBedrockRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.RoadmapResponse:
@@ -616,9 +736,9 @@ class LlmStreamParser:
 
     def AwsBedrockSutraCliAssistant(
         self, llm_response: str, baml_options: BamlCallOptions = {},
-    ) -> str:
+    ) -> stream_types.QAEngineerResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AwsBedrockSutraCliAssistant", llm_response=llm_response, mode="stream")
-        return typing.cast(str, result)
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def AwsBedrockTaskFilter(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -650,6 +770,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def AzureAIFoundryDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def AzureAIFoundryImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -667,6 +793,12 @@ class LlmStreamParser:
     ) -> stream_types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def AzureAIFoundryQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureAIFoundryQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def AzureAIFoundryRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -710,6 +842,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def AzureOpenAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def AzureOpenAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -727,6 +865,12 @@ class LlmStreamParser:
     ) -> stream_types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def AzureOpenAIQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="AzureOpenAIQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def AzureOpenAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -770,6 +914,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def GCPVertexAIDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def GCPVertexAIImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -787,6 +937,12 @@ class LlmStreamParser:
     ) -> stream_types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def GCPVertexAIQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GCPVertexAIQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def GCPVertexAIRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -830,6 +986,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def GoogleGeminiDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def GoogleGeminiImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -847,6 +1009,12 @@ class LlmStreamParser:
     ) -> stream_types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def GoogleGeminiQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="GoogleGeminiQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def GoogleGeminiRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -890,6 +1058,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def OpenAIChatGPTDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def OpenAIChatGPTImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -907,6 +1081,12 @@ class LlmStreamParser:
     ) -> stream_types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenAIChatGPTQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenAIChatGPTQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def OpenAIChatGPTRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -950,6 +1130,12 @@ class LlmStreamParser:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterConnectionSplitting", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ConnectionSplittingResponse, result)
 
+    def OpenRouterDeveloperAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.DeveloperResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterDeveloperAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.DeveloperResponse, result)
+
     def OpenRouterImplementationDiscovery(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.CrossIndexingResponse:
@@ -967,6 +1153,12 @@ class LlmStreamParser:
     ) -> stream_types.CrossIndexingResponse:
         result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterPackageDiscovery", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CrossIndexingResponse, result)
+
+    def OpenRouterQAEngineerAgent(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.QAEngineerResponse:
+        result = self.__options.merge_options(baml_options).parse_response(function_name="OpenRouterQAEngineerAgent", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.QAEngineerResponse, result)
 
     def OpenRouterRoadmapAgent(
         self, llm_response: str, baml_options: BamlCallOptions = {},

@@ -41,6 +41,6 @@ def _handle_roadmap_completion(params: Dict[str, Any]) -> Iterator[Dict[str, Any
     yield {
         "type": "tool_use",
         "tool_name": "attempt_completion",
-        "agent_name": Agent.ROADMAP,
+        "agent_name": Agent.Roadmap,
         "data": {"summary": summary, "projects": projects},
     }

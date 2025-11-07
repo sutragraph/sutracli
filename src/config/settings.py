@@ -242,6 +242,9 @@ class StorageConfig:
     # Model storage
     models_dir: str
 
+    # LSP servers storage
+    lsp_servers_dir: str
+
 
 @dataclass
 class EmbeddingConfig:
@@ -280,6 +283,20 @@ class WebScrapperConfig:
     include_links: bool
     trafilatura_config: dict
     markdown_options: dict
+
+
+@dataclass
+class RoadmapAgentConfig:
+    """Roadmap agent configuration."""
+
+    processing_mode: str  # "sequence" or "parallel"
+
+
+@dataclass
+class AgentsConfig:
+    """Agents configuration."""
+
+    roadmap: RoadmapAgentConfig
 
 
 class Config:
@@ -358,6 +375,23 @@ class Config:
             webscrapper_config = config_data.get("web_scrap", {})
             self.web_scrap = WebScrapperConfig(**webscrapper_config)
 
+            # Initialize agents config
+            agents_config = config_data.get("agents", {})
+            if agents_config:
+                roadmap_config = agents_config.get("roadmap", {})
+                self.agents = AgentsConfig(
+                    roadmap=RoadmapAgentConfig(
+                        processing_mode=roadmap_config.get(
+                            "processing_mode", "sequence"
+                        )
+                    )
+                )
+            else:
+                # Default configuration
+                self.agents = AgentsConfig(
+                    roadmap=RoadmapAgentConfig(processing_mode="sequence")
+                )
+
             # Initialize LLM config
             llm_config = config_data.get("llm", {})
             if llm_config:
@@ -416,6 +450,7 @@ class Config:
             self.storage.file_changes_dir,
             self.storage.file_edits_dir,
             self.storage.models_dir,
+            self.storage.lsp_servers_dir,
         ]
 
         for directory in directories:

@@ -39,19 +39,19 @@ After list_files returns file list, create individual database tasks for potenti
     "tasks": [
       {
         "action": "add",
-        "id": "1",
+        "id": 1,
         "to_status": "current",
         "description": "Use database tool to read index.html file completely and analyze for any connection patterns: script tags importing packages (axios, socket.io), CDN imports, WebSocket connections (new WebSocket), fetch API calls, XMLHttpRequest usage, and embedded JavaScript connection code."
       },
       {
         "action": "add",
-        "id": "2",
+        "id": 2,
         "to_status": "pending",
         "description": "Use database tool to read server.js file completely and analyze for built-in server connections (http.createServer, net.createServer), endpoint definitions, and incoming connection handlers."
       },
       {
         "action": "add",
-        "id": "3",
+        "id": 3,
         "to_status": "pending",
         "description": "Use database tool to read client.js file completely and analyze for outgoing HTTP requests using built-in modules (http, https), fetch API usage, and client-side connection patterns."
       }
@@ -70,13 +70,13 @@ Example 1: Axios usage analysis in few files
         "tasks": [
           {
             "action": "add",
-            "id": "1",
+            "id": 1,
             "to_status": "current",
             "description": "Use database tool to read client.js completely to find actual axios HTTP calls with real endpoints and parameters."
           },
           {
             "action": "add",
-            "id": "2",
+            "id": 2,
             "to_status": "pending",
             "description": "Use database tool to read api.js completely to find actual axios HTTP calls with real endpoints and parameters."
           }
@@ -407,7 +407,7 @@ EFFICIENT WORKFLOW:
     "tasks": [
       {
         "action": "add",
-        "id": "21",
+        "id": 21,
         "to_status": "current",
         "description": "Use search_keyword to find publishMessage wrapper function calls with actual queue names: publishMessage\("
       }
@@ -430,7 +430,7 @@ EFFICIENT WORKFLOW:
     "tasks": [
       {
         "action": "add",
-        "id": "22",
+        "id": 22,
         "to_status": "current",
         "description": "Search for queueName variable definition across all files if wrapper function uses variables"
       }
@@ -472,7 +472,7 @@ IMMEDIATE ACTION:
     "tasks": [
       {
         "action": "add",
-        "id": "23",
+        "id": 23,
         "to_status": "current",
         "description": "Use search_keyword to find makeApiCall wrapper function calls with actual endpoints: makeApiCall\("
       }
@@ -522,7 +522,7 @@ ACTION:
     "tasks": [
       {
         "action": "add",
-        "id": "24",
+        "id": 24,
         "to_status": "current",
         "description": "Use search_keyword to find all publish_message( wrapper function usage: publish_message\("
       }
@@ -559,7 +559,7 @@ ACTION:
     "tasks": [
       {
         "action": "add",
-        "id": "28",
+        "id": 28,
         "to_status": "current",
         "description": "Use search_keyword to find all emitEvent( wrapper function calls: emitEvent\("
       }
@@ -597,7 +597,7 @@ ACTION:
     "tasks": [
       {
         "action": "add",
-        "id": "29",
+        "id": 29,
         "to_status": "current",
         "description": "Use search_keyword to find all serviceClient usage patterns: serviceClient\("
       }
@@ -630,7 +630,7 @@ STEP 1: Search for wrapper function usage across codebase
     "tasks": [
       {
         "action": "add",
-        "id": "27",
+        "id": 27,
         "to_status": "current",
         "description": "Find sendMessage wrapper function usage across codebase"
       }
@@ -741,7 +741,7 @@ STEP 2: If NOT in sutra memory, find config files directly
     "tasks": [
       {
         "action": "add",
-        "id": "25",
+        "id": 25,
         "to_status": "current",
         "description": "Find .env files to locate API_BASE_URL environment variable"
       }

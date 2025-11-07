@@ -1,6 +1,4 @@
 template_string SearchKeywordToolWithoutProjectNameTemplate() #"
-====
-
 ## search_keyword
 
 Description: Search for keywords or patterns in the codebase using ripgrep. Supports single keywords, multiple patterns (using OR), and regex patterns. Faster than terminal commands and provides line numbers for precise location tracking.
@@ -18,7 +16,7 @@ Optional Parameters:
   - after_lines: Lines after match (default: 5)
   - case_sensitive: Case-sensitive search (default: false)
   - regex: Treat keyword as regex pattern (default: false)
-  - file_paths: Comma-separated file or directory paths to search.
+  - file_paths: List of file or directory paths to search.
   - fetch_next_chunk: Set to true to fetch next chunks of results when more are available (default: false)
 
 Notes:
@@ -28,12 +26,13 @@ Notes:
   - When results return `No results found for keyword search.`, check the history section for previous search attempts. If you see 3-4 failed search attempts with different keywords/patterns, then mark the task complete. However, don't give up after just 1 failed attempt - try different variations of keywords, patterns, or search parameters before concluding no results exist.
   - search_keyword is only for searching codebase - do not use for searching file names or directories - use list_files tool for that
   - When using `regex: false`, never use pipe `|` or special regex characters in the keyword. Setting regex to false means fixed string matching - it will search for the exact string you provide.
+
 Usage:
 "tool_call": {
   "tool_name": "search_keyword",
   "parameters": {
     "keyword": "your_search_pattern",
-    "file_paths": "path/to/file1, path/to/dir2",
+    "file_paths": ["path/to/file1", "path/to/dir2"],
     "before_lines": 0,
     "after_lines": 5,
     "case_sensitive": true|false,
@@ -50,7 +49,7 @@ GOOD EXAMPLES:
   "tool_name": "search_keyword",
   "parameters": {
     "keyword": "getUserById",
-    "file_paths": ".",
+    "file_paths": ["."],
     "before_lines": 0,
     "after_lines": 5
   }
@@ -62,8 +61,8 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "function\s+getUserById\s*\(",
     "regex": true,
-    "file_paths": "src/utils/helpers.ts"
-    "before_lines": 0
+    "file_paths": ["src/utils/helpers.ts"],
+    "before_lines": 0,
     "after_lines": 5
   }
 }
@@ -74,8 +73,8 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "import.*redis",
     "regex": true,
-    "file_paths": "src/services/cache-service.ts, src/config/database.ts"
-    "before_lines": 0
+    "file_paths": ["src/services/cache-service.ts", "src/config/database.ts"],
+    "before_lines": 0,
     "after_lines": 5
   }
 }
@@ -86,7 +85,7 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "\b(app|router)\.(put|PUT)\s*\([^)]*apiFunction\b",
     "regex": true,
-    "file_paths": "src/api",
+    "file_paths": ["src/api"],
     "before_lines": 0
     "after_lines": 5
   }
@@ -98,7 +97,7 @@ GOOD EXAMPLES:
   "parameters": {
     "keyword": "getUserData|setUserData|deleteUserData",
     "regex": true,
-    "file_paths": "src/config",
+    "file_paths": ["src/config"],
     "before_lines": 0
     "after_lines": 5
   }
@@ -109,7 +108,7 @@ GOOD EXAMPLES:
   "tool_name": "search_keyword",
   "parameters": {
     "keyword": "config|Config",
-    "file_paths": "src/config, src/utils",
+    "file_paths": ["src/config", "src/utils"],
     "regex": true,
     "before_lines": 0
     "after_lines": 5
@@ -123,7 +122,7 @@ BAD EXAMPLES: (AVOID THESE)
   "parameters": {
     "keyword": "function|class|method|import|export|const|let|var",
     "regex": true,
-    "file_paths": "src"
+    "file_paths": ["src"]
   }
 }
 
@@ -133,7 +132,7 @@ BAD EXAMPLES: (AVOID THESE)
   "parameters": {
     "keyword": "user|User|auth|Auth|login|register|session|token|jwt|api|controller|service",
     "regex": true,
-    "file_paths": "src"
+    "file_paths": ["src"]
   }
 }
 "#

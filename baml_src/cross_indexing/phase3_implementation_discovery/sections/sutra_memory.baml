@@ -19,19 +19,17 @@ Usage Format
     "tasks": [
       {
         "action": "move",
-        "id": "task_id",
-        "from_status": "pending",
+        "id": task_id,
         "to_status": "current",
       },
       {
         "action": "move",
-        "id": "task_id",
-        "from_status": "current",
+        "id": task_id,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "unique_int_id",
+        "id": unique_int_id,
         "to_status": "pending",
         "description": "additional task for further analysis"
       }
@@ -48,14 +46,12 @@ Example 1: Wrapper function analysis
     "tasks": [
       {
         "action": "move",
-        "id": "13",
-        "from_status": "pending",
+        "id": 13,
         "to_status": "current",
       },
       {
         "action": "move",
-        "id": "13",
-        "from_status": "current",
+        "id": 13,
         "to_status": "completed",
       }
     ],
@@ -69,13 +65,12 @@ Example 2: Wrapper function discovery with task creation
     "tasks": [
       {
         "action": "move",
-        "id": "3",
-        "from_status": "current",
+        "id": 3,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "21",
+        "id": 21,
         "to_status": "current",
         "description": "Use search_keyword to find all apicall( wrapper function usage: apicall\("
       }
@@ -90,13 +85,12 @@ Example 3: Custom API client pattern discovery with task creation
     "tasks": [
       {
         "action": "move",
-        "id": "3",
-        "from_status": "current",
+        "id": 3,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "22",
+        "id": 22,
         "to_status": "current",
         "description": "Use search_keyword to find all httpClient usage patterns: httpClient\.(get|post|put|delete)\("
       }
@@ -111,13 +105,12 @@ Example 4: Wrapper function analysis with dynamic parameters
     "tasks": [
       {
         "action": "move",
-        "id": "15",
-        "from_status": "current",
+        "id": 15,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "23",
+        "id": 23,
         "to_status": "current",
         "description": "Use database tool to read src/utils/apiHelper.js completely to identify function name containing axios.get(url, config) wrapper calls"
       }
@@ -132,13 +125,12 @@ Example 5: Wrapper function usage discovery
     "tasks": [
       {
         "action": "move",
-        "id": "23",
-        "from_status": "current",
+        "id": 23,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "24",
+        "id": 24,
         "to_status": "current",
         "description": "Use search_keyword to find makeApiCall usage patterns: makeApiCall\("
       }
@@ -153,13 +145,12 @@ Example 6: Environment variable analysis with config file discovery
     "tasks": [
       {
         "action": "move",
-        "id": "25",
-        "from_status": "current",
+        "id": 25,
         "to_status": "completed",
       },
       {
         "action": "add",
-        "id": "26",
+        "id": 26,
         "to_status": "current",
         "description": "Use database tool to read .env file to analyze DATABASE_URL and API_BASE_URL values"
       }
@@ -174,8 +165,7 @@ Example 7: Task completion scenario
     "tasks": [
       {
         "action": "move",
-        "id": "3",
-        "from_status": "current",
+        "id": 3,
         "to_status": "completed",
       }
     ],

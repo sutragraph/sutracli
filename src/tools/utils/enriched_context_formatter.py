@@ -476,7 +476,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
                     start_line = lines_data[0]
                     snippet_lines = sender_snippet.split("\n")
                     for i, line in enumerate(snippet_lines):
-                        result_lines.append(f"{start_line + i} | {line}")
+                        result_lines.append(f"{start_line + i:4d} | {line}")
                 else:
                     result_lines.append(sender_snippet)
             except Exception:
@@ -505,7 +505,7 @@ def _format_connection_mappings(mappings: List[Dict[str, Any]]) -> List[str]:
                     start_line = lines_data[0]
                     snippet_lines = receiver_snippet.split("\n")
                     for i, line in enumerate(snippet_lines):
-                        result_lines.append(f"{start_line + i} | {line}")
+                        result_lines.append(f"{start_line + i:4d} | {line}")
                 else:
                     result_lines.append(receiver_snippet)
             except Exception:
@@ -582,7 +582,7 @@ def _format_grouped_connections(
                     start_line = lines_data[0]
                     snippet_code_lines = code_snippet.split("\n")
                     for j, line in enumerate(snippet_code_lines):
-                        result_lines.append(f"{start_line + j} | {line}")
+                        result_lines.append(f"{start_line + j:4d} | {line}")
                 else:
                     # Fallback: show code without line numbers
                     for line in code_snippet.split("\n"):

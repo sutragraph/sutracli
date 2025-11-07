@@ -10,7 +10,6 @@ from loguru import logger
 
 from config import config
 from services.agent.memory_management.memory_formatter import clean_sutra_memory_content
-from src.utils.console import console
 
 
 class SessionManager:
@@ -27,7 +26,6 @@ class SessionManager:
         self.session_data: List[Dict[str, Any]] = []
         self.problem_context: str = ""
         self.current_query_id: Optional[str] = None
-        self.task_progress_history: List[str] = []  # Track progress across iterations
 
         # Load existing session if it exists
         self._load_session()
@@ -45,9 +43,6 @@ class SessionManager:
                 self.problem_context = session_data.get("problem_context", "")
                 self.session_data = session_data.get("session_data", [])
                 self.current_query_id = session_data.get("current_query_id")
-                self.task_progress_history = session_data.get(
-                    "task_progress_history", []
-                )
 
         except Exception as e:
             logger.warning(f"Failed to load session {self.session_id}: {e}")
@@ -62,7 +57,6 @@ class SessionManager:
                 "problem_context": self.problem_context,
                 "session_data": self.session_data,
                 "current_query_id": self.current_query_id,
-                "task_progress_history": self.task_progress_history,
                 "last_updated": time.time(),
             }
 
@@ -100,24 +94,12 @@ class SessionManager:
         """Get the current Sutra memory content (already cleaned)."""
         return self.sutra_memory
 
-    def get_task_progress_history(self) -> str:
-        """Get formatted task progress history for prompt inclusion."""
-        if not self.task_progress_history:
-            return ""
-
-        history_lines = []
-        for i, progress in enumerate(self.task_progress_history, 1):
-            history_lines.append(f"Iteration {i}: {progress}")
-
-        return "\n".join(history_lines)
-
     def clear_session(self) -> None:
         """Clear Sutra memory and reset session."""
         self.sutra_memory = ""
         self.session_data = []
         self.problem_context = ""
         self.current_query_id = None
-        self.task_progress_history = []
 
         # Remove session file
         try:

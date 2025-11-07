@@ -30,7 +30,6 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         """Initialize default tasks for Phase 1."""
         # Add default Phase 1 task - parent class will use counter-based ID
         super().add_task(
-            "1",
             "Use list_files tool to find package files in this project that list all used packages. Store them in sutra memory history with file paths for future findings.",
             TaskStatus.CURRENT,
         )
@@ -38,7 +37,6 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         task1_id = str(self.memory_ops.task_id_counter)
 
         super().add_task(
-            "2",
             "Open each package file one by one by checking history to find all connection-related packages used for data communication. Create tasks for import pattern discovery based on findings. (NOTE: only mark this task completed after creating all tasks for finding imports based on packages in current files)",
             TaskStatus.PENDING,
         )
@@ -138,12 +136,11 @@ class CrossIndexingTaskManager(SutraMemoryManager):
 
     def add_task(
         self,
-        task_id: str,
         description: str,
         status: TaskStatus = TaskStatus.PENDING,
         target_phase: Optional[int] = None,
     ) -> bool:
-        """Add task with phase metadata (task_id is ignored, counter+1 used instead)."""
+        """Add task with phase metadata."""
         # For phases 1 and 2, force status to PENDING to ensure proper phase transitions
         if self.current_phase in [1, 2]:
             actual_status = TaskStatus.PENDING
@@ -153,7 +150,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
         else:
             actual_status = status
 
-        success = super().add_task(task_id, description, actual_status)
+        success = super().add_task(description, actual_status)
 
         if success:
             # Get the actual counter-based ID that was assigned by parent class
@@ -182,12 +179,12 @@ class CrossIndexingTaskManager(SutraMemoryManager):
 
             logger.debug(
                 f"Added task {actual_task_id} in Phase {self.current_phase} targeting Phase {actual_target_phase} "
-                f"with status {actual_status} (LLM ID {task_id} ignored)"
+                f"with status {actual_status}"
             )
 
         return success
 
-    def move_task(self, task_id: str, new_status: TaskStatus) -> bool:
+    def move_task(self, task_id: int, new_status: TaskStatus) -> bool:
         """Move task to new status while preserving phase metadata."""
         logger.debug(
             f"Moving task {task_id} to status {new_status} in phase {self.current_phase}"
@@ -365,10 +362,10 @@ class CrossIndexingTaskManager(SutraMemoryManager):
             self.memory_ops.task_id_counter = 0
 
     def add_filtered_task(
-        self, task_id: str, description: str, created_in_phase: int, target_phase: int
+        self, description: str, created_in_phase: int, target_phase: int
     ) -> bool:
         """Add a filtered task with proper metadata (task_id is ignored, counter+1 used instead)."""
-        success = super().add_task(task_id, description, TaskStatus.PENDING)
+        success = super().add_task(description, TaskStatus.PENDING)
 
         if success:
             # Get the actual counter-based ID that was assigned by parent class
@@ -382,9 +379,7 @@ class CrossIndexingTaskManager(SutraMemoryManager):
                 "created_at": datetime.now().isoformat(),
             }
 
-            logger.debug(
-                f"Added filtered task {actual_task_id} (LLM ID {task_id} ignored)"
-            )
+            logger.debug(f"Added filtered task {actual_task_id}")
 
         return success
 

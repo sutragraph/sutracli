@@ -6,17 +6,19 @@ Modern CLI for SutraGraph - Interactive command-line interface with provider set
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 # IMPORTANT: Setup logging FIRST before any imports that use loguru
 # This prevents debug logs from appearing when log level is INFO
+from baml_client.types import Agent
 from src.utils.logging import setup_logging
 
 # Set up basic INFO logging early to prevent debug logs during imports
 # This will be reconfigured later in __init__ if a different level is requested
 setup_logging("INFO")
+from dataclasses import dataclass
+from typing import Callable
 
-# Prompt toolkit imports for arrow key navigation
 from prompt_toolkit import Application, prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout
@@ -29,20 +31,114 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
 
-from src.agent_management.prerequisites.agent_config import get_agent_registry
-from src.agent_management.prerequisites.indexing_handler import (
-    IndexingPrerequisitesHandler,
-)
-from src.agents_new import Agent
+
+@dataclass
+class MenuOption:
+    """Represents a menu option with display name and callback action."""
+
+    name: str
+    callback: Callable[[], None]
+
+
+class ArrowKeySelector:
+    """Handles arrow key selection for any type of options."""
+
+    @staticmethod
+    def select_option(options: list, title: str = "Select an option") -> Optional[Any]:
+        """
+        Generic arrow key selection menu that works with any list of options.
+
+        Why: This creates a reusable selection interface that eliminates duplicate
+        arrow key selection code for agents, providers, and options menus.
+
+        Args:
+            options: List of options (can be MenuOption objects, strings, or objects with .name)
+            title: Title to display above the selection menu
+
+        Returns:
+            The selected option object or None if cancelled
+        """
+        current_index = 0
+
+        def get_option_name(option):
+            """Extract display name from different option types."""
+            if isinstance(option, MenuOption):
+                return option.name
+            elif hasattr(option, "name"):
+                return option.name
+            elif isinstance(option, dict) and "name" in option:
+                return option["name"]
+            else:
+                return str(option)
+
+        def get_formatted_text():
+            lines = [
+                ("", f"{title} (↑↓ to navigate, Enter to select, Esc to cancel):\n\n")
+            ]
+
+            for i, option in enumerate(options):
+                option_name = get_option_name(option)
+                if i == current_index:
+                    lines.append(("class:selected", f"▶ {option_name}\n"))
+                else:
+                    lines.append(("", f"  {option_name}\n"))
+
+            return lines
+
+        # Key bindings
+        bindings = KeyBindings()
+
+        @bindings.add("up")
+        def move_up(event):
+            nonlocal current_index
+            current_index = (current_index - 1) % len(options)
+
+        @bindings.add("down")
+        def move_down(event):
+            nonlocal current_index
+            current_index = (current_index + 1) % len(options)
+
+        @bindings.add("enter")
+        def select_item(event):
+            event.app.exit(result=options[current_index])
+
+        @bindings.add("escape")
+        @bindings.add("c-c")
+        def cancel(event):
+            event.app.exit(result=None)
+
+        # Create the application
+        application = Application(
+            layout=Layout(
+                HSplit(
+                    [
+                        Window(
+                            FormattedTextControl(get_formatted_text), wrap_lines=True
+                        ),
+                    ]
+                )
+            ),
+            key_bindings=bindings,
+            mouse_support=False,
+            full_screen=False,
+            style=Style(
+                [
+                    ("selected", "bg:#0066cc #ffffff bold"),
+                    ("dim", "#666666"),
+                ]
+            ),
+        )
+
+        # Run the application
+        return application.run()
+
+
+from src.agent_management import AgentGraph
+from src.agent_management.core.registry import AgentRegistry
+from src.agent_management.types.exception import AgentErrorType
 from src.config.settings import reload_config
 from src.utils.console import console
 from src.utils.version_checker import show_update_notification
-
-
-class UserCancelledError(Exception):
-    """Exception raised when user cancels an operation."""
-
-    pass
 
 
 class ModernSutraKit:
@@ -57,8 +153,74 @@ class ModernSutraKit:
         if log_level != "INFO":
             setup_logging(log_level)
 
-        self.agent_registry = get_agent_registry()
-        self.indexing_handler = IndexingPrerequisitesHandler()
+    def _get_user_input(self, prompt_msg: str = "👤 You: ") -> Optional[str]:
+        """
+        Reusable method to get user input with consistent error handling.
+
+        Why: This eliminates the duplicate try/catch blocks for KeyboardInterrupt/EOFError
+        that are repeated in _execute_agent, _continue_existing_session, and options menu.
+        """
+        while True:
+            try:
+                user_input = input(f"\n{prompt_msg}").strip()
+                console.print("-" * 40)
+                return user_input
+            except KeyboardInterrupt:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+            except EOFError:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+
+    def _execute_agent_interaction(
+        self, agent: Agent, project_dir: Path, user_input: str
+    ) -> bool:
+        """
+        Execute a single agent interaction with consistent result handling.
+
+        Why: This extracts the agent execution pattern that's duplicated between
+        _execute_agent and _continue_existing_session methods.
+        """
+        agent_instance = AgentRegistry.get_or_create(agent, project_dir)
+
+        agent_result = agent_instance.run_with_user_role(user_input)
+
+        return True
+
+    def _setup_and_execute_agent(self, agent: Agent, project_dir: Path) -> bool:
+        """
+        Set up agent prerequisites and get initial user input.
+
+        Why: This extracts the common agent setup pattern that's needed for both
+        initial execution and new session workflows.
+        """
+        try:
+            agent_instance = AgentRegistry.get_or_create(agent, project_dir)
+
+            if not agent_instance.run_prerequisites():
+                console.error(
+                    "Prerequisites failed. Cannot proceed with agent execution."
+                )
+                return False
+
+            # Get initial user input
+            while True:
+                user_input = self._get_user_input()
+
+                if user_input is None:
+                    return False
+
+                if not user_input:
+                    continue
+
+                return self._execute_agent_interaction(agent, project_dir, user_input)
+
+        except ValueError as e:
+            console.error(str(e))
+            return False
+        except Exception as e:
+            console.error(f"Agent setup failed: {e}")
+            return False
 
     def print_banner(self):
         """Print the welcome banner."""
@@ -631,7 +793,7 @@ class ModernSutraKit:
 
     def select_agent(self) -> Agent:
         """Interactive agent selection with arrow keys."""
-        available_agents = self.agent_registry.get_available_agents()
+        available_agents = AgentGraph.get_all_agents()
 
         console.info("Agent Selection")
 
@@ -642,7 +804,7 @@ class ModernSutraKit:
             table.add_column("Description", style="white")
 
             for agent in available_agents:
-                table.add_row(agent.name, agent.description)
+                table.add_row(agent.name, AgentGraph.get_description(agent))
 
             console.print(table)
 
@@ -650,380 +812,164 @@ class ModernSutraKit:
 
         if not available_agents:
             console.error("No agents available")
-            return Agent.ROADMAP
+            sys.exit(1)
 
-        # Use arrow key selection
-        selected_agent = self._arrow_key_select_agents(available_agents)
+        # Use arrow key selection with the new ArrowKeySelector
+        selected_agent = ArrowKeySelector.select_option(
+            available_agents, "Select agent"
+        )
+
         if selected_agent:
-            return selected_agent.key
+            return selected_agent
         else:
             console.error("No agent selected. Exiting.")
             sys.exit(1)
 
     def _arrow_key_select_provider(self, providers):
-        """Arrow key selection for LLM providers."""
-        current_index = 0
+        """Arrow key selection for LLM providers using ArrowKeySelector."""
+        return ArrowKeySelector.select_option(providers, "Select LLM provider")
 
-        def get_formatted_text():
-            lines = [
-                (
-                    "",
-                    "Select LLM provider (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
-                )
-            ]
-
-            for i, provider in enumerate(providers):
-                if i == current_index:
-                    lines.append(("class:selected", f"▶ {provider['name']}\n"))
-                else:
-                    lines.append(("", f"  {provider['name']}\n"))
-
-            return lines
-
-        # Key bindings
-        bindings = KeyBindings()
-
-        @bindings.add("up")
-        def move_up(event):
-            nonlocal current_index
-            current_index = (current_index - 1) % len(providers)
-
-        @bindings.add("down")
-        def move_down(event):
-            nonlocal current_index
-            current_index = (current_index + 1) % len(providers)
-
-        @bindings.add("enter")
-        def select_item(event):
-            event.app.exit(result=providers[current_index])
-
-        @bindings.add("escape")
-        @bindings.add("c-c")
-        def cancel(event):
-            event.app.exit(result=None)
-
-        # Create the application
-        application = Application(
-            layout=Layout(
-                HSplit(
-                    [
-                        Window(
-                            FormattedTextControl(get_formatted_text), wrap_lines=True
-                        ),
-                    ]
-                )
-            ),
-            key_bindings=bindings,
-            mouse_support=False,
-            full_screen=False,
-            style=Style(
-                [
-                    ("selected", "bg:#0066cc #ffffff bold"),
-                    ("dim", "#666666"),
-                ]
-            ),
-        )
-
-        # Run the application
-        return application.run()
-
-    def _arrow_key_select_agents(self, agents):
-        """Custom arrow key selection for agents."""
-        current_index = 0
-
-        def get_formatted_text():
-            lines = [
-                (
-                    "",
-                    "Select agent (↑↓ to navigate, Enter to select, Esc to cancel):\n\n",
-                )
-            ]
-
-            for i, agent in enumerate(agents):
-                if i == current_index:
-                    lines.append(("class:selected", f"▶ {agent.name}"))
-                else:
-                    lines.append(("", f"  {agent.name}"))
-
-            return lines
-
-        # Key bindings
-        bindings = KeyBindings()
-
-        @bindings.add("up")
-        def move_up(event):
-            nonlocal current_index
-            current_index = (current_index - 1) % len(agents)
-
-        @bindings.add("down")
-        def move_down(event):
-            nonlocal current_index
-            current_index = (current_index + 1) % len(agents)
-
-        @bindings.add("enter")
-        def select_item(event):
-            event.app.exit(result=agents[current_index])
-
-        @bindings.add("escape")
-        @bindings.add("c-c")
-        def cancel(event):
-            event.app.exit(result=None)
-
-        # Create the application
-        application = Application(
-            layout=Layout(
-                HSplit(
-                    [
-                        Window(
-                            FormattedTextControl(get_formatted_text), wrap_lines=True
-                        ),
-                    ]
-                )
-            ),
-            key_bindings=bindings,
-            mouse_support=False,
-            full_screen=False,
-            style=Style(
-                [
-                    ("selected", "bg:#0066cc #ffffff bold"),
-                    ("dim", "#666666"),
-                ]
-            ),
-        )
-
-        # Run the application
-        return application.run()
-
-    def show_agent_prerequisites(self, agent_enum: Agent):
+    def show_agent_prerequisites(self, agent: Agent):
         """Show prerequisites for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_enum)
+        agent_config = AgentGraph.get_config(agent)
+
         if not agent_config:
             return
 
-        console.success(f"Selected: {agent_config.name}")
+        console.success(f"Selected: {agent.name}")
         console.dim(agent_config.description)
 
         table = Table(show_header=False, box=None)
         table.add_column("Status", style="", width=3)
         table.add_column("Requirement", style="")
-        table.add_column("Description", style="dim")
+
+        # Add rows for each prerequisite
+        for prereq in agent_config.prerequisites:
+            status = "✓"  # or check actual status
+            req_name = prereq.name.replace("_", " ").title()
+            table.add_row(status, req_name)
 
         console.print(table)
         console.print()
 
-    def run_agent_workflow(self, agent_enum: Agent, current_dir: Path):
+    def run_agent_workflow(self, agent: Agent, current_dir: Path):
         """Run the workflow for selected agent."""
-        agent_config = self.agent_registry.get_agent(agent_enum)
-        if not agent_config:
-            console.error(f"Agent '{agent_enum}' not found.")
-            return
-
-        # Check if agent is available (implemented)
-        available_agents = self.agent_registry.get_available_agents()
-        if agent_config not in available_agents:
-            console.warning(f"Agent '{agent_config.name}' is not yet implemented.")
-            return
-
         try:
-            # Check if indexing is required
-            if agent_config.requires_indexing:
-                self._run_indexing(current_dir)
+            self._execute_agent(agent, current_dir)
 
-            if agent_config.requires_incremental_indexing:
-                # Run incremental indexing and get the changes
-                changes_by_project = self._run_incremental_indexing_and_get_changes()
-
-                if (
-                    agent_config.requires_incremental_cross_indexing
-                    and changes_by_project
-                ):
-                    self.indexing_handler.run_incremental_cross_indexing(
-                        changes_by_project
-                    )
-
-            # Check if cross-indexing is required
-            if agent_config.requires_cross_indexing:
-                self._run_cross_indexing(current_dir)
-
-            # Run the actual agent
-            if agent_enum.value == "ROADMAP":
-                self._execute_agent(current_dir, agent_enum, agent_config)
-            else:
-                console.error(f"Agent '{agent_enum}' not implemented yet.")
-
-        except UserCancelledError:
-            console.warning("Workflow stopped by user choice.")
-            console.dim("You can restart the workflow anytime when ready.")
-            return
-
-    def _run_indexing(self, project_dir: Path):
-        """Run normal indexing for the project."""
-        console.print()
-        console.info(f"Starting indexing for: {project_dir}")
-        console.dim("   • Analyzing code structure and relationships")
-        console.dim("   • Generating embeddings for semantic search")
-        console.print()
-
-        try:
-            # Import and run indexing
-            from cli.commands import handle_index_command
-
-            # Mock args object for indexing
-            class Args:
-                project_path = str(project_dir)
-                directory = str(project_dir)
-                project_name = None
-                log_level = self.log_level
-                force = False
-
-            args = Args()
-            handle_index_command(args)
-
-            console.success("Normal indexing completed successfully!")
-
-        except Exception as e:
-            console.error(f"Indexing failed: {e}")
+        except RuntimeError as e:
+            # Check if it's a user cancellation error
+            error_type = getattr(e, "error_type", None)
+            if error_type == AgentErrorType.USER_CANCELLED:
+                console.warning("Workflow stopped by user choice.")
+                console.dim("You can restart the workflow anytime when ready.")
+                return
+            # Re-raise if it's a different runtime error
             raise
 
-    def _run_incremental_indexing_and_get_changes(self) -> Dict[str, Any]:
-        """Run incremental indexing and return the changes found by project."""
+    def _execute_agent(self, agent: Agent, project_dir: Path):
+        """Execute the actual agent."""
         console.print()
-        console.info("Starting incremental indexing")
 
-        try:
-            # Execute incremental indexing for all projects and capture changes with old content
-            result = (
-                self.indexing_handler.handle_multiple_project_indexing_with_old_content()
-            )
+        if self._setup_and_execute_agent(agent, project_dir):
+            console.success("Agent execution completed successfully!!!")
+        else:
+            console.warning("Agent execution completed with no result")
 
-            # Extract changes by project from the result
-            changes_by_project = {}
+        # Show options menu after agent completion
+        self._show_post_completion_options(agent, project_dir)
 
-            if result["status"] in ["completed", "partial"]:
-                # Get the actual changes from each project that was processed
-                if "results" in result:
-                    for project_info in result["results"]:
-                        if (
-                            isinstance(project_info, dict)
-                            and project_info.get("status") == "success"
-                        ):
-                            if "changes" in project_info:
-                                project_id = project_info.get("project_id", "unknown")
-                                changes_by_project[project_id] = project_info["changes"]
+    def _show_post_completion_options(self, agent: Agent, project_dir: Path):
+        """Show options menu after agent completion."""
+        console.print("\n" + "=" * 50)
 
-            elif result["status"] == "skipped":
-                console.info("No changes detected for incremental indexing")
-                return {}
-            else:
-                console.error(f"Incremental indexing failed: {result['message']}")
-                if result.get("error"):
-                    console.print(f"   Error: {result['error']}")
-                return {}
+        # Define options with callbacks
+        options = [
+            MenuOption(
+                "Continue with existing session",
+                lambda: self._continue_existing_session(agent, project_dir),
+            ),
+            MenuOption(
+                "Start new session", lambda: self._start_new_session(project_dir)
+            ),
+            MenuOption(
+                "Quit",
+                lambda: console.success("Goodbye! Thank you for using SutraGraph!"),
+            ),
+        ]
 
-            return changes_by_project
-
-        except Exception as e:
-            console.error(f"Error during incremental indexing: {e}")
-            return {}
-
-    def _run_cross_indexing(self, project_dir: Path):
-        """Run cross-indexing for the project."""
-
-        # Check if cross-indexing is already completed
-        try:
-            from src.graph.graph_operations import GraphOperations
-            from src.services.project_manager import ProjectManager
-
-            project_manager = ProjectManager()
-            graph_ops = GraphOperations()
-
-            project_name = project_manager.determine_project_name(project_dir)
-
-            if graph_ops.is_cross_indexing_done(project_name):
-                return
-
-        except Exception as e:
-            # If we can't check, proceed with the normal flow
-            console.dim(f"⚠️ Could not verify cross-indexing status: {e}")
-
-        warning_text = """
-• ⏱️  Time: May take 5-30 minutes based on codebase size
-• 🔥 Tokens: Will consume LLM tokens for deep analysis
-• 🔄 Process: This is a one-time setup for this project
-• 💻 Session: Do not close the terminal during this process
-
-This analysis will create detailed inter-service connection mappings
-for advanced code understanding and agent capabilities.
-Closing the terminal or interrupting may lead to incomplete data and token wastage.
-        """
-
-        warning_panel = Panel(
-            warning_text.strip(),
-            title="⚠️  Cross-Indexing Analysis",
-            border_style="yellow",
-            title_align="left",
+        selected_option = ArrowKeySelector.select_option(
+            options, "What would you like to do next?"
         )
 
-        console.print()
-        console.print(warning_panel)
+        if selected_option is None:  # User pressed Esc/Ctrl+C
+            return
+
+        # Execute the callback for the selected option
+        selected_option.callback()
+
+        # If quit was selected, we need to return from the method
+        if selected_option.name == "Quit":
+            return
+
+    def _continue_existing_session(self, agent: Agent, project_dir: Path):
+        """Continue with the existing session by prompting for user input."""
+        console.info(f"Continuing with {agent.name} session...")
+        console.print("You can continue interacting with the agent.")
         console.print()
 
-        # Ask for user confirmation
+        while True:
+            user_input = self._get_user_input()
+
+            if user_input is None:
+                return
+
+            if not user_input:
+                continue
+
+            # Execute agent with user input
+            self._execute_agent_interaction(agent, project_dir, user_input)
+
+            # After each interaction, show options menu again
+            console.info("Agent interaction completed!")
+            self._show_post_completion_options(agent, project_dir)
+            return
+
+    def _start_new_session(self, project_dir: Path):
+        """Start a new session by clearing registry and selecting new agent."""
+        console.info("Starting new session...")
+
+        # Clear all agent instances from registry
+        AgentRegistry.clear_all_instances()
+        console.success("All previous sessions cleared.")
+
+        # Select new agent
+        new_agent = self.select_agent()
+
+        # Show prerequisites for new agent
+        self.show_agent_prerequisites(new_agent)
+
+        # Confirm to proceed
         proceed = Confirm.ask(
-            "[bold yellow]Do you want to proceed with cross-indexing analysis?[/bold yellow]",
-            default=True,
+            "Ready to proceed with the new agent workflow?", default=True
         )
 
         if not proceed:
-            console.warning("Cross-indexing declined by user.")
-            console.dim(
-                "💡 Tip: You can run this later when you're ready to spend the time and tokens."
-            )
-            console.dim("📝 To continue later, simply run the same command again.")
-            # Raise a custom exception to stop the workflow
-            raise UserCancelledError("User declined cross-indexing analysis")
+            console.info("Returning to options menu...")
+            self._show_post_completion_options(new_agent, project_dir)
+            return
 
-        console.process("Starting cross-indexing analysis...")
-
-        try:
-            # Import and run cross-indexing
-            from cli.commands import handle_cross_indexing_command
-
-            # Mock args object for cross-indexing
-            class Args:
-                project_path = project_dir
-                directory = str(project_dir)
-                project_name = None
-                log_level = "INFO"
-
-            args = Args()
-            handle_cross_indexing_command(args)
-
-            console.success("Cross-indexing completed successfully!")
-
-        except Exception as e:
-            console.error(f"Cross-indexing failed: {e}")
-
-    def _execute_agent(self, project_dir: Path, agent_name: Agent, agent_config):
-        """Execute the actual agent."""
+        # Execute new agent workflow
         console.print()
-        console.highlight(f"Executing {agent_config.name}")
+        console.highlight(f"Executing {new_agent.name}")
 
-        try:
-            from cli.commands import handle_agent_command
+        if self._setup_and_execute_agent(new_agent, project_dir):
+            console.success("New agent execution completed successfully!!!")
+        else:
+            console.warning("New agent execution completed with no result")
 
-            # Execute the agent - post-processing is handled internally by the agent service
-            agent_result = handle_agent_command(
-                agent_name=agent_name, project_path=project_dir
-            )
-
-            if agent_result:
-                console.success("Agent execution completed successfully!!!")
-            else:
-                console.warning("Agent execution completed with no result")
-
-        except Exception as e:
-            console.error(f"Agent execution failed: {e}")
+        # Show options menu after completion
+        self._show_post_completion_options(new_agent, project_dir)
 
     def run(self):
         """Main CLI execution flow."""
@@ -1060,9 +1006,13 @@ Closing the terminal or interrupting may lead to incomplete data and token wasta
             self.run_agent_workflow(selected_agent, current_dir)
             console.success("🎉 SutraGraph workflow completed!")
             console.dim("Thank you for using SutraGraph!")
-        except UserCancelledError:
-            # This should already be handled in _run_roadmap_agent, but just in case
-            pass
+        except RuntimeError as e:
+            # Check if it's a user cancellation - already handled in run_agent_workflow
+            error_type = getattr(e, "error_type", None)
+            if error_type == AgentErrorType.USER_CANCELLED:
+                pass
+            else:
+                raise
 
 
 def main():

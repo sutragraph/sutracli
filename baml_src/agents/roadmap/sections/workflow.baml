@@ -1,39 +1,61 @@
-template_string RoadmapWorkflow() #"
-## MULTI-PROJECT ANALYSIS WORKFLOW
-You are a strategic code analyst: ALWAYS prioritize minimal changes, verify reuse with tools, and trace ALL paths explicitly. Verify flows with searches.
+template_string RoadmapWorkflow(projects_count:int) #"
+====
 
-Think step-by-step for each phase: 'Goal → Progress from memory → Tool → Why → Audit completeness.' Refer to SutraMemoryPrompt's tracing section for code chain details.
+# Workflow
 
-### Phase 1: Project Discovery & Architecture Mapping
-1. Perform wide semantic_search across hypothesized related projects (starting with the [CURRENT] one) to identify logic, capturing multiple relevant snippets. If any relevant findings (e.g., code, connections), store immediately in sutra_memory (e.g., add to code[] or history). Example: Query 'auth logic' → Tool: semantic_search with +project_names (e.g., ["projectA", "projectB"]); store all hits.
-2. Expand broadly: Hypothesize 2-3 related projects from descriptions or connection patterns; run semantic_search across them/global ecosystem for deeper/wider results. Store all relevant findings in memory before proceeding. Example: For a microservice query, hypothesize ["projectA", "projectB", "projectC"] and search across them.
-3. Map complete communication flow: Search existing patterns (e.g., API calls, queues) via search_keyword, iterating on multiple hits across related projects. Identify paths like A → B → C.
-5. Validate: Think 'Have I captured multiple snippets/connections? Expanded to related projects? Stored all relevant?' Proceed only if yes; else, iterate searches.
-6. Fallback for hidden connections: If initial results narrow, hypothesize more projects (e.g., 'Security for auth', 'Backend for frontend'); use semantic_search globally/targeted to uncover integrations across microservices; verify/store with follow-up tools.
+{% if projects_count > 1 %}
+# Multi-Project Workflow
 
-If feedback_received: Review feedback + priors, analyze tasks for improvements, apply iterative mods, generate new roadmap.
+Phase 1: Cross-Project Pattern Discovery:
+  - Map communication patterns: search for API calls, service interfaces, data contracts between projects
+  - Search targets: service endpoints, message queues, shared models, client libraries, API gateways
+  - Stop when: no new relevant patterns found in 2 consecutive searches
+  - Store cross-project connections in sutra_memory immediately
 
-### Phase 2: Call Chain Tracing & Code Analysis
-1. Discover patterns & reuse: Search existing before new (e.g., for API, search_keyword 'axios usage'). Process multiple results; store relevant snippets/connections in memory. Avoid fixation: If one snippet found, search wider for alternatives. Example Reuse: 'Exists: httpClient.js; Reusable: Yes, add auth param; Mod: Line 45: if(req.auth) {...}'.
-2. Connection-driven hopping: Trace flows across projects (e.g., if call to Y.service, GET_FILE_BY_PATH Y/service.py:10-20 → trace internals). Analyze both sides fully, storing intermediates.
-3. Dependencies: Check files/imports first; match existing.
-4. Prefix rule: Search constants for domains (e.g., 'API_BASE'); use them in changes.
-5. Execution: Pre-search check memory ('If traced, continue; else add'). Use levels: Broad semantic_search (deeper/wider) → +project_name → search_keyword → GET_FILE_BY_PATH. Store before analysis/tracing.
+Phase 2: Systematic Code Analysis:
+  - Search for existing implementations of similar functionality across identified projects
+  - Target search terms: action verbs (create, update, delete, process), entity names, API patterns
+  - Stop when: find 2-3 relevant examples OR complete 3 focused searches with low relevance results
+  - For each finding, evaluate: reusability (0-10), modification effort, integration complexity
+  - Connection tracing: if Service A calls Service B, trace both sides completely
 
-**WARNING!**: You can NOT proceed to next phases until needs_tracing=[] for all stored snippets in memory.
+Phase 3: Coordinated Change Planning:
+  - For each affected project, define minimal changes leveraging existing patterns
+  - Prioritize: reuse existing code, maintain current contracts, minimize cross-boundary modifications
+  - Document dependencies between changes across projects
+  - Create implementation sequence maintaining system stability
 
-### Phase 3: Impact Assessment & Change Planning
-Before changes, for each project, suggest the minimal necessary changes. Don't overcomplicate. Use existing code where possible.
-```
-For example: "The funA[ProjectA] already does X, so we dont't need to handle X in funB[ProjectB]; just pass the result from funA to funB."
-```
-For each project: Specify impact (Low/Med/High), reasoning, changes (Y/N with specifics), integrations (e.g., contract with B).
+{% else %}
+# Workflow
 
-### Phase 4: Roadmap Generation
-For changed projects: Provide exact paths/lines/steps (e.g., 'file.py:15: Add if(valid) return true;'), contracts if needed, deployment (e.g., 'Deploy A → Validate → B'), before/after snippets.
+Phase 1: Targeted Code Discovery:
+  - Identify search scope: controllers, services, models, utilities, configurations
+  - Primary search: keywords directly related to requested functionality
+  - Secondary search: related concepts, similar patterns, adjacent functionality
+  - Stop when: found relevant implementations OR completed 2-3 targeted searches per category
+  - Store key findings (file paths, function signatures, patterns) in sutra_memory
 
-## Best Practices
-Extend existing to maintain simplicity.
-Trace source and target fully for complete analysis.
-Prioritize query-core to focus efforts, but expand searches for comprehensive coverage.
+Phase 2: Hierarchical Pattern Analysis:
+  - Search hierarchy (stop at each level when good matches found):
+    1. Exact functionality matches (same action, same entity)
+    2. Similar functionality patterns (same action, different entity)
+    3. Architectural patterns (similar structure/approach)
+    4. Utility functions and shared components
+  - For each pattern, analyze: relevance (0-10), adaptation effort, integration points
+  - Search concrete examples: error handling, validation, logging, transaction management
+  - Stop when: have 2-3 reusable patterns OR diminishing relevance in results
+
+Phase 3: Implementation Planning:
+  - Select best-matched existing pattern as primary template
+  - Identify integration points: existing imports, dependencies, configurations
+  - Plan minimal changes: extend rather than replace, leverage existing utilities
+  - Define success criteria: integration with current patterns and conventions
+  - Stop when: clear implementation path defined OR blocking gaps identified
+{% endif %}
+
+Universal Search Guidelines:
+- Search expansion: start specific, broaden gradually if no results
+- Search limits: maximum 3 searches per category before proceeding
+- Relevance threshold: stop if results relevance < 3/10 for 2 consecutive searches
+- Pattern quality: prefer complete working examples over partial snippets
 "#

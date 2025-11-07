@@ -305,7 +305,7 @@ class CrossIndexService:
             # Combine memory and tool status (tool status now handled by execute_tool)
             if last_tool_result and last_tool_result.get("tool_status"):
                 tool_status = last_tool_result["tool_status"]
-                full_context = f"{memory_context}\n\nTOOL STATUS\n\n{tool_status}\n===="
+                full_context = f"{memory_context}\n\nTOOL STATUS\n{tool_status}\n===="
             else:
                 full_context = memory_context
 
@@ -478,7 +478,6 @@ Tool Results:
                     # Add code snippet to task manager
                     try:
                         snippet_id = self.task_manager.add_code_snippet(
-                            code_id="dummy_id",  # Will be replaced with counter+1
                             file_path=file_path,
                             start_line=start_line,
                             end_line=end_line,

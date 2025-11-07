@@ -7,7 +7,7 @@ client<llm> AwsBedrock {
     model env.AWS_MODEL_ID
     region env.AWS_REGION
     inference_configuration {
-      temperature 0.1
+      temperature 0.2
       max_tokens env.AWS_MAX_TOKENS
     }
     allowed_role_metadata ["system", "user", "cache_control"]
@@ -20,7 +20,7 @@ client<llm> AnthropicClaude {
   options {
     api_key env.ANTHROPIC_API_KEY
     model env.ANTHROPIC_MODEL_ID
-    temperature 0.1
+    temperature 0.2
     allowed_role_metadata ["system", "user", "cache_control"]
     headers {
       "anthropic-beta" "prompt-caching-2024-07-31"
@@ -35,7 +35,7 @@ client<llm> OpenAIChatGPT {
   options {
     api_key env.OPENAI_API_KEY
     model env.OPENAI_MODEL_ID
-    temperature 0.1
+    temperature 0.2
     allowed_roles ["system", "user"]
     max_tokens env.OPENAI_MAX_TOKENS
   }
@@ -51,7 +51,7 @@ client<llm> GoogleGemini {
     allowed_roles ["system", "user"]
     generationConfig {
       maxOutputTokens env.GEMINI_MAX_TOKENS
-      temperature 0.1
+      temperature 0.2
     }
   }
 }
@@ -65,9 +65,7 @@ client<llm> GCPVertexAI {
     allowed_roles ["system", "user"]
     generationConfig {
       maxOutputTokens env.GEMINI_MAX_TOKENS
-      temperature 0.1
-      topP 1
-      topK 1
+      temperature 0.2
     }
   }
 }
@@ -79,7 +77,7 @@ client<llm> AzureOpenAI {
     api_key env.AZURE_OPENAI_API_KEY
     base_url env.AZURE_BASE_URL
     api_version env.AZURE_API_VERSION
-    temperature 0.1
+    temperature 0.2
     allowed_roles ["system", "user"]
     max_tokens env.AZURE_MAX_TOKENS
   }

@@ -19,7 +19,6 @@ class ProjectManager:
 
     def __init__(
         self,
-        memory_manager=None,
     ):
         """Initialize the project manager.
 
@@ -30,10 +29,8 @@ class ProjectManager:
         """
         self.db_connection = SQLiteConnection()
 
-        self.memory_manager = memory_manager
-
         # Initialize project indexer with memory manager if provided
-        self.project_indexer = ProjectIndexer(self.memory_manager)
+        self.project_indexer = ProjectIndexer()
 
         # Use the converter from project indexer to avoid duplication
         self.converter = self.project_indexer.converter

@@ -8,10 +8,11 @@ from loguru import logger
 from rich.panel import Panel
 from rich.text import Text
 
-from src.agents_new import Agent
+from baml_client.types import Agent
+from src.agent_management.types.exception import AgentErrorType
 from src.embeddings import get_vector_store
 from src.graph import SQLiteConnection
-from src.services.agent_service_new import AgentService
+from src.services.agent_service import AgentService
 from src.services.project_manager import ProjectManager
 from src.tools.tool_web_scrap.action import WebScraper
 from src.tools.tool_web_search.action import (
@@ -71,11 +72,46 @@ def handle_agent_command(agent_name: Agent, project_path: Path):
     try:
         agent = AgentService(agent_name=agent_name, project_path=project_path)
 
-        return agent.run()
+        while True:
+            try:
+                user_input = input("\n👤 You: ").strip()
+                console.print("-" * 40)
+
+                if not user_input:
+                    continue
+
+                # Got valid input, break out of input loop
+                break
+            except KeyboardInterrupt:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+            except EOFError:
+                console.print("\n\n👋 Goodbye! Session ended.")
+                return None
+
+        # Run agent session with the input
+        console.print("🚀 Starting agent session...")
+        return agent.solve_problem(problem_query=user_input)
 
     except KeyboardInterrupt:
         console.print("\n❌ Operation interrupted by user")
         sys.exit(1)
+    except RuntimeError as e:
+        # Check if it's a typed agent error
+        error_type = getattr(e, "error_type", None)
+        if error_type == AgentErrorType.USER_CANCELLED:
+            console.print("\n⚠️  Task cancelled by user")
+            return None
+        elif error_type == AgentErrorType.MAX_ITERATIONS_REACHED:
+            console.print(f"\n⚠️  {str(e)}")
+            return None
+        elif error_type == AgentErrorType.COMPLETION_WITHOUT_RESULT:
+            console.print(f"\n❌ Agent error: {str(e)}")
+            sys.exit(1)
+        else:
+            # Unknown runtime error
+            console.print(f"\n❌ Runtime error: {e}")
+            sys.exit(1)
     except Exception as e:
         console.print(f"\n❌ Unexpected error: {e}")
         sys.exit(1)
@@ -106,7 +142,7 @@ def handle_index_command(args) -> None:
 
         # Initialize required components
         db_connection = SQLiteConnection()
-        project_manager = ProjectManager(db_connection)
+        project_manager = ProjectManager()
 
         # Determine project name
         project_name = args.project_name

@@ -53,8 +53,8 @@ def validate_and_process_baml_results(
     """
     try:
         processed_matches = []
-        incoming_ids = {str(conn.get("id")) for conn in incoming_connections}
-        outgoing_ids = {str(conn.get("id")) for conn in outgoing_connections}
+        incoming_ids = {(conn.get("id")) for conn in incoming_connections}
+        outgoing_ids = {(conn.get("id")) for conn in outgoing_connections}
 
         for match in response.matches:
             # Validate match structure
@@ -71,18 +71,18 @@ def validate_and_process_baml_results(
                 continue
 
             # Validate IDs exist in the original data
-            if str(match.incoming_id) not in incoming_ids:
+            if (match.incoming_id) not in incoming_ids:
                 logger.warning(f"Invalid incoming_id: {match.incoming_id}")
                 continue
 
-            if str(match.outgoing_id) not in outgoing_ids:
+            if (match.outgoing_id) not in outgoing_ids:
                 logger.warning(f"Invalid outgoing_id: {match.outgoing_id}")
                 continue
 
             processed_matches.append(
                 {
-                    "incoming_id": str(match.incoming_id),
-                    "outgoing_id": str(match.outgoing_id),
+                    "incoming_id": (match.incoming_id),
+                    "outgoing_id": (match.outgoing_id),
                     "match_confidence": match.match_confidence,
                     "match_reason": match.match_reason,
                 }
