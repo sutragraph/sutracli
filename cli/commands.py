@@ -608,7 +608,7 @@ def handle_switch_provider_command(args) -> None:
     console.print("🔄 Switch Provider COMMAND")
 
     # Run modern interactive CLI
-    from cli.modern_cli import ModernSutraKit
+    from cli.llm_provider import LLMProvider
 
-    cli = ModernSutraKit()
-    cli.switch_llm_provider()
+    llm_provider = LLMProvider()
+    llm_provider.switch_llm_provider()
